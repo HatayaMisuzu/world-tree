@@ -1,0 +1,22 @@
+{
+  "id": "classic",
+  "name": "经典",
+  "description": "标准世界树叙事模式。DM主导，世界书驱动，六标记段协议，完整Director层。这是我们一直构建的基础模式。",
+  "basedOn": "worldbook",
+  "status": "active",
+  "defaultModules": ["M1","M2","M3","M4","M5","M6","M7","M8","M9","M10","M11","M12","M13","M15","M15c","M16","M17","M18"],
+  "narrativeStyle": "DM描述场景，玩家自由行动，世界书条目注入叙事，Director层管理节奏和事件。",
+  "dmRole": "full",
+  "defaultPreset": "epic",
+  "promptHints": {
+    "dmInstruction": "你是世界树叙事引擎 DM。描述场景、管理角色、审查可行性、按节奏触发事件。输出使用六标记段协议。",
+    "eventIntensityDefault": "moderate",
+    "pressureDefault": "medium"
+  },
+  "constraints": {
+    "allowRandomEvents": true,
+    "allowNewCharacters": true,
+    "allowSceneBreaks": true,
+    "requirePlayerAction": false
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/location.schema.json",
+  "title": "地点",
+  "description": "世界树地点实体定义",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "type": { "type": "string", "enum": ["城市", "村庄", "城堡", "森林", "山脉", "河流", "海洋", "沙漠", "平原", "地牢", "塔", "酒馆", "广场", "宫殿", "港口", "遗迹", "其他"] },
+    "region": { "type": "string", "description": "所属区域" },
+    "description": { "type": "string", "maxLength": 2000 },
+    "features": { "type": "array", "items": { "type": "string" }, "description": "显著特征" },
+    "atmosphere": { "type": "string", "description": "氛围" },
+    "population": { "type": "string" },
+    "climate": { "type": "string" },
+    "exports": { "type": "array", "items": { "type": "string" } },
+    "relatedFactions": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

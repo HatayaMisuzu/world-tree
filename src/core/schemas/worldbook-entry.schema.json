@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/worldbook-entry.schema.json",
+  "title": "世界书条目",
+  "description": "世界书触发式知识条目定义",
+  "type": "object",
+  "required": ["title", "content"],
+  "properties": {
+    "id": { "type": "string", "description": "唯一标识符" },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "条目标题"
+    },
+    "content": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 5000,
+      "description": "条目内容"
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "触发关键词",
+      "default": []
+    },
+    "triggers": {
+      "type": "array",
+      "description": "触发词（独立于 keywords，用于匹配逻辑）",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "人物", "种族", "地点", "组织", "事件", "物品",
+        "魔法", "科技", "规则", "文化", "历史", "传说",
+        "关系", "设定", "其他"
+      ],
+      "description": "条目分类"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["主动", "被动", "混合", "触发"],
+      "description": "条目触发类型"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["触发", "常驻", "禁用"],
+      "description": "条目注入模式",
+      "default": "触发"
+    },
+    "layer": {
+      "type": "string",
+      "enum": ["表层", "中层", "深层"],
+      "description": "信息层级",
+      "default": "中层"
+    },
+    "depth": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "展开深度"
+    },
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "触发概率"
+    },
+    "persistence": {
+      "type": "string",
+      "enum": ["永久", "会话", "单场景"],
+      "description": "持久性",
+      "default": "会话"
+    },
+    "matchMode": {
+      "type": "string",
+      "enum": ["精确", "语义", "两者", "向量化"],
+      "description": "匹配模式",
+      "default": "语义"
+    },
+    "vectorThreshold": { "type": "number", "minimum": 0, "maximum": 1 },
+    "relevance": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "语义相关度"
+    },
+    "extend": {
+      "type": "boolean",
+      "description": "是否允许自动展开子条目",
+      "default": false
+    },
+    "parent": {
+      "type": "string",
+      "description": "父条目 ID（用于条目生长树）"
+    },
+    "children": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "子条目 ID 列表"
+    },
+    "conflicts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "与此条目冲突的条目 ID"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["confirmed", "proposed", "draft"],
+      "description": "条目确认状态",
+      "default": "confirmed"
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

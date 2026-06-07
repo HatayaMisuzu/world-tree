@@ -1,0 +1,190 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/character.schema.json",
+  "title": "角色",
+  "description": "世界树角色实体定义",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "唯一标识符，小写下划线",
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "角色名称",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "alias": {
+      "type": "array",
+      "description": "别名/称号列表",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "role": {
+      "type": "string",
+      "description": "角色定位（主角/配角/NPC/反派等）",
+      "enum": ["主角", "配角", "NPC", "反派", "导师", "盟友", "中立", "未定义"]
+    },
+    "status": {
+      "type": "string",
+      "description": "当前状态",
+      "default": "正常"
+    },
+    "mood": {
+      "type": "string",
+      "description": "当前情绪",
+      "default": ""
+    },
+    "location": {
+      "type": "string",
+      "description": "当前位置"
+    },
+    "age": {
+      "type": ["integer", "string", "null"],
+      "description": "年龄"
+    },
+    "gender": {
+      "type": "string",
+      "description": "性别"
+    },
+    "race": {
+      "type": "string",
+      "description": "种族"
+    },
+    "appearance": {
+      "type": "object",
+      "description": "外貌特征",
+      "properties": {
+        "height": { "type": "string" },
+        "hair": { "type": "string" },
+        "eyes": { "type": "string" },
+        "build": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "style": { "type": "string", "description": "穿衣风格" }
+      }
+    },
+    "personality": {
+      "type": "object",
+      "description": "人格底盘（四层：表层/里层/触发条件/玩家影响力）",
+      "properties": {
+        "surface": {
+          "type": "object",
+          "description": "表层人格：公开可见的特质",
+          "properties": {
+            "traits": { "type": "array", "items": { "type": "string" } },
+            "mannerisms": { "type": "array", "items": { "type": "string" } },
+            "speechPattern": { "type": "string", "description": "说话风格" }
+          }
+        },
+        "inner": {
+          "type": "object",
+          "description": "里层人格：隐藏面/秘密",
+          "properties": {
+            "desires": { "type": "array", "items": { "type": "string" } },
+            "fears": { "type": "array", "items": { "type": "string" } },
+            "obsessions": { "type": "array", "items": { "type": "string" } },
+            "secrets": { "type": "array", "items": { "type": "string" } },
+            "contradictions": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "triggers": {
+          "type": "object",
+          "description": "触发条件：什么情境会显露里层",
+          "properties": {
+            "emotionalOutbursts": { "type": "array", "items": { "type": "string" } },
+            "softSpots": { "type": "array", "items": { "type": "string" } },
+            "taboos": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "playerInfluence": {
+          "type": "object",
+          "description": "玩家影响力：角色会因玩家行为发生什么改变",
+          "properties": {
+            "canChange": { "type": "array", "items": { "type": "string" } },
+            "cannotChange": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "background": {
+      "type": "object",
+      "description": "背景故事",
+      "properties": {
+        "origin": { "type": "string" },
+        "currentIdentity": { "type": "string" },
+        "keyExperiences": { "type": "array", "items": { "type": "string" } },
+        "currentGoal": { "type": "string" }
+      }
+    },
+    "traits": {
+      "type": "array",
+      "description": "简单特征标签（兼容旧格式）",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "abilities": {
+      "type": "object",
+      "description": "能力/技能",
+      "properties": {
+        "combat": { "type": "string" },
+        "magic": { "type": "string" },
+        "knowledge": { "type": "array", "items": { "type": "string" } },
+        "special": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "items": {
+      "type": "object",
+      "description": "随身物品与风格",
+      "properties": {
+        "weapon": { "type": "string" },
+        "emblem": { "type": "string", "description": "标志物" },
+        "accessories": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "description": "关系列表（简版，详见 relations.json）",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": { "type": "string", "description": "目标角色名" },
+          "type": { "type": "string", "description": "关系类型" },
+          "attitude": { "type": "string", "description": "态度" }
+        }
+      },
+      "default": []
+    },
+    "knowledge": {
+      "type": "object",
+      "description": "角色认知层（M9）：该角色知道什么",
+      "properties": {
+        "known": { "type": "array", "items": { "type": "string" } },
+        "suspected": { "type": "array", "items": { "type": "string" } },
+        "unknown": { "type": "array", "items": { "type": "string" } },
+        "misconceptions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "source": {
+      "type": "string",
+      "description": "数据来源",
+      "default": "world-tree"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    }
+  },
+  "additionalProperties": true
+}

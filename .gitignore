@@ -1,0 +1,37 @@
+# v0-ui 导出产物（旧版备份，由 src/v0-out 替代）
+v0-ui/out/
+
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+world-tree-desktop-portable/
+*.exe
+
+# 运行时数据（本地开发用，勿提交）
+data/engine/runs/
+data/engine/worlds/
+data/engine/global-memory/snapshots.json
+
+# 用户数据
+userData/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# 备份（本地开发用）
+*-backups/
+src/v0-out.bak/
+
+# 日志
+*.log
+npm-debug.log*

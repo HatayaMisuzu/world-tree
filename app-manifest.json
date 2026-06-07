@@ -1,0 +1,93 @@
+{
+  "id": "world-tree-desktop",
+  "name": "World Tree Desktop",
+  "version": "1.0.1",
+  "dataCompatibility": {
+    "worldTreeDataVersions": [
+      "12.x"
+    ],
+    "defaultDataRoot": "",
+    "dataRootHint": "data",
+    "engineRootHint": "defaults\\engine-profile",
+    "packagedPathCatalog": "paths\\world-tree-paths.json"
+  },
+  "safety": {
+    "mode": "read-only-plus-overlay-and-explicit-module-create",
+    "writesWorldTreeJson": "module-create-only",
+    "writesInstalledSkill": false,
+    "hermesRequired": false,
+    "startsWithEmptyModules": true,
+    "storesLlmApiKeyInUserConfig": false,
+    "storesLlmApiKeyInSeparateSecretsFile": true,
+    "packagesApiKeys": false,
+    "moduleCreationRequiresDataRoot": true,
+    "moduleCreationRejectsPathTraversal": true
+  },
+  "directLlm": {
+    "enabled": true,
+    "apiStyle": "openai-compatible-chat-completions",
+    "worldTreeEngineAdapter": "defaults\\engine-profile\\world-tree-runtime.json",
+    "bundlesFulltextKnowledgeForSearch": true,
+    "injectsFulltextEveryTurn": false,
+    "personas": [
+      "personas\\hermes-writer-soul.md",
+      "personas\\dm-manual.md"
+    ]
+  },
+  "i18n": {
+    "enabled": true,
+    "languages": [
+      "zh-CN",
+      "en-US"
+    ],
+    "persistedInUserConfig": true,
+    "defaultLanguage": "zh-CN"
+  },
+  "cards": {
+    "imports": [
+      "sillytavern-character-json",
+      "sillytavern-png-metadata",
+      "worldtree-dm-card",
+      "worldtree-worldbook-card",
+      "markdown-dm-card"
+    ],
+    "localLibraryOnly": true,
+    "writesWorldTreeCards": false
+  },
+  "worldbook": {
+    "keywordTriggerPreview": true,
+    "entryEnableDisable": true,
+    "injectsIntoDirectLlmPrompt": true,
+    "writesWorldTreeJson": false
+  },
+  "powerUser": {
+    "enabled": true,
+    "centralSettingsView": true,
+    "defaultSlashCommands": "src\\core\\slash-commands.js",
+    "userSlashCommands": "Electron userData\\power-user.json",
+    "separatesDefaultContentFromUserData": true,
+    "engineAdapterProfile": "defaults\\engine-profile\\world-tree-runtime.json",
+    "overlayRoot": "data\\engine",
+    "runObjectIsolation": [
+      "worldbook",
+      "character_card",
+      "preset"
+    ],
+    "isolatedOverlayShape": "data\\engine\\runs\\<mode>\\modules\\<module-id>",
+    "isolatedArchiveShape": "data\\engine\\runs\\<mode>\\archives",
+    "knowledgeCards": "defaults\\engine-profile\\modules",
+    "fulltextKnowledge": "defaults\\engine-knowledge\\fulltext",
+    "userDataFiles": [
+      "config.json",
+      "secrets.json",
+      "power-user.json",
+      "worldbook-state.json",
+      "Local Storage"
+    ]
+  },
+  "upgradeNotes": [
+    "Core data parsing lives under src/core so future migrations can be added without changing the Electron shell.",
+    "Hermes calls live under src/adapters/hermes.js and can be replaced by another model or local runtime adapter.",
+    "First release exports proposed patches and commands instead of directly modifying world-tree JSON."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "_⚠️_HIDDEN_MODE": "此模式尚未完成，status=hidden 确保用户界面不暴露。只有用户明确要求完成此模式时才可改回 active。禁止 AI 代理擅自将 status 改为 active 或暴露到 UI。",
+  "id": "tabletop",
+  "name": "跑团",
+  "description": "桌面角色扮演模式。DM以跑团风格引导叙事，强调玩家自由行动、骰子隐喻判定、探索和角色互动。三支柱循环：探索/社交/战斗。",
+  "basedOn": "worldbook",
+  "status": "hidden",
+  "defaultModules": ["M1","M2","M3","M8","M11","M12","M13","M15","M16","M17","M18"],
+  "narrativeStyle": "DM描述场景，玩家声明行动，DM判定难度并使用骰子检定。骰子结果通过叙事隐式呈现——成功顺遂、失败坎坷。三支柱：探索(环境/信息)、社交(说服/欺骗/威胁)、战斗(攻防检定)。",
+  "dmRole": "full",
+  "defaultPreset": "epic",
+  "promptHints": {
+    "dmInstruction": "你是 World Tree Desktop 跑团模式的 DM。你用法庭式的叙事和隐喻式的骰子判定驱动故事。——当玩家声明有风险的动作时，在心里判定 DC 后调用【检定建议】标记。系统会返回【检定结果】，你再用叙事隐式呈现成败。不要直接输出数字，成功时描写顺畅，失败时描写不顺畅但给出变通路径。失败不卡关。——比经典模式更主动引导：每个场景给出 2-3 个可探索方向，探探环境、找人聊聊、推进任务。跑团三支柱（探索/社交/战斗）自然循环切换。",
+    "eventIntensityDefault": "moderate",
+    "pressureDefault": "medium"
+  },
+  "constraints": {
+    "allowRandomEvents": true,
+    "allowNewCharacters": true,
+    "allowSceneBreaks": true,
+    "requirePlayerAction": true
+  },
+  "tabletopConfig": {
+    "diceNotation": "d20",
+    "checkMechanics": "dc+modifier",
+    "critOnNatural20": true,
+    "fumbleOnNatural1": true,
+    "advantageSystem": true,
+    "environmentEncounterTables": true
+  }
+}

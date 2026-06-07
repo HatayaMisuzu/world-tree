@@ -1,0 +1,1 @@
+{"moduleId":"M5","name":"组织层级","version":"v12.19","type":"runtime","dependsOn":["M4"],"summary":"M4的依赖模块。追踪组织内部层级结构：职位名→上下级关系→命令权限范围。","activatedBy":["epic","all"],"rules":["每个组织有树形层级结构，成员绑定到特定层级节点。","层级变更需在叙事中体现(晋升/贬职/新任命)。","命令权限受层级约束：上级可命令下级，同级只能协商。"],"edgeCases":["关闭M4时自动关闭M5。"],"referencePath":"references/M4-组织实体.md"}

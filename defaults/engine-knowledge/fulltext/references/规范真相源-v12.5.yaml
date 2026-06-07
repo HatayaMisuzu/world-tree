@@ -1,0 +1,264 @@
+skill:
+  name: world-tree
+  display_name: 世界树引擎
+  version: "12.19"
+  release_focus: "M19角色卡驱动模式。控制台自适应识别世界书/角色卡标签。角色卡独立于世界书M8角色。存档类型隔离[W]/[C]。DM姿态双模切换。"
+
+governance:
+  this_file_is_single_source_of_truth: true
+  authority_version: "v12.19"
+  filename_note: "文件名保留 v12.5 以避免旧引用失效；内容权威版本以 skill.version 为准。"
+  edit_order:
+    - "change_this_yaml_first"
+    - "sync_SKILL_md"
+    - "sync_reference_docs"
+    - "run_release_checklist"
+  sync_rule:
+    - "if_SKILL_or_reference_conflicts_with_this_yaml_this_yaml_wins"
+    - "do_not_change_mapping_timeout_path_or_command_registry_only_in_prose"
+
+runtime:
+  data_root:
+    default: "D:/world-tree-data"
+    configurable: true
+    config_key: "WT_DATA_ROOT"
+  context_compress:
+    round_threshold: 30
+    snapshot_kb_threshold: 50
+
+fact_integrity:
+  canonical_state_file: "branches/{active_branch}/canon_state.json"
+  source_rule: "formal_state_files_define_confirmed_facts"
+  read_before_narration:
+    - "module.json"
+    - "timeline-tree.json"
+    - "branches/{active_branch}/runtime.json"
+    - "branches/{active_branch}/canon_state.json"
+    - "enabled_module_state_files"
+  commit_classes:
+    confirmed: "explicitly_happened_and_non_conflicting_then_write_back"
+    implied: "retain_as_uncertainty_label_only"
+    proposed: "retain_as_candidate_for_main_agent_or_user_review"
+  conflict_rule: "surface_the_conflict_and_request_resolution"
+  evidence_rule: "saved_synced_isolated_or_cleaned_claims_require_verified_operation_or_host_capability"
+
+branching:
+  timeline_tree_file: "timeline-tree.json"
+  active_branch_source: "timeline-tree.json:active_branch"
+  mutable_state_dir: "branches/{active_branch}/"
+  shared_state_dir: "shared/"
+  rule: "all_mutable_runtime_reads_and_writes_must_route_through_active_branch"
+
+subagents:
+  enabled_by_default_in_world_tree_mode: true
+  timeout_seconds: 90
+  result_size_limit_kb: 2
+  fallback: "timeout_or_unavailable_then_main_agent_takes_over"
+  path_rule: "all_paths_must_use_forward_slashes"
+  cleanup_rule: "main_agent_cleans_all_temp_files"
+  fact_authority: "proposal_only_main_agent_commits_confirmed_facts"
+  full_spec: "references/M-子agent协作.md"
+  allowed_result_content:
+    - "candidate_description"
+    - "conflict_checks"
+    - "source_references"
+    - "open_questions"
+
+mode_rules:
+  daily_mode:
+    wrap_with_world_tree_tags: false
+    trigger_subagents: false
+  world_tree_mode:
+    wrap_with_world_tree_tags: true
+    trigger_subagents: true
+  daily_interrupt_inside_world_tree_mode:
+    wrap_with_world_tree_tags: false
+    trigger_subagents: false
+    write_runtime: false
+    memory_ingest: true
+    note: "reply_briefly_then_keep_current_module_active"
+
+isolation_layer:
+  top_level: "世界书 (WorldBook) — 隔离容器，最高层级"
+  second_level: "预设 (Preset) — 风格参数层，属于世界书"
+  third_level: "数据模块层 — 角色/时间/场景/组织/种族/世界状态/触发条目/存档"
+  full_spec: "references/M1-世界书隔离.md"
+  core_rules:
+    - "隔离边界 = 世界书。世界书之间硬阻断。"
+    - "预设属于世界书，只控制风格参数。切换预设不动数据层。"
+    - "同一世界书内所有模块自由联通、统一信息、统一调度。"
+    - "切换世界书 → 全维度清空→守门人校验→重新加载。"
+    - "切换预设 → 只变风格参数，不碰角色/时间/场景/组织/种族/世界状态/触发条目。"
+
+continuation_safety:
+  added_in: "v12.4"
+  location_in_skill: "§7.1:0.15"
+  description: "续写安全确认——防串戏机制。当用户发出模糊续写指令时，从独立数据目录交叉验证当前状态。"
+  trigger: "短续写指令（继续/推进/下一步等不含模组/分支/场景标识的指令）"
+  skip_condition: "日常模式 或 用户指令含明确模组/场景标识"
+  steps:
+    - step: 1
+      name: "模组存活检查"
+    - step: 2
+      name: "分支一致性检查"
+    - step: 3
+      name: "运行时状态核对"
+    - step: 4
+      name: "角色名模组归属校验（守门人复核）"
+  hard_rule: "任一检查不通过 → 立即停止输出 + 报告冲突点 + 等待用户确认后再继续"
+
+auto_advance_mode:
+  added_in: "v12.5"
+  location_in_skill: "§七点五"
+  description: "自动推进模式——用户不互动时AI主动推进剧情。原自主输出小说模式已简化为本模式。"
+  spec_file: "references/自动推进模式.md"
+  novel_engine_pointer: "旧完整小说流水线为历史归档；当前世界树仅保留自动推进。若恢复书籍级小说生产，必须作为 world-tree 的 M-子模块重新纳入，不另建独立 skill。"
+
+preset_system:
+  definition: "预设 = 故事模板层。基于世界书运行，定义'在这个世界上讲一个什么样的故事'。"
+  full_spec: "references/M12-故事模板.md"
+  data_ownership:
+    worldbook_level: [世界观, 运行规则, 地理种族势力, 组织实体, 角色库, 历史, 世界状态, 触发条目]
+    preset_level: [故事类型, 风格参数, 主角状态, 驱动力, 关键NPC状态, 故事时间线, 场景进度, 开头设定]
+
+intelligent_completion:
+  principle: "谨慎推理。大的、重要的部分让用户补全。小世界/小预设可放宽。"
+  full_spec: "references/M12-故事模板.md"
+  priority_chain:
+    - "预设字段缺失 → 世界书中有对应内容？→ 是 → 自动引用补全"
+    - "→ 否 → 可从世界书其他内容推理？→ 是 → 推理补全（标注推测）"
+    - "→ 否 → 向用户提问"
+
+switch_behavior:
+  switch_worldbook: "世界观/规则/种族/组织/角色库/历史/世界状态/触发条目→重载 | 预设级全维度→重载"
+  switch_preset: "世界书级全维度→不变 | 主角/驱动力/周边/时间线/场景/开头→切换"
+  gateway: "守门人校验不变——世界书之间硬阻断"
+
+module_policy:
+  m14:
+    status: "removed"
+    removal_date: "2026-06-02"
+    reason: "世界树引擎本身不承载、不输出、不存储色色内容。色色全归erotic-writing skill。"
+  m15: {status: "active", renamed_from: "M15a", version: "v12.7"}
+  m15c: {status: "active", renamed_from: "M15b", version: "v12.7", note: "叙事质量审查。非阻塞标记+建议。"}
+  m18: {status: "active", version: "v12.7", note: "场景走向预测。"}
+  m19: {status: "active", version: "v12.19", note: "角色卡驱动模式。独立于世界书M8角色。DM隐退纯沉浸互动。关系追踪隐形化。存档[W]/[C]隔离。"}
+
+world_type_modules:
+  epic_fantasy:
+    enabled: [M1, M2, M3, M4, M5, M6, M7, M8, M9, M10, M11, M12, M13, M15, M15c, M16, M17, M18]
+  sci_fi:
+    enabled: [M1, M2, M3, M4, M5, M6, M7, M8, M9, M10, M11, M12, M13, M15, M15c, M16, M17, M18]
+  wuxia:
+    enabled: [M1, M2, M7, M8, M11, M12, M13, M15, M15c, M16, M17, M18]
+  modern_city:
+    enabled: [M1, M2, M8, M11, M12, M13, M15, M15c, M16, M17, M18]
+    note: "M16/M17 run in light mode"
+  campus:
+    enabled: [M1, M2, M8, M11, M12, M13, M15, M15c, M16, M17, M18]
+    note: "M16/M17 run in light mode"
+  daily_chat:
+    enabled: [M1, M8, M11, M12, M13, M15c]
+  character_card:
+    enabled: [M1, M3, M8, M9, M11, M13, M15c, M16, M17, M19]
+    note: "角色卡驱动模式。DM隐退无标记输出。M3仅场景级状态变量(无事件驱动)。M9重构为角色对user的认知层。M16仅场景级时间。M17框架就位但暂不触发(以用户括号提示引导)。"
+
+lightweight_modes:
+  m16:
+    scope: "scene_level_time_progression_only"
+  m17:
+    scope: "low_impact_rhythm_control_only"
+  full_spec: "SKILL.md §0.0.4B"
+
+character_card_mode:
+  added_in: "v12.19"
+  description: "角色卡驱动模式——与M8角色预设完全独立。角色卡是独立输入类型，不绑定世界书。"
+  full_spec: "references/M19-角色卡驱动.md"
+  core_rules:
+    - "角色卡 ≠ 世界书中的M8角色。两套独立体系，互不混用。"
+    - "DM完全隐退，纯叙事输出，无[旁白]/[系统]/★提案等元层标记。"
+    - "输出风格：角色直接以第一人称'我'对user说话，不跳出角色做meta分析。"
+    - "关系追踪完全隐形叙事化，不向user展示任何数值面板。"
+    - "M17随机事件框架就位但暂不触发。当前以用户括号提示引导事件。"
+    - "M9重构：从'角色对世界状态认知'转为'角色对user的认知+角色自身秘密'。"
+    - "user-角色默认关系：'熟悉但不亲密的暧昧'。"
+    - "存档类型隔离：角色卡存档标记[C]，世界书存档标记[W]。跨模式读档阻断并提示。"
+  detection:
+    worldbook_signals: ["spec", "entries", "worldbook", "触发词", "M2条目结构(触发词+内容+优先级)"]
+    character_card_signals: ["name+first_mes+personality(ST格式)", "名称+性格+首次对话(原生格式)", "mes_example", "description+scenario"]
+    dual_detection: "两者都检出→分别标注→提示用户选择加载类型"
+    unknown: "两者都未检出→提示'无法识别格式'"
+  preserve_commands:
+    - "/存档 [名]"
+    - "/读档 [名]"
+    - "/存档列表"
+    - "/场景 now"
+    - "/场景 move [地点]"
+    - "/角色 show [名]"
+    - "/分支 list"
+    - "/分支 switch [名]"
+    - "/引擎 status"
+
+command_registry:
+  must_exist_in_main_skill:
+    - "/角色 load 文件名"
+    - "/认知 群组 create 群组名 角色列表"
+    - "/认知 群组 share 群组名 状态名"
+    - "/认知 群组 show 群组名"
+    - "/读档 名称"
+    - "/存档列表"
+    - "/随机 weights"
+  full_spec_command_details: "references/命令详解.md"
+
+engine_templates:
+  version: "12.19"
+  required_files:
+    - "D:/world-tree-data/_engine/canon_state.template.json"
+    - "D:/world-tree-data/_engine/agent_profiles.json"
+  character_card_runtime: "must_preserve_mode_label_character_card_and_C_save_prefix"
+
+innovation_modules:
+  narrative_radar: "references/M-叙事一致性雷达.md"
+  character_card_inertia: "references/M19-情绪惯性系统.md"
+  worldbook_growth_tree: "references/世界书生长树.md"
+  branch_fate_diff: "references/分支差异叙事摘要.md"
+  material_absorption_scorer: "references/素材吸收评分器.md"
+  release_audit: "references/一键发版审计.md"
+
+contract_check:
+  script: "scripts/world_tree_contract_check.py"
+  expected_summary: "fail=0"
+  release_audit_script: "scripts/world_tree_release_audit.py"
+  checks:
+    - "truth_source_matches_skill_version"
+    - "writer_mirror_hash_matches_key_files"
+    - "engine_templates_match_v12_19"
+    - "old_entrypoints_are_archived"
+    - "m19_minimal_samples_are_indexed"
+
+maintenance:
+  encoding: "utf-8"
+  old_names_removed:
+    - "dynamic-world-engine"
+  old_versions_removed:
+    - "v12.0 (current-state descriptions)"
+  release_checklist:
+    - "confirm_yaml_version_name_and_release_focus"
+    - "sync_SKILL_md_from_yaml"
+    - "sync_reference_docs_from_yaml"
+    - "verify_SKILL_md_is_under_1200_lines"
+    - "verify_auto_advance_mode_doc_exists"
+    - "verify_world_type_mapping_consistency"
+    - "verify_m14_is_removed_no_residual_bridge"
+    - "verify_continuation_safety_section_is_present"
+    - "verify_light_mode_rules_are_present"
+    - "verify_command_registry_entries_exist_in_main_skill"
+    - "verify_gateway_checks_in_read_write_flows"
+    - "verify_step_numbering_no_duplicates_no_gaps"
+    - "verify_no_unix_paths_on_windows_host"
+    - "verify_reference_doc_versions_match_skill_version"
+    - "verify_SOUL_md_commands_all_exist_in_skill_registry"
+    - "verify_writer_profile_config_defaults_correct"
+    - "sync_shared_skills_to_writer_profile"
+    - "verify_contract_check_script_passes"
+    - "verify_release_audit_script_passes"

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="wind" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff8d6" stop-opacity="0"/>
+      <stop offset=".45" stop-color="#fff8d6" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#9fe2da" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft">
+      <feGaussianBlur stdDeviation="1.8"/>
+    </filter>
+  </defs>
+  <g fill="none" stroke="url(#wind)" stroke-width="2.4" stroke-linecap="round" filter="url(#soft)">
+    <path d="M-140 620 C180 530 330 690 610 575 S1040 500 1730 590">
+      <animate attributeName="d" dur="11s" repeatCount="indefinite"
+        values="M-140 620 C180 530 330 690 610 575 S1040 500 1730 590;M-140 606 C170 564 345 650 610 592 S1040 535 1730 570;M-140 620 C180 530 330 690 610 575 S1040 500 1730 590"/>
+    </path>
+    <path d="M-180 720 C150 650 410 760 710 690 S1090 640 1760 700" opacity=".65">
+      <animate attributeName="d" dur="13s" repeatCount="indefinite"
+        values="M-180 720 C150 650 410 760 710 690 S1090 640 1760 700;M-180 735 C150 682 430 730 710 708 S1090 610 1760 720;M-180 720 C150 650 410 760 710 690 S1090 640 1760 700"/>
+    </path>
+    <path d="M-120 230 C130 150 360 280 620 210 S1030 130 1680 180" opacity=".45">
+      <animate attributeName="d" dur="17s" repeatCount="indefinite"
+        values="M-120 230 C130 150 360 280 620 210 S1030 130 1680 180;M-120 246 C130 175 360 245 620 228 S1030 160 1680 165;M-120 230 C130 150 360 280 620 210 S1030 130 1680 180"/>
+    </path>
+  </g>
+</svg>

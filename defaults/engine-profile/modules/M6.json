@@ -1,0 +1,1 @@
+{"moduleId":"M6","name":"关系网络","version":"v12.19","type":"runtime","dependsOn":["M4"],"summary":"M4的依赖模块。追踪组织间关系(联盟/敌对/附庸/中立)和动态变化。","activatedBy":["epic","all"],"rules":["组织间关系状态：联盟/敌意/战争/附庸/中立/协定。","关系变更需事件推动，不因一句话改变。","关系网络图可视化（控制台支持）。"],"edgeCases":["关闭M4时自动关闭M6。"],"referencePath":"references/M4-组织实体.md"}

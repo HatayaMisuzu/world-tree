@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <filter id="soft"><feGaussianBlur stdDeviation=".35"/></filter>
+  </defs>
+  <circle cx="60" cy="60" r="49" fill="none" stroke="#f8eed7" stroke-opacity=".9" stroke-width="2"/>
+  <circle cx="60" cy="60" r="40" fill="none" stroke="#f8eed7" stroke-opacity=".42" stroke-width="1"/>
+  <path d="M60 16 V104" stroke="#f8eed7" stroke-opacity=".9" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M60 78 C47 80 38 88 30 99 M60 78 C73 81 82 89 91 99 M60 76 C55 88 52 96 48 105 M60 76 C65 88 68 96 72 105" fill="none" stroke="#f8eed7" stroke-opacity=".78" stroke-width="2" stroke-linecap="round"/>
+  <path d="M60 56 C45 52 36 44 31 34 M60 53 C75 49 84 40 90 29 M60 45 C52 38 50 28 51 20 M60 45 C68 37 70 28 70 20" fill="none" stroke="#f8eed7" stroke-opacity=".86" stroke-width="2" stroke-linecap="round"/>
+  <g fill="none" stroke="#f8eed7" stroke-opacity=".86" stroke-width="1.8" stroke-linecap="round">
+    <path d="M48 49 C39 50 31 54 24 62"/>
+    <path d="M72 48 C83 49 93 54 100 64"/>
+    <path d="M52 36 C43 31 38 25 35 17"/>
+    <path d="M68 36 C78 31 84 25 88 17"/>
+    <path d="M45 58 C36 61 30 67 25 75"/>
+    <path d="M75 58 C84 61 91 68 96 76"/>
+  </g>
+  <g fill="#f8eed7" fill-opacity=".82" filter="url(#soft)">
+    <ellipse cx="42" cy="33" rx="4" ry="7" transform="rotate(-38 42 33)"/>
+    <ellipse cx="79" cy="31" rx="4" ry="7" transform="rotate(38 79 31)"/>
+    <ellipse cx="31" cy="56" rx="4" ry="7" transform="rotate(-64 31 56)"/>
+    <ellipse cx="91" cy="57" rx="4" ry="7" transform="rotate(64 91 57)"/>
+    <ellipse cx="52" cy="24" rx="3" ry="6" transform="rotate(-10 52 24)"/>
+    <ellipse cx="69" cy="24" rx="3" ry="6" transform="rotate(10 69 24)"/>
+  </g>
+</svg>

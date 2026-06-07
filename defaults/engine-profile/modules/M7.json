@@ -1,0 +1,1 @@
+{"moduleId":"M7","name":"关键人物","version":"v12.19","type":"runtime","dependsOn":["M4"],"summary":"M4的依赖模块。追踪各组织的关键人物(领袖/长老/将军等)，每个关键人物有独立的声望/态度/位置状态。","activatedBy":["epic","wuxia","all"],"rules":["关键人物绑定所属组织，随组织状态变化而变化。","关键人物有自己的时间体感和驱动力(M16a联动)。","关键人物角色认知独立追踪(M9联动)。"],"edgeCases":["关闭M4时自动关闭M7。"],"referencePath":"references/M4-组织实体.md"}

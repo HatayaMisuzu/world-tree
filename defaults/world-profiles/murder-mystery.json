@@ -1,0 +1,33 @@
+{
+  "id": "murder-mystery",
+  "name": "剧本杀",
+  "description": "独立案件引擎模式。不走叙事管线——用专用状态机管理调查/审讯/讨论/指认流程。DM是信息分发员而非创作导演。支持多人本单人适配（AI模拟其他玩家）。",
+  "basedOn": "standalone",
+  "status": "active",
+  "defaultModules": [],
+  "narrativeStyle": "独立案件引擎。DM管理流程、分发线索、扮演嫌疑人。不走Director→Writer→Guardian管线。玩家通过调查/审讯/讨论推进案件，最终指认凶手。",
+  "dmRole": "host",
+  "defaultPreset": "minimal",
+  "promptHints": {
+    "dmInstruction": "你是剧本杀 DM。你没有创作自由——你分发预写的线索、扮演预写的角色、管理固定的流程。具体的系统指令从 murder-mystery.js 的 MURDER_MYSTERY_DM_INSTRUCTION 加载。",
+    "eventIntensityDefault": "none",
+    "pressureDefault": "low"
+  },
+  "constraints": {
+    "allowRandomEvents": false,
+    "allowNewCharacters": false,
+    "allowSceneBreaks": true,
+    "requirePlayerAction": true
+  },
+  "murderConfig": {
+    "dataFileFormat": "json",
+    "caseDirectory": "defaults/cases/",
+    "maxCluesPerRound": 4,
+    "maxInterrogationPerRound": 4,
+    "phases": ["briefing","character_select","reading","investigation","discussion","accusation","reveal","scoring"],
+    "aiSimulateNPCs": true,
+    "singlePlayerMode": true,
+    "physicalToTextAdaptation": true,
+    "multiplayerToSingleAdaptation": true
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "version": "world-tree-v12.19-desktop",
+  "categories": {
+    "engine": ["/引擎 new", "/引擎 load", "/引擎 status", "/引擎 exit", "/压缩"],
+    "modules": ["/模块 list", "/模块 on", "/模块 off", "/模块 preset", "/模块 all", "/模块 minimal"],
+    "worldbook": ["/世界书", "/世界书集 list", "/世界书集 create", "/世界书集 switch", "/世界书集 now"],
+    "characters": ["/角色 list", "/角色 create", "/角色 update", "/角色 now"],
+    "scene": ["/场景 now", "/场景 move", "/场景 summary", "/场景 chain"],
+    "archive": ["/存档", "/读档", "/存档列表", "/存档 delete"],
+    "branch": ["/分支 list", "/分支 create", "/分支 switch", "/分支 diff"],
+    "rules": ["/规则 check"],
+    "quality": ["/审查 check"],
+    "advance": ["/推进"],
+    "processing": ["/引擎 接收", "/引擎 搜集", "/引擎 发现", "/引擎 补全", "/引擎 推理", "/引擎 处理", "/引擎 打包", "/引擎 交付"]
+  }
+}

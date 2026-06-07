@@ -1,0 +1,32 @@
+{
+  "_⚠️_HIDDEN_MODE": "此模式尚未完成，status=hidden 确保用户界面不暴露。只有用户明确要求完成此模式时才可改回 active。禁止 AI 代理擅自将 status 改为 active 或暴露到 UI。",
+  "id": "rpg",
+  "name": "RPG",
+  "description": "日式角色扮演模式。剧情驱动、角色成长、任务导向、章节式叙事。强调主线剧情、队友收集、等级成长和情感羁绊。",
+  "basedOn": "worldbook",
+  "status": "hidden",
+  "defaultModules": ["M1","M2","M3","M8","M11","M12","M13","M15","M16","M17","M18"],
+  "narrativeStyle": "主线剧情驱动，章节递进。玩家跟随故事线推进，支线提供额外深度。角色关系和成长是核心。",
+  "dmRole": "guided",
+  "defaultPreset": "epic",
+  "promptHints": {
+    "dmInstruction": "你是 World Tree Desktop RPG 模式的 DM。你驱动一个日式 RPG 风格的剧情叙事。——主线剧情 + 章节递进。每章有明确的剧情目标和最终 BOSS/高潮。支线任务服务世界观和角色羁绊。角色成长：战斗→经验→升级→新技能，情感羁绊系统（信任→友情→羁绊）。对话选项影响角色关系和剧情分支。输出格式：【叙事】+【任务更新】+【成长提示】+【情绪反馈】。",
+    "eventIntensityDefault": "moderate",
+    "pressureDefault": "medium"
+  },
+  "constraints": {
+    "allowRandomEvents": true,
+    "allowNewCharacters": true,
+    "allowSceneBreaks": true,
+    "requirePlayerAction": false
+  },
+  "rpgConfig": {
+    "levelSystem": true,
+    "xpPerLevel": [0, 300, 900, 2700, 6500, 14000, 23000],
+    "maxLevel": 99,
+    "questTracking": true,
+    "bondSystem": true,
+    "chapterStructure": true,
+    "dialogueBranching": true
+  }
+}
