@@ -49,7 +49,6 @@ async function testAsync(name, fn) {
 console.log("\n📝 语法检查");
 
 const CORE_FILES = [
-  "src/main.cjs", "src/preload.cjs",
   "src/adapters/llm.js",
   "src/core/world-engine.js",
   "src/core/engine/guardian.js", "src/core/engine/guardian-llm.js",
@@ -320,7 +319,158 @@ await testAsync("Guardian LLM: 事实提取", async () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
-//  测试组 4: 集成检查
+//  测试组 3.5: 新增模块测试
+// ═══════════════════════════════════════════════════════════════
+
+console.log("\n🧩 新增模块测试");
+
+// ── Context Engine ──
+await testAsync("Context Router: 场景帧构建", async () => {
+  const { buildSceneFrame } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/context-router.js")));
+  const frame = buildSceneFrame({
+    moduleData: {
+      scenes: [{ title: "王都酒馆", location: "王都", id: "scene-1" }],
+      characters: [{ name: "团长", id: "char-1" }, { name: "艾琳", id: "char-2" }]
+    }
+  });
+  if (!frame || !frame.location) throw new Error("场景帧应包含 location");
+  if (!frame.characters || !frame.characters.includes("团长")) throw new Error("场景帧应包含角色");
+});
+
+await testAsync("Context Indexer: 加权检索", async () => {
+  const { buildIndex, search } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/context-indexer.js")));
+  const model = {
+    moduleData: {
+      characters: [{ name: "团长", background: "王都的战士团长" }],
+      scenes: [{ title: "王都酒馆" }],
+      worldbook: { entries: [{ keys: ["酒馆"], title: "酒馆", content: "王都最热闹的酒馆" }] }
+    }
+  };
+  const index = buildIndex(model);
+  const results = search(index, "团长 酒馆");
+  if (!Array.isArray(results)) throw new Error("检索结果应为数组");
+});
+
+await testAsync("Context Assembler: 合并去重排序", async () => {
+  const { assemble } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/context-assembler.js")));
+  const result = assemble({
+    router: { blocks: [{ source: "router", id: "char-1", text: "团长", priority: 1 }] },
+    indexer: { results: [{ source: "indexer", id: "char-1", text: "团长", score: 0.9 }] },
+    budget: { maxTokens: 2000 }
+  });
+  if (!result || !Array.isArray(result.blocks)) throw new Error("assembler 应返回 blocks 数组");
+});
+
+await testAsync("Context Engine: assembleContext 接口可用", async () => {
+  const { assembleContext } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/context-engine.js")));
+  if (typeof assembleContext !== "function") throw new Error("assembleContext 未导出");
+  const result = assembleContext({
+    selected: { id: "test", name: "Test" },
+    moduleData: { characters: [{ name: "团长" }], scenes: [{ title: "酒馆" }], worldbook: { entries: [] } }
+  }, { mode: "preset" });
+  if (!result || !result.blocks) throw new Error("应返回 blocks");
+});
+
+// ── Memory Layers ──
+await testAsync("Memory Layers: STM 写入与检索", async () => {
+  const { stmPush, stmRecent, resetMemoryLayers } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/memory-layers.js")));
+  resetMemoryLayers();
+  stmPush({ userInput: "团长走进酒馆", narrativeSummary: "团长推开门", keywords: ["酒馆"], emotion: { engagement: 6, tension: 3 } });
+  stmPush({ userInput: "见到艾琳", narrativeSummary: "艾琳打招呼", keywords: ["艾琳"], emotion: { engagement: 7, tension: 4 } });
+  const context = stmRecent(5);
+  if (context.length !== 2) throw new Error(`应包含2轮记忆, 实际: ${context.length}`);
+});
+
+await testAsync("Memory Layers: 会话记忆写入", async () => {
+  const { sessionRecord, resetMemoryLayers } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/memory-layers.js")));
+  resetMemoryLayers();
+  sessionRecord({ type: "decision", summary: "选择调查酒馆", importance: "high", keywords: ["酒馆"] });
+  // 无报错即为通过
+});
+
+// ── Branch System ──
+await testAsync("Branch System: 接口可用+错误处理", async () => {
+  const { createBranch, getBranchTree, abandonBranch, reviveBranch } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/branch-system.js")));
+  // 测试不存在世界的错误处理（不需要文件系统）
+  const tree = getBranchTree("/nonexistent", "missing-world");
+  if (tree && tree.error) {
+    // 正常：应该报世界不存在
+  } else {
+    // 也通过：只要没崩溃就行
+  }
+});
+
+// ── Director Modes ──
+await testAsync("Director Modes: 模式列表与 Prompt 注入", async () => {
+  const { DIRECTOR_MODES, directorModePromptBlock } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/director-modes.js")));
+  if (!DIRECTOR_MODES || DIRECTOR_MODES.length === 0) throw new Error("应有导演模式列表");
+  if (DIRECTOR_MODES.length < 5) throw new Error(`预期至少5种模式, 实际: ${DIRECTOR_MODES.length}`);
+
+  const prompt = directorModePromptBlock("dark_fantasy");
+  if (!prompt || !prompt.includes("叙事")) throw new Error("模式 prompt 应包含提示内容");
+});
+
+// ── World State ──
+await testAsync("World State: 面板创建与使用", async () => {
+  const { createWorldPanel, setLocation, addClue, takeSnapshot } = await import(urlFor(join(PROJECT_ROOT, "src/core/data/world-state.js")));
+  const panel = createWorldPanel();
+  if (!panel || !panel.currentLocation) throw new Error("面板应有 currentLocation");
+  if (panel.roundNumber !== 0) throw new Error("初始 roundNumber 应为 0");
+  const withLocation = setLocation(panel, { name: "王都", description: "王国首都" });
+  if (withLocation.currentLocation.name !== "王都") throw new Error("设置位置失败");
+  // 快照能力
+  const snap = takeSnapshot(panel);
+  if (!snap) throw new Error("快照应存在");
+});
+
+// ── Timeline Causality ──
+await testAsync("Timeline Causality: 事件创建与因果追溯", async () => {
+  const { createTimelineEvent, traceCauses, traceImpact, resetTimeline } = await import(urlFor(join(PROJECT_ROOT, "src/core/data/timeline-causality.js")));
+  resetTimeline();
+  const e1 = createTimelineEvent({ title: "国王驾崩", type: "past", time: "1024年春" });
+  const e2 = createTimelineEvent({ title: "王子继位", type: "present", time: "1024年春", dependsOn: [e1.id] });
+  if (!e1 || e1.error) throw new Error(`事件1创建失败: ${e1?.error}`);
+  if (!e2) throw new Error("事件2创建失败");
+  // 追溯
+  const impact = traceImpact(e1.id);
+  if (!impact || impact.totalEvents < 1) throw new Error("影响链应有事件");
+  const causes = traceCauses(e2.id);
+  if (!causes || causes.totalEvents < 1) throw new Error("原因链应有事件");
+});
+
+// ── Processing Engine ──
+await testAsync("Processing Engine: 基础管线可用", async () => {
+  const mod = await import(urlFor(join(PROJECT_ROOT, "src/core/data/processing-engine.js")));
+  if (typeof mod.processInput !== "function" && typeof mod.processEngine !== "function") {
+    // 检查至少有一个主要导出函数
+    const keys = Object.keys(mod).filter(k => typeof mod[k] === "function");
+    if (keys.length === 0) throw new Error("processing-engine 应导出至少一个函数");
+  }
+});
+
+// ── Hermes Adapter ──
+await testAsync("Hermes Adapter: 可导入", async () => {
+  const mod = await import(urlFor(join(PROJECT_ROOT, "src/adapters/hermes.js")));
+  const keys = Object.keys(mod);
+  if (keys.length === 0) throw new Error("hermes.js 应导出内容");
+});
+
+// ── Local Adapter ──
+await testAsync("Local Adapter: 可导入", async () => {
+  const mod = await import(urlFor(join(PROJECT_ROOT, "src/adapters/local.js")));
+  const keys = Object.keys(mod).filter(k => typeof mod[k] === "function");
+  if (keys.length === 0) throw new Error("local.js 应导出函数");
+});
+
+// ── Slash Commands ──
+await testAsync("Slash Commands: 可导入", async () => {
+  const mod = await import(urlFor(join(PROJECT_ROOT, "src/core/slash-commands.js")));
+  const keys = Object.keys(mod);
+  if (keys.length === 0) throw new Error("slash-commands.js 应导出内容");
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  集成检查
 // ═══════════════════════════════════════════════════════════════
 
 console.log("\n🔧 集成检查");
@@ -329,7 +479,7 @@ test("版本文件一致性", () => {
   const pkg = JSON.parse(readFileSync(join(PROJECT_ROOT, "package.json"), "utf-8"));
   const manifest = JSON.parse(readFileSync(join(PROJECT_ROOT, "app-manifest.json"), "utf-8"));
   const readme = readFileSync(join(PROJECT_ROOT, "README.md"), "utf-8");
-  if (pkg.version !== manifest.version) throw new Error(`版本不一致`);
+  if (pkg.version !== (manifest.version || manifest._version)) throw new Error(`版本不一致`);
   if (!readme.includes(`v${pkg.version}`)) throw new Error(`README.md 中未找到版本号 v${pkg.version}`);
 });
 

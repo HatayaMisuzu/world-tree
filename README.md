@@ -1,31 +1,57 @@
 # World Tree Desktop
 
-本地优先的 AI 叙事引擎控制台。Electron 桌面应用，可独立运行或配合 Hermes Agent 使用。
+本地优先的 AI 叙事引擎 **Web 控制台**。纯浏览器访问，无需 Electron。
 
-**Current version: v1.0.1** 🎉
+**Current version: v2.2.0** 🎉
+
+---
 
 ## 快速开始
 
-```powershell
-npm install
-npm start
+```bash
+npm install        # 仅首次
+node server.js     # 启动 Web 服务器
+# → http://localhost:3000
 ```
 
-## 五模式
+**默认模型**: DeepSeek (`deepseek-chat`) · 默认地址: `https://api.deepseek.com/v1`
 
-| 模式 | DM 角色 | 引擎 | 适用场景 |
-|------|---------|------|----------|
-| **经典** | 完整 DM | 双段式管线（Director→Writer→Guardian） | 长篇叙事、GM 主持 |
-| **剧本杀** | 主持人（信息管制） | 独立案件状态机 | 侦探推理 |
-| **角色卡** | 隐退（纯 RP） | 用户括号提示驱动 | 一对一角色扮演 |
-| **预设** | 轻量 | 简化管线 | 快速原型 |
-| *跑团* 🙈 | 完整 DM | 骰子引擎（隐藏 WIP） | TRPG |
-| *RPG* 🙈 | 引导 | 章节/任务/羁绊（隐藏 WIP） | JRPG |
-| *经营* 🙈 | 报告者 | 资源/时间/决策（隐藏 WIP） | 模拟经营 |
+---
 
-🙈 = 引擎完成，UI 隐藏。用户决定何时暴露。
+## 架构
 
-## 双段式叙事管线（v1.0.1）
+```
+| 浏览器 (world-tree-console.html)
+  │  fetch() REST API
+  ▼
+server.js (Node.js HTTP 服务器)
+  │
+  ├─ /api/config              配置读写
+  ├─ /api/secrets             密钥管理
+  ├─ /api/llm/test            LLM 连接测试
+  ├─ /api/llm/chat            🆕 直连 LLM 叙事对话（含角色卡模式）
+  ├─ /api/modules             🆕 模组列表/创建/删除
+  ├─ /api/modules/{id}/history 🆕 对话历史加载
+  ├─ /api/alchemy/digest      🆕 炼金台→模组/角色卡创建
+  ├─ /api/alchemy/import      🆕 炼金台分析
+  ├─ /api/characters          🆕 角色卡双来源（Hermes skills + 炼金台产出）
+  ├─ /api/engine/manifest     引擎版本+模块清单
+  └─ → 直调 DeepSeek / OpenAI 兼容 API
+```
+
+---
+
+## 三模式（数据层）
+
+| 模式 | DM 角色 | 适用场景 |
+|------|---------|----------|
+| **世界书** | 完整 DM | 长篇叙事、世界设定驱动 |
+| **角色卡** | 隐退（纯 RP） | 一对一角色扮演 |
+| **预设** | 轻量 | 快速原型、少量设定 |
+
+---
+
+## 双段式叙事管线
 
 ```
 用户输入
@@ -34,126 +60,112 @@ npm start
   → Guardian（JS 优先，<50 分自动 LLM 修正）→ completeTurn → 自动存档
 ```
 
-### 管线进化（v0.8.0→v1.0.1）
+---
 
-| 能力 | 版本 | 说明 |
-|------|:---:|------|
-| 健康检查 | v0.8.0 | 5 项纯 JS 扫描（缺失字段/重复ID/断裂引用/时间线冲突/关键词冲突） |
-| 写入管控 | v0.8.0 | 三级权限 + 待确认队列（3 轮未确认自动清理） |
-| 自动纠错 | v0.8.5 | JS 检测→注入 canon 事实→LLM 修正→重新校验（最多 2 轮） |
-| 记忆可追溯 | v0.9.0 | 每条记忆标注 _why（触发原因+因果链）+ _provenance（来源+可信度） |
-| 多模型分工 | v0.9.5 | Director/Writer/Guardian 可各自指定模型和 API 端点，404 自动回退 |
+## 内容炼金台
 
-## Director 层
+粘贴文档（小说/设定/角色卡）→ 自动解析角色/地点/组织 → 创建模组 → 直接对话。
 
-Director 位于用户输入和 LLM 之间，管理：
-
-- **情绪状态机**：4 维玩家模型（engagement/tension/fatigue/curiosity）
-- **叙事者风格**：8 种预设，影响事件调度（疲劳保护 > 剧情连续性 > 玩家情绪 > 叙事者 > 风格）
-- **事件评分**：核心事件走判断评分，环境事件走概率
-- **节奏分析**：检测过紧/过松，疲劳时阻止新事件
-- **预测缓存**：边界事件（20-50 分）缓存后自然冒泡
-- **全局记忆**：跨模组快照检索（关键词 + 情绪 + 时效 + 因果链加分）
-
-## LLM Director 模式
-
-| 模式 | Token 消耗 | 说明 |
-|------|:---:|------|
-| 纯 JS | 0 | 确定性方向包 |
-| 混合 ⭐ | 150-250 | LLM 分析语义 + JS 守卫决策。性价比最优 |
-| LLM Director | 全量 | 完整 JSON 方向包。解析失败自动回退 JS |
-
-## 剧本杀
-
-独立案件引擎，不走叙事管线：
-
-- **状态机**：开场→选角→阅读→调查(×N)→讨论(×N)→指认→揭晓→评分
-- **信息管制**：线索不调查不揭示，嫌疑人审讯才回答
-- **多人适配**：AI 模拟其他玩家发言，凶手自动误导
-- `defaults/cases/镜中人之死.json` — 6 角色、12 线索、完整的密室本格推理
-
-## 可选 Hermes 集成
-
-Settings 中配置 API Base URL + Token。配置后对话面板可创建 session 并发送消息。
-
-## 直连 LLM 游戏模式
-
-Game 标签页可直连 OpenAI 兼容 `/chat/completions` API。
-
-### 🆕 多模型分工（v0.9.5）
-
-每个角色可独立指定模型和 API：
-
-```json
-{
-  "llmModel": "gpt-4o",
-  "llmModelDirector": "deepseek-chat",
-  "llmModelWriter": "claude-sonnet-4",
-  "llmModelGuardian": "deepseek-chat"
-}
+```
+POST /api/alchemy/digest
+  1. 引擎解析 → items[]
+  2. items → worldbook entries + characters + locations + orgs
+  3. 写入 shared/worldbook.json + shared/characters.json + ...
+  4. 返回模组信息 → 出现在模组列表
 ```
 
-推荐：Director/Guardian 用便宜快速模型，Writer 用最强创意模型。约节省 50-70% 成本。
+---
 
-## 质量保障
+## 全链路持久化
 
-```powershell
-npm run preflight    # audit + test 一键跑通
-npm run audit        # 版本一致性 / 危险路径 / 目录结构
-npm run test         # 54 项集成测试（语法→导入→功能→集成）
+每轮对话自动写入：
+
+| 文件 | 内容 | 写入方式 |
+|:----|:-----|:----|
+| `runtime/chat.jsonl` | 对话记录（用户+助手） | 追加 |
+| `runtime/memory.jsonl` | 叙事记忆快照 | 追加 |
+| `runtime/state.json` | 完整引擎状态+情绪 | 覆盖 |
+| `runtime/overlay/` | 引擎增量数据 | 合并/追加 |
+| `world.json` | 轮次计数+时间戳 | 覆盖 |
+
+选择模组时自动加载最近 50 轮历史 + 恢复引擎状态。
+
+---
+
+## 模组文件格式
+
 ```
+{name}/
+├── world.json                    ← 元数据
+├── shared/                       ← 静态数据
+│   ├── worldbook.json            ← 世界观条目
+│   ├── characters.json           ← 角色
+│   ├── scenes.json / locations.json
+│   ├── organizations.json / relations.json
+│   ├── timeline.json / world_state.json
+│   ├── races.json / rules.json
+├── runtime/                      ← 持久化
+│   ├── state.json                ← 引擎状态
+│   ├── chat.jsonl                ← 对话
+│   ├── memory.jsonl              ← 记忆
+│   └── overlay/                  ← 引擎增量
+```
+
+一个世界 = 一个文件夹 = 可复制、可备份、可分享。
+
+---
 
 ## 核心模块
 
-| 模块 | 内容 |
-|------|------|
-| M1 | 世界书隔离容器 |
-| M2 | 触发式条目（精确/语义/向量匹配） |
-| M3-M10 | 世界状态、组织、角色、认知、种族 |
-| M11 | 场景会话管理 |
-| M12 | 故事模板 |
-| M13 | 五层叙事引擎 |
-| M15 | 世界规则 + 叙事质量审查 |
-| M16-M18 | 时间、随机事件、场景预测 |
-| M19 | 角色卡驱动模式 |
-| M-创作 | 六阶段创作向导（全模块覆盖） |
+| 模块 | 内容 | 状态 |
+|------|------|:----:|
+| M1 | 世界书隔离容器 | ✅ |
+| M2 | 触发式条目（精确/语义/向量匹配） | ✅ |
+| M3-M10 | 世界状态、组织、角色、认知、种族 | ✅ |
+| M11 | 场景会话管理 | ✅ |
+| M12 | 故事模板 | ✅ |
+| M13 | 五层叙事引擎 | ✅ |
+| M15 | 世界规则 + 叙事质量审查 | ✅ |
+| M16-M18 | 时间、随机事件、场景预测 | ✅ |
+| M19 | 角色卡驱动模式 | ✅ |
+| M-创作 | 六阶段创作向导 | ✅ |
+| 内容炼金台 | 外部文档自动拆解导入 + 角色卡VC-3人格提炼 | ✅ |
+| 上下文引擎 | 统一全文检索+定向查表+合并排序 | ✅ |
+| 枝干系统 | 四态管理+嫁接合并 | ✅ |
+| 世界脉象 | 15维度叙事KPI+趋势追踪 | ✅ |
+| 角色卡引擎 | VC-3人格提炼+双来源管理+人称规则修正 | ✅ |
+
+---
+
+## 质量保障
+
+```bash
+npm test              # 75 项集成测试
+npm run audit         # 版本一致性 / 危险路径 / 目录结构
+npm run interface-audit # 🆕 接口联动审计（IO校准/API契约/engineState链路）
+npm run preflight     # audit + test + interface-audit 一键跑通
+```
+
+---
 
 ## 源码结构
 
 ```
+world-tree-console.html   唯一 Web UI
+server.js                 HTTP 服务器（REST API）
 src/
-  main.cjs             Electron 主进程 + IPC（配置/秘密/世界/健康检查/采纳）
-  preload.cjs          contextBridge API
-  adapters/llm.js      多模型分工 LLM 适配器 + 双段式管线
+  adapters/llm.js         三角色LLM + 双段式管线
   core/
-    world-engine.js     模式 Prompt 构建 + Guardian 校验包
-    engine/
-      guardian.js       M1 守门人 + JS 叙事校验
-      guardian-llm.js   LLM 事实注入 + 自动修正
-      global-memory.js  全局记忆 v2（_why + 溯源标记）
-      health-check.js   世界健康检查（5 项）
-      overlay-store.js  Overlay 写入 + Pending 队列
-      lifecycle.js      prepareTurn / completeTurn
-      director.js       Director 层（情绪/事件/缓存）
-      storytellers.js   8 种叙事者风格
-      murder-mystery.js 剧本杀案件引擎
-      tabletop.js       跑团（🙈）
-      rpg.js            RPG（🙈）
-      sim.js            经营（🙈）
-    data/               角色卡/规则/预测/场景/邻近
-  ui/                   渲染进程（视图/样式/i18n）
+    world-engine.js       引擎入口 + Prompt构建
+    engine/               引擎核心（director/guardian/lifecycle…）
+    data/                 数据模块（worldbook/character-card/alchemy…）
+      skill-generator.js  🆕 VC-3 人格提炼引擎
+      skill-parser.js     🆕 SKILL.md → JSON 解析桥
 scripts/
-  audit.mjs             项目审计
-  test.mjs              54 项集成测试
-defaults/
-  engine-profile/       直连 LLM 运行时适配器
-  engine-knowledge/     全文可搜索知识库
-  world-profiles/       子类型配置
-  cases/                剧本杀案例
-```
-
-## 打包
-
-```powershell
-npm run dist    # electron-builder → Windows portable
+  test.mjs                75 项集成测试
+  audit.mjs               项目审计
+  interface-audit.mjs     🆕 接口联动审计
+data/
+  engine/characters/       🆕 炼金台产出角色卡（card.json + runtime/）
+defaults/                 知识库 / 配置 / 剧本杀案例
 ```

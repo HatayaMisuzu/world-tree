@@ -1,21 +1,27 @@
 # v0-ui 导出产物（旧版备份，由 src/v0-out 替代）
 v0-ui/out/
 
+# v0-out 静态导出（旧版 UI，已合并到 src/ui/）
+src/v0-out/
+
+# v0-ui 依赖与构建缓存（v0-ui/.gitignore 已覆盖，加根兜底防误提交）
+v0-ui/node_modules/
+v0-ui/.next/
+
 # 依赖
 node_modules/
 
-# 构建产物
-dist/
-world-tree-desktop-portable/
-*.exe
-
-# 运行时数据（本地开发用，勿提交）
+# 运行时数据
 data/engine/runs/
 data/engine/worlds/
 data/engine/global-memory/snapshots.json
 
-# 用户数据
+# Web 服务用户数据
 userData/
+
+# 构建产物
+dist/
+*.exe
 
 # IDE
 .vscode/

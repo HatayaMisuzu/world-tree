@@ -91,38 +91,64 @@ summary{cursor:pointer;font-weight:600}
 details>*:not(summary){margin-top:8px}
 
 .actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.filters{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:12px}
-.diff{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.diff .changed{border-color:rgba(232,179,57,.4)}
-.diff-row{display:grid;grid-template-columns:minmax(100px,.6fr) 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--line-soft)}
-.diff-row:last-child{border-bottom:0}
-.path{color:var(--accent-2);font-family:var(--mono);font-size:12px;overflow-wrap:anywhere;word-break:break-all}
 
-canvas.graph{display:block;width:100%;height:380px;border:1px solid var(--line-soft);background:#0d141f;border-radius:var(--radius)}
+.chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;min-height:calc(100vh - 160px)}
+/* 侧栏内嵌折叠面板 */
+.chat-side{display:grid;align-content:start;gap:10px;min-width:0}
+.chat-side .sp-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.chat-side .sp-toggle h3{margin:0;font-size:13px;font-weight:600;display:flex;gap:4px;align-items:center}
+.chat-side .sp-toggle .sp-toggle-btn{font-size:12px;color:var(--muted);border:0;background:0;cursor:pointer;padding:2px 6px;border-radius:4px}
+.chat-side .sp-toggle .sp-toggle-btn:hover{background:rgba(255,255,255,.06)}
+.chat-side .sp-body{display:grid;gap:6px;padding-top:4px}
+.chat-side .sp-body.collapsed{display:none}
+.sp-card{background:#0d141f;border:1px solid var(--line-soft);border-radius:var(--radius);padding:10px;display:grid;gap:6px}
+.sp-card h4{margin:0;font-size:12px;font-weight:600;color:var(--muted);display:flex;gap:4px;align-items:center}
+.sp-row{font-size:12px;display:flex;justify-content:space-between;gap:6px;color:var(--text);overflow:hidden}
+.sp-row .sp-label{color:var(--muted);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sp-row .sp-val{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.emotion-bar{display:flex;align-items:center;gap:6px}
+.emotion-bar .eb-track{flex:1;height:5px;background:var(--panel-2);border-radius:3px;overflow:hidden}
+.emotion-bar .eb-fill{height:100%;border-radius:3px;transition:width .3s ease}
+.emotion-bar .eb-val{font-size:11px;min-width:18px;text-align:right;color:var(--muted);font-family:var(--mono)}
+.sp-empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:12px;border:1px dashed var(--line-soft);border-radius:var(--radius);background:#0d141f}
 
-.chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;min-height:calc(100vh - 160px)}
 .chat-space{display:grid;grid-template-rows:auto 1fr auto;gap:10px;min-height:580px}
 .chat-messages{display:grid;align-content:start;gap:8px;min-height:380px;max-height:calc(100vh - 300px);overflow:auto;padding:10px;background:#0d141f;border:1px solid var(--line-soft);border-radius:var(--radius)}
-.chat-message{display:grid;gap:5px;max-width:84%;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--line-soft);background:#141e2c;overflow-wrap:anywhere;font-size:13px}
+.chat-message{display:grid;gap:5px;max-width:90%;padding:9px 12px;border-radius:var(--radius);border:1px solid var(--line-soft);background:#141e2c;overflow-wrap:anywhere;font-size:13px}
 .chat-message.user{justify-self:end;background:#14345a;border-color:rgba(91,156,245,.4)}
 .chat-message.assistant{justify-self:start}
 .chat-message.system,.chat-message.error{justify-self:center;max-width:100%;color:#ffdba6;background:#1f1a0d;border-color:rgba(232,179,57,.4)}
 .chat-message.error{color:#ffadad;background:#1f1212;border-color:rgba(229,77,77,.45)}
 .chat-meta-line{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:11px}
 .chat-content{white-space:pre-wrap;line-height:1.7}
-.wt-tag{display:inline-block;padding:1px 6px;margin:0 2px;border-radius:4px;background:rgba(91,156,245,.12);color:#b9dcff;font-family:var(--mono);font-size:11px}
 .chat-input-row{display:grid;grid-template-columns:1fr auto;gap:8px}
 .chat-input-row textarea{min-height:80px;border:1px solid var(--line);border-radius:var(--radius);padding:10px;background:#0d141f;color:var(--text);font-family:var(--font);font-size:13px}
 .chat-side{display:grid;align-content:start;gap:10px}
 .chat-settings{display:grid;gap:6px}
-.clip-list{max-height:160px;overflow:auto}
 
-.pulse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.pulse-card{background:var(--panel-2);border:1px solid var(--line-soft);border-radius:var(--radius);padding:10px;display:grid;gap:4px}
-.pulse-card b{font-size:22px}
-.pulse-card.normal b{color:var(--ok)}.pulse-card.warning b{color:var(--warn)}.pulse-card.critical b{color:var(--bad)}
-.pulse-card i{display:block;height:3px;border-radius:2px;background:var(--line);position:relative}
-.pulse-card i::after{content:'';position:absolute;left:0;top:0;height:100%;width:var(--value,50%);border-radius:2px;background:var(--accent);transition:width .5s}
+/* 模组卡片 */
+.module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.module-card{background:#0d141f;border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:8px;transition:border-color .2s;position:relative}
+.module-card:hover{border-color:var(--accent)}
+.module-card.selected{border-color:var(--ok);box-shadow:0 0 0 1px rgba(62,207,142,.3)}
+.module-card .tags{display:flex;gap:4px;flex-wrap:wrap}
+.module-card .name{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.module-card .desc{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.module-card .meta{font-size:12px;color:var(--muted);display:flex;gap:12px}
+.module-card .actions{justify-self:end}
+.module-card .select-btn{min-width:80px}
+
+/* 炼金台拖拽区 */
+.alchemy-drop{border:2px dashed var(--line);border-radius:var(--radius);padding:30px 20px;text-align:center;background:#0d141f;transition:border-color .3s,background .3s;cursor:pointer;min-height:120px;display:grid;align-content:center;gap:8px}
+.alchemy-drop:hover,.alchemy-drop.dragover{border-color:var(--accent);background:#111b2a}
+.alchemy-drop.dragover{border-color:var(--cyan);background:#0f1f2a}
+.alchemy-drop .icon{font-size:28px}
+.alchemy-drop .hint{color:var(--muted);font-size:13px}
+.alchemy-drop .supported{color:var(--muted);font-size:11px}
+
+/* 配置行 */
+.config-row{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center}
+.config-row label{color:var(--muted);font-size:13px;min-width:70px;text-align:right}
 
 .hidden{display:none!important}
 ::-webkit-scrollbar{width:6px;height:6px}
@@ -137,58 +163,41 @@ canvas.graph{display:block;width:100%;height:380px;border:1px solid var(--line-s
 <div class="app">
   <header class="topbar">
     <div class="brand">
-      <h1>🌳 观测终端 v2</h1>
-      <div id="contextLine" class="context">← 拖拽项目文件夹或点击选择目录</div>
+      <h1>🌳 世界树桌面</h1>
+      <div id="contextLine" class="context">启动中...</div>
     </div>
     <div class="toolbar">
-      <button id="pickDirBtn" class="primary" title="选择 world-tree-desktop 项目目录">📂 选择目录</button>
-      <button id="dragBtn" class="ghost" title="拖拽文件夹到页面">📎 拖拽</button>
-      <button id="refreshBtn" class="ghost" disabled>🔄 刷新</button>
+      <button id="homeBtn" class="ghost" title="返回模组选择">🏠 首页</button>
+      <span id="llmStatus" class="badge pending" style="cursor:default">未连接</span>
     </div>
   </header>
   <nav id="tabs" class="tabs"></nav>
   <main id="main"></main>
   <footer class="statusbar">
-    <div id="statusLeft">只读 · 浏览器/Electron · 控制台 v2.1</div>
-    <div id="statusRight">待加载</div>
+    <div id="statusLeft">World Tree Desktop · 直连 LLM 模式</div>
+    <div id="statusRight">等待配置</div>
   </footer>
 </div>
-<input id="dirInput" class="hidden" type="file" webkitdirectory multiple accept=".json,.jsonl,.html,.js,.cjs,.mjs,.ts,.tsx,.css,.md,.txt,.yaml,.yml">
 
 <script>
 "use strict";
+
 /* ═══════════════════════════════════════════════════════════════
- * World Tree 观测终端 v2  —  翻新版
- * 适配 world-tree-desktop v1.0.1 项目结构（project-relative paths）
- * 浏览器拖拽加载 / Electron IPC 双模式
+ * World Tree 桌面控制台 — 直连 LLM 版
+ * 模组选择 → 模组对话，内容炼金台集成
  * ═══════════════════════════════════════════════════════════════ */
 
 const CFG = {
-  version:"2.1.0",
-  productVersion:"1.0.1",
-  gatewayCandidates:["http://127.0.0.1:18742","http://127.0.0.1:8742","http://127.0.0.1:8642"],
-  systemDirs:new Set(["_engine","_learned","_material_warehouse","_processing","_references","_temp","_console","node_modules",".next","dist","out","win-unpacked"]),
+  version:"3.0.0",
   tabs:[
-    {id:"overview",label:"📊 概览",prio:0},
+    {id:"home",label:"🏠 首页",prio:0},
     {id:"chat",label:"💬 对话",prio:5},
     {id:"worlds",label:"🌍 世界",prio:8},
     {id:"archives",label:"📦 存档",prio:10},
-    {id:"modules",label:"📁 模组",prio:12},
-    {id:"characters",label:"👤 角色",prio:20},
-    {id:"scenes",label:"🎭 场景",prio:30},
-    {id:"state",label:"📈 状态",prio:40},
     {id:"telemetry",label:"📡 脉象",prio:44},
     {id:"director",label:"🎬 导演模式",prio:45},
-    {id:"content",label:"📦 内容库",prio:46},
-    {id:"proposals",label:"📋 提案",prio:47},
-    {id:"causality",label:"🔗 因果链",prio:48},
-    {id:"memory",label:"🧠 记忆层",prio:49},
     {id:"guardian",label:"🛡 守护",prio:50},
-    {id:"tracking",label:"🎯 追踪",prio:55},
     {id:"branches",label:"🌿 分支",prio:60},
-    {id:"organizations",label:"🏛 组织",prio:65},
-    {id:"presets",label:"⚙ 预设",prio:68},
-    {id:"commands",label:"⌨ 指令",prio:70},
     {id:"health",label:"🔍 体检",prio:75},
   ]
 };
@@ -198,619 +207,949 @@ const U = {
   qs(s,r){return (r||document).querySelector(s)},
   qsa(s,r){return Array.from((r||document).querySelectorAll(s))},
   esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")},
-  path(...p){return p.filter(Boolean).join("/").replace(/\\/g,"/").replace(/\/+/g,"/").replace(/^\/|\/$/g,"")},
-  base(p){return String(p||"").split(/[\\/]/).pop()||p},
-  ext(s){return String(s||"").replace(/^.*\./,"")},
-  norm(p){return String(p||"").replace(/\\/g,"/").replace(/^\/+/,"").toLowerCase()},
-  flat(v){if(!v)return[];if(Array.isArray(v))return v;if(typeof v==="object")return Object.entries(v).map(([k,it])=>(it&&typeof it==="object"&&!Array.isArray(it)?{id:k,...it}:{id:k,value:it}));return[v]},
-  get(o,p,f){const k=String(p).split(".");let c=o;for(const kk of k){if(c==null||typeof c!=="object"||!(kk in c))return f;c=c[kk]}return c??f},
-  first(o,ps,f=""){for(const p of ps){const v=U.get(o,p);if(v!==undefined&&v!==null&&v!=="")return v}return f},
   date(v){if(!v)return"未知";const d=v instanceof Date?v:new Date(v);if(isNaN(d.getTime()))return String(v);return d.toLocaleString("zh-CN",{hour12:false})},
   rel(v){if(!v)return"未知";const d=v instanceof Date?v:new Date(v);if(isNaN(d.getTime()))return String(v);const diff=Date.now()-d.getTime(),a=Math.abs(diff);if(a<6e4)return"刚刚";if(a<36e5)return Math.round(a/6e4)+" 分钟前";if(a<864e5)return Math.round(a/36e5)+" 小时前";return Math.round(a/864e5)+" 天前"},
   json(v){try{return JSON.stringify(v??null,null,2)}catch{return String(v)}},
   compact(v,m=180){const t=typeof v==="string"?v:U.json(v);const c=t.replace(/\s+/g," ").trim();return c.length>m?c.slice(0,m)+"...":c},
-  slug(v,f="item"){return String(v||"").trim().replace(/[^\p{L}\p{N}._-]+/gu,"_").replace(/^_+|_+$/g,"").slice(0,48)||f},
-  hash(v){let h=2166136261;for(let i=0;i<v.length;i++){h^=v.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(16).padStart(8,"0")},
-  async readTxt(f){return new Promise((rs,rj)=>{const r=new FileReader();r.onload=()=>rs(String(r.result||""));r.onerror=()=>rj(r.error);r.readAsText(f,"utf-8")})},
-  parseJ(t,p,w){try{return JSON.parse(t)}catch(e){w.push({level:"error",path:p,message:"JSON 解析失败: "+e.message});return null}},
-  fileUrl(p){try{return new URL(p,document.URL).href}catch{return p}},
-  isElectron(){return typeof window!=="undefined"&&(!!window.process?.versions?.electron||!!navigator.userAgent.includes("Electron"))},
-  async copy(t){if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(t);return}const a=document.createElement("textarea");a.value=t;a.style.position="fixed";a.style.left="-1000px";document.body.appendChild(a);a.focus();a.select();const ok=document.execCommand("copy");a.remove();return ok},
-  downloadJson(fn,data){const b=new Blob([U.json(data)],{type:"application/json;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(u),1e3)},
-  diff(l,r,pre=""){
-    const rows=[];const lo=l&&typeof l==="object",ro=r&&typeof r==="object";
-    if(!lo||!ro||Array.isArray(l)||Array.isArray(r)){if(U.json(l)!==U.json(r))rows.push({path:pre||"$",left:l,right:r});return rows}
-    const ks=new Set([...Object.keys(l||{}),...Object.keys(r||{})]);
-    for(const k of[...ks].sort()){rows.push(...U.diff(l?.[k],r?.[k],pre?`${pre}.${k}`:k));if(rows.length>120)break}
-    return rows
-  }
+  slug(v,f="item"){return String(v||"").trim().replace(/[^\p{L}\p{N}_.-]+/gu,"_").replace(/^_+|_+$/g,"").slice(0,48)||f},
 };
 
-/* ── 组件 ── */
+/* ── API 调用 ── */
+const API = {
+  base:"",
+  async call(method,path,body){
+    const url = (API.base||"")+path;
+    const opts={method,headers:{"Content-Type":"application/json"}};
+    if(body)opts.body=JSON.stringify(body);
+    const r=await fetch(url,opts);
+    if(!r.ok){const t=await r.text().catch(()=>"");throw new Error(`HTTP ${r.status}: ${t||r.statusText}`)}
+    return r.json();
+  },
+  get(path){return API.call("GET",path)},
+  post(path,body){return API.call("POST",path,body)},
+
+  async loadModules(){return API.get("/api/modules")},
+  async createModule(data){return API.post("/api/modules/create",data)},
+  async deleteModule(id){return API.post("/api/modules/delete",{id})},
+  async loadConfig(){return API.get("/api/config")},
+  async saveConfig(data){return API.post("/api/config",data)},
+  async getSecrets(){return API.get("/api/secrets")},
+  async saveLlmKey(data){return API.post("/api/secrets/llm",data)},
+  async testLlm(data){return API.post("/api/llm/test",data)},
+  async chatSend(data){return API.post("/api/llm/chat",data)},
+  async alchemyImport(data){return API.post("/api/alchemy/import",data)},
+  async getStatus(){return API.get("/api/status")},
+  async loadCharacters(){return API.get("/api/characters")},
+  async loadCharacter(id){return API.post("/api/characters/load",{id})},
+};
+
+/* ── 应用状态 ── */
+const AS = {
+  activeTab:"home",
+  modules:[],
+  selectedModule:null,
+  config:{},
+  hasApiKey:false,
+  llmConnected:false,
+  llmTestResult:"",
+  messages:[],
+  historyKey:"",
+  busy:false,
+  quickStartContent:"",  // 快速开始的上下文内容
+  isQuickStart:false,     // 是否快速模式（不保存记录）
+  engineState:null,       // 从服务端恢复的引擎状态
+  lastScene:"",            // 上次对话的场景
+  showStatusPanel:true,    // 状态面板是否展开
+  lastStatusSections:{},   // 最新一轮的状态建议+情绪反馈
+  characters:[],           // 已安装角色卡列表
+};
+
+/* 对话记录持久化 */
+const CH = {
+  keyPrefix:"wt3-chat-",
+  currentKey:"",
+  saveKey(m){return CH.keyPrefix+(m?.id||"global")},
+  load(m){const k=CH.saveKey(m);if(k===CH.currentKey||AS.isQuickStart)return;CH.currentKey=k;try{AS.messages=JSON.parse(localStorage.getItem(k)||"[]")}catch{AS.messages=[]}},
+  persist(){if(!CH.currentKey||AS.isQuickStart)return;localStorage.setItem(CH.currentKey,JSON.stringify(AS.messages.slice(-200)))},
+  add(role,content,ext){const msg={id:"m_"+Date.now()+"_"+Math.random().toString(16).slice(2),role,content,ts:new Date().toISOString(),...ext};AS.messages.push(msg);CH.persist();return msg},
+  clear(){AS.messages=[];CH.persist()},
+  /** 从服务端加载历史 */
+  async loadFromServer(m){
+    if(!m||m.id==="__quick__")return;
+    try{
+      const res=await API.get(`/api/modules/${encodeURIComponent(m.id)}/history?limit=50`);
+      if(res.status==="ok"&&res.messages?.length){
+        let idx=0;
+        AS.messages=res.messages.map(r=>({id:"h_"+Date.now()+"_"+idx++,role:r.role,content:r.content,ts:r.ts||"",round:r.round||0,sections:r.sections||null}));
+        CH.currentKey=CH.saveKey(m);
+        AS.selectedModule.turnCount=res.turnCount||0;
+        // 从历史中恢复最新的状态/情绪数据
+        for(let i=AS.messages.length-1;i>=0;i--){
+          const s=AS.messages[i].sections;
+          if(s){AS.lastStatusSections=s;break;}
+        }
+      }
+      // 恢复引擎状态（emotionState 等）
+      if(res.engineState) AS.engineState = res.engineState;
+      if(res.lastScene) AS.lastScene = res.lastScene;
+    }catch(e){console.warn("加载历史失败",e)}
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════════
+ * 视图渲染
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* ── 组件函数 ── */
 const C = {
   badge(t,k="pending"){return`<span class="badge ${k}">${U.esc(t)}</span>`},
   empty(t,d=""){return`<div class="empty"><strong>${U.esc(t)}</strong>${d?`<div>${U.esc(d)}</div>`:""}</div>`},
   notice(t,k=""){return`<div class="notice ${k}">${U.esc(t)}</div>`},
   stat(l,v,d=""){return`<div class="stat"><strong>${U.esc(v)}</strong><span>${U.esc(l)}</span>${d?`<span>${U.esc(d)}</span>`:""}</div>`},
-  json(v){return`<pre>${U.esc(U.json(v))}</pre>`},
-  table(rows,cols){if(!rows.length)return C.empty("无数据");return`<table><thead><tr>${cols.map(c=>`<th>${U.esc(c.l)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${c.render?c.render(r):U.esc(U.get(r,c.k,""))}</td>`).join("")}</tr>`).join("")}</tbody></table>`},
-  itemList(items){const a=U.flat(items);if(!a.length)return C.empty("无条目");return`<div class="list">${a.map((it,i)=>{const t=U.first(it,["title","name","id","key"],"条目 "+(i+1));return`<details><summary>${U.esc(t)}</summary>${C.json(it)}</details>`}).join("")}</div>`},
-  warns(ws){if(!ws?.length)return"";const items=ws.slice(0,10).map(w=>`<div class="notice ${w.level==="error"?"bad":"warn"}"><strong>${U.esc(w.path||"数据")}</strong> · ${U.esc(w.message)}</div>`).join("");const more=ws.length>10?C.notice(`还有 ${ws.length-10} 条隐藏`,"warn"):"";return`<div class="grid">${items}${more}</div>`},
-  diffRows(lt,rt,rows){if(!rows.length)return C.notice("无差异","ok");return`<div class="panel changed"><h3>差异: ${U.esc(lt)} ↔ ${U.esc(rt)}</h3><div class="list">${rows.map(r=>`<div class="diff-row"><div class="path">${U.esc(r.path)}</div><div class="diff"><pre>${U.esc(U.json(r.left))}</pre><pre>${U.esc(U.json(r.right))}</pre></div></div>`).join("")}</div></div>`},
-  chatContent(t){const e=U.esc(t||"");return e.replace(/\[世界树:([^\]]+)\]/g,'<span class="wt-tag">[世界树:$1]</span>').replace(/\[\/世界树\]/g,'<span class="wt-tag">[/世界树]</span>')},
-  chatMsg(m){const rl=m.role==="user"?"玩家":m.role==="assistant"?"DM":"系统";const cb=m.role==="assistant"?`<button class="small" data-chat-clip="${U.esc(m.id)}">📋</button>`:"";return`<div class="chat-message ${U.esc(m.role)}"><div class="chat-meta-line"><strong>${U.esc(rl)}</strong><span>${U.date(m.ts)}</span><span class="actions">${cb}</span></div><div class="chat-content">${C.chatContent(m.content)}</div></div>`},
-  pulseCard(item){return`<div class="pulse-card ${U.esc(item.st||"normal")}"><div><strong>${U.esc(item.n||item.id)}</strong><span>${U.esc(item.st||"normal")}</span></div><b>${item.v??0}</b><i style="--value:${Math.max(0,Math.min(100,Number(item.v)||0))}%"></i></div>`}
-};
-
-/* ── 应用状态 ── */
-const AS = {
-  activeTab:"overview",activeModule:"",sourceLabel:"未加载",files:new Map(),jsonCache:new Map(),
-  warnings:[],model:null,moduleData:null,tree:null
-};
-
-/* ── 数据加载 ── */
-const DS = {
-  async loadFromDir(files,label){
-    AS.files=new Map();AS.jsonCache=new Map();AS.warnings=[];
-    for(const f of Array.from(files||[])){
-      const p=f.webkitRelativePath||f.name;
-      AS.files.set(U.norm(p),{path:p,file:f,lastModified:f.lastModified});
+  dataModeLabel(m){
+    const map={worldbook:"📖 世界书",character_card:"🃏 角色卡",preset:"🎲 预设",standalone:"🔍 独立"};
+    return map[m?.dataMode]||m?.dataMode||"📖 世界书";
+  },
+  typeIcon(m){
+    if(m?.type==="world")return"🌍";
+    if(m?.type==="profile")return"📋";
+    if(m?.type==="case")return"🔍";
+    return"📦";
+  },
+  moduleCard(m,selected){
+    const isSel=selected&&(selected.id===m.id);
+    const isProfile=m.type==="profile";
+    const isCase=m.type==="case";
+    return`<div class="module-card ${isSel?"selected":""}" data-module-id="${U.esc(m.id)}">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <div class="name">${C.typeIcon(m)} ${U.esc(m.displayName||m.name)}</div>
+        <div class="tags">
+          ${C.badge(C.dataModeLabel(m),m.dataMode==="worldbook"?"info":m.dataMode==="character_card"?"purple":"cyan")}
+          ${m.turnCount>0?C.badge(m.turnCount+"轮","ok"):C.badge("新","warn")}
+          ${isProfile?'<span class="badge">模板</span>':''}
+          ${isCase?'<span class="badge cyan">案例</span>':''}
+          ${m.isPlaceholder?'<span class="badge warn">🙈 未完成</span>':''}
+        </div>
+      </div>
+      ${m.description?`<div class="desc">${U.esc(m.description)}</div>`:""}
+      <div class="meta">
+        <span>${U.esc(m.subType||"classic")}</span>
+        ${m.lastPlayed?`<span>上次: ${U.rel(m.lastPlayed)}</span>`:""}
+        ${m.createdAt?`<span>创建: ${U.date(m.createdAt)}</span>`:""}
+      </div>
+      <div class="actions">
+        ${m.type==="world"
+          ? isSel
+            ? `<button class="small select-btn" style="background:var(--panel-2);border-color:var(--ok);color:var(--ok)" disabled>✓ 已选择</button><button class="danger small" data-action="delete-module">🗑</button>`
+            : `<button class="primary small select-btn" data-action="select-module">选择</button><button class="danger small" data-action="delete-module">🗑</button>`
+          : `<button class="primary small select-btn" data-action="create-from-template">从模板创建</button>`}
+      </div>
+    </div>`;
+  },
+  configForm(){
+    const c=AS.config;
+    return`<div class="panel" style="max-width:600px">
+      <div class="panel-head"><h2>🔌 LLM 配置</h2><div class="actions"><button class="small primary" id="saveLlmBtn">💾 保存</button><button class="small" id="testLlmBtn">🔗 测试</button></div></div>
+      <div class="grid" style="gap:8px">
+        <div class="config-row"><label>API地址</label><input id="cfgUrl" value="${U.esc(c.llmBaseUrl||"")}" placeholder="https://api.deepseek.com/v1"></div>
+        <div class="config-row"><label>模型</label><input id="cfgModel" value="${U.esc(c.llmModel||"")}" placeholder="deepseek-chat"></div>
+        <div class="config-row"><label>API Key</label><div style="display:flex;gap:6px;align-items:center;width:100%"><input id="cfgKey" type="password" value="" placeholder="${AS.hasApiKey?"已配置，输入新 key 则覆盖":"sk-..."}" style="flex:1">${AS.hasApiKey?C.badge("已配置","ok"):""}</div></div>
+      </div>
+      <div style="margin-top:8px;font-size:12px">${AS.llmTestResult}</div>
+    </div>`;
+  },
+  chatContent(t){
+    const e=U.esc(t||"");
+    return e.replace(/【([^】]+)】/g,'<span class="wt-tag">【$1】</span>');
+  },
+  chatMsg(m){
+    const rl=m.role==="user"?"玩家":m.role==="assistant"?"世界树":"系统";
+    const cb=m.role==="assistant"?`<button class="small" data-chat-clip="${U.esc(m.id)}">📋</button>`:"";
+    return`<div class="chat-message ${U.esc(m.role)}"><div class="chat-meta-line"><strong>${U.esc(rl)}</strong><span>${U.date(m.ts)}</span><span class="actions">${cb}</span></div><div class="chat-content">${C.chatContent(m.content)}</div></div>`;
+  },
+  /* ── 状态面板组件 ── */
+  spCard(title,icon,data){
+    if(!data||typeof data!=="object")return"";
+    const rows=Object.entries(data).filter(([k])=>!k.startsWith("_")).map(([k,v])=>{const val=Array.isArray(v)?v.join(", "):String(v);return`<div class="sp-row"><span class="sp-label">${U.esc(k)}</span><span class="sp-val">${U.esc(val)}</span></div>`}).join("");
+    return rows?`<div class="sp-card"><h4>${icon} ${U.esc(title)}</h4>${rows}</div>`:"";
+  },
+  spEmotion(data){
+    if(!data)return"";
+    // data.player 可能是字符串 "engagement=7, tension=4..." 或对象 {engagement:7, tension:4, ...}
+    let items=[];
+    if(typeof data.player==="string"){
+      items=data.player.split(",").map(s=>s.trim());
+    }else if(typeof data.player==="object"&&data.player){
+      items=Object.entries(data.player).filter(([k])=>!k.startsWith("_")).map(([k,v])=>`${k}=${v}`);
+    }else{
+      // 尝试从 data 顶层读取情绪字段
+      items=Object.entries(data).filter(([k])=>["engagement","tension","fatigue","curiosity"].includes(k)).map(([k,v])=>`${k}=${v}`);
     }
-    AS.sourceLabel=label||"已加载";
-    return DS.buildModel();
+    if(!items.length)return"";
+    const labels={engagement:["🎭 投入","#5b9cf5"],tension:["⚡ 紧张","#e8b339"],fatigue:["😴 疲劳","#b388ff"],curiosity:["🔍 好奇","#5cd4ff"]};
+    return`<div class="sp-card"><h4>🎯 情绪状态</h4>${items.map(p=>{const[k,v]=p.split("=");const info=labels[k.trim()]||[k,"#7a889b"];const pct=Math.min(100,Math.round((parseInt(v)||0)*10));return`<div class="emotion-bar"><span style="font-size:11px;min-width:36px">${info[0]}</span><div class="eb-track"><div class="eb-fill" style="width:${pct}%;background:${info[1]}"></div></div><span class="eb-val">${U.esc(v)}</span></div>`}).join("")}</div>`;
   },
-  async loadFromRecords(records,label){
-    AS.files=new Map();AS.jsonCache=new Map();AS.warnings=[];
-    for(const r of Array.from(records||[])){
-      if(!r?.path)continue;
-      AS.files.set(U.norm(r.path),{path:r.path,text:r.text||"",size:r.size||0,mtimeMs:r.mtimeMs||0});
-    }
-    AS.sourceLabel=label||"Electron IPC";
-    return DS.buildModel();
-  },
-  async readText(path){
-    const k=U.norm(path);const rec=AS.files.get(k);if(!rec)return null;
-    if(rec.file)return U.readTxt(rec.file);
-    if(typeof rec.text==="string")return rec.text;
-    return null;
-  },
-  async readJson(path,req){
-    const k=U.norm(path);if(AS.jsonCache.has(k))return AS.jsonCache.get(k);
-    if(!AS.files.has(k)){if(req)AS.warnings.push({level:"warn",path,message:"未找到文件"});return null}
-    const txt=await DS.readText(path);const j=U.parseJ(txt,path,AS.warnings);
-    AS.jsonCache.set(k,j);return j;
-  },
-  has(p){return AS.files.has(U.norm(p))},
-  list(prefix=""){
-    const n=U.norm(prefix);
-    return Array.from(AS.files.values()).filter(r=>r?.path&&(!n||U.norm(r.path).startsWith(n))).map(r=>r.path).sort((a,b)=>a.localeCompare(b,"zh-CN"));
-  },
-  async firstJson(paths){
-    for(const p of paths){if(DS.has(p))return{p,data:await DS.readJson(p)}}return{path:paths[0],data:null};
-  },
-  topDirs(){
-    const dirs=new Set();
-    for(const r of AS.files.values()){
-      const first=String(r.path||"").replace(/\\/g,"/").split("/")[0];
-      if(first&&!first.includes(".")&&!CFG.systemDirs.has(first))dirs.add(first);
-    }
-    return[...dirs].sort((a,b)=>a.localeCompare(b,"zh-CN"));
-  },
-  /* 加载项目模块数据 */
-  async buildModel(){
-    if(!AS.files.size)return{loaded:false,modules:[],activeModule:null,warnings:[],sourceLabel:AS.sourceLabel};
-    const model={loaded:true,modules:[],activeModule:null,warnings:AS.warnings,sourceLabel:AS.sourceLabel,files:DS.list()};
-    const pkg=await DS.readJson("package.json");const readme=await DS.readText("README.md");
-    const appManifest=await DS.readJson("app-manifest.json");
-    const srcFiles=DS.list("src/");const v0OutFiles=DS.list("src/v0-out/");const legacyUiFiles=DS.list("src/ui/");const coreFiles=DS.list("src/core/");
-    const dataFiles=DS.list("data/");const worldFiles=DS.list("data/engine/worlds/");const runFiles=DS.list("data/engine/runs/");const v0uiFiles=DS.list("v0-ui/");
-    model.pkg=pkg;model.readmeLine=readme?readme.split("\n")[0]||"":"";model.appManifest=appManifest;
-    model.srcFiles=srcFiles.length;model.v0OutFiles=v0OutFiles.length;model.legacyUiFiles=legacyUiFiles.length;model.uiFiles=v0OutFiles.length||legacyUiFiles.length;model.coreFiles=coreFiles.length;
-    model.dataFiles=dataFiles.length;model.worldFiles=worldFiles.length;model.runFiles=runFiles.length;model.v0uiFiles=v0uiFiles.length;
-
-    // 加载世界数据
-    model.worlds=[];model.archiveGroups=[];
-    const desktopWorldDirs=new Set();
-    for(const f of worldFiles){
-      const m=U.norm(f).match(/^data\/engine\/worlds\/([^/]+)\/world\.json$/);
-      if(m)desktopWorldDirs.add(m[1]);
-    }
-    for(const dir of [...desktopWorldDirs].sort((a,b)=>a.localeCompare(b,"zh-CN"))){
-      const base=U.path("data/engine/worlds",dir);
-      const wj=await DS.readJson(U.path(base,"world.json"));
-      const rt=await DS.readJson(U.path(base,"runtime.json"));
-      if(!wj)continue;
-      model.worlds.push({
-        name:dir,
-        title:U.first(wj,["title","displayName","name","id"],dir),
-        worldType:U.first(wj,["worldType","world_type","mode","type"],"-"),
-        branch:U.first(rt||{},["activeBranch","branch"],"main"),
-        path:base,
-        turnCount:U.first(rt||{},["turnCount","turn","session.turn"],0),
-        lastPlayedAt:U.first(rt||{},["updatedAt","lastPlayedAt","mtime"],""),
-        kind:"desktop-world"
-      });
-    }
-    const legacyWorlds=DS.topDirs().filter(d=>d!="data"&&d!="src"&&d!="v0-ui"&&d!="defaults"&&d!="scripts"&&d!="design"&&d!="docs"&&d!="personas"&&d!="paths"&&d!="node_modules");
-    for(const w of legacyWorlds){
-      const wj=await DS.readJson(U.path(w,"module.json"));if(!wj)continue;
-      const tj=await DS.readJson(U.path(w,"timeline-tree.json"));
-      const branch=U.first(tj||{},["active_branch","activeBranch"],"main");
-      model.worlds.push({name:w,title:U.first(wj,["name","title"],w),worldType:U.first(wj,["world_type","type"],"")||"-",branch,path:w,kind:"legacy-module"});
-    }
-
-    // 加载引擎配置
-    const ec=await DS.readJson("data/engine/");
-    model.engineConfig=ec;
-    
-    // 读取项目关键文件统计
-    model.defaults={};
-    const dFiles=DS.list("defaults/");
-    model.defaults.files=dFiles;
-    const scriptFiles=DS.list("scripts/");
-    model.scriptFiles=scriptFiles;
-    
-    AS.model=model;
-    return model;
+  statusPanel(sections){
+    if(!sections||Object.keys(sections).length===0)return`<div class="sp-empty">暂无状态数据<br><span style="font-size:11px">发送消息后状态会显示在这里</span></div>`;
+    const parts=[];
+    if(sections["情绪反馈"])parts.push(C.spEmotion(sections["情绪反馈"]));
+    const st=sections["状态建议"];
+    if(st){if(st["场景状态"])parts.push(C.spCard("场景状态","🌍",st["场景状态"]));if(st["玩家状态"])parts.push(C.spCard("玩家状态","🧙",st["玩家状态"]));if(st["叙事状态"])parts.push(C.spCard("叙事状态","📖",st["叙事状态"]));}
+    return parts.join("")||`<div class="sp-empty">暂无状态数据</div>`;
   }
 };
 
-window.WorldTreeConsole={CFG,AS,DS,loadRecords:async(records,label)=>{const m=await DS.loadFromRecords(records,label);AS.model=m;AS.activeTab="overview";await render();return{files:AS.files.size,worlds:m.worlds?.length||0,warnings:m.warnings?.length||0}}};
+/* ═══════════════════════════════════════════════════════════════
+ * 视图注册
+ * ═══════════════════════════════════════════════════════════════ */
 
-/* ── 视图渲染 ── */
-const Views = {registry:new Map(),register(v){Views.registry.set(v.id,v)},get(id){return Views.registry.get(id)||Views.registry.get("overview")}};
+const Views = {registry:new Map(),register(v){Views.registry.set(v.id,v)},get(id){return Views.registry.get(id)}};
 
+/* ── 首页：模组选择 + 炼金台 ── */
 Views.register({
-  id:"overview",
-  render(m){
-    if(!m?.loaded)return`<div class="grid"><div class="panel" style="text-align:center;padding:60px 20px"><h2>🌳 World Tree Desktop v${CFG.productVersion}</h2><p style="color:var(--muted);margin:12px 0 20px">将项目文件夹拖拽到窗口，或点击「选择目录」加载</p><div class="actions" style="justify-content:center"><button data-pick-dir class="primary">📂 选择项目目录</button></div></div></div>`;
-    const wc=m.worlds?.length||0;const hasPkg=!!m.pkg;
+  id:"home",
+  render(){
+    const mods=AS.modules;
+    const worlds=mods.filter(m=>m.type==="world");
+    const templates=mods.filter(m=>m.type==="profile"&&!m.isPlaceholder);
+    const cases=mods.filter(m=>m.type==="case");
     return`<div class="grid">
-      <div class="cols-4">
-        ${C.stat("世界",wc,String(wc>0?`${wc} 个世界已加载`:"暂无"))}
-        ${C.stat("源文件",(m.srcFiles||0)+(m.coreFiles||0),`src/ 目录`)}
-        ${C.stat("UI 文件",m.uiFiles||0,m.v0OutFiles?`src/v0-out/`:`src/ui/`)}
-        ${C.stat("数据文件",m.dataFiles||0,`data/ 目录`)}
+      ${C.configForm()}
+
+      <!-- 快速开始：即用即走 -->
+      <div class="panel">
+        <div class="panel-head"><h2>🚀 快速开始</h2><span class="sub">导入文件/粘贴文本，直接对话，不创建模组、不保存记录</span></div>
+        <div class="alchemy-drop" id="quickStartDrop" title="拖拽文件/文件夹或粘贴文本">
+          <div class="icon">📂</div>
+          <div class="hint">拖拽文件/文件夹，或粘贴文本，一键开聊</div>
+          <div class="supported">支持 .md .txt .json，自动遍历子目录</div>
+        </div>
+        <textarea id="quickStartText" placeholder="或在此粘贴叙事设定、小说开头、角色描述等内容..." style="margin-top:10px;min-height:100px;width:100%"></textarea>
+        <div class="actions" style="margin-top:8px">
+          <button class="primary" data-action="quick-start-chat">⚡ 开始对话（即用即走）</button>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--warn)">💡 提示：对话不会保存，关闭页面即丢失。如需持久化，请使用炼金台导入后创建模组。</div>
       </div>
-      <div class="cols-2">
-        <div class="panel"><h2>📋 项目信息</h2><div class="list">${hasPkg?`<div class="item"><div class="item-head"><span class="item-title">${U.esc(m.pkg?.name||"world-tree-desktop")}</span>${C.badge("v"+U.esc(m.pkg?.version||""),"info")}</div><div class="meta">${U.esc(m.pkg?.description||"")}</div></div>`:C.notice("package.json 未找到","warn")}${m.readmeLine?`<div class="item"><div class="item-title">${U.esc(m.readmeLine)}</div></div>`:""}</div></div>
-        <div class="panel"><h2>🔍 快速入口</h2><div class="actions">${CFG.tabs.slice(1,8).map(t=>`<button data-tab="${U.esc(t.id)}">${U.esc(t.label)}</button>`).join("")}</div></div>
+
+      <!-- 已有模组（持久化世界） -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>📦 已有模组</h2>
+          <div class="actions">
+            <button class="small primary" data-action="refresh-modules">🔄 刷新</button>
+          </div>
+        </div>
+        ${worlds.length
+          ?`<div class="module-grid">${worlds.map(m=>C.moduleCard(m,AS.selectedModule)).join("")}</div>`
+          :C.empty("暂无模组","通过炼金台下方的「创建」按钮新建持久化世界")}
       </div>
-      ${m.worlds?.length?`<div class="panel"><h2>🌍 世界列表</h2>${C.table(m.worlds,[{k:"title",l:"名称"},{k:"worldType",l:"类型"},{k:"branch",l:"分支"},{k:"name",l:"ID"},{k:"path",l:"路径"}])}</div>`:C.notice("未发现已加载的世界模组","warn")}
-      ${C.warns(m.warnings)}
+
+      <!-- 角色卡（来自创生skill） -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>🃏 角色卡</h2>
+          <div class="actions">
+            <button class="small primary" data-action="refresh-characters">🔄 刷新</button>
+          </div>
+        </div>
+        ${AS.characters.length
+          ?`<div class="module-grid">${AS.characters.map(c=>{
+              const isSel=AS.selectedModule&&AS.selectedModule.id==="char:"+c.id;
+              return`<div class="module-card ${isSel?"selected":""}" data-char-id="${U.esc(c.id)}">
+                <div style="display:flex;justify-content:space-between;align-items:start">
+                  <div class="name">🃏 ${U.esc(c.displayName||c.name)}</div>
+                  <div class="tags">${C.badge("角色卡","purple")}</div>
+                </div>
+                ${c.description?`<div class="desc">${U.esc(c.description)}</div>`:""}
+                <div class="actions">
+                  ${isSel
+                    ?`<button class="small select-btn" style="background:var(--panel-2);border-color:var(--ok);color:var(--ok)" disabled>✓ 已选择</button>`
+                    :`<button class="primary small select-btn" data-action="select-character">选择</button>`}
+                  <button class="danger small" data-action="delete-character" title="删除角色卡">🗑</button>
+                </div>
+              </div>`;
+            }).join("")}</div>`
+          :C.empty("暂无角色卡","在 Hermes 的 skills/creative 目录下安装角色卡后点击刷新")}
+      </div>
+
+      <!-- 炼金台 + 创建 -->
+      <div class="panel">
+        <div class="panel-head"><h2>⚗️ 内容炼金台</h2><span class="sub">导入文档 → 自动拆解为世界书条目 → 创建持久化模组</span></div>
+        <div class="alchemy-drop" id="alchemyDrop" title="拖拽文件或点击选择">
+          <div class="icon">📄</div>
+          <div class="hint">拖拽文件到此处，或点击选择</div>
+          <div class="supported">支持 .md .txt .json</div>
+        </div>
+        <textarea id="alchemyText" placeholder="粘贴外部文档内容..." style="margin-top:10px;min-height:80px;width:100%"></textarea>
+        <div class="actions" style="margin-top:8px">
+          <button class="primary small" data-action="alchemy-import">🔮 分析并生成条目</button>
+          <button class="small" data-action="create-worldbook">📖 创建世界书</button>
+          <button class="small" data-action="create-character-card">🃏 创建角色卡</button>
+          <button class="small" data-action="create-preset">🎲 创建预设</button>
+        </div>
+        <div id="alchemyResult" style="margin-top:8px;font-size:12px"></div>
+      </div>
     </div>`;
   }
 });
 
+/* ── 对话 ── */
 Views.register({
   id:"chat",
-  render(m){
-    if(!m?.loaded)return C.notice("请先加载项目目录","warn");
-    CH.ensureLoaded(m);
-    const s=CH.loadS();const sid=CH.sessionFor(m);const ks=CH.sessionsMetaFor(m);
-    const clips=CH.clips();const bdy=CH.boundaryModule()||"";
+  render(){
+    const m=AS.selectedModule;
+    if(!m)return`<div class="grid"><div class="panel" style="text-align:center;padding:60px 20px"><h2>💬 未选择模组</h2><p style="color:var(--muted);margin:12px 0">请先在首页选择一个模组</p><button class="primary" data-action="go-home">🏠 返回首页</button></div></div>`;
+    const spCollapsed=AS.showStatusPanel?"":"collapsed";
+    const spToggleIcon=AS.showStatusPanel?"−":"+";
     return`<div class="chat-layout">
       <section class="panel chat-space">
-        <div class="panel-head"><div><h2>💬 对话面板</h2><div class="sub">Hermes API · ${U.esc(CH.status)}</div></div>
-          <div class="actions"><button class="small" data-chat-auto>🔗 自动</button><button class="small" data-chat-health>🩺 测试</button><button class="primary small" data-chat-new>🆕 新对话</button><button class="danger small" data-chat-clear>🗑</button></div></div>
-        <div id="chatMessages" class="chat-messages">${CH.messages.length?CH.messages.map(C.chatMsg).join(""):C.empty("未开始对话","配置 API 连接后发送消息")}</div>
-        <div class="chat-input-row"><textarea id="chatInput" placeholder="发送消息...">${U.esc(CH.draft)}</textarea><button class="primary" data-chat-send ${CH.busy?"disabled":""}>发送</button></div>
+        <div class="panel-head">
+          <div><h2>💬 ${AS.isQuickStart?"⚡ 快速对话":`${C.typeIcon(m)} ${U.esc(m.displayName||m.name)}`}</h2><div class="sub">${AS.isQuickStart?'<span style="color:var(--warn)">⚡ 快速模式 · 不保存记录</span>':`${C.dataModeLabel(m)} · ${U.esc(m.subType||"classic")}`}</div></div>
+          <div class="actions">
+            <button class="small primary" data-action="chat-send" ${AS.busy?"disabled":""}>发送</button>
+            <button class="small danger" data-action="chat-clear">🗑 清空</button>
+          </div>
+        </div>
+        <div id="chatMessages" class="chat-messages">${AS.messages.length?AS.messages.map(C.chatMsg).join(""):C.empty("开始对话","发送消息开始叙事")}</div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="输入你的行动或对话..." style="min-height:100px"></textarea>
+        </div>
       </section>
       <aside class="chat-side">
-        <div class="panel tight"><h3>🔌 连接</h3><div class="chat-settings">
-          <input id="chatUrl" value="${U.esc(s.baseUrl)}" placeholder="http://127.0.0.1:18742">
-          <input id="chatToken" value="${U.esc(s.token)}" placeholder="API Token" type="password">
-          <input id="chatSid" value="${U.esc(sid||"")}" placeholder="Session ID">
-          <button class="small" data-chat-save>💾 保存设置</button>
-        </div></div>
-        ${ks.length?`<div class="panel tight"><h3>📜 会话历史</h3><div class="list">${ks.slice(0,5).map(s=>`<div class="item tight" style="padding:6px 8px;font-size:12px"><div class="item-head"><span>${U.esc(s.title||s.id)}</span><button class="small" data-chat-switch="${U.esc(s.id)}">切换</button></div></div>`).join("")}</div></div>`:""}
-        ${clips.length?`<div class="panel tight"><h3>📋 剪贴板</h3><div class="clip-list">${clips.slice(0,8).map(c=>`<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--line-soft)">${U.esc(U.compact(c.text,80))}<span style="color:var(--muted);font-size:11px"> · ${U.rel(c.ts)}</span></div>`).join("")}</div></div>`:""}
-        <div class="panel tight"><h3>📊 上下文</h3><div class="list" style="font-size:12px"><div>世界: ${U.esc(m.activeModule?.meta?.title||"-")}</div><div>分支: ${U.esc(m.activeBranch||"main")}</div><div>树模式: ${bdy?C.badge("[世界树:"+bdy+"]"):C.badge("未检测","pending")}</div></div></div>
+        <!-- 状态面板（可折叠，内嵌在侧栏） -->
+        <div class="panel tight">
+          <div class="sp-toggle" data-action="toggle-status-panel">
+            <h3>📊 状态</h3>
+            <span class="sp-toggle-btn">[${spToggleIcon}]</span>
+          </div>
+          <div class="sp-body ${spCollapsed}">${C.statusPanel(AS.lastStatusSections)}</div>
+        </div>
+        <!-- 模组信息 -->
+        <div class="panel tight">
+          <h3>📊 模组信息</h3>
+          <div style="font-size:12px;display:grid;gap:4px">
+            <div>名称: ${U.esc(m.displayName||m.name)}</div>
+            <div>类型: ${C.dataModeLabel(m)}</div>
+            <div>子类型: ${U.esc(m.subType||"-")}</div>
+            <div>轮次: ${m.turnCount||0}</div>
+            ${AS.lastScene?`<div>场景: ${U.esc(AS.lastScene)}</div>`:""}
+            <div>${C.badge(AS.llmConnected?"已连接":"未连接",AS.llmConnected?"ok":"pending")}</div>
+          </div>
+        </div>
+        ${m.lastPlayed?`<div class="panel tight"><h3>⏱ 上次</h3><div style="font-size:12px">${U.rel(m.lastPlayed)}</div></div>`:""}
+        <div class="panel tight">
+          <h3>🔧 操作</h3>
+          <div class="actions" style="flex-direction:column;align-items:stretch">
+            <button class="small" data-action="go-home">🏠 切换模组</button>
+          </div>
+        </div>
       </aside>
     </div>`;
   }
 });
 
+/* ── 世界列表（保留兼容） ── */
 Views.register({
   id:"worlds",
-  render(m){
-    if(!m?.worlds?.length)return C.notice("未加载世界数据","warn");
-    return`<div class="grid"><div class="panel"><h2>🌍 世界列表 (${m.worlds.length})</h2>${C.table(m.worlds,[{k:"title",l:"名称"},{k:"worldType",l:"类型",render:r=>C.badge(r.worldType||"-","info")},{k:"branch",l:"分支"},{k:"path",l:"路径",render:r=>`<code>${U.esc(r.path)}</code>`}])}</div></div>`;
+  render(){
+    const mods=AS.modules.filter(m=>m.type==="world");
+    if(!mods.length)return C.notice("尚无世界","warn");
+    return`<div class="grid"><div class="panel"><h2>🌍 世界列表 (${mods.length})</h2>${C.table(mods,[{k:"displayName",l:"名称"},{k:"dataMode",l:"类型",render:r=>C.badge(r.dataMode||"-","info")},{k:"turnCount",l:"轮次"},{k:"subType",l:"子类型"},{k:"lastPlayed",l:"上次",render:r=>r.lastPlayed?U.rel(r.lastPlayed):"-"}])}</div></div>`;
   }
 });
 
+/* ── 存档（保留兼容） ── */
 Views.register({
   id:"archives",
-  render(m){
-    if(!m?.worlds?.length)return C.notice("无数据","warn");
-    const arcs=[];
-    for(const w of m.worlds||[]){
-      const dir=U.path(w.path,"branches",w.branch,"archive");
-      const files=DS.list(dir).filter(f=>f.toLowerCase().endsWith(".json"));
-      for(const f of files.slice(0,20))arcs.push({world:w.title,path:f,name:U.base(f).replace(/\.json$/i,""),branch:w.branch});
-    }
-    return`<div class="grid">${arcs.length?`<div class="panel"><h2>📦 存档 (${arcs.length})</h2>${C.table(arcs,[{k:"name",l:"存档名"},{k:"world",l:"世界"},{k:"branch",l:"分支"},{k:"path",l:"路径"}])}</div>`:C.notice("暂未发现存档文件","warn")}</div>`;
-  }
+  render(){return C.empty("存档管理","存档数据在运行时自动保存，当前由引擎管理");}
 });
 
-Views.register({
-  id:"modules",
-  render(m){
-    const items=[{l:"源文件总数",v:m.srcFiles},{l:"UI 文件",v:m.uiFiles},{l:"核心模块",v:m.coreFiles},{l:"世界数据文件",v:m.worldFiles||0},{l:"脚本文件",v:m.scriptFiles?.length||0},{l:"默认配置",v:m.defaults?.files?.length||0}];
-    const mList=[{l:"package.json",v:m.pkg?"✅":"❌"},{l:"app-manifest.json",v:m.appManifest?"✅":"❌"},{l:"main.cjs",v:DS.has("src/main.cjs")?"✅":"❌"},{l:"preload.cjs",v:DS.has("src/preload.cjs")?"✅":"❌"},{l:"src/v0-out/index.html",v:DS.has("src/v0-out/index.html")?"✅":"❌"},{l:"world-engine.js",v:DS.has("src/core/world-engine.js")?"✅":"❌"},{l:"llm.js",v:DS.has("src/adapters/llm.js")?"✅":"❌"},{l:"world-tree-console.html",v:DS.has("world-tree-console.html")?"✅":"❌"}];
-    return`<div class="grid">
-      <div class="cols-4">${items.map(i=>C.stat(i.l,i.v)).join("")}</div>
-      <div class="panel"><h2>📁 核心文件清单</h2>${C.table(mList,[{k:"l",l:"文件"},{k:"v",l:"状态",render:r=>C.badge(r.v,r.v==="✅"?"ok":"bad")}])}</div>
-    </div>`;
-  }
-});
-
-Views.register({
-  id:"characters",
-  render(m){
-    if(!m?.worlds?.length)return C.notice("无数据，请先加载带角色的世界","warn");
-    const chars=[];
-    for(const w of m.worlds||[]){
-      const cb=DS.readJson(U.path(w.path,"shared","characters_base.json"));
-      const cs=DS.readJson(U.path(w.path,"branches",w.branch,"characters_state.json"));
-    }
-    return C.empty("角色数据","角色数据在模组 JSON 中，请加载具体世界数据后查看完整角色列表");
-  }
-});
-
-Views.register({
-  id:"scenes",
-  render(m){return C.empty("场景数据","场景链数据加载中...")}
-});
-
-Views.register({
-  id:"state",
-  render(m){
-    if(!m?.worlds?.length)return C.notice("无数据","warn");
-    const panel=[];
-    for(const w of m.worlds||[]){
-      const ws=DS.readJson(U.path(w.path,"branches",w.branch,"world_state.json"));
-      panel.push({world:w.title,hasState:ws?"✅":"⏳"});
-    }
-    return`<div class="grid">${C.table(panel,[{k:"world",l:"世界"},{k:"hasState",l:"状态"}])}</div>`;
-  }
-});
-
+/* ── 脉象 ── */
 Views.register({
   id:"telemetry",
-  render(m){
-    const telem=[];
-    for(const w of m?.worlds||[]){
-      const t=DS.readJson(U.path(w.path,"branches",w.branch,"world_telemetry.json"));
-      if(t?.dimensions)for(const [k,v] of Object.entries(t.dimensions))telem.push({world:w.title,dim:k,val:v.value||0,st:v.status||"normal",name:v.name||k});
-    }
-    if(!telem.length)return C.empty("脉象尚未生成","请在运行世界叙事后查看脉象数据");
-    return`<div class="grid"><div class="pulse-grid">${telem.map(t=>C.pulseCard({id:t.dim,n:t.name,v:t.val,st:t.st})).join("")}</div></div>`;
-  }
+  render(){return C.empty("世界脉象","运行世界叙事后查看脉象数据");}
 });
 
+/* ── 导演模式 ── */
 Views.register({
   id:"director",
-  render(m){
-    const modes=["轻小说","跑团DM","黑暗奇幻","治愈日常","悬疑调查","战争史诗","沙盒模拟"];
-    const info=[{m:"经典(classic)",d:"完整 DM + 双段式管线"},{m:"剧本杀(murder-mystery)",d:"独立案件状态机"},{m:"角色卡(character)",d:"纯 RP,DM 隐退"},{m:"跑团(tabletop)",d:"骰子引擎 🙈"},{m:"RPG",d:"章节/经验/羁绊 🙈"},{m:"经营(sim)",d:"资源/时间/决策 🙈"}];
-    return`<div class="grid">
-      <div class="panel"><h2>🎬 导演模式</h2><div class="sub">Director 在叙事管线中管理情绪/节奏/事件评分</div><div class="list">${modes.map(m=>`<span class="badge info">${U.esc(m)}</span>`).join(" ")}</div></div>
-      <div class="panel"><h2>🎮 游戏模式</h2>${C.table(info,[{k:"m",l:"模式"},{k:"d",l:"说明"}])}</div>
-    </div>`;
+  render(){
+    const info=[{m:"经典(classic)",d:"完整 DM + 双段式管线"},{m:"剧本杀(murder-mystery)",d:"独立案件状态机"},{m:"角色卡(character)",d:"纯 RP,DM 隐退"},{m:"角色卡模式",d:"括号提示驱动，无外部事件"}];
+    return`<div class="grid"><div class="panel"><h2>🎬 导演模式</h2><div class="sub">内部使用 hybrid 模式（JS + 轻量 LLM 分析）</div><div class="list">${info.map(i=>`<div class="item"><strong>${U.esc(i.m)}</strong><span style="color:var(--muted)">${U.esc(i.d)}</span></div>`).join("")}</div></div></div>`;
   }
 });
 
-Views.register({
-  id:"content",
-  render(m){return C.empty("内容库","加载世界数据后显示内容注册表")}
-});
-
-Views.register({
-  id:"proposals",
-  render(m){return C.empty("提案","尚无待处理提案")}
-});
-
-Views.register({
-  id:"causality",
-  render(m){return C.empty("因果链","因果链数据加载中...")}
-});
-
-Views.register({
-  id:"memory",
-  render(m){return C.empty("记忆层","五层记忆数据加载中...")}
-});
-
+/* ── 守护 ── */
 Views.register({
   id:"guardian",
-  render(m){
+  render(){
     const checks=["人设一致性","世界观冲突","战力体系","时间线冲突","未授权内容"];
-    return`<div class="grid"><div class="panel"><h2>🛡 守护系统 (Guardian v2)</h2><div class="list">${checks.map(c=>`<span class="badge ok">${U.esc(c)}</span>`).join(" ")}</div></div></div>`;
+    return`<div class="grid"><div class="panel"><h2>🛡 守护系统 (Guardian v2)</h2><div class="list" style="flex-direction:row">${checks.map(c=>C.badge(c,"ok")).join(" ")}</div></div></div>`;
   }
 });
 
-Views.register({
-  id:"tracking",
-  render(m){
-    return C.empty("追踪","伏笔与冲突追踪数据加载中...");
-  }
-});
-
+/* ── 分支 ── */
 Views.register({
   id:"branches",
-  render(m){
-    if(!m?.worlds?.length)return C.notice("无数据","warn");
-    const rows=[];
-    for(const w of m.worlds||[]){
-      const tj=DS.readJson(U.path(w.path,"timeline-tree.json"));
-      const brs=tj?.branches?U.flat(tj.branches):[{id:"main",name:"主分支",status:"active"}];
-      for(const b of brs)rows.push({world:w.title,id:b.id||"main",name:b.name||b.id||"main",status:b.status||"active"});
-    }
-    return`<div class="grid">${rows.length?`<div class="panel"><h2>🌿 分支一览</h2>${C.table(rows,[{k:"world",l:"世界"},{k:"name",l:"名称"},{k:"id",l:"ID"},{k:"status",l:"状态",render:r=>C.badge(r.status||"active",r.status==="active"?"ok":r.status==="merged"?"info":"warn")}])}</div>`:C.notice("无分支数据","warn")}</div>`;
-  }
+  render(){return C.empty("叙事分支","分支管理由引擎自动处理");}
 });
 
-Views.register({
-  id:"organizations",
-  render(m){
-    return C.empty("组织数据","组织数据加载中...");
-  }
-});
-
-Views.register({
-  id:"presets",
-  render(m){
-    const pList=[];
-    for(const w of m?.worlds||[]){
-      const pDir=U.path(w.path,"presets");
-      const files=DS.list(pDir).filter(f=>f.endsWith(".json"));
-      for(const f of files.slice(0,10))pList.push({world:w.title,path:f,name:U.base(f).replace(/\.json$/i,"")});
-    }
-    return`<div class="grid">${pList.length?`<div class="panel"><h2>⚙ 预设</h2>${C.table(pList,[{k:"name",l:"名称"},{k:"world",l:"世界"},{k:"path",l:"路径"}])}</div>`:C.notice("无预设数据","warn")}</div>`;
-  }
-});
-
-Views.register({
-  id:"commands",
-  render(m){
-    const groups={
-      "引擎":["/引擎 new [名]","/引擎 load [名]","/引擎 status","/引擎 health","/引擎 exit"],
-      "对话":["/推进","/推进 停止","/摘要链 show [N]","/压缩"],
-      "世界":["/世界 list","/世界 new [名]","/世界 load [名]","/世界 delete [名]"],
-      "存档/分支":["/存档 [名]","/读档 [名]","/存档列表","/分支 list","/分支 switch [名]","/分支 merge [src] [tgt]"],
-      "角色":["/角色 list","/角色 create [名]","/角色 show [名]","/角色 use [名]"],
-      "场景":["/场景 now","/场景 new [名]","/场景 move [名]","/场景 time [时间]"],
-      "预设":["/预设 list","/预设 use [名]","/预设 status"],
-      "审查":["/审查 check","/审查 status","/审查 dismiss [名]"],
-      "追踪":["/追踪 status","/追踪 伏笔","/追踪 冲突"],
-      "模块":["/模块 list","/模块 on|off [ID]","/模块 preset [类型]"]
-    };
-    return`<div class="grid"><div class="panel"><h2>⌨ 指令速查</h2><div class="list">${Object.entries(groups).map(([g,cmds])=>`<details><summary>${U.esc(g)}</summary><div class="list">${cmds.map(c=>`<code style="display:block;margin:2px 0">${U.esc(c)}</code>`).join("")}</div></details>`).join("")}</div></div></div>`;
-  }
-});
-
+/* ── 体检 ── */
 Views.register({
   id:"health",
-  render(m){
-    if(!m?.loaded)return C.notice("请先加载项目","warn");
+  render(){
     const items=[
-      {n:"项目版本",v:m.pkg?.version||"未知",st:m.pkg?"ok":"bad"},
       {n:"控制台版本",v:CFG.version,st:"ok"},
-      {n:"package.json",v:DS.has("package.json")?"✅":"❌",st:DS.has("package.json")?"ok":"bad"},
-      {n:"app-manifest.json",v:m.appManifest?"✅":"❌",st:m.appManifest?"ok":"warn"},
-      {n:"src/ 目录",v:DS.has("src/main.cjs")?"✅":"❌",st:DS.has("src/main.cjs")?"ok":"bad"},
-      {n:"UI 入口",v:DS.has("src/v0-out/index.html")?"✅":"❌",st:DS.has("src/v0-out/index.html")?"ok":"bad"},
-      {n:"世界数据目录",v:m.worldFiles?"✅":"❌",st:m.worldFiles?"ok":"warn"},
-      {n:"运行记录目录",v:m.runFiles?"✅":"❌",st:m.runFiles?"ok":"info"},
-      {n:"世界数",v:m.worlds?.length||0,st:m.worlds?.length?"ok":"pending"},
-      {n:"加载提示",v:m.warnings.length?m.warnings.length+" 个警告":"正常",st:m.warnings.length?"warn":"ok"},
+      {n:"已连接 LLM",v:AS.llmConnected?"✅":"❌",st:AS.llmConnected?"ok":"bad"},
+      {n:"已选择模组",v:AS.selectedModule?.displayName||"无",st:AS.selectedModule?"ok":"pending"},
+      {n:"可用模组数",v:AS.modules.length,st:AS.modules.length?"ok":"pending"},
+      {n:"对话轮次",v:AS.messages.filter(m=>m.role==="assistant").length,st:"info"},
     ];
-    return`<div class="grid">
-      <div class="cols-2">${items.map(i=>C.stat(i.n,i.v,"状态: "+i.st)).join("")}</div>
-      <div class="panel"><h2>🔍 诊断</h2>${C.json({consoleVersion:CFG.version,productVersion:CFG.productVersion,sourceLabel:m.sourceLabel,files:AS.files.size,worlds:m.worlds?.length||0,pkg:m.pkg?.version,warnings:m.warnings.length})}</div>
-      ${C.warns(m.warnings)}
-    </div>`;
+    return`<div class="grid"><div class="panel"><h2>🔍 诊断</h2><div class="cols-auto">${items.map(i=>C.stat(i.n,i.v)).join("")}</div></div></div>`;
   }
 });
 
-/* ── 聊天模块 ── */
-const CH = {
-  settingsKey:"wt2-chat-settings",clipKey:"wt2-chat-clips",currentKey:"",messages:[],settings:null,status:"未连接",busy:false,draft:"",apiProcessed:false,
-  defaultS(){return{baseUrl:"http://127.0.0.1:18742",token:"",sessionId:"",sessionsByModule:{},sessionsMetaByModule:{},showBoundary:true,autoConnect:true}},
-  loadS(){if(CH.settings)return CH.settings;try{CH.settings={...CH.defaultS(),...JSON.parse(localStorage.getItem(CH.settingsKey)||"{}")}}catch{CH.settings=CH.defaultS()}return CH.settings},
-  saveS(s){CH.settings={...CH.defaultS(),...s};CH.settings.sessionsByModule=CH.settings.sessionsByModule||{};CH.settings.sessionsMetaByModule=CH.settings.sessionsMetaByModule||{};localStorage.setItem(CH.settingsKey,JSON.stringify(CH.settings))},
-  moduleKey(m){const w=m?.worlds?.[0];const raw=w?.title||w?.name||AS.sourceLabel||"global";return U.slug(raw,"global")+"__"+U.hash(raw)},
-  historyKey(m){return"wt2-chat-"+CH.moduleKey(m)},
-  sessionFor(m){const s=CH.loadS();return s.sessionsByModule?.[CH.moduleKey(m)]||""},
-  sessionsMetaFor(m){const s=CH.loadS();return U.flat(s.sessionsMetaByModule?.[CH.moduleKey(m)]||[]).filter(i=>i&&i.id).sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")))},
-  ensureLoaded(m){const k=CH.historyKey(m);if(k===CH.currentKey)return;CH.currentKey=k;try{CH.messages=JSON.parse(localStorage.getItem(k)||"[]")}catch{CH.messages=[]}},
-  persist(){if(!CH.currentKey)return;localStorage.setItem(CH.currentKey,JSON.stringify(CH.messages.slice(-200)))},
-  add(role,content,ext){const msg={id:"m_"+Date.now()+"_"+Math.random().toString(16).slice(2),role,content,ts:new Date().toISOString(),...ext};CH.messages.push(msg);CH.persist();return msg},
-  clear(){CH.messages=[];CH.persist()},
-  clips(){try{return JSON.parse(localStorage.getItem(CH.clipKey)||"[]")}catch{return[]}},
-  saveClip(t){const c=CH.clips();c.unshift({text:t,ts:new Date().toISOString()});localStorage.setItem(CH.clipKey,JSON.stringify(c.slice(0,80)))},
-  boundaryModule(){const t=CH.messages.map(m=>m.content).join("\n");const ms=Array.from(t.matchAll(/\[世界树:([^\]]+)\]/g));return ms.length?ms[ms.length-1][1]:t.includes("[/世界树]")?"":""},
-  baseUrl(){return CH.loadS().baseUrl.replace(/\/+$/,"")},
-  headers(){const s=CH.loadS();const h={"Content-Type":"application/json"};if(s.token)h.Authorization="Bearer "+s.token;return h},
-  httpError(prefix,r,text){const body=U.compact(text||"",180);if(r.status===401||r.status===403)return `${prefix} HTTP ${r.status}: 鉴权失败，请检查 API Token / API_SERVER_KEY${body?`（${body}）`:""}`;return `${prefix} HTTP ${r.status}${body?`: ${body}`:""}`},
-  async checkBase(baseUrl){
-    const base=String(baseUrl||"").replace(/\/+$/,"");if(!base)throw new Error("网关地址为空");
-    let r;
-    try{r=await fetch(base+"/health",{headers:CH.headers()})}catch(e){throw new Error(`${base} 无法连接: ${e.message||e}`)}
-    const txt=await r.text().catch(()=>"");
-    if(!r.ok)throw new Error(CH.httpError("健康检查失败",r,txt));
-    let data={};try{data=txt?JSON.parse(txt):{}}catch{data={raw:txt}}
-    return{baseUrl:base,data};
-  },
-  async autoConnect(){
-    const s=CH.loadS();const urls=[s.baseUrl,...CFG.gatewayCandidates].map(u=>String(u||"").replace(/\/+$/,"")).filter(Boolean);
-    const candidates=[...new Set(urls)];const errors=[];
-    for(const base of candidates){
-      try{const ok=await CH.checkBase(base);CH.saveS({...s,baseUrl:ok.baseUrl});CH.status="已连接";return ok}
-      catch(e){errors.push(e.message)}
-    }
-    throw new Error(errors.join("；")||"没有可用网关");
-  },
-  async health(){return (await CH.checkBase(CH.baseUrl())).data},
-  async send(msg,m,onDelta){let msgs=CH.loadS();const sid=msgs.sessionId||msgs.sessionsByModule?.[CH.moduleKey(m)];if(!sid)throw new Error("请先创建会话");const r=await fetch(CH.baseUrl()+"/api/sessions/"+encodeURIComponent(sid)+"/chat",{method:"POST",headers:CH.headers(),body:JSON.stringify({message:msg})});const txt=await r.text().catch(()=>"");if(!r.ok)throw new Error(CH.httpError("发送失败",r,txt));let d={};try{d=txt?JSON.parse(txt):{}}catch{d={content:txt}}const final=d?.message?.content||d?.content||"";onDelta("",final);return final},
-  async createSession(m){const mn=m?.worlds?.[0]?.title||"world-tree";const r=await fetch(CH.baseUrl()+"/api/sessions",{method:"POST",headers:CH.headers(),body:JSON.stringify({title:"观测终端 · "+mn+" · "+new Date().toISOString().replace(/\.\d{3}Z$/,"").replace("T"," ")})});const txt=await r.text().catch(()=>"");if(!r.ok)throw new Error(CH.httpError("创建会话失败",r,txt));let d={};try{d=txt?JSON.parse(txt):{}}catch{d={}}const sid=d?.session?.id||d?.id;if(!sid)throw new Error("API 未返回 session id");const s=CH.loadS();s.sessionsByModule=CH.loadS().sessionsByModule||{};s.sessionsByModule[CH.moduleKey(m)]=sid;CH.saveS(s);CH.upsertMeta(m,{id:sid,title:mn,createdAt:new Date().toISOString()});return sid},
-  upsertMeta(m,meta){if(!meta?.id)return;const s=CH.loadS();const k=CH.moduleKey(m);const bucket=[...CH.sessionsMetaFor(m)];const idx=bucket.findIndex(i=>i.id===meta.id);if(idx>=0)bucket[idx]={...bucket[idx],...meta};else bucket.unshift(meta);const smbm={...(s.sessionsMetaByModule||{}),[k]:bucket.slice(0,12)};CH.saveS({...s,sessionsMetaByModule:smbm})}
-};
+/* ═══════════════════════════════════════════════════════════════
+ * 渲染引擎
+ * ═══════════════════════════════════════════════════════════════ */
 
-/* ── 应用控制器 ── */
-function cls(){CH.apiProcessed=false}
-function renderTabs(active){return CFG.tabs.map(t=>`<button class="tab ${active===t.id?"active":""}" data-tab="${U.esc(t.id)}">${U.esc(t.label)}</button>`).join("")}
+function renderTabs(active){
+  return CFG.tabs.map(t=>`<button class="tab ${active===t.id?"active":""}" data-tab="${U.esc(t.id)}">${U.esc(t.label)}</button>`).join("");
+}
+
 async function render(){
-  const m=AS.model||{loaded:false,modules:[],activeModule:null,warnings:[],sourceLabel:AS.sourceLabel};
-  const tab=AS.activeTab;
-  U.qs("#tabs").innerHTML=renderTabs(tab);
-  const ctx=m?.worlds?.[0]?m.worlds[0].title:AS.sourceLabel;
-  U.qs("#contextLine").textContent=m.loaded?`${ctx} · ${AS.files.size} 个文件`:"← 拖拽或选择目录";
-  U.qs("#statusRight").textContent=m.loaded?`${m.worlds?.length||0} 世界 · v${m.pkg?.version||"-"}`:"待加载";
-  const view=Views.get(tab);
-  U.qs("#main").innerHTML=view.render(m);
-  U.qs("#refreshBtn").disabled=!m.loaded;
-  bindEvents(m);
+  try{
+    const tab=AS.activeTab;
+    U.qs("#tabs").innerHTML=renderTabs(tab);
+    const ctx=AS.selectedModule?AS.selectedModule.displayName||AS.selectedModule.name:"未选择模组";
+    U.qs("#contextLine").textContent=ctx;
+    U.qs("#statusRight").textContent=`${AS.modules.length||0} 模组 · ${AS.messages.length} 条消息`;
+    const st=U.qs("#llmStatus");
+    if(st){st.className="badge "+(AS.llmConnected?"ok":"pending");st.textContent=AS.llmConnected?"已连接":"未连接"}
+    const view=Views.get(tab);
+    if(!view){U.qs("#main").innerHTML=C.empty("未知标签");bindEvents();return}
+    U.qs("#main").innerHTML=view.render();
+    bindEvents();
+  }catch(e){
+    console.error("render 出错",e);
+    U.qs("#main").innerHTML=`<div class="panel" style="text-align:center;padding:40px"><h2>⚠️ 页面渲染出错</h2><p style="color:var(--bad)">${U.esc(e.message)}</p><button class="primary" onclick="location.reload()">🔄 刷新页面</button></div>`;
+  }
 }
-function bindEvents(m){
-  for(const btn of U.qsa("#pickDirBtn,[data-pick-dir]"))btn.onclick=()=>{U.qs("#dirInput")?.click()};
-  // Tab clicks
-  for(const btn of U.qsa("[data-tab]"))btn.onclick=()=>{AS.activeTab=btn.dataset.tab;render()};
-  // Module select
-  for(const btn of U.qsa("[data-select-module]"))btn.onclick=()=>{AS.activeModule=btn.dataset.selectModule;createToast("已切换到: "+btn.dataset.selectModule);render()};
-  // Chat events
-  if(AS.activeTab==="chat")bindChat(m);
-}
-function bindChat(m){
-  const sendBtn=U.qs("[data-chat-send]");const input=U.qs("#chatInput");
-  if(sendBtn)sendBtn.onclick=async()=>{
-    if(CH.busy||!input?.value?.trim())return;CH.busy=true;sendBtn.disabled=true;
-    const txt=input.value.trim();input.value="";CH.draft="";
-    CH.add("user",txt);const msgs=U.qs("#chatMessages");if(msgs)msgs.innerHTML=CH.messages.map(C.chatMsg).join("");msgs?.scrollTo(0,msgs.scrollHeight);
+
+/* ═══════════════════════════════════════════════════════════════
+ * 事件绑定
+ * ═══════════════════════════════════════════════════════════════ */
+
+function bindEvents(){
+  // Tab 切换
+  for(const btn of U.qsa("[data-tab]"))
+    btn.onclick=()=>{AS.activeTab=btn.dataset.tab;render()};
+
+  // 首页按钮
+  U.qs("#homeBtn").onclick=()=>{AS.activeTab="home";render()};
+
+  // ── LLM 配置 ──
+  const saveBtn=U.qs("#saveLlmBtn");
+  if(saveBtn)saveBtn.onclick=async()=>{
+    const url=U.qs("#cfgUrl")?.value;const model=U.qs("#cfgModel")?.value;const key=U.qs("#cfgKey")?.value;
     try{
-      await CH.send(txt,m,(_,final)=>{CH.add("assistant",final);if(msgs)msgs.innerHTML=CH.messages.map(C.chatMsg).join("");msgs?.scrollTo(0,msgs.scrollHeight);});
-    }catch(e){CH.add("error",String(e));if(msgs)msgs.innerHTML=CH.messages.map(C.chatMsg).join("")}
-    finally{CH.busy=false;sendBtn.disabled=false}
+      if(url)await API.saveConfig({llmBaseUrl:url,llmModel:model||"deepseek-chat"});
+      // 只有用户填了新 key 才更新，留空则保留服务端已有 key
+      if(key)await API.saveLlmKey({value:key});
+      const cfg=await API.loadConfig();Object.assign(AS.config,cfg);
+      // 更新 hasApiKey：检查服务端是否还有 key
+      try{const sec=await API.getSecrets();AS.hasApiKey=sec?.llm?.items?.length>0}catch{}
+      createToast("配置已保存");
+      // 自动测试
+      const testKey=key||(await API.get("/api/secrets/llm-value").then(r=>/^\*{6,}/.test(r.value)?"":r.value).catch(()=>""));
+      if(testKey){
+        AS.llmTestResult="<span class='loading'>测试中...</span>";render();
+        try{const t=await API.testLlm({config:AS.config,apiKey:testKey});if(t.status==="ok"){AS.llmConnected=true;AS.hasApiKey=true}else{AS.llmConnected=false};AS.llmTestResult=t.status==="ok"?`<span style="color:var(--ok)">✅ 连接成功 (${t.latencyMs}ms)</span>`:`<span style="color:var(--bad)">❌ ${U.esc(t.errorMsg||"连接失败")}</span>`;render()}catch(e){AS.llmTestResult=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;render()}
+      }else{AS.llmTestResult="";render()}
+    }catch(e){createToast("保存失败: "+e.message,"bad")}
   };
-  if(input)input.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendBtn?.click()};CH.draft=input.value};
-  const newBtn=U.qs("[data-chat-new]");
-  if(newBtn)newBtn.onclick=async()=>{
-    try{const sid=await CH.createSession(m);createToast("新会话: "+sid);U.qs("#chatSid").value=sid;render()}catch(e){createToast("创建失败: "+e.message,"bad")}
+
+  const testBtn=U.qs("#testLlmBtn");
+  if(testBtn)testBtn.onclick=async()=>{
+    let url=U.qs("#cfgUrl")?.value;let key=U.qs("#cfgKey")?.value;
+    // 如果用户没填 key，从服务端取真实的（跳过掩码格式）
+    if(!key||/^\*{6,}/.test(key)){try{const kv=await API.get("/api/secrets/llm-value");key=kv.value;if(/^\*{6,}/.test(key))key=""}catch{}}
+    AS.llmTestResult="<span class='loading'>测试中...</span>";render();
+    try{const t=await API.testLlm({config:{...AS.config,llmBaseUrl:url},apiKey:key});if(t.status==="ok"){AS.llmConnected=true;AS.hasApiKey=true}else{AS.llmConnected=false};AS.llmTestResult=t.status==="ok"?`<span style="color:var(--ok)">✅ 连接成功 (${t.latencyMs}ms)</span>`:`<span style="color:var(--bad)">❌ ${U.esc(t.errorMsg||"连接失败")}</span>`;render()}catch(e){AS.llmTestResult=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;render()}
   };
-  const saveBtn=U.qs("[data-chat-save]");
-  if(saveBtn)saveBtn.onclick=()=>{
-    const s=CH.loadS();s.baseUrl=U.qs("#chatUrl")?.value||s.baseUrl;s.token=U.qs("#chatToken")?.value||s.token;s.sessionId=U.qs("#chatSid")?.value||s.sessionId;
-    CH.saveS(s);createToast("设置已保存");CH.apiProcessed=false;
+
+  // ── 模组操作 ──
+  for(const btn of U.qsa("[data-action='select-module']")){
+    const card=btn.closest("[data-module-id]");
+    if(!card)continue;
+    btn.onclick=async()=>{
+      const id=card.dataset.moduleId;
+      const mod=AS.modules.find(m=>m.id===id);
+      if(!mod)return;
+      AS.selectedModule=mod;
+      CH.clear();
+      await CH.loadFromServer(mod);
+      AS.activeTab="chat";
+      createToast(`已选择: ${mod.displayName||mod.name}${AS.messages.length?" · "+AS.messages.length+" 条历史":""}`);
+      render();
+    };
+  }
+
+  // 从模板创建
+  for(const btn of U.qsa("[data-action='create-from-template']")){
+    const card=btn.closest("[data-module-id]");
+    if(!card)continue;
+    btn.onclick=async()=>{
+      const id=card.dataset.moduleId;
+      const tmpl=AS.modules.find(m=>m.id===id);
+      if(!tmpl)return;
+      // 生成模组名
+      const baseName=tmpl.displayName||tmpl.name||"新世界";
+      const name=prompt(`从「${baseName}」创建新模组，请输入名称:`, baseName);
+      if(!name||!name.trim())return;
+      try{
+        const data={name:name.trim(),displayName:name.trim(),dataMode:tmpl.dataMode||"worldbook",subType:tmpl.subType||"classic",preset:tmpl.preset||"epic"};
+        const res=await API.createModule(data);
+        if(res.status==="ok"){
+          await refreshModules();
+          // 自动选中新模组
+          const newMod=AS.modules.find(m=>m.id===res.module.id);
+          if(newMod){AS.selectedModule=newMod;CH.load(newMod);AS.activeTab="chat";createToast(`✅ 已创建并选择: ${name}`);render()}
+        }else{createToast(`创建失败: ${res.errorMsg}`,"bad")}
+      }catch(e){createToast("创建失败: "+e.message,"bad")}
+    };
+  }
+
+  for(const btn of U.qsa("[data-action='delete-module']")){
+    const card=btn.closest("[data-module-id]");
+    if(!card)continue;
+    btn.onclick=async()=>{
+      const id=card.dataset.moduleId;
+      if(!confirm(`确定删除模组「${id}」？\n\n删除后所有对话记录和设定数据将永久丢失。`))return;
+      try{await API.deleteModule(id);createToast("已删除");await refreshModules();}catch(e){createToast("删除失败: "+e.message,"bad")}
+    };
+  }
+
+  // ── 角色卡删除 ──
+  for(const btn of U.qsa("[data-action='delete-character']")){
+    const card=btn.closest("[data-char-id]");
+    if(!card)continue;
+    btn.onclick=async()=>{
+      const id=card.dataset.charId;
+      if(!confirm(`确定删除角色卡「${id}」？\n\n将从 Hermes 技能目录中永久移除该角色卡文件。此操作不可恢复！`))return;
+      try{
+        const res=await API.post("/api/characters/delete",{id});
+        if(res.status==="ok"){
+          createToast("角色卡已删除");
+          AS.characters=await API.loadCharacters();
+          if(AS.selectedModule?.id==="char:"+id)AS.selectedModule=null;
+          render();
+        }else{createToast("删除失败: "+(res.errorMsg||"未知错误"),"bad")}
+      }catch(e){createToast("删除失败: "+e.message,"bad")}
+    };
+  }
+
+  const refreshBtn=U.qsa("[data-action='refresh-modules']");
+  for(const btn of refreshBtn)btn.onclick=async()=>{await refreshModules();};
+
+  // ── 角色卡 ──
+  for(const btn of U.qsa("[data-action='refresh-characters']"))
+    btn.onclick=async()=>{
+      try{
+        AS.characters=await API.loadCharacters();
+        render();
+        createToast(`已刷新 · ${AS.characters.length} 个角色卡`);
+      }catch(e){createToast("刷新角色卡失败","bad")}
+    };
+  for(const btn of U.qsa("[data-action='select-character']")){
+    const card=btn.closest("[data-char-id]");
+    if(!card)continue;
+    btn.onclick=async()=>{
+      const id=card.dataset.charId;
+      const charData=AS.characters.find(c=>c.id===id);
+      if(!charData)return;
+      AS.selectedModule={id:"char:"+id,name:charData.displayName||id,displayName:charData.displayName||id,dataMode:"character_card",subType:"default",preset:"minimal",turnCount:0};
+      CH.clear();
+      // 尝试从服务端加载角色卡数据（用于注入 cardContext）
+      try{
+        const res=await API.loadCharacter(id);
+        if(res.status==="ok"&&res.card) AS._currentCharCard=res.card;
+      }catch(e){}
+      AS.activeTab="chat";
+      createToast(`已选择: ${charData.displayName||id} 🃏`);
+      render();
+    };
+  }
+
+  // ── 新建模组 ──
+  const createWorldbook=U.qsa("[data-action='create-worldbook']");
+  for(const btn of createWorldbook)btn.onclick=()=>showCreateDialog("worldbook","经典");
+  const createCharCard=U.qsa("[data-action='create-character-card']");
+  for(const btn of createCharCard)btn.onclick=async()=>{
+    const textArea=U.qs("#alchemyText");
+    const text=textArea?.value?.trim();
+    if(!text){createToast("请先输入或拖拽角色内容","bad");return}
+    const name=prompt("输入角色卡名称:");
+    if(!name||!name.trim())return;
+    const resultEl=U.qs("#alchemyResult");
+    if(resultEl)resultEl.innerHTML="<span class='loading'>🧬 正在分析角色人格...</span>";
+    try{
+      const res=await API.post("/api/alchemy/digest",{text,worldName:name.trim(),dataMode:"character_card"});
+      if(res.status==="ok"){
+        resultEl.innerHTML=`<span style="color:var(--ok)">✅ 角色卡「${U.esc(res.module?.displayName||name)}」已创建</span>`;
+        createToast(`角色卡已就绪: ${res.module?.displayName||name}`);
+        // 刷新角色卡列表
+        try{AS.characters=await API.loadCharacters();}catch{}
+        // 自动选择新角色卡
+        const newMod=AS.characters.find(c=>c.id===res.module?.id?.replace(/^char:/,""));
+        if(newMod){AS.selectedModule={id:"char:"+newMod.id,name:newMod.displayName||newMod.id,displayName:newMod.displayName||newMod.id,dataMode:"character_card",subType:"default",preset:"minimal",turnCount:0};CH.clear();AS.activeTab="chat";createToast(`已选择: ${newMod.displayName||newMod.id} 🃏`);render()}
+        render();
+      }else{
+        resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(res.errorMsg)}</span>`;
+      }
+    }catch(e){
+      if(resultEl)resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;
+    }
   };
-  const healthBtn=U.qs("[data-chat-health]");
-  if(healthBtn)healthBtn.onclick=async()=>{try{const h=await CH.health();createToast("已连接: "+JSON.stringify(h).slice(0,80));CH.status="已连接";render()}catch(e){createToast("连接失败: "+e.message,"bad");CH.status="未连接";render()}};
-  const clearBtn=U.qs("[data-chat-clear]");
+  const createPreset=U.qsa("[data-action='create-preset']");
+  for(const btn of createPreset)btn.onclick=()=>showCreateDialog("preset","预设");
+  const showCreateBtn=U.qs("[data-action='show-create']");
+  if(showCreateBtn)showCreateBtn.onclick=()=>showCreateDialog("worldbook","经典");
+
+  // ── 对话─
+  if(AS.activeTab==="chat")bindChat();
+
+  // ── 炼金台 ──
+  bindAlchemy();
+
+  // ── 回到首页 ──
+  for(const btn of U.qsa("[data-action='go-home']"))
+    btn.onclick=()=>{AS.activeTab="home";render()};
+
+  // ── 状态面板切换 ──
+  for(const btn of U.qsa("[data-action='toggle-status-panel']"))
+    btn.onclick=()=>{AS.showStatusPanel=!AS.showStatusPanel;render()};
+
+  // ── 快速开始 ──
+  const qsDrop=U.qs("#quickStartDrop");
+  if(qsDrop){
+    qsDrop.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';qsDrop.classList.add("dragover")};
+      qsDrop.ondragleave=()=>qsDrop.classList.remove("dragover");
+      qsDrop.ondrop=async e=>{
+          e.preventDefault();e.stopPropagation();qsDrop.classList.remove("dragover");
+          const texts=[];
+          const items=e.dataTransfer?.items;
+          const files=e.dataTransfer?.files;
+          // 诊断信息
+          let dbg=[`items:${items?.length||0} files:${files?.length||0}`];
+          // 方法1: items + webkitGetAsEntry（唯一支持文件夹递归的方式）
+          if(items?.length){
+            let fileCount=0,dirCount=0;
+            for(let i=0;i<items.length;i++){
+              const item=items[i];
+              dbg.push(`item[${i}].kind=${item.kind}`);
+              if(item.kind!=="file")continue;
+              const entry=item.getAsEntry?item.getAsEntry():item.webkitGetAsEntry?item.webkitGetAsEntry():null;
+              if(!entry){dbg.push(`item[${i}]: getAsEntry=null`);continue}
+              dbg.push(`item[${i}]: ${entry.isDirectory?"📁dir":"📄file"} name=${entry.name||"?"}`);
+              if(entry.isDirectory){
+                dirCount++;
+                // 递归读取目录
+                async function readDir(dir,path){
+                  const reader=dir.createReader();
+                  const all=[];
+                  while(true){
+                    const batch=await new Promise(rs=>reader.readEntries(rs));
+                    if(!batch.length)break;
+                    all.push(...batch);
+                  }
+                  for(const c of all){
+                    if(c.isFile){
+                      fileCount++;
+                      try{
+                        const f=await new Promise((rs,rj)=>c.file(rs,rj));
+                        const ext=f.name.split('.').pop().toLowerCase();
+                        if(['md','txt','json'].includes(ext)){
+                          texts.push(`【${path?path+'/':''}${f.name}】\n${await f.text()}\n`);
+                        }
+                      }catch(e){dbg.push(`读文件错误:${e.message}`)}
+                    }else if(c.isDirectory){
+                      await readDir(c,path?path+'/'+c.name:c.name);
+                    }
+                  }
+                }
+                await readDir(entry,"");
+              }else if(entry.isFile){
+                fileCount++;
+                try{
+                  const f=await new Promise((rs,rj)=>entry.file(rs,rj));
+                  const ext=f.name.split('.').pop().toLowerCase();
+                  if(['md','txt','json'].includes(ext)){
+                    texts.push(`【${f.name}】\n${await f.text()}\n`);
+                  }
+                }catch(e){dbg.push(`读文件错误:${e.message}`)}
+              }
+            }
+            dbg.push(`扫描到 ${fileCount} 个文件, ${dirCount} 个文件夹`);
+          }
+          // 方法2: 回退 files
+          if(!texts.length&&files?.length){
+            dbg.push("回退到 files 路径");
+            for(let i=0;i<files.length;i++){
+              const f=files[i];
+              const ext=f.name.split('.').pop().toLowerCase();
+              if(['md','txt','json'].includes(ext)){
+                texts.push(`【${f.name}】\n${await f.text()}\n`);
+              }
+            }
+          }
+        if(texts.length){
+          const ta=U.qs("#quickStartText");
+          if(ta)ta.value=texts.join("\n---\n");
+          createToast(`已读取 ${texts.length} 个文件`)
+        }else{createToast(`未找到支持的文本文件 · ${dbg.join(" | ")}`,"warn")}
+      };
+    qsDrop.onclick=()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".md,.txt,.json";inp.webkitdirectory=true;inp.onchange=async()=>{const files=inp.files;if(!files?.length)return;const texts=[];for(const f of files){const ext=f.name.split('.').pop().toLowerCase();if(['md','txt','json'].includes(ext)){texts.push(`【${f.webkitRelativePath||f.name}】\n${await f.text()}\n`)}}const ta=U.qs("#quickStartText");if(ta)ta.value=texts.join("\n---\n");createToast(`已读取 ${texts.length} 个文件`)};inp.click()};
+  }
+  const qsBtn=U.qs("[data-action='quick-start-chat']");
+  if(qsBtn)qsBtn.onclick=()=>{
+    const ta=U.qs("#quickStartText");
+    const content=ta?.value?.trim();
+    if(!content){createToast("请先粘贴内容或拖拽文件","bad");return}
+    AS.quickStartContent=content;
+    AS.isQuickStart=true;
+    AS.selectedModule={id:"__quick__",name:"快速对话",displayName:"快速对话",dataMode:"worldbook",subType:"classic",turnCount:0};
+    CH.clear();
+    // 快速模式：不往可见对话塞设定文本，改为在 doSend 里以 system 消息静默传递
+    AS.activeTab="chat";
+    createToast("⚡ 快速模式 · 不保存记录");
+    render();
+  };
+}
+
+/* ── 对话绑定 ── */
+function bindChat(){
+  const chatInput=U.qs("#chatInput");
+  const sendBtn=U.qs("[data-action='chat-send']");
+
+  async function doSend(){
+    if(AS.busy||!chatInput?.value?.trim())return;
+    const txt=chatInput.value.trim();chatInput.value="";
+    AS.busy=true;sendBtn.disabled=true;
+    // 添加用户消息
+    CH.add("user",txt);
+    // 回显
+    const msgs=U.qs("#chatMessages");
+    if(msgs)msgs.innerHTML=AS.messages.map(C.chatMsg).join("");
+    msgs?.scrollTo(0,msgs.scrollHeight);
+    try{
+      // 调用 LLM
+      let msgPayload=AS.messages.map(m=>({role:m.role,content:m.content})).slice(-40);
+      // 快速模式：把设定背景作为 system 消息静默传递，不显示在聊天界面
+      if(AS.isQuickStart&&AS.quickStartContent){
+        msgPayload=[{role:"system",content:"以下为叙事设定背景：\n"+AS.quickStartContent.slice(0,3000)},...msgPayload];
+      }
+      const res=await API.chatSend({
+        input:txt,
+        moduleKey:AS.selectedModule?.id||"",
+        dataMode:AS.selectedModule?.dataMode||"worldbook",
+        engineState:AS.engineState||{turnCount:AS.selectedModule?.turnCount||0},
+        messages:msgPayload
+      });
+      if(res.status==="ok"){
+        CH.add("assistant",res.narrative||"（无回应）");
+        // 捕获状态/情绪数据用于侧栏面板
+        AS.lastStatusSections=res.parsedSections||{};
+        if(res.engineState) AS.engineState = res.engineState;
+        // 刷新状态面板内容
+        const spc=U.qs(".sp-body");
+        if(spc)spc.innerHTML=C.statusPanel(AS.lastStatusSections);
+        // 更新模组轮次
+        if(AS.selectedModule)AS.selectedModule.turnCount=(AS.selectedModule.turnCount||0)+1;
+      }else{
+        CH.add("error",res.errorMsg||"LLM 返回错误");
+      }
+      if(msgs)msgs.innerHTML=AS.messages.map(C.chatMsg).join("");
+      msgs?.scrollTo(0,msgs.scrollHeight);
+    }catch(e){
+      CH.add("error",String(e.message||e));
+      if(msgs)msgs.innerHTML=AS.messages.map(C.chatMsg).join("");
+    }
+    AS.busy=false;if(sendBtn)sendBtn.disabled=false;
+  }
+
+  const msgsEl=U.qs("#chatMessages");
+  if(msgsEl)msgsEl.onclick=e=>{
+    const btn=e.target.closest("[data-chat-clip]");
+    if(!btn)return;
+    const mid=btn.dataset.chatClip;
+    const msg=AS.messages.find(m=>m.id===mid);
+    if(msg){navigator.clipboard?.writeText?.(msg.content);createToast("已复制")}
+  };
+
+  if(sendBtn)sendBtn.onclick=doSend;
+  if(chatInput)chatInput.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();doSend()}};
+
+  const clearBtn=U.qs("[data-action='chat-clear']");
   if(clearBtn)clearBtn.onclick=()=>{if(confirm("清空当前对话？")){CH.clear();render()}};
-  const autoBtn=U.qs("[data-chat-auto]");
-  if(autoBtn)autoBtn.onclick=async()=>{
-    try{const h=await CH.autoConnect();CH.status="已连接";createToast("自动连接成功: "+h.baseUrl);render()}catch(e){CH.status="连接失败";createToast("自动连接失败: "+e.message,"bad");render()}
+}
+
+/* ── 炼金台绑定 ── */
+function bindAlchemy(){
+  const drop=U.qs("#alchemyDrop");
+  const textArea=U.qs("#alchemyText");
+  const importBtn=U.qs("[data-action='alchemy-import']");
+
+  // 拖拽
+  if(drop){
+    drop.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';drop.classList.add("dragover")};
+    drop.ondragleave=()=>drop.classList.remove("dragover");
+    drop.ondrop=async e=>{
+      e.preventDefault();e.stopPropagation();drop.classList.remove("dragover");
+      const files=e.dataTransfer?.files;
+      if(files?.length){
+        const texts=[];
+        for(const f of files){
+          const ext=f.name.split('.').pop().toLowerCase();
+          if(['md','txt','json'].includes(ext)){
+            texts.push(await f.text());
+          }
+        }
+        if(texts.length&&textArea)textArea.value=texts.join("\n---\n");
+        createToast(`已读取 ${texts.length} 个文件`);
+      }
+    };
+    drop.onclick=()=>{
+      const inp=document.createElement("input");inp.type="file";inp.accept=".md,.txt,.json,.png";
+      inp.onchange=async()=>{
+        const f=inp.files?.[0];if(!f)return;
+        const txt=await f.text();
+        if(textArea)textArea.value=txt;
+        createToast(`已读取: ${f.name}`);
+      };inp.click();
+    };
+  }
+
+  // 导入按钮 → 炼金台消化：分析内容 → 自动创建模组
+  if(importBtn)importBtn.onclick=async()=>{
+    const text=textArea?.value?.trim();
+    if(!text){createToast("请先输入或拖拽内容","bad");return}
+    const resultEl=U.qs("#alchemyResult");
+    if(resultEl)resultEl.innerHTML="<span class='loading'>分析并创建模组中...</span>";
+    try{
+      const res=await API.post("/api/alchemy/digest",{text,worldName:("解析_"+Date.now().toString(36))});
+      if(res.status==="ok"){
+        resultEl.innerHTML=`<span style="color:var(--ok)">✅ 模组已创建 · ${res.entries} 条目 / ${res.characters} 角色 / ${res.locations} 地点</span>`;
+        createToast(`炼金台: "${res.module?.displayName}" 已就绪`);
+        await refreshModules();
+        // 自动选择新模组 → 跳转对话
+        const newMod=AS.modules.find(m=>m.id===res.module?.id);
+        if(newMod){AS.selectedModule=newMod;CH.clear();await CH.loadFromServer(newMod);AS.activeTab="chat";createToast(`已选择: ${newMod.displayName||newMod.name}`);render()}
+      }else{
+        resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(res.errorMsg)}</span>`;
+      }
+    }catch(e){
+      if(resultEl)resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;
+    }
   };
-  // Clip button delegation
-  const main=U.qs("#main");
-  if(main)main.onclick=e=>{
-    const btn=e.target.closest("[data-chat-clip]");if(!btn)return;
-    const mid=btn.dataset.chatClip;const msg=CH.messages.find(m=>m.id===mid);
-    if(msg){CH.saveClip(msg.content);createToast("片段已保存")}
-  };
-  // Chat switch
-  for(const btn of U.qsa("[data-chat-switch]"))btn.onclick=()=>{const s=CH.loadS();s.sessionId=btn.dataset.chatSwitch;CH.saveS(s);createToast("已切换会话");render()};
+}
+
+/* ── 创建模组对话框 ── */
+function showCreateDialog(dataMode,label){
+  const name=prompt(`输入新${label}的名称:`);
+  if(!name||!name.trim())return;
+  (async()=>{
+    try{
+      const data={name:name.trim(),displayName:name.trim(),dataMode};
+      data.subType=dataMode==="worldbook"?"classic":"default";
+      data.preset=dataMode==="worldbook"?"epic":"minimal";
+      const res=await API.createModule(data);
+      if(res.status==="ok"){
+        createToast(`✅ 已创建: ${name}`);
+        await refreshModules();
+      }else{
+        createToast(`创建失败: ${res.errorMsg}`,"bad");
+      }
+    }catch(e){createToast("创建失败: "+e.message,"bad")}
+  })();
+}
+
+/* ── 刷新模组列表 ── */
+async function refreshModules(){
+  try{
+    const mods=await API.loadModules();
+    AS.modules=mods;
+    // 如果当前选中的模组还在，保留选择
+    if(AS.selectedModule){
+      const stillExists=mods.find(m=>m.id===AS.selectedModule.id);
+      if(!stillExists)AS.selectedModule=null;
+    }
+    render();
+    createToast(`已刷新 · ${mods.length} 个模组`);
+  }catch(e){createToast("刷新失败: "+e.message,"bad")}
 }
 
 /* ── Toast ── */
 let toastTimer;
 function createToast(msg,tone=""){
-  const t=document.createElement("div");t.style.cssText=`position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 20px;border-radius:8px;border:1px solid ${tone==="bad"?"rgba(229,77,77,.5)":"rgba(62,207,142,.4)"};background:${tone==="bad"?"#1f1212":"#0f1f18"};color:${tone==="bad"?"#ffadad":"#b8f0d0"};font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.5);max-width:80vw;text-align:center`;t.textContent=msg;document.body.appendChild(t);
+  const t=document.createElement("div");
+  t.style.cssText=`position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 20px;border-radius:8px;border:1px solid ${tone==="bad"?"rgba(229,77,77,.5)":"rgba(62,207,142,.4)"};background:${tone==="bad"?"#1f1212":"#0f1f18"};color:${tone==="bad"?"#ffadad":"#b8f0d0"};font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.5);max-width:80vw;text-align:center`;
+  t.textContent=msg;document.body.appendChild(t);
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.remove(),3500);
 }
 
-/* ── 文件加载 ── */
-async function loadFromPicked(files){
-  const m=await DS.loadFromDir(files,"已选择目录");
-  AS.model=m;AS.activeTab="overview";render();
-  createToast(`加载完毕 · ${AS.files.size} 文件 · ${m.worlds?.length||0} 世界`);
-}
+/* ═══════════════════════════════════════════════════════════════
+ * 初始化
+ * ═══════════════════════════════════════════════════════════════ */
 
-// Drag and drop
-document.addEventListener("dragover",e=>{e.preventDefault()});
-document.addEventListener("drop",async e=>{
-  e.preventDefault();
-  const items=e.dataTransfer?.items;if(!items?.length)return;
-  const entries=[];let hasDj=false;
-  for(const item of Array.from(items)){
-    const entry=item.webkitGetAsEntry?.()||item.getAsEntry?.();
-    if(entry){entries.push(entry);if(item.kind==="file"&&U.ext(item.name||"").toLowerCase()==="json")hasDj=true}
-  }
-  if(!entries.length)return;
-  const records=new Map();
-  async function walk(entry,prefix){
-    const p=U.path(prefix,entry.name);
-    if(entry.isFile){await new Promise((rs,rj)=>entry.file(f=>{records.set(U.norm(p),{path:p,file:f,lastModified:f.lastModified});rs()},rj));return}
-    records.set(U.norm(p),{path:p,kind:"directory"});
-    const reader=entry.createReader();
-    while(true){const batch=await new Promise(rs=>reader.readEntries(rs));if(!batch.length)break;for(const c of batch)await walk(c,p)}
-  }
-  for(const e of entries){if(e.isDirectory)await walk(e,"");else if(e.isFile)await walk(e,"")}
-  // Strip wrapping root if single
-  const firstSegs=new Set();for(const k of records.keys()){const first=k.split("/")[0];if(first)firstSegs.add(first)}
-  if(firstSegs.size===1&&records.has(Array.from(firstSegs)[0]+"/package.json")){
-    const rewritten=new Map();
-    for(const rec of records.values()){
-      const p=String(rec.path||"");const n=U.norm(p);
-      const first=n.split("/")[0];
-      if(n===first)continue;
-      const stripped=p.split(/[\\/]/).slice(1).join("/");if(!stripped)continue;
-      rewritten.set(U.norm(stripped),{...rec,path:stripped});
-    }
-    records.clear();for(const[k,v]of rewritten)records.set(k,v);
-  }
-  AS.files=records;AS.jsonCache=new Map();AS.warnings=[];AS.sourceLabel="拖拽项目";
-  const m=await DS.buildModel();AS.model=m;AS.activeTab="overview";render();
-  createToast(`加载完毕 · ${AS.files.size} 文件 · ${m.worlds?.length||0} 世界`);
-});
-
-// Pick directory button
-U.qs("#pickDirBtn")?.addEventListener("click",()=>{U.qs("#dirInput")?.click()});
-U.qs("#dirInput")?.addEventListener("change",async e=>{
-  const files=e.target.files;if(!files?.length)return;await loadFromPicked(files);
-});
-// Refresh
-U.qs("#refreshBtn")?.addEventListener("click",async()=>{if(AS.files.size){AS.jsonCache=new Map();AS.warnings=[];const m=await DS.buildModel();AS.model=m;render();createToast("已刷新")}});
-// Drag button hint
-U.qs("#dragBtn")?.addEventListener("click",()=>{createToast("📎 将项目文件夹拖拽到页面上任意位置即可加载")});
-
-/* ── Init ── */
 async function init(){
-  render();
-  // Auto-load if Electron (try to read project files)
-  if(U.isElectron()&&window.worldTreeDesktop){
+  // 检测 API base
+  const bases=["http://localhost:3000",window.location.origin];
+  for(const b of bases){
     try{
-      const info=await window.worldTreeDesktop.appInfo?.();
-      const paths=info?.paths||{};
-      const records=[];
-      if(paths.defaultContentRoot){
-        const content=await window.worldTreeDesktop.readRoot(paths.defaultContentRoot);
-        records.push(...(content?.records||[]));
-      }
-      if(paths.dataRoot){
-        const data=await window.worldTreeDesktop.readRoot(paths.dataRoot);
-        records.push(...(data?.records||[]).map(r=>({...r,path:U.path("data",r.path)})));
-      }
-      if(records.length){
-        const m=await DS.loadFromRecords(records,paths.portableRoot||paths.defaultContentRoot||"Electron IPC");
-        AS.model=m;AS.activeTab="overview";await render();
-        createToast(`Electron 自动加载完成 · ${AS.files.size} 文件 · ${m.worlds?.length||0} 世界`);
-      }
-      if(CH.loadS().autoConnect){
-        CH.autoConnect().then(()=>{CH.status="已连接";render()}).catch(()=>{CH.status="未连接"});
-      }
-    }catch(e){createToast("Electron IPC 错误: "+e.message,"bad")}
+      const r=await fetch(b+"/api/status");
+      if(r.ok){API.base=b;break}
+    }catch{}
   }
+
+  // 加载配置
+  try{
+    const cfg=await API.loadConfig();
+    Object.assign(AS.config,cfg);
+  }catch(e){console.warn("配置加载失败",e)}
+
+  // 获取密钥状态
+  try{
+    const sec=await API.getSecrets();
+    AS.hasApiKey=sec?.llm?.items?.length>0;
+  }catch(e){}
+
+  // 自动测试 LLM 连接（如果有已保存的 key）
+  if(AS.hasApiKey&&AS.config.llmBaseUrl){
+    try{
+      const kv=await API.get("/api/secrets/llm-value");
+      const key=kv.value;
+      if(key&&!/^\*{6,}/.test(key)){
+        const t=await API.testLlm({config:AS.config,apiKey:key});
+        if(t.status==="ok"){AS.llmConnected=true;AS.hasApiKey=true}
+      }
+    }catch(e){}
+  }
+
+  // 加载模组列表
+  try{
+    AS.modules=await API.loadModules();
+  }catch(e){console.warn("模组加载失败",e)}
+
+  // 加载角色卡列表
+  try{
+    AS.characters=await API.loadCharacters();
+  }catch(e){console.warn("角色卡加载失败",e)}
+
+  render();
+  createToast("🌳 世界树桌面已启动");
 }
+
 init();
 </script>
 </body>

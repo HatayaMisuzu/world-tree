@@ -50,8 +50,8 @@
       "role": "archive/settings/monitor/dialogue 页背景和装饰",
       "source": "Codex 从参考图生成",
       "transparent": false,
-      "status": "needs_copy",
-      "codex_note": "Codex 生成的 image2 PNG 资产。目前仅在 C:\\Users\\Lenovo\\Documents\\Codex\\... 输出目录，需复制到 src/ui/ 并更新此清单。",
+      "status": "deprecated",
+      "codex_note": "已迁移至 src/v0-out/ 静态资源输出体系。旧版 Codex 生成资产不再复制。",
       "expected_files": [
         "archive-library-bg-image2.png",
         "settings-root-bg-image2.png",
@@ -65,8 +65,6 @@
   ],
   "missing": [],
   "codex_tasks": [
-    "复制 image2 PNG 资产从 C 盘输出到 src/ui/",
-    "资产到位后更新此 manifest 的 status 和 missing 字段",
-    "检查透明底问题：部分 image2 素材可能带底色"
+    "已迁移至 src/v0-out/ 静态资源体系，src/ui/ 资产保留为旧版备用"
   ]
 }

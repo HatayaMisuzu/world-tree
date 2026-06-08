@@ -1,42 +1,49 @@
-# World Tree Desktop — 发布检查清单
+# World Tree Desktop v2.2.0 — 发布检查清单
 
 ## 发布前
 
 - [ ] `node scripts/audit.mjs` → 0 错误
 - [ ] `node scripts/test.mjs` → 全部通过
-- [ ] 版本号一致：`package.json` / `app-manifest.json` / `README.md` / `CHANGELOG.md`
+- [ ] `node scripts/interface-audit.mjs` → 全部通过
+- [ ] `npm run preflight` → 三项全过
+- [ ] 版本号一致：`package.json` / `README.md` / `CHANGELOG.md` / `app-manifest.json`
 - [ ] CHANGELOG.md 已记录本次变更
-- [ ] `npm run preflight` 全部通过
 
 ## 核心文件清单
 
 | 层 | 文件 | 说明 |
 |---|------|------|
-| 入口 | `src/main.cjs` | Electron 主进程 + IPC |
-| 桥接 | `src/preload.cjs` | contextBridge API |
-| 适配器 | `src/adapters/llm.js` | LLM 调用 + 双段式管线 |
-| 引擎 | `src/core/world-engine.js` | 模式 Prompt 构建 + Guardian 校验包 |
-| 引擎 | `src/core/engine/guardian.js` | M1 守门人 + JS 校验 |
-| 引擎 | `src/core/engine/guardian-llm.js` | LLM 事实注入 + 自动修正 |
-| 引擎 | `src/core/engine/global-memory.js` | 全局记忆 v2（_why+溯源） |
-| 引擎 | `src/core/engine/health-check.js` | 世界健康检查 |
-| 引擎 | `src/core/engine/overlay-store.js` | Overlay 写入 + Pending 队列 |
-| 引擎 | `src/core/engine/lifecycle.js` | prepareTurn / completeTurn |
-| 引擎 | `src/core/engine/director.js` | Director 层（情绪/事件/缓存） |
-| 数据 | `src/core/data/` | 角色卡/规则/预测/场景/邻近 |
-| 脚本 | `scripts/audit.mjs` | 项目审计 |
-| 脚本 | `scripts/test.mjs` | 集成测试（54 项） |
+| 入口 | `server.js` | Node.js HTTP 服务器（所有 REST API） |
+| UI | `world-tree-console.html` | 唯一 Web UI（13 标签页） |
+| 适配器 | `src/adapters/llm.js` | 三角色 LLM 调用 + 双段式管线 |
+| 引擎 | `src/core/world-engine.js` | 引擎入口 + 模式 Prompt 构建 |
+| 引擎 | `src/core/engine/` | director/guardian/lifecycle/context-engine 等 37 模块 |
+| 数据 | `src/core/data/` | 世界书/角色卡/炼金台/邻近环等 19 模块 |
+| 脚本 | `scripts/audit.mjs` | 项目审计（版本/路径/目录） |
+| 脚本 | `scripts/test.mjs` | 集成测试（75 项） |
+| 脚本 | `scripts/interface-audit.mjs` | 接口联动审计（47 项） |
+
+### 新增文件（v2.2.0）
+
+```
+src/core/data/skill-generator.js    VC-3 人格提炼引擎
+src/core/data/skill-parser.js       SKILL.md → JSON 解析桥
+```
+
+### 角色卡目录（炼金台产出）
+
+```
+data/engine/characters/{name}/
+├── card.json              ← parseCharacterCard() 直接消费（VC-3 人格提炼输出）
+└── runtime/               ← 对话持久化
+```
 
 ## 版本历史
 
 | 版本 | 日期 | 里程碑 |
 |------|------|--------|
-| v0.6.9 | 2026-06-05 | 分层风动画主页 |
-| v0.7.4 | 2026-06-05 | UI 重做（Codex 主题） |
-| v0.7.4.1 | 2026-06-05 | 数据归家 |
-| v0.7.5 | 2026-06-05 | 审计脚本 |
-| v0.8.0 | 2026-06-05 | 健康检查 + 采纳机制 |
-| v0.8.5 | 2026-06-05 | Guardian 事实注入 + 自动修正 |
-| v0.9.0 | 2026-06-05 | 记忆可解释 |
-| v0.9.5 | 2026-06-05 | 多模型分工 |
-| v1.0.0 | 2026-06-05 | 测试 + 发布标准化 |
+| v2.2.0 | 2026-06-08 | 炼金台 → 角色卡生成管线 + VC-3 人格提炼 + 角色卡双来源 |
+| v2.1.0 | 2026-06-08 | 全链路持久化 + 炼金台集成 + 接口联动审计 |
+| v2.0   | 2026-06-08 | 重构为纯 Web 应用（去 Electron） |
+| v1.0.1 | 2026-06-07 | 便携数据根与可用性修复 |
+| v1.0.0 | 2026-06-06 | 初始发布：内容系统 + UI 终端 |

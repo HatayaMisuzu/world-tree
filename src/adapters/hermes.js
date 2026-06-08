@@ -3,10 +3,12 @@ import { moduleKey, moduleTitle } from "../core/normalizers.js";
 
 const SESSION_KEY = "world-tree-desktop:sessions";
 
-function headers(config) {
+function headers(config, apiKey = "") {
   const result = { "Content-Type": "application/json" };
-  if (config.hermesToken) result.Authorization = `Bearer ${config.hermesToken}`;
-  if (config.hermesToken) result["X-API-Key"] = config.hermesToken;
+  // 🆕 v1.0.1 统一使用 LLM API Key 认证（OpenAI 格式）
+  // 优先使用传入的 apiKey，其次尝试 config 中的 hermesBaseUrl 无 token 连接
+  const key = apiKey || config.hermesToken || "";
+  if (key) result.Authorization = `Bearer ${key}`;
   return result;
 }
 
@@ -41,17 +43,17 @@ export function sessionsFor(model) {
   return loadSessions()[moduleKey(model.selected)] || [];
 }
 
-export async function health(config) {
-  if (!baseUrl(config)) throw new Error("未配置 Hermes API 地址");
-  const response = await fetch(`${baseUrl(config)}/health`, { headers: headers(config) });
+export async function health(config, apiKey = "") {
+  if (!baseUrl(config)) throw new Error("未配置 API 地址");
+  const response = await fetch(`${baseUrl(config)}/health`, { headers: headers(config, apiKey) });
   return parseResponse(response);
 }
 
-export async function createSession(model, config) {
+export async function createSession(model, config, apiKey = "") {
   if (!model.selected) throw new Error("未选择模组");
   const response = await fetch(`${baseUrl(config)}/api/sessions`, {
     method: "POST",
-    headers: headers(config),
+    headers: headers(config, apiKey),
     body: JSON.stringify({ title: `World Tree - ${moduleTitle(model.selected)}` })
   });
   const data = await parseResponse(response);
@@ -75,8 +77,8 @@ export async function createSession(model, config) {
   return sessionId;
 }
 
-export async function sendMessage(model, config, sessionId, message) {
-  if (!sessionId) sessionId = await createSession(model, config);
+export async function sendMessage(model, config, sessionId, message, apiKey = "") {
+  if (!sessionId) sessionId = await createSession(model, config, apiKey);
   const sessions = loadSessions();
   const key = moduleKey(model.selected);
   const bucket = sessions[key] || [];
@@ -87,7 +89,7 @@ export async function sendMessage(model, config, sessionId, message) {
 
   const response = await fetch(`${baseUrl(config)}/api/sessions/${encodeURIComponent(sessionId)}/chat`, {
     method: "POST",
-    headers: headers(config),
+    headers: headers(config, apiKey),
     body: JSON.stringify({ message, system_message: systemMessage })
   });
   const data = await parseResponse(response);

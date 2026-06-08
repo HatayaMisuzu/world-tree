@@ -15,6 +15,7 @@ import { updateAllProximities, suggestActivationCandidates, analyzeNarrativeGap,
 import { directNarrative, parseEmotionSection, generateDirectionPacket } from "./director.js";
 import { getDefaultEmotionState } from "./emotion-state.js";
 import { createMemorySnapshot, searchMemorySnapshots, formatMemorySection, loadGlobalMemory } from "./global-memory.js";
+import { setRelation, relationContextFor } from "../data/relations.js";
 import { recordSimulationRun, isSimulateActive } from "./simulator.js";
 import { calculateWorldTelemetry, telemetryForLLM, directorHints as telemetryDirectorHints } from "./world-telemetry.js";
 
@@ -257,6 +258,21 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     overlayPatch.emotionState = state.emotionState;
   }
 
+  // ═══ 🆕 叙事关系提取：从本轮叙事文本中自动更新角色关系 ═══
+  if (dataMode !== "character_card" && model.moduleData?.characters?.length) {
+    const charNames = new Set(model.moduleData.characters.map(c => c.name).filter(Boolean));
+    if (charNames.size >= 2 && parsed.narrative) {
+      const changes = extractRelationChanges(parsed.narrative, charNames, emotionUpdate);
+      for (const change of changes) {
+        const result = setRelation(change);
+        if (!result.error) {
+          overlayPatch.relationChanges = overlayPatch.relationChanges || [];
+          overlayPatch.relationChanges.push(change);
+        }
+      }
+    }
+  }
+
   // M15 规则审查：仅严格审查核心环角色的行为
   if (coreEntities.length === 0) {
     overlayPatch.ruleCheck = { pass: true, note: "无核心实体，跳过规则审查" };
@@ -374,6 +390,15 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     });
   }
 
+  // ═══ 🆕 叙事记忆持久化 ═══
+  overlayPatch.memory = {
+    role: "narrative",
+    content: parsed.narrative || rawText || "",
+    input: input || "",
+    timestamp: new Date().toISOString(),
+    round: model.turnCount || 0,
+  };
+
   return {
     narrative: parsed.narrative || rawText,
     parsedSections: parsed.sections,
@@ -476,6 +501,128 @@ function buildDefaultEntities(moduleData = {}) {
   }
 
   return entities;
+}
+
+// ═══ 🆕 从叙事文本提取关系变化 ═══
+// 纯模式匹配，不调用 LLM。每轮叙事发生后自动更新角色间的关系态度。
+// 匹配方向词 → 态度变化量 → 写入 relations.js
+//
+// 方向词映射表（可扩展）：
+//   正向词（态度+1~+2）：救了/帮助/保护/支持/救了/救了/赞赏/夸奖/安慰/鼓励/信任/交给他
+//   负向词（态度-1~-2）：反对/质疑/指责/背叛/攻击/威胁/警告/怀疑/伤害/欺骗/抛弃/背叛
+//   关系词：朋友/盟友/师徒/敌人/恋人/同事
+function extractRelationChanges(narrative, charNameSet, emotionUpdate) {
+  if (!narrative || charNameSet.size < 2) return [];
+
+  const changes = [];
+
+  // 从叙事文本中找到同时出现的角色对
+  const mentionedChars = [];
+  for (const name of charNameSet) {
+    const regex = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    if (regex.test(narrative)) {
+      mentionedChars.push(name);
+    }
+  }
+
+  if (mentionedChars.length < 2) return [];
+
+  // 方向词匹配
+  const POSITIVE_WORDS = [
+    { word: "救了", delta: 2, desc: "救命之恩" },
+    { word: "帮助", delta: 1, desc: "提供帮助" },
+    { word: "保护", delta: 2, desc: "保护对方" },
+    { word: "支持", delta: 1, desc: "表示支持" },
+    { word: "鼓励", delta: 1, desc: "给予鼓励" },
+    { word: "安慰", delta: 1, desc: "安慰对方" },
+    { word: "信任", delta: 1, desc: "表示信任" },
+    { word: "夸奖", delta: 1, desc: "夸奖对方" },
+    { word: "赞赏", delta: 1, desc: "赞赏对方" },
+    { word: "交给", delta: 1, desc: "托付信任" }
+  ];
+
+  const NEGATIVE_WORDS = [
+    { word: "背叛", delta: -2, desc: "背叛行为" },
+    { word: "攻击", delta: -2, desc: "发动攻击" },
+    { word: "伤害", delta: -2, desc: "造成伤害" },
+    { word: "欺骗", delta: -1, desc: "欺骗对方" },
+    { word: "抛弃", delta: -2, desc: "抛弃对方" },
+    { word: "威胁", delta: -1, desc: "发出威胁" },
+    { word: "怀疑", delta: -1, desc: "怀疑对方" },
+    { word: "反对", delta: -1, desc: "反对对方" },
+    { word: "质疑", delta: -1, desc: "质疑对方" },
+    { word: "指责", delta: -1, desc: "指责对方" }
+  ];
+
+  const RELATION_KEYWORDS = [
+    { word: "朋友", type: "friend" },
+    { word: "盟友", type: "ally" },
+    { word: "敌人", type: "enemy" },
+    { word: "师徒", type: "mentor" },
+    { word: "恋人", type: "lover" },
+    { word: "守护", type: "protector" }
+  ];
+
+  // 对每对同时出现的角色，计算净态度变化
+  for (let i = 0; i < mentionedChars.length; i++) {
+    for (let j = i + 1; j < mentionedChars.length; j++) {
+      const source = mentionedChars[i];
+      const target = mentionedChars[j];
+
+      let netDelta = 0;
+      let matchedDesc = "";
+      let matchedType = null;
+
+      // 匹配正向词
+      for (const pw of POSITIVE_WORDS) {
+        const pattern = new RegExp(
+          `${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^。！？]{0,40}${pw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^。！？]{0,20}${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          'i'
+        );
+        if (pattern.test(narrative)) {
+          netDelta += pw.delta;
+          matchedDesc = matchedDesc || `${source} → ${target}: ${pw.desc}`;
+        }
+      }
+
+      // 匹配负向词
+      for (const nw of NEGATIVE_WORDS) {
+        const pattern = new RegExp(
+          `${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^。！？]{0,40}${nw.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^。！？]{0,20}${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          'i'
+        );
+        if (pattern.test(narrative)) {
+          netDelta += nw.delta;
+          matchedDesc = matchedDesc || `${source} → ${target}: ${nw.desc}`;
+        }
+      }
+
+      // 匹配关系关键词
+      for (const rk of RELATION_KEYWORDS) {
+        const pattern = new RegExp(
+          `${source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}的${rk.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          'i'
+        );
+        if (pattern.test(narrative)) {
+          matchedType = rk.type;
+          matchedDesc = `被描述为「${source}的${rk.word}${target}」`;
+        }
+      }
+
+      if (netDelta !== 0 || matchedType) {
+        changes.push({
+          source,
+          target,
+          type: matchedType || "complex",
+          attitude: netDelta,
+          description: matchedDesc || `叙事中相互作用`,
+          origin: "auto-extracted-from-narrative"
+        });
+      }
+    }
+  }
+
+  return changes;
 }
 
 

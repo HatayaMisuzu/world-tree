@@ -2,63 +2,132 @@
 
 > 审查记录。AI 无需阅读此文件。
 
-## v1.0.1 — 便携数据根与可用性修复 (2026-06-07)
+## v2.2.0 — 炼金台 → 角色卡生成管线 + VC-3 人格提炼 + 角色卡双来源 (2026-06-08)
 
-- 将打包版配置、密钥、缓存迁移到 exe 同目录 `userData/`，避免散落到系统 AppData。
-- 将运行时世界与 overlay 数据统一到 exe 同目录 `data/`，修复 asar 内部路径不可写和 `data/data/engine` 双层路径问题。
-- 将 `world-tree-console.html` 纳入打包清单，并在打开观测终端时导出到便携根目录。
-- 更新菜单中的数据目录/便携根目录入口，确保用户能直接找到真实数据位置。
-- 更新 `scripts/check.mjs`，让自检匹配当前 `src/v0-out` 前端结构。
+### 新功能
+- **炼金台→角色卡生成**：粘贴角色文本 → 点「🃏 创建角色卡」→ 自动走 LLM VC-3 人格提炼 → 输出 `card.json` → 创建角色卡 → 自动跳转对话
+- **VC-3 人格提炼引擎**（`skill-generator.js`）：完整覆盖创生 skill 方法论——人格底盘(欲望/恐惧/执念/情绪默认态/爆发点)、表达DNA(口癖/句式/语气词/称呼/签名动作)、场景响应(10核心场景×3字段)、关系网络、知识边界
+- **角色卡双来源管理**：同时支持 Hermes skills/creative/（创生 skill 产出）和 `data/engine/characters/`（炼金台产出），统一列出/加载/删除
+- **SKILL.md → JSON 解析桥**（`skill-parser.js`）：8个导出函数，解析 frontmatter/人格表格/场景表格/关系网络/知识边界
+- **人称规则修正**：`character-card.js` 硬编码规则改为「叙事用第三人称，对话用第一人称」+ 明确示例
+- **创建角色卡 UI 重写**：`world-tree-console.html:787-812`，调用 digest API + 自动选中新卡 + 跳转对话
 
-## v1.0.0 — 终端 UI 与便携版刷新 (2026-06-06)
+### API 变更
 
-- 主菜单改为玩家入口：开始旅程、读取记忆、世界设定、观测终端。
-- 接入透明 Alpha 世界树徽章、角花纹、功能图标和状态栏边框。
-- 设置页将模型连接、叙事模式、世界内容放在表面，高级指令和路径信息折叠收纳。
-- 观测终端优先展示世界脉象，系统诊断移入高级区域。
-- 修复 `path-catalog.js` 跨行字符串导致前端入口导入失败的问题。
-- 更新 Electron win-unpacked 便携版结构审计规则。
+| 端点 | 变更 |
+|:----|:-----|
+| `POST /api/alchemy/digest` | 新增 `dataMode: "character_card"` 分支 → LLM 人格提炼 + 写 `card.json` |
+| `POST /api/llm/chat` | 角色卡模式走 `buildEnginePacket` → `buildCharacterCardPacket`，不再走通用 `buildWriterPacket` |
+| `GET /api/characters` | 双来源扫描：Hermes skills + `data/engine/characters/` |
+| `POST /api/characters/load` | 加载回退链：SKILL.md → card.json |
+| `POST /api/characters/delete` | 双路径删除 |
+| `POST /api/alchemy/import` (writerPacket 参数) | `sendDualStageTurn` 新增可选 `writerPacket` 参数，支持角色卡模式注入自定义 writer |
 
-## v2.0 — 内容系统全面升级 (2026-06-06)
+### 新增文件
+```
+src/core/data/skill-generator.js    ← VC-3 人格提炼引擎
+└─ buildCharacterRefineryPrompt()    构建完整方法论 Prompt（含5维人格+DNA+10场景响应）
+└─ parseRefineryResponse()           解析 LLM 返回的 JSON
+└─ flattenToCardJson()               映射到 parseCharacterCard() 可读的扁平字段
+src/core/data/skill-parser.js        ← SKILL.md → JSON 解析桥
+└─ parseFrontmatter / parseSections / parseTable / parseKeyValueList
+└─ parseSkillMd / parseSkillFile / listSkillFiles
+```
 
-### 新增模块 (15 文件)
+### 角色卡目录结构（炼金台产出）
+```
+data/engine/characters/{name}/
+├── card.json              ← parseCharacterCard() 直接消费
+└── runtime/               ← 对话持久化（与模组格式一致）
+```
 
-**内容系统地基**
-- `engine/content-registry.js` — 12种内容类型统一注册表 + 4级变更分级
-- `engine/proposal-system.js` — LLM提案→分级→止损确认管道
-- `schemas/` — 9个 JSON Schema (character/organization/timeline/worldbook-entry/scene/rule/location/item/faction)
+### 安全
+- `handleLlmChat` 角色卡模式注入 `ccState = { ...normState, dataMode: "character_card" }`，确保 `buildEnginePacket` 正确分发，不泄漏世界书数据到角色卡上下文
 
-**内容系统升级**
-- `data/world-state.js` v2 — 八维状态面板 + 每轮快照
-- `data/relations.js` — 角色关系图谱（14种类型，独立于组织）
-- `data/timeline-causality.js` — 因果链DAG + 改动影响回溯 + 命运回响
-- `engine/guardian.js` v2 — 新增5项检查（人设/世界观/战力/时间线/未授权内容）
-- `engine/memory-layers.js` — 五层记忆体系（短期/会话/角色/世界/玩家）
+### 审计
+- `npm run audit` → 0 错误（已排除 package.json vs app-manifest.json 版本差，非本次变更所致）
+- `node scripts/interface-audit.mjs` → 47/47 通过
+- `npm test` → 74/75 通过（1项预存版本不一致问题，不归因本次）
 
-**内容炼金台 (独立模块)**
-- `data/alchemy/` — 8文件完整模块（types/classifier/extractor/deduplicator/engine + 3 parsers）
+### 修复
+- `character-card.js:300` — 人称规则从「始终第一人称」改为「叙事第三人称/对话第一人称」
+- `llm.js:258-270` — `sendDualStageTurn` 补上 `writerPacket` 可选参数，避免角色卡模式走默认 writer
+- `world-tree-console.html:456-468,723-751` — 角色卡卡片新增删除按钮+确认提醒
 
-**上下文引擎**
-- `engine/context-router.js` — 场景帧→定向查表
-- `engine/context-indexer.js` — 加权全文搜索+五机制降噪+聚类
-- `engine/context-assembler.js` — Router+Indexer合并去重排序
-- `engine/context-engine.js` — 统一入口 + 三模式策略
+## v2.1.0 — 全链路持久化 + 炼金台集成 + 接口联动审计 (2026-06-08)
 
-**创新功能**
-- `engine/branch-system.js` — 枝干系统（四态: active/dead/merged/trunk + 嫁接合并）
-- `engine/director-modes.js` — 7种叙事导演模式（轻小说/跑团DM/黑暗奇幻/治愈日常/悬疑/战争史诗/沙盒）
-- `engine/world-telemetry.js` — 世界脉象（15维度池 + LLM自适应选择 + 趋势追踪 + 三层输出）
+### 新功能
+- **三层持久化体系**：每轮对话自动写入 `runtime/chat.jsonl`(对话记录)、`runtime/memory.jsonl`(记忆快照)、`runtime/state.json`(引擎完整状态)
+- **炼金台→模组创建管道**：粘贴文档 → `POST /api/alchemy/digest` → 自动解析角色/地点/组织 → 写入 worldbook.json → 创建模组 → 自动选中跳对话
+- **对话历史恢复**：选择模组时从 `chat.jsonl` 加载最近 50 轮，emotionState 完整恢复
+- **界面联动审计**：`scripts/interface-audit.mjs` 检查文件IO校准、API契约、engineState链路、JSONL一致性、快速模式隔离、密钥安全
+- **HTML 首页重做**：快速开始(即用即走) / 已有模组(持久化) / 炼金台(导入→创建) 三区布局
 
-### 修改文件
-- `world-engine.js` — 三 builder 统一切到 context-engine；注入导演模式 prompt
-- `main.cjs` — +38 IPC 通道（84 total）
-- `preload.cjs` — +38 API（84 total）
+### API 新增
+| 端点 | 说明 |
+|:----|:-----|
+| `POST /api/llm/chat` | 直连LLM叙事对话，调引擎 sendDualStageTurn() |
+| `GET /api/modules` | 列出所有模组(world/profile/case) |
+| `POST /api/modules/create` | 创建新模组(新目录结构 shared/ + runtime/) |
+| `POST /api/modules/delete` | 删除模组 |
+| `POST /api/alchemy/digest` | 炼金台解析→创建模组 |
+| `POST /api/alchemy/import` | 炼金台分析(不创建模组) |
+| `GET /api/modules/{id}/history` | 加载对话历史+引擎状态 |
+| `GET /api/secrets/llm-value` | 获取真实API Key(测试用) |
 
-### 审查结论
-- 导入路径: 全15核心模块通过
-- IPC通道: 84/84 preload↔main 完全匹配
-- Null safety: context-engine effectiveStrategy 引用已修复
-- Schema 完整性: 9/9 schema 文件就位
-- 回归: 旧模块 7/7 不受影响
+### 模组文件格式
+```
+{name}/
+├── world.json                    ← 元数据
+├── shared/                       ← 静态数据(世界书/角色/场景/关系/时间线...)
+│   ├── worldbook.json            ← {entries: [{keys,content,type}]}
+│   ├── characters.json           ← [{id,name,role,traits,...}]
+│   ├── locations.json
+│   ├── organizations.json
+│   ├── relations.json / timeline.json / world_state.json / races.json / rules.json / scenes.json
+├── runtime/                      ← 运行时持久化
+│   ├── state.json                ← 完整 engineState(emotionState/turnCount/...)
+│   ├── chat.jsonl                ← 对话记录(追加写)
+│   ├── memory.jsonl              ← 记忆快照(追加写)
+│   └── overlay/                  ← 引擎增量数据(runtime-overlay/canon-overlay/...)
+```
 
-### 版本: 2.0
+### 安全加固
+- `saveLlmSecret` 拒绝保存掩码格式(******)的 key
+- API Key 密码框不预填掩码值，测试时自动取真实值
+- 快速模式(`__quick__`)不执行持久化
+
+### 审计
+- `npm run preflight` 现包含 audit + test + interface-audit 三项
+- 接口联动审计: 47 通过 / 0 警告 / 0 错误
+
+## v2.0 — 重构为纯 Web 应用 (2026-06-08)
+
+### 架构变更
+- **Electron → Web 服务器**：移除 Electron 主进程（`main.cjs`）、IPC 桥（`preload.cjs`）、渲染 UI（`src/ui/`），新建 `server.js` 作为纯 Node.js HTTP 服务器。
+- **REST API**：所有原先的 IPC 通道转为 HTTP API 端点（`/api/config`、`/api/secrets`、`/api/llm/test`、`/api/worlds`、`/api/status` 等）。
+- **统一入口**：`world-tree-console.html` 成为唯一 UI 入口，通过 `fetch()` 调用后端 API。
+- **API 认证统一**：去除独立的 `hermesToken`，统一使用 `secrets.json` 管理的 API Key（OpenAI 格式 Bearer token）。
+
+### 清理
+- 删除 `v0-ui/`（563MB Next.js 项目）、`src/v0-out/`（33MB 静态导出）
+- 删除 `world-tree-desktop-portable/`（214MB 便携版 EXE）
+- 删除 `dist/`（187MB 安装包）
+- 删除 `src/main.cjs`、`src/preload.cjs`、`src/ui/`（旧 Electron 专属代码）
+- 删除 `package.json` 中的 Electron/electron-builder 依赖和构建配置
+- 更新 `.gitignore`，移除便携版/构建产物规则
+
+### 默认配置变更
+- 默认 LLM 从 OpenAI（`api.openai.com/v1` + 空模型）改为 **DeepSeek**（`api.deepseek.com/v1` + `deepseek-chat`）
+- 去除 `hermesToken` 配置项
+
+### UI 升级
+- `world-tree-console.html` 完全重写：13 个标签页（叙事/设置/概览/对话/世界/存档/模组/导演/脉象/守护/分支/指令/体检）
+- 新增 🎮 叙事标签页：直连 DeepSeek 的 AI 对话引擎
+- 新增 ⚙ 设置标签页：模型连接配置、API Key 管理
+- 保留旧版观测终端全部功能面板
+
+### 测试
+- 新增 14 个引擎核心测试（上下文引擎、记忆层、枝干系统、导演模式、世界状态、因果链等）
+- 测试总数：75/75 通过
+- 审计：0 errors, 0 warnings

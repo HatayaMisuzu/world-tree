@@ -1,25 +1,22 @@
 {
   "name": "world-tree-desktop",
-  "version": "1.0.1",
-  "description": "World Tree Desktop — 本地优先的 AI 叙事引擎控制台",
+  "version": "2.2.0",
+  "description": "World Tree Desktop — 本地优先的 AI 叙事引擎 Web 控制台",
   "type": "module",
-  "main": "src/main.cjs",
+  "main": "server.js",
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "electron .",
+    "start": "node server.js",
     "test": "node scripts/test.mjs",
     "audit": "node scripts/audit.mjs",
-    "preflight": "node scripts/audit.mjs && node scripts/test.mjs",
-    "pack:dir": "electron-builder --dir",
-    "dist": "electron-builder --win portable"
+    "preflight": "node scripts/audit.mjs && node scripts/test.mjs && node scripts/interface-audit.mjs"
   },
   "keywords": [
     "world-tree",
     "narrative-engine",
     "ai-storytelling",
-    "electron",
     "local-first",
     "interactive-fiction"
   ],
@@ -28,33 +25,5 @@
   "repository": {
     "type": "local",
     "directory": "."
-  },
-  "devDependencies": {
-    "electron": "^40.9.3",
-    "electron-builder": "^26.8.1"
-  },
-  "build": {
-    "appId": "local.world-tree.desktop",
-    "productName": "World Tree Desktop",
-    "electronVersion": "40.9.3",
-    "npmRebuild": false,
-    "nodeGypRebuild": false,
-    "asar": true,
-    "files": [
-      "src/**/*",
-      "defaults/**/*",
-      "paths/**/*",
-      "personas/**/*",
-      "scripts/**/*",
-      "data/**/*",
-      "app-manifest.json",
-      "package.json",
-      "README.md",
-      "CHANGELOG.md",
-      "world-tree-console.html"
-    ],
-    "win": {
-      "target": "portable"
-    }
   }
 }

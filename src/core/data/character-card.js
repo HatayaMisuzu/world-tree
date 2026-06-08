@@ -297,7 +297,7 @@ export function characterCardMode(card = {}) {
     activeCharacter: parsed.identity.name,
     outputStyle: "pure-narrative",
     rules: [
-      "1. 角色始终以第一人称「我」说话",
+      "1. 叙事用第三人称（角色名），对话用第一人称「我」。「我」只出现在对话引号里。",
       "2. 对话自然附带标志性动作/神态（不强制，看节奏）",
       "3. 绝不跳出角色身份做元分析",
       "4. 不主动提及关系网中其他人（除非user先提）",

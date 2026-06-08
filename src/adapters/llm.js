@@ -4,7 +4,7 @@ import { completeTurn, DIRECTOR_MODES } from "../core/world-engine.js";
 import { characterCardMode } from "../core/data/character-card.js";
 import { cardModeNarrativeHint } from "../core/data/character-card.js";
 import { styleInstruction } from "../core/data/templates.js";
-import { buildDirectorPacket, buildWriterPacket, buildGuardianPacket } from "../core/world-engine.js";
+import { buildDirectorPacket, buildWriterPacket, buildEnginePacket, buildGuardianPacket } from "../core/world-engine.js";
 import { formatDirectionPacket } from "../core/engine/direction-packet.js";
 import { generateDirectionPacket } from "../core/engine/director.js";
 import { validateNarrativeAgainstDirection, validateWithAutoCorrect } from "../core/engine/guardian.js";
@@ -137,7 +137,7 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
 
   const messages = [
     { role: "system", content: systemPrompt },
-    ...(role === "writer" ? (options.messages || []).filter((m) => m.role === "user" || m.role === "assistant").slice(-20) : []),
+    ...(role === "writer" ? (options.messages || []).filter((m) => m.role === "user" || m.role === "assistant" || m.role === "system").slice(-20) : []),
     { role: "user", content: packet }
   ];
 
@@ -262,6 +262,7 @@ export async function sendDualStageTurn(opts = {}) {
     knowledgeSnippets = [], knowledgeCards = [], cardContext = [],
     moduleKey = "unloaded", dataMode = "worldbook",
     turnPrep = null, directionPacket = null,
+    writerPacket = null,  // 🆕 外部传入的 writer 包（由 buildEnginePacket 构建，按 dataMode 分发）
     skipDirector = true,  // 默认用 JS 方向包
     skipGuardian = true,  // 默认跳过 Guardian
     useLlmAnalysis = false, // 🆕 轻量 LLM 分析（混合模式）
@@ -394,7 +395,7 @@ export async function sendDualStageTurn(opts = {}) {
   }
 
   // === Step 2: Writer LLM ===
-  const writerInput = buildWriterPacket({
+  const writerInput = writerPacket || buildWriterPacket({
     model, input, engineState,
     directionPacket: finalDirectionPacket,
     injectedWorldbook, knowledgeSnippets, knowledgeCards, cardContext,
