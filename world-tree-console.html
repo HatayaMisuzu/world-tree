@@ -261,7 +261,6 @@ const AS = {
   lastScene:"",            // 上次对话的场景
   showStatusPanel:true,    // 状态面板是否展开
   lastStatusSections:{},   // 最新一轮的状态建议+情绪反馈
-  characters:[],           // 已安装角色卡列表
 };
 
 /* 对话记录持久化 */
@@ -338,7 +337,7 @@ const C = {
         ${m.createdAt?`<span>创建: ${U.date(m.createdAt)}</span>`:""}
       </div>
       <div class="actions">
-        ${m.type==="world"
+        ${m.type==="world"||m.dataMode==="character_card"||m.type==="case"
           ? isSel
             ? `<button class="small select-btn" style="background:var(--panel-2);border-color:var(--ok);color:var(--ok)" disabled>✓ 已选择</button><button class="danger small" data-action="delete-module">🗑</button>`
             : `<button class="primary small select-btn" data-action="select-module">选择</button><button class="danger small" data-action="delete-module">🗑</button>`
@@ -352,7 +351,7 @@ const C = {
       <div class="panel-head"><h2>🔌 LLM 配置</h2><div class="actions"><button class="small primary" id="saveLlmBtn">💾 保存</button><button class="small" id="testLlmBtn">🔗 测试</button></div></div>
       <div class="grid" style="gap:8px">
         <div class="config-row"><label>API地址</label><input id="cfgUrl" value="${U.esc(c.llmBaseUrl||"")}" placeholder="https://api.deepseek.com/v1"></div>
-        <div class="config-row"><label>模型</label><input id="cfgModel" value="${U.esc(c.llmModel||"")}" placeholder="deepseek-chat"></div>
+        <div class="config-row"><label>模型</label><input id="cfgModel" value="${U.esc(c.llmModel||"")}" placeholder="deepseek-v4-flash"></div>
         <div class="config-row"><label>API Key</label><div style="display:flex;gap:6px;align-items:center;width:100%"><input id="cfgKey" type="password" value="" placeholder="${AS.hasApiKey?"已配置，输入新 key 则覆盖":"sk-..."}" style="flex:1">${AS.hasApiKey?C.badge("已配置","ok"):""}</div></div>
       </div>
       <div style="margin-top:8px;font-size:12px">${AS.llmTestResult}</div>
@@ -410,9 +409,8 @@ Views.register({
   id:"home",
   render(){
     const mods=AS.modules;
-    const worlds=mods.filter(m=>m.type==="world");
+    const worlds=mods.filter(m=>m.type==="world"||m.dataMode==="character_card"||m.type==="case");
     const templates=mods.filter(m=>m.type==="profile"&&!m.isPlaceholder);
-    const cases=mods.filter(m=>m.type==="case");
     return`<div class="grid">
       ${C.configForm()}
 
@@ -431,7 +429,7 @@ Views.register({
         <div style="margin-top:8px;font-size:12px;color:var(--warn)">💡 提示：对话不会保存，关闭页面即丢失。如需持久化，请使用炼金台导入后创建模组。</div>
       </div>
 
-      <!-- 已有模组（持久化世界） -->
+      <!-- 已有模组（持久化世界 + 角色卡 + 案例） -->
       <div class="panel">
         <div class="panel-head">
           <h2>📦 已有模组</h2>
@@ -441,35 +439,7 @@ Views.register({
         </div>
         ${worlds.length
           ?`<div class="module-grid">${worlds.map(m=>C.moduleCard(m,AS.selectedModule)).join("")}</div>`
-          :C.empty("暂无模组","通过炼金台下方的「创建」按钮新建持久化世界")}
-      </div>
-
-      <!-- 角色卡（来自创生skill） -->
-      <div class="panel">
-        <div class="panel-head">
-          <h2>🃏 角色卡</h2>
-          <div class="actions">
-            <button class="small primary" data-action="refresh-characters">🔄 刷新</button>
-          </div>
-        </div>
-        ${AS.characters.length
-          ?`<div class="module-grid">${AS.characters.map(c=>{
-              const isSel=AS.selectedModule&&AS.selectedModule.id==="char:"+c.id;
-              return`<div class="module-card ${isSel?"selected":""}" data-char-id="${U.esc(c.id)}">
-                <div style="display:flex;justify-content:space-between;align-items:start">
-                  <div class="name">🃏 ${U.esc(c.displayName||c.name)}</div>
-                  <div class="tags">${C.badge("角色卡","purple")}</div>
-                </div>
-                ${c.description?`<div class="desc">${U.esc(c.description)}</div>`:""}
-                <div class="actions">
-                  ${isSel
-                    ?`<button class="small select-btn" style="background:var(--panel-2);border-color:var(--ok);color:var(--ok)" disabled>✓ 已选择</button>`
-                    :`<button class="primary small select-btn" data-action="select-character">选择</button>`}
-                  <button class="danger small" data-action="delete-character" title="删除角色卡">🗑</button>
-                </div>
-              </div>`;
-            }).join("")}</div>`
-          :C.empty("暂无角色卡","在 Hermes 的 skills/creative 目录下安装角色卡后点击刷新")}
+          :C.empty("暂无模组","通过炼金台下方的按钮新建世界书、角色卡或预设")}
       </div>
 
       <!-- 炼金台 + 创建 -->
@@ -653,7 +623,7 @@ function bindEvents(){
   if(saveBtn)saveBtn.onclick=async()=>{
     const url=U.qs("#cfgUrl")?.value;const model=U.qs("#cfgModel")?.value;const key=U.qs("#cfgKey")?.value;
     try{
-      if(url)await API.saveConfig({llmBaseUrl:url,llmModel:model||"deepseek-chat"});
+      if(url)await API.saveConfig({llmBaseUrl:url,llmModel:model||"deepseek-v4-flash"});
       // 只有用户填了新 key 才更新，留空则保留服务端已有 key
       if(key)await API.saveLlmKey({value:key});
       const cfg=await API.loadConfig();Object.assign(AS.config,cfg);
@@ -686,12 +656,26 @@ function bindEvents(){
       const id=card.dataset.moduleId;
       const mod=AS.modules.find(m=>m.id===id);
       if(!mod)return;
-      AS.selectedModule=mod;
-      CH.clear();
-      await CH.loadFromServer(mod);
-      AS.activeTab="chat";
-      createToast(`已选择: ${mod.displayName||mod.name}${AS.messages.length?" · "+AS.messages.length+" 条历史":""}`);
-      render();
+      if(mod.dataMode==="character_card"){
+        // 角色卡选择：加载角色数据
+        AS.selectedModule=mod;
+        CH.clear();
+        try{
+          const res=await API.loadCharacter(mod._characterId||id.replace("char:",""));
+          if(res.status==="ok"&&res.card) AS._currentCharCard=res.card;
+        }catch(e){}
+        AS.activeTab="chat";
+        createToast(`已选择: ${mod.displayName||id} 🃏`);
+        render();
+      }else{
+        // 普通模组选择
+        AS.selectedModule=mod;
+        CH.clear();
+        await CH.loadFromServer(mod);
+        AS.activeTab="chat";
+        createToast(`已选择: ${mod.displayName||mod.name}${AS.messages.length?" · "+AS.messages.length+" 条历史":""}`);
+        render();
+      }
     };
   }
 
@@ -725,61 +709,29 @@ function bindEvents(){
     if(!card)continue;
     btn.onclick=async()=>{
       const id=card.dataset.moduleId;
-      if(!confirm(`确定删除模组「${id}」？\n\n删除后所有对话记录和设定数据将永久丢失。`))return;
-      try{await API.deleteModule(id);createToast("已删除");await refreshModules();}catch(e){createToast("删除失败: "+e.message,"bad")}
-    };
-  }
-
-  // ── 角色卡删除 ──
-  for(const btn of U.qsa("[data-action='delete-character']")){
-    const card=btn.closest("[data-char-id]");
-    if(!card)continue;
-    btn.onclick=async()=>{
-      const id=card.dataset.charId;
-      if(!confirm(`确定删除角色卡「${id}」？\n\n将从 Hermes 技能目录中永久移除该角色卡文件。此操作不可恢复！`))return;
+      const mod=AS.modules.find(m=>m.id===id);
+      const isChar=mod?.dataMode==="character_card";
+      const isCase=mod?.type==="case";
+      const typeLabel=isChar?"角色卡":isCase?"案例":"模组";
+      if(!confirm(`确定删除${typeLabel}「${mod?.displayName||id}」？${isChar?"\n\n将从 Hermes 技能目录中永久移除该角色卡文件。此操作不可恢复！":"\n\n删除后所有对话记录和设定数据将永久丢失。"}`))return;
       try{
-        const res=await API.post("/api/characters/delete",{id});
-        if(res.status==="ok"){
-          createToast("角色卡已删除");
-          AS.characters=await API.loadCharacters();
-          if(AS.selectedModule?.id==="char:"+id)AS.selectedModule=null;
-          render();
-        }else{createToast("删除失败: "+(res.errorMsg||"未知错误"),"bad")}
+        if(isChar){
+          const res=await API.post("/api/characters/delete",{id:mod._characterId||id.replace("char:","")});
+          if(res.status==="ok"){
+            if(AS.selectedModule?.id===id)AS.selectedModule=null;
+            createToast("角色卡已删除");
+          }else{createToast("删除失败: "+(res.errorMsg||"未知错误"),"bad");return}
+        }else{
+          await API.deleteModule(id);
+          createToast("已删除");
+        }
+        await refreshModules();
       }catch(e){createToast("删除失败: "+e.message,"bad")}
     };
   }
 
   const refreshBtn=U.qsa("[data-action='refresh-modules']");
   for(const btn of refreshBtn)btn.onclick=async()=>{await refreshModules();};
-
-  // ── 角色卡 ──
-  for(const btn of U.qsa("[data-action='refresh-characters']"))
-    btn.onclick=async()=>{
-      try{
-        AS.characters=await API.loadCharacters();
-        render();
-        createToast(`已刷新 · ${AS.characters.length} 个角色卡`);
-      }catch(e){createToast("刷新角色卡失败","bad")}
-    };
-  for(const btn of U.qsa("[data-action='select-character']")){
-    const card=btn.closest("[data-char-id]");
-    if(!card)continue;
-    btn.onclick=async()=>{
-      const id=card.dataset.charId;
-      const charData=AS.characters.find(c=>c.id===id);
-      if(!charData)return;
-      AS.selectedModule={id:"char:"+id,name:charData.displayName||id,displayName:charData.displayName||id,dataMode:"character_card",subType:"default",preset:"minimal",turnCount:0};
-      CH.clear();
-      // 尝试从服务端加载角色卡数据（用于注入 cardContext）
-      try{
-        const res=await API.loadCharacter(id);
-        if(res.status==="ok"&&res.card) AS._currentCharCard=res.card;
-      }catch(e){}
-      AS.activeTab="chat";
-      createToast(`已选择: ${charData.displayName||id} 🃏`);
-      render();
-    };
-  }
 
   // ── 新建模组 ──
   const createWorldbook=U.qsa("[data-action='create-worldbook']");
@@ -798,11 +750,11 @@ function bindEvents(){
       if(res.status==="ok"){
         resultEl.innerHTML=`<span style="color:var(--ok)">✅ 角色卡「${U.esc(res.module?.displayName||name)}」已创建</span>`;
         createToast(`角色卡已就绪: ${res.module?.displayName||name}`);
-        // 刷新角色卡列表
-        try{AS.characters=await API.loadCharacters();}catch{}
-        // 自动选择新角色卡
-        const newMod=AS.characters.find(c=>c.id===res.module?.id?.replace(/^char:/,""));
-        if(newMod){AS.selectedModule={id:"char:"+newMod.id,name:newMod.displayName||newMod.id,displayName:newMod.displayName||newMod.id,dataMode:"character_card",subType:"default",preset:"minimal",turnCount:0};CH.clear();AS.activeTab="chat";createToast(`已选择: ${newMod.displayName||newMod.id} 🃏`);render()}
+        // 刷新模组列表（含角色卡）并自动选择新角色卡
+        await refreshModules();
+        const newModId="char:"+(res.module?.id?.replace(/^char:/,""));
+        const newMod=AS.modules.find(m=>m.id===newModId);
+        if(newMod){AS.selectedModule=newMod;CH.clear();AS.activeTab="chat";createToast(`已选择: ${newMod.displayName||name} 🃏`);render()}
         render();
       }else{
         resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(res.errorMsg)}</span>`;
@@ -947,7 +899,7 @@ function bindChat(){
       let msgPayload=AS.messages.map(m=>({role:m.role,content:m.content})).slice(-40);
       // 快速模式：把设定背景作为 system 消息静默传递，不显示在聊天界面
       if(AS.isQuickStart&&AS.quickStartContent){
-        msgPayload=[{role:"system",content:"以下为叙事设定背景：\n"+AS.quickStartContent.slice(0,3000)},...msgPayload];
+        msgPayload=[{role:"system",content:"以下为叙事设定背景：\n"+AS.quickStartContent},...msgPayload];
       }
       const res=await API.chatSend({
         input:txt,
@@ -1078,24 +1030,44 @@ function showCreateDialog(dataMode,label){
 async function refreshModules(){
   try{
     const mods=await API.loadModules();
-    AS.modules=mods;
+    // 同时加载角色卡，合并到模组列表
+    let chars=[];
+    try{chars=await API.loadCharacters();}catch{}
+    const charModules=(chars||[]).map(c=>({
+      id:"char:"+c.id,
+      name:c.displayName||c.name,
+      displayName:c.displayName||c.name,
+      dataMode:"character_card",
+      subType:"default",
+      preset:"minimal",
+      turnCount:0,
+      description:c.description||"",
+      _characterId:c.id
+    }));
+    AS.modules=[...mods,...charModules];
     // 如果当前选中的模组还在，保留选择
     if(AS.selectedModule){
-      const stillExists=mods.find(m=>m.id===AS.selectedModule.id);
+      const stillExists=AS.modules.find(m=>m.id===AS.selectedModule.id);
       if(!stillExists)AS.selectedModule=null;
     }
     render();
-    createToast(`已刷新 · ${mods.length} 个模组`);
+    const worldCount=mods.filter(m=>m.type==="world").length;
+    const charCount=charModules.length;
+    const extra=charCount?` + ${charCount} 个角色卡`:"";
+    createToast(`已刷新 · ${worldCount} 个模组${extra}`);
   }catch(e){createToast("刷新失败: "+e.message,"bad")}
 }
 
 /* ── Toast ── */
 let toastTimer;
+let currentToast=null;
 function createToast(msg,tone=""){
+  if(currentToast)currentToast.remove();
   const t=document.createElement("div");
   t.style.cssText=`position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 20px;border-radius:8px;border:1px solid ${tone==="bad"?"rgba(229,77,77,.5)":"rgba(62,207,142,.4)"};background:${tone==="bad"?"#1f1212":"#0f1f18"};color:${tone==="bad"?"#ffadad":"#b8f0d0"};font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.5);max-width:80vw;text-align:center`;
   t.textContent=msg;document.body.appendChild(t);
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.remove(),3500);
+  currentToast=t;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.remove();if(currentToast===t)currentToast=null},3500);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1136,15 +1108,10 @@ async function init(){
     }catch(e){}
   }
 
-  // 加载模组列表
+  // 加载模组+角色卡（合并列表）
   try{
-    AS.modules=await API.loadModules();
-  }catch(e){console.warn("模组加载失败",e)}
-
-  // 加载角色卡列表
-  try{
-    AS.characters=await API.loadCharacters();
-  }catch(e){console.warn("角色卡加载失败",e)}
+    await refreshModules();
+  }catch(e){console.warn("模组+角色卡加载失败",e)}
 
   render();
   createToast("🌳 世界树桌面已启动");

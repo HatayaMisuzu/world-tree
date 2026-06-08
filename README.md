@@ -2,7 +2,7 @@
 
 本地优先的 AI 叙事引擎 **Web 控制台**。纯浏览器访问，无需 Electron。
 
-**Current version: v2.2.0** 🎉
+**Current version: v2.2.1** 🎉
 
 ---
 
@@ -14,7 +14,7 @@ node server.js     # 启动 Web 服务器
 # → http://localhost:3000
 ```
 
-**默认模型**: DeepSeek (`deepseek-chat`) · 默认地址: `https://api.deepseek.com/v1`
+**默认模型**: DeepSeek (`deepseek-v4-flash`) · 默认地址: `https://api.deepseek.com/v1`
 
 ---
 

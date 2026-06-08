@@ -2,6 +2,43 @@
 
 > 审查记录。AI 无需阅读此文件。
 
+## v2.2.1 — 首页整合 + 删除修复 + Toast 修复 + 默认模型更新 (2026-06-08)
+
+### 首页重构
+- **角色卡删除**：移除首页独立「角色卡」面板，角色卡合并到「已有模组」列表
+- **模组类型区分**：在模块网格中所有类型统一展示，通过标签区分「📖 世界书/🃏 角色卡/🎲 预设」
+- **选择处理器统一**：`select-module` 事件根据 `dataMode` 自动走角色卡/模组逻辑
+- **删除处理器统一**：`delete-module` 事件支持角色卡/案例/模组三种删除路径
+- **`refreshModules()`**：合并加载 `API.loadModules()` + `API.loadCharacters()` 到 `AS.modules`
+- **`init()`**：移除双重加载，统一走 `refreshModules()`
+
+### 删除功能增强
+- **案例模块**：`moduleCard()` 加入 `type==="case"`，案例也有「选择+删除」按钮
+- **服务端 `deleteModule()`**：新增案例模块删除支持（`defaults/cases/` 路径）
+- **确认对话框**：区分「角色卡」「案例」「模组」三种删除确认文案
+
+### 默认模型修复
+- **`DEFAULT_CONFIG`**：`llmModel` 改为 `deepseek-v4-flash`（之前为 `deepseek-chat`）
+- **HTML 表单**：placeholder 和保存兜底值全部同步为 `deepseek-v4-flash`
+- **`README.md`**：默认模型说明同步
+
+### Toast 修复
+- **叠加问题**：旧 toast 的 `setTimeout` 被 `clearTimeout` 清掉后永不消失
+- **修复**：引入 `currentToast` 引用，新建前先移除旧的；超时后清理引用
+
+### 快速开始
+- **`world-tree-console.html:902`**：移除 `.slice(0, 3000)` 截断限制，完整粘贴内容直送 LLM
+
+### 审计修复（v2.2.0 延续）
+- **版本号动态化**：`server.js:831` 从硬编码 `"1.0.1"` 改为 `PKG_VERSION` 动态读取
+- **`app-manifest.json`**：同步到 v2.2.0
+- **`RELEASE.md`**：重写（去 Electron 引用，对齐 Web 架构）
+- **`AI-GUIDE.md`**：v2.1 → v2.2，路径修正
+- **`test.mjs`**：版本文件一致性测试修复（适配 `_version` 字段）
+- **`server.js`**：启动时 `ensureDir` 补上 `data/engine/characters/`
+- **路径遍历防护**：`serveStatic` 加 `startsWith(ROOT)` 白名单
+- **Git 清理**：删除 381 个旧 Electron/Codex 文件，3 个文档文件入仓
+
 ## v2.2.0 — 炼金台 → 角色卡生成管线 + VC-3 人格提炼 + 角色卡双来源 (2026-06-08)
 
 ### 新功能

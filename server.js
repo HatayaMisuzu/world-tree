@@ -51,7 +51,7 @@ function secretsPath() {
 const DEFAULT_CONFIG = {
   hermesBaseUrl: "http://127.0.0.1:8642",
   llmBaseUrl: "https://api.deepseek.com/v1",
-  llmModel: "deepseek-chat",
+  llmModel: "deepseek-v4-flash",
   lastModuleKey: "",
   moduleHistory: [],
   theme: "dark",
@@ -291,8 +291,17 @@ async function createModule(body) {
   return { status: "ok", module: { id: worldName, name: worldName, displayName: displayName || worldName, type: "world", dataMode, subType, preset, turnCount: 0 } };
 }
 
-/** 删除模组 */
+/** 删除模组（支持世界模块 + 案例） */
 async function deleteModule(moduleId) {
+  // 案例模块
+  const caseMatch = moduleId.match(/^case:(.+)/);
+  if (caseMatch) {
+    const casePath = join(CASES_DIR(), caseMatch[1] + ".json");
+    if (!existsSync(casePath)) return { status: "error", errorMsg: "案例不存在" };
+    rmSync(casePath, { force: true });
+    return { status: "ok" };
+  }
+  // 世界模块
   const worldName = moduleId.replace(/^world:/, "");
   const worldDir = join(WORLDS_DIR(), worldName);
   if (!existsSync(worldDir)) return { status: "error", errorMsg: "模组不存在" };
