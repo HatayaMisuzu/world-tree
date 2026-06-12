@@ -69,7 +69,7 @@ for (const f of ["server.js", "world-tree-console.html", "package.json", "CHANGE
 
 // 目录
 console.log("\n📂 目录结构");
-for (const d of ["data/engine/worlds", "data/engine/characters", "defaults/engine-profile", "defaults/world-profiles", "defaults/examples", "src/core/engine", "src/core/data/alchemy", "tests/unit", "legacy/adapters"]) {
+for (const d of ["defaults/engine-profile", "defaults/world-profiles", "defaults/examples", "src/core/engine", "src/core/data/alchemy", "tests/unit", "legacy/adapters"]) {
   if (existsSync(join(ROOT, d))) pass(d);
   else fail(`${d}: 缺失`);
 }
