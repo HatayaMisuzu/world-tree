@@ -1,18 +1,18 @@
-# World Tree Desktop — AI 开发指南
+# World Tree — AI 开发指南
 
 > 本文档供 AI agent / LLM 阅读，快速理解项目架构、文件路径和修改规则。
-> 最后更新: v2.2 (2026-06-08)
+> 最后更新: v2.3.1 (2026-06-12)
 
 ## 项目定位
 
 纯 Web 服务器 + 单页 HTML 控制台。直连任意 OpenAI-compatible LLM 运行叙事/角色扮演。无 Electron、无外部依赖（仅 Node.js）。
 
-**工作目录**: `D:\工作台\world-tree-desktop`
+**工作目录**: 项目根目录（克隆到任意位置，以下记作 `<ROOT>`）
 
 ## 运行
 
 ```bash
-cd D:\工作台\world-tree-desktop
+cd <ROOT>
 npm install        # 首次
 node server.js     # 启动 → http://localhost:3000
 npm run preflight  # 全检: 审计 + 测试 + 接口联动审计
@@ -28,7 +28,7 @@ npm run preflight  # 全检: 审计 + 测试 + 接口联动审计
 server.js → handleLlmChat()
   ↓ 构建 model(读 shared/) + engineState(读 runtime/state.json)
 src/adapters/llm.js → sendDualStageTurn()
-  ↓ Director→Writer→Guardian
+  ↓ Director(hybrid: 轻量LLM分析→JS方向包) → Writer(LLM) → Guardian(JS校验+自动修正)
 completeTurn() → writeSet + overlayPatch + memorySnapshot
   ↓ persistTurn()
 runtime/chat.jsonl (追加) + runtime/memory.jsonl (追加)
@@ -42,7 +42,9 @@ runtime/state.json (覆盖) + runtime/overlay/ (增量)
 ## 文件地图
 
 ```
-world-tree-console.html    ← 唯一 Web UI（13 标签页）
+world-tree-console.html    ← Web UI 结构入口（引用 CSS/JS）
+world-tree-console.css     ← Web UI 样式
+world-tree-console.js      ← Web UI 交互逻辑（13 标签页）
 server.js                  ← HTTP 服务器（所有 REST API）
 src/
 ├── adapters/
@@ -57,9 +59,11 @@ src/
 │   │   ├── output-parser.js ← LLM标记段解析器
 │   │   ├── modules.js      ← M1-M19模块注册表
 │   │   ├── direction-packet.js ← 方向包数据结构
+│   │   ├── constants.js    ← 引擎常量集中管理（情绪/节奏/预测/词库）
+│   │   ├── state-persistence.js ← 进程内引擎状态导出/导入
 │   │   ├── emotion-state.js ← 四维情绪状态机
-│   │   ├── context-engine.js ← 上下文引擎入口
-│   │   ├── context-router/indexer/assembler ← 上下文字模块
+│   │   ├── context-engine.js ← 统一上下文组装入口（world-engine 当前调用）
+│   │   ├── context-router.js / context-indexer.js / context-assembler.js ← 路由/索引/组装子模块
 │   │   ├── world-telemetry.js ← 15维叙事KPI
 │   │   ├── overlay-store.js ← overlay写入路径+三级权限
 │   │   ├── global-memory.js ← 全局记忆快照
@@ -81,14 +85,18 @@ src/
 │   │   ├── rules.js/prediction.js/random-events.js/scenes.js/...
 │   └── schemas/             ← 9个JSON Schema (src/core/schemas/)
 scripts/
-├── test.mjs                ← 75 项集成测试
+├── test.mjs                ← 84 项集成/语法测试
+├── check.mjs               ← 关键文件存在性 + 无副作用核心模块导入检查
 ├── audit.mjs               ← 项目审计（版本/路径/目录）
 └── interface-audit.mjs     ← 接口联动审计（IO校准/API契约/engineState链路）
+tests/
+└── unit/                    ← 51 项单元测试（emotion/direction/output/guardian）
 defaults/
-├── engine-knowledge/        ← 全文知识库（references/29文档）
 ├── engine-profile/          ← Layer 2 知识卡（M1-M19 JSON）
 ├── world-profiles/          ← 世界子类型配置（classic/murder-mystery）
-└── cases/                   ← 剧本杀案例（镜中人之死）
+└── examples/manifest.json   ← 素材示例清单入口（当前为空，待维护者提供素材）
+legacy/
+└── adapters/hermes.js       ← 旧 Hermes 适配器（保留但不在主路径启用）
 docs/                        ← 设计文档（6篇）
 design/                      ← 视觉设计资源
 data/
@@ -132,10 +140,10 @@ data/engine/worlds/{name}/
 | `/api/modules` | GET | 列出所有模组 | 扫描 `data/engine/worlds/` |
 | `/api/modules/create` | POST | 创建新模组 | 写 `world.json` + `shared/` + `runtime/` |
 | `/api/modules/{id}/history` | GET | 加载对话历史 | 读 `runtime/chat.jsonl` |
-| `/api/characters` | GET | 列出角色卡（双来源） | 扫描 Hermes skills + `data/engine/characters/` |
-| `/api/characters/load` | POST | 加载角色卡（SKILL.md / card.json） | `skill-parser.js` + `character-card.js` |
-| `/api/characters/delete` | POST | 删除角色卡（双路径） | — |
-| `/api/secrets/llm-value` | GET | 获取真实 API Key | 读 `secrets.json` |
+| `/api/characters` | GET | 列出角色卡 | 扫描 `data/engine/characters/` |
+| `/api/characters/load` | POST | 加载角色卡（card.json） | `character-card.js` |
+| `/api/characters/delete` | POST | 删除角色卡 | — |
+| `/api/secrets/llm-value` | GET | 获取密钥（脱敏，仅返回掩码） | 读 `secrets.json`（不返回明文） |
 
 ---
 
@@ -143,21 +151,23 @@ data/engine/worlds/{name}/
 
 1. **语法检查**: `node --check <file>` 通过后再提交
 2. **接口联动审计**: 改动 server.js / HTML / 引擎后必须运行 `node scripts/interface-audit.mjs`
-3. **preflight 全检**: `npm run preflight` = audit + test + interface-audit，三项通过才能交付
+3. **preflight 全检**: `npm run preflight` = audit + check + test + interface-audit，四项通过才能交付
 4. **文件 IO 校准**: `createModule` 创建的 shared/ 文件必须被 `buildModuleModel` 读取
 5. **API 契约**: 每个 API 返回字段必须被 HTML 使用
 6. **engineState 链路**: 存储(state.json) → 加载(history API) → 发送(chat API) 完整闭环
 7. **JSONL 一致性**: 写入的字段与读取时使用的字段对齐
 8. **快速模式隔离**: `__quick__` 模块不执行持久化
-9. **密钥安全**: `saveLlmSecret` 拒绝掩码格式 key，HTML 不预填密码框
-10. **版本号**: 改动后更新 `CHANGELOG.md` + `package.json` + `README.md`
-11. **世界隔离**: 切换世界时调用 `resetPredictionCache()` + `resetEventCache()` + `resetEmotionState()`
+9. **密钥安全**: `saveLlmSecret` 拒绝掩码格式 key（≥4个连续`*`号），HTML 不预填密码框；`/api/secrets/llm-value` 仅返回脱敏值
+10. **本地访问**: `isLocalRequest()` 检查 Origin，非 localhost 请求返回 403
+11. **速率限制**: 静态文件 300/min + API 120/min，超限返回 429
+12. **版本号**: 改动后更新 `CHANGELOG.md` + `package.json` + `README.md` + `AI-GUIDE.md`
+13. **世界隔离**: 切换世界时调用 `resetPredictionCache(worldName)` + `resetEventCache()` + `resetEmotionState()`
 
 ---
 
 ## 接口审计检查项
 
-`node scripts/interface-audit.mjs` 检查 7 类、47 项：
+`node scripts/interface-audit.mjs` 检查 7 类、56 项：
 
 | 类别 | 检查内容 |
 |:----|:-----|

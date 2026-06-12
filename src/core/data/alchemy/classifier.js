@@ -80,16 +80,16 @@ export async function classify({ chunks = [], llmCall } = {}) {
 function parseClassifierResponse(response, chunks) {
   const text = String(response || "");
 
-  // 尝试提取 JSON 数组
+  // 尝试提取 JSON 数组（平衡括号匹配，避免嵌套/多数组错误）
   let json;
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (jsonMatch) {
+  const jsonStr = extractBalancedJSONArray(text);
+  if (jsonStr) {
     try {
-      json = JSON.parse(jsonMatch[0]);
+      json = JSON.parse(jsonStr);
     } catch {
       // 尝试修复常见 JSON 错误
       try {
-        const cleaned = jsonMatch[0]
+        const cleaned = jsonStr
           .replace(/,(\s*[}\]])/g, '$1')  // 移除尾部逗号
           .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3'); // 加引号
         json = JSON.parse(cleaned);
@@ -149,4 +149,29 @@ export function groupByType(classificationResults, chunks) {
   }
 
   return groups;
+}
+
+/** 平衡括号匹配提取 JSON 数组（避免嵌套/多数组时的贪婪匹配错误） */
+function extractBalancedJSONArray(text) {
+  // 找到第一个 '['
+  const start = text.indexOf("[");
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === "\"") { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "[") depth++;
+    else if (ch === "]") {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
 }

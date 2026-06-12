@@ -1,6 +1,6 @@
 // ===== 上下文引擎 v1 =====
-// World Tree 统一上下文组装入口。
-// 替代原有的三个 buildXxxPacket，整合 Router + Indexer + Assembler。
+// World Tree 统一上下文组装入口，当前由 world-engine.js 的 buildEnginePacket 调用。
+// 整合 Router + Indexer + Assembler，向各模式 Packet Builder 提供 promptText。
 //
 // 对外唯一接口: assembleContext(model, options) → { promptText, blocks, stats, sceneFrame }
 //

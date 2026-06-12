@@ -3,7 +3,7 @@
   "name": "剧本杀",
   "description": "独立案件引擎模式。不走叙事管线——用专用状态机管理调查/审讯/讨论/指认流程。DM是信息分发员而非创作导演。支持多人本单人适配（AI模拟其他玩家）。",
   "basedOn": "standalone",
-  "status": "active",
+  "status": "hidden",
   "defaultModules": [],
   "narrativeStyle": "独立案件引擎。DM管理流程、分发线索、扮演嫌疑人。不走Director→Writer→Guardian管线。玩家通过调查/审讯/讨论推进案件，最终指认凶手。",
   "dmRole": "host",
@@ -21,7 +21,7 @@
   },
   "murderConfig": {
     "dataFileFormat": "json",
-    "caseDirectory": "defaults/cases/",
+    "caseDirectory": "",
     "maxCluesPerRound": 4,
     "maxInterrogationPerRound": 4,
     "phases": ["briefing","character_select","reading","investigation","discussion","accusation","reveal","scoring"],

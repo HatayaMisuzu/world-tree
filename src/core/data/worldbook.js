@@ -182,9 +182,27 @@ function _supportsVector(mode, entry) {
 }
 
 function _semanticMatch(entry, query) {
-  const contentWords = String(entry.content || "").toLowerCase().split(/[^\p{L}\p{N}]+/u);
-  const inputWords = query.split(/[^\p{L}\p{N}]+/u);
-  return inputWords.filter((w) => w.length >= 2 && contentWords.includes(w)).length >= 1;
+  // 中文2-gram分词 + 权重匹配
+  const tokenize = (s) => {
+    const cleaned = String(s || "").toLowerCase().replace(/[，。！？、：；\"\"''「」『』\s]/g, "");
+    const tokens = [];
+    // 中文2-gram
+    for (let i = 0; i < cleaned.length - 1; i++) {
+      const bigram = cleaned.slice(i, i + 2);
+      if (/[\u4e00-\u9fff]/.test(bigram)) tokens.push(bigram);
+    }
+    // 英文单词
+    const words = cleaned.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2);
+    return [...tokens, ...words];
+  };
+
+  const contentTokens = tokenize(entry.content || "");
+  const queryTokens = tokenize(query);
+  if (!queryTokens.length) return false;
+
+  const hitCount = queryTokens.filter((t) => contentTokens.some((ct) => ct === t || ct.includes(t))).length;
+  // 至少命中2个token，或查询词只有一个时命中即可
+  return queryTokens.length >= 2 ? hitCount >= 2 : hitCount >= 1;
 }
 
 export function proposeEntry({ keys = [], content = "", priority = 100, source = "llm" }) {

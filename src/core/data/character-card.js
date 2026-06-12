@@ -154,8 +154,28 @@ export function selectEmotionalGradient(gradients = {}, emotionProfile = {}) {
 }
 
 // ---- 角色关系模型 ----
+/** 中文关系描述 → 标准关系类型映射 */
+const RELATION_TYPE_MAP = {
+  "敌": "enemy", "仇": "enemy", "敌对": "enemy", "对手": "rival", "宿敌": "enemy",
+  "友": "ally", "朋友": "friend", "同伴": "ally", "伙伴": "ally", "盟友": "ally",
+  "恋": "lover", "爱": "lover", "恋人": "lover", "情侣": "lover", "暗恋": "crush",
+  "亲": "blood", "血": "blood", "家人": "blood", "兄妹": "blood", "姐弟": "blood", "父子": "blood", "母女": "blood",
+  "师": "mentor", "徒": "mentor", "师父": "mentor", "徒弟": "mentor", "老师": "mentor", "学生": "mentor",
+  "主": "master_servant", "从": "master_servant", "主人": "master_servant", "仆人": "master_servant",
+  "守": "protector", "保护": "protector", "守护": "protector",
+  "背": "betrayed", "背叛": "betrayed",
+  "陌": "stranger", "不熟": "stranger",
+  "同": "ally", "同事": "ally", "同学": "ally",
+};
+function normalizeRelationType(chineseType) {
+  if (!chineseType) return "stranger";
+  for (const [key, value] of Object.entries(RELATION_TYPE_MAP)) {
+    if (chineseType.includes(key)) return value;
+  }
+  return "complex";
+}
+
 export function parseCharacterRelations(card = {}, allCharacters = []) {
-  // 从角色卡提取关系
   const directRelations = Array.isArray(card.relations) ? card.relations :
     Array.isArray(card.关系) ? card.关系 : [];
   
@@ -170,7 +190,7 @@ export function parseCharacterRelations(card = {}, allCharacters = []) {
   return {
     outgoing: directRelations.map((r) => ({
       target: r.target || r.name || r.对象 || "",
-      type: r.type || r.关系 || "中性",
+      type: normalizeRelationType(r.type || r.关系 || "中性"),
       closeness: r.closeness || r.亲密度 || "一般",
       dynamicsDescription: r.dynamics || r.动态描述 || r.note || ""
     })),

@@ -1,4 +1,4 @@
-# Codex Interface Notes — World Tree Desktop
+# Codex Interface Notes — World Tree
 
 > v0.7.4.1+ 起，UI 设计和图片资产由 Codex 处理。
 > 本文档记录引擎侧给 Codex 暴露的接口约束和注释约定。
@@ -35,7 +35,7 @@ Codex 可以通过 preload.cjs 暴露的 API 调用这些通道：
 - `src/adapters/llm.js` — LLM 调用适配器
 - `src/main.cjs` — Electron 主进程
 - `defaults/engine-profile/` — 引擎知识卡
-- `defaults/engine-knowledge/` — 全文知识库
+- `defaults/engine-profile/` — 引擎模块配置
 
 ## Codex 可以动的区域
 

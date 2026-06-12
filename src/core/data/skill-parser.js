@@ -4,14 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
-
-// Hermes 角色卡技能存放目录
-// 优先从 HERMES_HOME 环境变量获取，回退到用户目录下的默认位置
-function hermesSkillsDir() {
-  const home = process.env.HERMES_HOME || resolve(process.env.USERPROFILE || "C:\\Users\\Lenovo", "AppData/Local/hermes");
-  return join(home, "skills", "creative");
-}
+import { join } from "node:path";
 
 /**
  * 解析 YAML frontmatter（极简实现，仅覆盖 SKILL.md 使用的字段）
@@ -276,10 +269,12 @@ export function parseSkillMd(md) {
 }
 
 /**
- * 扫描 skills/creative 目录，列出所有 SKILL.md
+ * 扫描显式传入的 skills/creative 目录，列出所有 SKILL.md。
+ * 未配置外部目录时返回空数组，避免默认耦合到个人 Hermes 安装。
  */
-export function listSkillFiles() {
-  const dir = hermesSkillsDir();
+export function listSkillFiles(skillsDir = "") {
+  const dir = String(skillsDir || "").trim();
+  if (!dir) return [];
   if (!existsSync(dir)) return [];
   try {
     const items = readdirSync(dir, { withFileTypes: true });

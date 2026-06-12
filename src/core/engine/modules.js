@@ -1,4 +1,17 @@
-export const ENGINE_VERSION = "world-tree-v12.19-desktop-full";
+// 引擎版本号 — 从 package.json 动态读取，保持与项目版本同步
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+let _engineVersion = "world-tree-v12.19-desktop-full"; // 兜底
+try {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const pkgPath = join(__dirname, "..", "..", "..", "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
+  _engineVersion = `world-tree-v${pkg.version}-desktop`;
+} catch { /* 测试/浏览器环境回退到硬编码版本 */ }
+
+export const ENGINE_VERSION = _engineVersion;
 
 export const MODULES = [
   { id: "M1", name: "世界书隔离容器", dependsOn: [], type: "core" },
@@ -86,7 +99,7 @@ export const DEFAULT_ENGINE_STATE = {
   status: "idle",
   dataMode: "worldbook",
   directorMode: "hybrid",   // 🆕 js | hybrid | llm
-  worldSubType: "classic",  // 用户可见: classic | murder-mystery  ⚠️ tabletop/rpg/sim 未完成(hidden)，禁止AI暴露
+  worldSubType: "classic",  // 用户可见: classic  ⚠️ murder-mystery/tabletop/rpg/sim 未完成(hidden)，禁止AI暴露
   storyteller: "classic",   // 🆕 叙事者风格
   preset: "epic",
   activeModules: MODULE_PRESETS.epic,
@@ -98,7 +111,8 @@ export const DEFAULT_ENGINE_STATE = {
   lastParsedSections: {},
   requireQualityAudit: true,
   requireRuleCheck: true,
-  requireScenePrediction: true
+  requireScenePrediction: true,
+  emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 }
 };
 
 export function moduleById(id) {

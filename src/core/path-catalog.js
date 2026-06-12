@@ -48,13 +48,6 @@ export const PATH_CATALOG = [
     description: "引擎知识卡和模块定义。"
   },
   {
-    id: "defaults-knowledge",
-    label: "全文知识库",
-    kind: "knowledge-root",
-    path: "defaults/engine-knowledge/fulltext/",
-    description: "参考文档全文检索库。"
-  },
-  {
     id: "defaults-profiles",
     label: "世界书子类型配置",
     kind: "profile-root",
@@ -62,11 +55,11 @@ export const PATH_CATALOG = [
     description: "classic/tabletop/rpg/sim 等子类型预设。"
   },
   {
-    id: "defaults-cases",
-    label: "默认案件",
-    kind: "case-root",
-    path: "defaults/cases/",
-    description: "剧本杀默认案件数据。"
+    id: "defaults-examples",
+    label: "素材示例清单",
+    kind: "example-root",
+    path: "defaults/examples/manifest.json",
+    description: "维护者登记示例世界或角色卡的清单；当前默认为空，不随开源包分发素材。"
   },
   {
     id: "personas",

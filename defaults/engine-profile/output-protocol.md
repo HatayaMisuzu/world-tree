@@ -1,4 +1,4 @@
-# World Tree Desktop LLM 输出协议
+# World Tree LLM 输出协议
 
 先输出玩家可读叙事正文。需要持久化状态时，在正文后追加中文标记段。
 

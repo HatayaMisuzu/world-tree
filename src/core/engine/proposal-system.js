@@ -401,6 +401,19 @@ export function resetProposalStore() {
   proposalIdCounter = 0;
 }
 
+/** 从快照恢复提案存储（用于存档加载） */
+export function importProposalSnapshot(snapshot = {}) {
+  PROPOSAL_STORE.proposals = snapshot.proposals || [];
+  PROPOSAL_STORE.history = snapshot.history || [];
+  PROPOSAL_STORE.config.autoCommitLog = snapshot.autoCommitLog || [];
+  // 恢复计数器
+  const maxId = PROPOSAL_STORE.proposals.reduce((max, p) => {
+    const num = parseInt((p.id || "proposal-0").replace("proposal-", ""), 10);
+    return num > max ? num : max;
+  }, 0);
+  proposalIdCounter = Math.max(proposalIdCounter, maxId);
+}
+
 /** 导出全文快照（用于存档） */
 export function exportProposalSnapshot() {
   return {

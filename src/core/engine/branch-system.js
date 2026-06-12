@@ -15,8 +15,19 @@
 //   compareBranches(branchA, branchB)
 //   getBranchTree(worldName)
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, readdirSync, statSync } from "fs";
-import { join, basename } from "path";
+import { readFile, writeFile, mkdir, cp, readdir, stat } from "node:fs/promises";
+import { join, basename } from "node:path";
+
+/** async helper — replaces existsSync */
+async function exists(path) {
+  try { await stat(path); return true; } catch { return false; }
+}
+
+/** async helper — replaces readJSON (sync) */
+async function readJSON(path) {
+  if (!(await exists(path))) return null;
+  try { return JSON.parse(await readFile(path, "utf-8")); } catch { return null; }
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  branch-meta.json 格式
@@ -59,30 +70,31 @@ function createBranchMeta(opts = {}) {
  * @param {Object} opts — { label, divergeEvent, round }
  * @returns {Object} 新分支信息
  */
-export function createBranch(worldsRoot, worldName, sourceBranch = "main", opts = {}) {
+export async function createBranch(worldsRoot, worldName, sourceBranch = "main", opts = {}) {
   const worldDir = join(worldsRoot, worldName);
-  if (!existsSync(worldDir)) return { error: `世界「${worldName}」不存在` };
+  if (!(await exists(worldDir))) return { error: `世界「${worldName}」不存在` };
 
   const srcDir = join(worldDir, "branches", sourceBranch);
-  if (!existsSync(srcDir)) return { error: `源分支「${sourceBranch}」不存在` };
+  if (!(await exists(srcDir))) return { error: `源分支「${sourceBranch}」不存在` };
 
   // 生成新分支 ID
   const branchId = `branch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const dstDir = join(worldDir, "branches", branchId);
 
   // 不允许重复
-  if (existsSync(dstDir)) return { error: `分支「${branchId}」已存在` };
+  if (await exists(dstDir)) return { error: `分支「${branchId}」已存在` };
 
   // 深拷贝源分支
-  mkdirSync(dstDir, { recursive: true });
-  const entries = readdirSync(srcDir);
+  await mkdir(dstDir, { recursive: true });
+  const entries = await readdir(srcDir);
   for (const entry of entries) {
     const srcPath = join(srcDir, entry);
     const dstPath = join(dstDir, entry);
-    if (statSync(srcPath).isDirectory()) {
-      cpSync(srcPath, dstPath, { recursive: true });
+    const st = await stat(srcPath);
+    if (st.isDirectory()) {
+      await cp(srcPath, dstPath, { recursive: true });
     } else {
-      writeFileSync(dstPath, readFileSync(srcPath));
+      await writeFile(dstPath, await readFile(srcPath));
     }
   }
 
@@ -95,7 +107,7 @@ export function createBranch(worldsRoot, worldName, sourceBranch = "main", opts 
     label: opts.label || `${worldName} — 分支 ${branchId.slice(-4)}`,
     description: opts.description || ""
   });
-  writeFileSync(join(dstDir, "branch-meta.json"), JSON.stringify(meta, null, 2));
+  await writeFile(join(dstDir, "branch-meta.json"), JSON.stringify(meta, null, 2));
 
   return {
     ok: true,
@@ -114,18 +126,18 @@ export function createBranch(worldsRoot, worldName, sourceBranch = "main", opts 
  * 获取完整分支树
  * @returns {Object} { trunk, branches: [{ id, parent, status, label, children }] }
  */
-export function getBranchTree(worldsRoot, worldName) {
+export async function getBranchTree(worldsRoot, worldName) {
   const branchesDir = join(worldsRoot, worldName, "branches");
-  if (!existsSync(branchesDir)) return { trunk: "main", branches: [] };
+  if (!(await exists(branchesDir))) return { trunk: "main", branches: [] };
 
   const allBranches = [];
-  const entries = readdirSync(branchesDir, { withFileTypes: true });
+  const entries = await readdir(branchesDir, { withFileTypes: true });
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const metaPath = join(branchesDir, entry.name, "branch-meta.json");
-    const meta = existsSync(metaPath)
-      ? JSON.parse(readFileSync(metaPath, "utf-8"))
+    const meta = (await exists(metaPath))
+      ? JSON.parse(await readFile(metaPath, "utf-8"))
       : { branchId: entry.name, parentBranch: null, status: "active", label: entry.name };
 
     allBranches.push({
@@ -197,20 +209,20 @@ export function getBranchTree(worldsRoot, worldName) {
  * 标记分支为枯枝（废弃但保留数据）
  * @returns {Object}
  */
-export function abandonBranch(worldsRoot, worldName, branchId, reason = "") {
+export async function abandonBranch(worldsRoot, worldName, branchId, reason = "") {
   if (branchId === "main") return { error: "不能废弃主线" };
 
   const metaPath = join(worldsRoot, worldName, "branches", branchId, "branch-meta.json");
-  if (!existsSync(metaPath)) return { error: `分支「${branchId}」不存在` };
+  if (!(await exists(metaPath))) return { error: `分支「${branchId}」不存在` };
 
-  const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
+  const meta = JSON.parse(await readFile(metaPath, "utf-8"));
   if (meta.status === "dead") return { error: "该分支已是枯枝" };
   if (meta.status === "merged") return { error: "已合并的分支不能废弃——它已经是主线的一部分" };
 
   meta.status = "dead";
   meta.abandonReason = reason;
   meta.abandonedAt = new Date().toISOString();
-  writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+  await writeFile(metaPath, JSON.stringify(meta, null, 2));
 
   return { ok: true, branchId, previousStatus: "active", meta };
 }
@@ -218,11 +230,11 @@ export function abandonBranch(worldsRoot, worldName, branchId, reason = "") {
 /**
  * 复活枯枝
  */
-export function reviveBranch(worldsRoot, worldName, branchId) {
+export async function reviveBranch(worldsRoot, worldName, branchId) {
   const metaPath = join(worldsRoot, worldName, "branches", branchId, "branch-meta.json");
-  if (!existsSync(metaPath)) return { error: `分支「${branchId}」不存在` };
+  if (!(await exists(metaPath))) return { error: `分支「${branchId}」不存在` };
 
-  const meta = JSON.parse(readFileSync(metaPath, "utf-8"));
+  const meta = JSON.parse(await readFile(metaPath, "utf-8"));
   if (meta.status !== "dead") return { error: "只有枯枝可以复活" };
 
   meta.status = "active";
@@ -230,7 +242,7 @@ export function reviveBranch(worldsRoot, worldName, branchId) {
   // 清除废弃标记
   delete meta.abandonReason;
   delete meta.abandonedAt;
-  writeFileSync(metaPath, JSON.stringify(meta, null, 2));
+  await writeFile(metaPath, JSON.stringify(meta, null, 2));
 
   return { ok: true, branchId, meta };
 }
@@ -243,18 +255,18 @@ export function reviveBranch(worldsRoot, worldName, branchId) {
  * 对比两个分支的差异
  * @returns {Object} { added, removed, modified, summary }
  */
-export function compareBranches(worldsRoot, worldName, branchA, branchB) {
+export async function compareBranches(worldsRoot, worldName, branchA, branchB) {
   const aDir = join(worldsRoot, worldName, "branches", branchA);
   const bDir = join(worldsRoot, worldName, "branches", branchB);
 
-  if (!existsSync(aDir)) return { error: `分支「${branchA}」不存在` };
-  if (!existsSync(bDir)) return { error: `分支「${branchB}」不存在` };
+  if (!(await exists(aDir))) return { error: `分支「${branchA}」不存在` };
+  if (!(await exists(bDir))) return { error: `分支「${branchB}」不存在` };
 
   const result = { added: [], removed: [], modified: [], summary: "" };
 
   // 对比 canon_state
-  const aCanon = readJSON(join(aDir, "canon_state.json"));
-  const bCanon = readJSON(join(bDir, "canon_state.json"));
+  const aCanon = await readJSON(join(aDir, "canon_state.json"));
+  const bCanon = await readJSON(join(bDir, "canon_state.json"));
   if (aCanon && bCanon) {
     const aConfirmed = aCanon.confirmed || [];
     const bConfirmed = bCanon.confirmed || [];
@@ -273,11 +285,11 @@ export function compareBranches(worldsRoot, worldName, branchA, branchB) {
   }
 
   // 对比 characters
-  const aChars = readJSON(join(aDir, "..", "..", "shared", "characters.json"));
-  const bChars = readJSON(join(bDir, "..", "..", "shared", "characters.json"));
+  const aChars = await readJSON(join(aDir, "..", "..", "shared", "characters.json"));
+  const bChars = await readJSON(join(bDir, "..", "..", "shared", "characters.json"));
   // 注意：shared 是跨分支共享的，所以这里主要比较 runtime 中的角色状态
-  const aRuntime = readJSON(join(aDir, "runtime.json"));
-  const bRuntime = readJSON(join(bDir, "runtime.json"));
+  const aRuntime = await readJSON(join(aDir, "runtime.json"));
+  const bRuntime = await readJSON(join(bDir, "runtime.json"));
   if (aRuntime?.characters && bRuntime?.characters) {
     const aNames = new Set(aRuntime.characters.map(c => c.name));
     const bNames = new Set(bRuntime.characters.map(c => c.name));
@@ -316,17 +328,17 @@ export function compareBranches(worldsRoot, worldName, branchA, branchB) {
  * 不直接覆盖——生成 merge proposal 列表供用户逐项确认
  * @returns {Object} { ok, proposals: [], summary }
  */
-export function mergeBranch(worldsRoot, worldName, sourceBranch, targetBranch = "main") {
+export async function mergeBranch(worldsRoot, worldName, sourceBranch, targetBranch = "main") {
   if (sourceBranch === targetBranch) return { error: "不能将分支合并到自身" };
 
   const srcDir = join(worldsRoot, worldName, "branches", sourceBranch);
   const tgtDir = join(worldsRoot, worldName, "branches", targetBranch);
 
-  if (!existsSync(srcDir)) return { error: `源分支「${sourceBranch}」不存在` };
-  if (!existsSync(tgtDir)) return { error: `目标分支「${targetBranch}」不存在` };
+  if (!(await exists(srcDir))) return { error: `源分支「${sourceBranch}」不存在` };
+  if (!(await exists(tgtDir))) return { error: `目标分支「${targetBranch}」不存在` };
 
   // 对比差异
-  const diff = compareBranches(worldsRoot, worldName, targetBranch, sourceBranch);
+  const diff = await compareBranches(worldsRoot, worldName, targetBranch, sourceBranch);
   if (diff.error) return diff;
 
   // 生成嫁接提案列表
@@ -376,9 +388,9 @@ export function mergeBranch(worldsRoot, worldName, sourceBranch, targetBranch = 
  * @param {Object[]} confirmedProposals — 用户确认要执行的提案
  * @returns {Object}
  */
-export function executeMerge(worldsRoot, worldName, sourceBranch, targetBranch, confirmedProposals = []) {
+export async function executeMerge(worldsRoot, worldName, sourceBranch, targetBranch, confirmedProposals = []) {
   const tgtDir = join(worldsRoot, worldName, "branches", targetBranch);
-  if (!existsSync(tgtDir)) return { error: `目标分支不存在` };
+  if (!(await exists(tgtDir))) return { error: `目标分支不存在` };
 
   const applied = [];
   const skipped = [];
@@ -386,17 +398,17 @@ export function executeMerge(worldsRoot, worldName, sourceBranch, targetBranch, 
   for (const proposal of confirmedProposals) {
     if (proposal.type === "add" && proposal.source === "canon_state") {
       const canonPath = join(tgtDir, "canon_state.json");
-      const canon = readJSON(canonPath) || { confirmed: [], implied: [], proposed: [] };
+      const canon = (await readJSON(canonPath)) || { confirmed: [], implied: [], proposed: [] };
       canon.confirmed = [...(canon.confirmed || []), proposal.data];
-      writeFileSync(canonPath, JSON.stringify(canon, null, 2));
+      await writeFile(canonPath, JSON.stringify(canon, null, 2));
       applied.push(proposal);
     } else if (proposal.type === "remove" && proposal.source === "canon_state") {
       const canonPath = join(tgtDir, "canon_state.json");
-      const canon = readJSON(canonPath) || { confirmed: [], implied: [], proposed: [] };
+      const canon = (await readJSON(canonPath)) || { confirmed: [], implied: [], proposed: [] };
       canon.confirmed = (canon.confirmed || []).filter(
         e => JSON.stringify(e) !== JSON.stringify(proposal.data)
       );
-      writeFileSync(canonPath, JSON.stringify(canon, null, 2));
+      await writeFile(canonPath, JSON.stringify(canon, null, 2));
       applied.push(proposal);
     } else {
       skipped.push({ ...proposal, reason: "不支持的提案类型或来源" });
@@ -405,12 +417,12 @@ export function executeMerge(worldsRoot, worldName, sourceBranch, targetBranch, 
 
   // 标记源分支为 merged
   const srcMetaPath = join(worldsRoot, worldName, "branches", sourceBranch, "branch-meta.json");
-  if (existsSync(srcMetaPath)) {
-    const meta = JSON.parse(readFileSync(srcMetaPath, "utf-8"));
+  if (await exists(srcMetaPath)) {
+    const meta = JSON.parse(await readFile(srcMetaPath, "utf-8"));
     meta.status = "merged";
     meta.mergeTarget = targetBranch;
     meta.mergedAt = new Date().toISOString();
-    writeFileSync(srcMetaPath, JSON.stringify(meta, null, 2));
+    await writeFile(srcMetaPath, JSON.stringify(meta, null, 2));
   }
 
   return {
@@ -426,21 +438,12 @@ export function executeMerge(worldsRoot, worldName, sourceBranch, targetBranch, 
 //  获取可玩分支
 // ═══════════════════════════════════════════════════════════════
 
-export function getActiveBranches(worldsRoot, worldName) {
-  const tree = getBranchTree(worldsRoot, worldName);
+export async function getActiveBranches(worldsRoot, worldName) {
+  const tree = await getBranchTree(worldsRoot, worldName);
   return tree.allBranches.filter(b => b.status === "active");
 }
 
-export function getDeadBranches(worldsRoot, worldName) {
-  const tree = getBranchTree(worldsRoot, worldName);
+export async function getDeadBranches(worldsRoot, worldName) {
+  const tree = await getBranchTree(worldsRoot, worldName);
   return tree.allBranches.filter(b => b.status === "dead");
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  工具
-// ═══════════════════════════════════════════════════════════════
-
-function readJSON(path) {
-  if (!existsSync(path)) return null;
-  try { return JSON.parse(readFileSync(path, "utf-8")); } catch { return null; }
 }

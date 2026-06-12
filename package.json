@@ -1,17 +1,39 @@
 {
-  "name": "world-tree-desktop",
-  "version": "2.2.1",
-  "description": "World Tree Desktop — 本地优先的 AI 叙事引擎 Web 控制台",
+  "name": "world-tree",
+  "version": "2.3.1",
+  "description": "World Tree — 本地优先的 AI 叙事引擎 Web 控制台",
   "type": "module",
   "main": "server.js",
+  "bin": {
+    "world-tree": "bin/world-tree.js"
+  },
+  "files": [
+    "bin/",
+    "server.js",
+    "world-tree-console.html",
+    "world-tree-console.css",
+    "world-tree-console.js",
+    "src/",
+    "defaults/engine-profile/",
+    "defaults/world-profiles/",
+    "defaults/examples/manifest.json",
+    "README.md",
+    "README.en.md",
+    "SECURITY.md",
+    "config.example.json",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
     "start": "node server.js",
+    "check": "node scripts/check.mjs",
     "test": "node scripts/test.mjs",
+    "test:unit": "node --test tests/unit/direction-packet.test.js tests/unit/emotion-state.test.js tests/unit/output-parser.test.js tests/unit/guardian.test.js",
     "audit": "node scripts/audit.mjs",
-    "preflight": "node scripts/audit.mjs && node scripts/test.mjs && node scripts/interface-audit.mjs"
+    "interface-audit": "node scripts/interface-audit.mjs",
+    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/test.mjs && node scripts/interface-audit.mjs"
   },
   "keywords": [
     "world-tree",
@@ -21,9 +43,9 @@
     "interactive-fiction"
   ],
   "author": "World Tree",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
-    "type": "local",
-    "directory": "."
+    "type": "git",
+    "url": "https://github.com/WorldTreeDAO/world-tree.git"
   }
 }

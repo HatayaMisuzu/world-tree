@@ -59,7 +59,11 @@ export function buildCharacterRefineryPrompt(text, items = []) {
     "被需求帮助": {"reaction": "", "gesture": "", "dialogueStyle": ""},
     "孤独低落时": {"reaction": "", "gesture": "", "dialogueStyle": ""},
     "世界外知识": {"reaction": "", "gesture": "", "dialogueStyle": ""},
-    "突破边界": {"reaction": "", "gesture": "", "dialogueStyle": ""}
+    "突破边界": {"reaction": "", "gesture": "", "dialogueStyle": ""},
+    "被忽视冷落": {"reaction": "", "gesture": "", "dialogueStyle": ""},
+    "被误会冤枉": {"reaction": "", "gesture": "", "dialogueStyle": ""},
+    "看到他人受伤": {"reaction": "", "gesture": "", "dialogueStyle": ""},
+    "久别重逢": {"reaction": "", "gesture": "", "dialogueStyle": ""}
   },
   "性格权重": {
     "自信骄傲": 25,
@@ -174,6 +178,10 @@ export function flattenToCardJson(refined) {
     孤独低落时: scenes["孤独低落时"] || { reaction: "", gesture: "", dialogueStyle: "" },
     世界外知识: scenes["世界外知识"] || { reaction: "", gesture: "", dialogueStyle: "" },
     突破边界: scenes["突破边界"] || { reaction: "", gesture: "", dialogueStyle: "" },
+    被忽视冷落: scenes["被忽视冷落"] || { reaction: "", gesture: "", dialogueStyle: "" },
+    被误会冤枉: scenes["被误会冤枉"] || { reaction: "", gesture: "", dialogueStyle: "" },
+    看到他人受伤: scenes["看到他人受伤"] || { reaction: "", gesture: "", dialogueStyle: "" },
+    久别重逢: scenes["久别重逢"] || { reaction: "", gesture: "", dialogueStyle: "" },
     性格权重: c["性格权重"] || {},
     关系: relations.map(r => ({
       name: r["角色"] || "",

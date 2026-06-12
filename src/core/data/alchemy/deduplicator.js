@@ -108,28 +108,50 @@ function checkConflict(item, existingEntities = []) {
 /**
  * 简单的名称相似度（Jaccard 3-gram）
  */
+/** 编辑距离（Levenshtein），用于短名兜底 */
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n; if (n === 0) return m;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
 function nameSimilarity(a = "", b = "") {
   if (a === b) return 1.0;
   const sa = String(a).toLowerCase();
   const sb = String(b).toLowerCase();
   if (sa === sb) return 1.0;
 
-  // 3-gram
-  const grams = (s) => {
-    const g = new Set();
-    for (let i = 0; i < s.length - 2; i++) {
-      g.add(s.slice(i, i + 3));
-    }
-    return g;
+  // 对短名（≤3字符）优先使用编辑距离，避免 3-gram 退化
+  if (sa.length <= 3 || sb.length <= 3) {
+    const maxLen = Math.max(sa.length, sb.length);
+    if (maxLen === 0) return 0;
+    const ed = editDistance(sa, sb);
+    return Math.max(0, 1 - ed / maxLen);
+  }
+
+  // 组合 2-gram + 3-gram 取高值
+  const ngramSim = (n) => {
+    const grams = (s) => {
+      const g = new Set();
+      for (let i = 0; i <= s.length - n; i++) g.add(s.slice(i, i + n));
+      return g;
+    };
+    const ga = grams(sa), gb = grams(sb);
+    if (!ga.size || !gb.size) return 0;
+    const intersection = [...ga].filter((g) => gb.has(g)).length;
+    const union = ga.size + gb.size - intersection;
+    return union > 0 ? intersection / union : 0;
   };
 
-  const ga = grams(sa);
-  const gb = grams(sb);
-  if (!ga.size || !gb.size) return 0;
-
-  const intersection = [...ga].filter(g => gb.has(g)).length;
-  const union = ga.size + gb.size - intersection;
-  return union > 0 ? intersection / union : 0;
+  return Math.max(ngramSim(2), ngramSim(3));
 }
 
 /**

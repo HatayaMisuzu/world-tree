@@ -14,14 +14,22 @@ node_modules/
 # 运行时数据
 data/engine/runs/
 data/engine/worlds/
-data/engine/global-memory/snapshots.json
+data/engine/characters/
+data/engine/global-memory/
+data/characters-archive/
 
 # Web 服务用户数据
 userData/
+config.json
+secrets.json
+.env
+.env.*
 
 # 构建产物
 dist/
 *.exe
+*.tgz
+*.tar.gz
 
 # IDE
 .vscode/

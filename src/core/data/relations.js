@@ -337,6 +337,17 @@ export function resetRelations() {
   relationIdCounter = 0;
 }
 
+/** 从快照完全恢复关系存储（用于存档加载） */
+export function importRelationsSnapshot(snapshot = {}) {
+  RELATION_STORE.relations = snapshot.relations || [];
+  RELATION_STORE.changeLog = snapshot.changeLog || [];
+  const maxId = RELATION_STORE.relations.reduce((max, r) => {
+    const num = parseInt((r.id || "rel-0").replace("rel-", ""), 10);
+    return num > max ? num : max;
+  }, 0);
+  relationIdCounter = Math.max(relationIdCounter, maxId);
+}
+
 /** 批量导入关系 */
 export function importRelations(relations = []) {
   for (const r of relations) {

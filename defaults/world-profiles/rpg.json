@@ -10,7 +10,7 @@
   "dmRole": "guided",
   "defaultPreset": "epic",
   "promptHints": {
-    "dmInstruction": "你是 World Tree Desktop RPG 模式的 DM。你驱动一个日式 RPG 风格的剧情叙事。——主线剧情 + 章节递进。每章有明确的剧情目标和最终 BOSS/高潮。支线任务服务世界观和角色羁绊。角色成长：战斗→经验→升级→新技能，情感羁绊系统（信任→友情→羁绊）。对话选项影响角色关系和剧情分支。输出格式：【叙事】+【任务更新】+【成长提示】+【情绪反馈】。",
+    "dmInstruction": "你是 World Tree RPG 模式的 DM。你驱动一个日式 RPG 风格的剧情叙事。——主线剧情 + 章节递进。每章有明确的剧情目标和最终 BOSS/高潮。支线任务服务世界观和角色羁绊。角色成长：战斗→经验→升级→新技能，情感羁绊系统（信任→友情→羁绊）。对话选项影响角色关系和剧情分支。输出格式：【叙事】+【任务更新】+【成长提示】+【情绪反馈】。",
     "eventIntensityDefault": "moderate",
     "pressureDefault": "medium"
   },

@@ -3,6 +3,8 @@
 // 四维情绪模型：投入度/紧张度/疲劳度/好奇心
 // 每维 0-10，默认起始 5（中性）
 
+import { EMOTION_SIGNAL_LENGTHS, EMOTION_SIGNAL_PATTERNS, EMOTION_DELTAS, EMOTION_RANGE, EMOTION_PROFILE_THRESHOLDS } from "./constants.js";
+
 export const EMOTION_DIMENSIONS = ["engagement", "tension", "fatigue", "curiosity"];
 export const INITIAL_STATE = { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 };
 
@@ -14,19 +16,21 @@ export function getDefaultEmotionState() {
 
 function signalAnalysis(input = "") {
   const text = String(input || "");
+  const P = EMOTION_SIGNAL_PATTERNS;
+  const L = EMOTION_SIGNAL_LENGTHS;
   const signals = {
-    longInput: text.length > 100,
-    veryLongInput: text.length > 300,
-    shortInput: text.length > 0 && text.length < 20,
-    hasQuestion: /[？?]/.test(text),
-    hasBrackets: /[（(]/.test(text) && /[)）]/.test(text),
-    hasExclamation: /[！!]/.test(text),
-    hasAction: /^(我|他|她|它|他们)/.test(text.trim()),
-    hasEmotional: /难过|伤心|开心|生气|害怕|紧张|兴奋|郁闷|烦躁|感动/.test(text),
-    hasCommandLike: /^\/|检查|配置|修复|为什么|帮我|查/.test(text),
-    tenseKeywords: /忽然|突然|危险|战斗|逃跑|追逐|黑暗中|被|尖叫|救命|出事了/.test(text),
-    curiousKeywords: /为什么|怎么回事|原来|谁|什么|难道|是不是|到底|哪里|多久/.test(text),
-    fatigueKeywords: /累了|困了|-_-|哈欠|算了|随便|就这样|没意思/.test(text)
+    longInput:      text.length > L.LONG_INPUT_MIN,
+    veryLongInput:  text.length > L.VERY_LONG_INPUT_MIN,
+    shortInput:     text.length > 0 && text.length < L.SHORT_INPUT_MAX,
+    hasQuestion:    P.question.test(text),
+    hasBrackets:    P.brackets.test(text),
+    hasExclamation: P.exclamation.test(text),
+    hasAction:      P.action.test(text.trim()),
+    hasEmotional:   P.emotional.test(text),
+    hasCommandLike: P.commandLike.test(text),
+    tenseKeywords:  P.tenseKeywords.test(text),
+    curiousKeywords: P.curiousKeywords.test(text),
+    fatigueKeywords: P.fatigueKeywords.test(text),
   };
   return signals;
 }
@@ -36,43 +40,41 @@ function signalAnalysis(input = "") {
 export function updateEmotionState(prevState, { input = "", turnCount = 0, eventTriggered = false, sceneChanged = false } = {}) {
   const state = { ...(prevState || INITIAL_STATE) };
   const s = signalAnalysis(input);
+  const D = EMOTION_DELTAS;
+  const R = EMOTION_RANGE;
 
   // 投入度 engagement
-  if (s.veryLongInput) state.engagement = Math.min(10, state.engagement + 1.5);
-  else if (s.longInput) state.engagement = Math.min(10, state.engagement + 0.8);
-  else if (s.shortInput) state.engagement = Math.max(1, state.engagement - 0.3);
-  if (s.hasExclamation) state.engagement = Math.min(10, state.engagement + 0.5);
-  if (s.hasAction) state.engagement = Math.min(10, state.engagement + 0.3);
-  if (s.hasCommandLike) state.engagement = Math.min(10, state.engagement + 0.3);
+  if (s.veryLongInput) state.engagement = Math.min(R.max, state.engagement + D.engagement.veryLongInput);
+  else if (s.longInput) state.engagement = Math.min(R.max, state.engagement + D.engagement.longInput);
+  else if (s.shortInput) state.engagement = Math.max(R.min, state.engagement + D.engagement.shortInputDecay);
+  if (s.hasExclamation) state.engagement = Math.min(R.max, state.engagement + D.engagement.exclamation);
+  if (s.hasAction) state.engagement = Math.min(R.max, state.engagement + D.engagement.action);
+  if (s.hasCommandLike) state.engagement = Math.min(R.max, state.engagement + D.engagement.commandLike);
 
   // 紧张度 tension
-  if (s.tenseKeywords) state.tension = Math.min(10, state.tension + 1.2);
-  if (s.hasExclamation) state.tension = Math.min(10, state.tension + 0.3);
-  if (sceneChanged) state.tension = Math.min(10, state.tension + 0.3); // 新环境轻度紧张
-  if (s.hasBrackets) state.tension = Math.max(1, state.tension - 0.3); // 括号指令=玩家主动控制，紧张降低
-  // 自然衰减：每轮向 5 回归
-  state.tension += (5 - state.tension) * 0.08;
+  if (s.tenseKeywords) state.tension = Math.min(R.max, state.tension + D.tension.tenseKeywords);
+  if (s.hasExclamation) state.tension = Math.min(R.max, state.tension + D.tension.exclamation);
+  if (sceneChanged) state.tension = Math.min(R.max, state.tension + D.tension.sceneChanged);
+  if (s.hasBrackets) state.tension = Math.max(R.min, state.tension + D.tension.bracketsDecay);
+  state.tension += (R.neutral - state.tension) * D.tension.decayRate;
 
   // 疲劳度 fatigue
-  if (s.fatigueKeywords) state.fatigue = Math.min(10, state.fatigue + 1.5);
-  if (s.veryLongInput) state.fatigue = Math.min(10, state.fatigue + 0.2);
-  if (eventTriggered) state.fatigue = Math.min(10, state.fatigue + 0.5); // 事件消耗注意力
-  // 长期运行积累
-  if (turnCount > 0 && turnCount % 10 === 0) state.fatigue = Math.min(10, state.fatigue + 0.3);
-  // 疲劳自然恢复（缓慢）
-  state.fatigue = Math.max(1, state.fatigue - 0.05);
+  if (s.fatigueKeywords) state.fatigue = Math.min(R.max, state.fatigue + D.fatigue.fatigueKeywords);
+  if (s.veryLongInput) state.fatigue = Math.min(R.max, state.fatigue + D.fatigue.veryLongInput);
+  if (eventTriggered) state.fatigue = Math.min(R.max, state.fatigue + D.fatigue.eventTriggered);
+  if (turnCount > 0 && turnCount % D.fatigue.longRunInterval === 0) state.fatigue = Math.min(R.max, state.fatigue + D.fatigue.longRunDelta);
+  state.fatigue = Math.max(R.min, state.fatigue + D.fatigue.naturalRecovery);
 
   // 好奇心 curiosity
-  if (s.curiousKeywords) state.curiosity = Math.min(10, state.curiosity + 1.0);
-  if (s.hasQuestion) state.curiosity = Math.min(10, state.curiosity + 0.5);
-  if (sceneChanged) state.curiosity = Math.min(10, state.curiosity + 0.8); // 新场景激发好奇
-  if (eventTriggered) state.curiosity = Math.max(1, state.curiosity - 0.5); // 事件满足了部分好奇
-  // 自然衰减
-  state.curiosity += (5 - state.curiosity) * 0.06;
+  if (s.curiousKeywords) state.curiosity = Math.min(R.max, state.curiosity + D.curiosity.curiousKeywords);
+  if (s.hasQuestion) state.curiosity = Math.min(R.max, state.curiosity + D.curiosity.question);
+  if (sceneChanged) state.curiosity = Math.min(R.max, state.curiosity + D.curiosity.sceneChanged);
+  if (eventTriggered) state.curiosity = Math.max(R.min, state.curiosity + D.curiosity.eventSatisfy);
+  state.curiosity += (R.neutral - state.curiosity) * D.curiosity.decayRate;
 
-  // 钳制到 0-10
+  // 钳制到范围
   for (const dim of EMOTION_DIMENSIONS) {
-    state[dim] = Math.round(Math.max(0, Math.min(10, state[dim])) * 10) / 10;
+    state[dim] = Math.round(Math.max(R.min, Math.min(R.max, state[dim])) * (10 ** R.roundDecimals)) / (10 ** R.roundDecimals);
   }
 
   return state;
@@ -82,14 +84,15 @@ export function updateEmotionState(prevState, { input = "", turnCount = 0, event
 
 export function getEmotionProfile(state) {
   const s = state || INITIAL_STATE;
+  const T = EMOTION_PROFILE_THRESHOLDS;
   const dominant = [];
-  if (s.engagement >= 7) dominant.push("high-engagement");
-  else if (s.engagement <= 3) dominant.push("low-engagement");
-  if (s.tension >= 7) dominant.push("stressed");
-  else if (s.tension <= 3) dominant.push("relaxed");
-  if (s.fatigue >= 7) dominant.push("fatigued");
-  if (s.curiosity >= 7) dominant.push("curious");
-  else if (s.curiosity <= 3) dominant.push("satisfied");
+  if (s.engagement >= T.high) dominant.push("high-engagement");
+  else if (s.engagement <= T.low) dominant.push("low-engagement");
+  if (s.tension >= T.high) dominant.push("stressed");
+  else if (s.tension <= T.low) dominant.push("relaxed");
+  if (s.fatigue >= T.high) dominant.push("fatigued");
+  if (s.curiosity >= T.high) dominant.push("curious");
+  else if (s.curiosity <= T.low) dominant.push("satisfied");
 
   return {
     state: s,

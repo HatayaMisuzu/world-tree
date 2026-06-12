@@ -1,6 +1,6 @@
 import { startupPacket } from "../core/commands.js";
 import { moduleTitle } from "../core/normalizers.js";
-import { completeTurn, DIRECTOR_MODES } from "../core/world-engine.js";
+import { completeTurn, DIRECTOR_MODES, moduleContext, renderKnowledgeCards } from "../core/world-engine.js";
 import { characterCardMode } from "../core/data/character-card.js";
 import { cardModeNarrativeHint } from "../core/data/character-card.js";
 import { styleInstruction } from "../core/data/templates.js";
@@ -39,21 +39,6 @@ export function canUseDirectLlm(config, secretAvailable = false) {
     (r) => resolveEndpointForRole(r, config) && resolveModelForRole(r, config)
   );
   return Boolean((hasDefault || hasAnyRole) && secretAvailable);
-}
-
-function moduleContext(model) {
-  const data = model.moduleData;
-  if (!model.selected || !data) return "No world-tree module is loaded. Run in quick-start memory-only mode.";
-  return [
-    `Module: ${moduleTitle(model.selected)}`,
-    `Path: ${model.selected.path}`,
-    `Branch: ${model.selected.branch || "main"}`,
-    `Characters: ${data.characters.slice(0, 10).map((item) => item.name).join(", ") || "none"}`,
-    `Scenes: ${data.scenes.slice(0, 5).map((item) => item.title).join(" / ") || "none"}`,
-    `Archives: ${data.archives.length}`,
-    "",
-    startupPacket(model)
-  ].join("\n");
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -132,12 +117,13 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   }
 
   const systemPrompt = ROLE_PROMPTS[role] || WRITER_SYSTEM_PROMPT;
-  const temperature = role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85;
-  const maxTokens   = role === "director" ? 1024 : role === "guardian" ? 1024 : 4096;
+  const { messages: historyMessages = [], temperature: optTemp, max_tokens: optMaxTokens } = options;
+  const temperature = optTemp ?? (role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85);
+  const maxTokens   = optMaxTokens ?? (role === "director" ? 1024 : role === "guardian" ? 1024 : 4096);
 
   const messages = [
     { role: "system", content: systemPrompt },
-    ...(role === "writer" ? (options.messages || []).filter((m) => m.role === "user" || m.role === "assistant" || m.role === "system").slice(-20) : []),
+    ...(role === "writer" ? (historyMessages || []).filter((m) => m.role === "user" || m.role === "assistant" || m.role === "system").slice(-20) : []),
     { role: "user", content: packet }
   ];
 

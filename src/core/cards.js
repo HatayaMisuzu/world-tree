@@ -80,6 +80,7 @@ export function parseCard(imported) {
 export function worldbookEntriesFromModel(model, state = {}) {
   const entries = [
     ...normalizeWorldbookEntries(model.moduleData?.worldbook?.entries || []),
+    ...normalizeWorldbookEntries(model._overlay?.worldbook?.entries || []),
     ...normalizeWorldbookEntries(state.importedEntries || []).map((entry) => ({
       ...entry,
       id: `imported:${entry.id}`,

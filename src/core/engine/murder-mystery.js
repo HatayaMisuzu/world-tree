@@ -1,4 +1,6 @@
 // ===== 剧本杀案件引擎 v1.0 =====
+// @hidden v2.3.0 — 模式未完成，不对用户暴露。引擎代码保留供将来启用。
+// 恢复方法：1) defaults/world-profiles/murder-mystery.json status→"active"  2) server.js 案例扫描 if(false)→删除
 // 独立模式 — 不走叙事管线，专用案件状态机
 // 职责：案件加载 / 阶段推进 / 线索分发 / 证词管理 / AI模拟角色 / 真相校验 / 评分
 

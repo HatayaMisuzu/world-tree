@@ -18,6 +18,8 @@ import { createMemorySnapshot, searchMemorySnapshots, formatMemorySection, loadG
 import { setRelation, relationContextFor } from "../data/relations.js";
 import { recordSimulationRun, isSimulateActive } from "./simulator.js";
 import { calculateWorldTelemetry, telemetryForLLM, directorHints as telemetryDirectorHints } from "./world-telemetry.js";
+import { POSITIVE_RELATION_WORDS, NEGATIVE_RELATION_WORDS, RELATION_TYPE_KEYWORDS, DEGRADATION } from "./constants.js";
+import { exportEngineState } from "./state-persistence.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  prepareTurn — 三种模式差异化预处理
@@ -152,24 +154,30 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
   const parsed = parseMarkedOutput(rawText);
   const state = normalizeEngineState(engineState);
 
-  // 角色卡模式：不解析标记段（DM隐退后不应有标记段），纯叙事
+  // 角色卡模式：解析情绪反馈段（如有），忽略其他标记段（DM隐退后不应有复杂标记段）
   if (dataMode === "character_card") {
+    const emotionUpdate = parseEmotionSection(parsed.sections);
+    if (emotionUpdate) {
+      const currentEmotion = state.emotionState || getDefaultEmotionState();
+      state.emotionState = { ...currentEmotion, ...emotionUpdate };
+    }
     return {
-      narrative: rawText,
-      parsedSections: {},
+      narrative: parsed.narrative || rawText,
+      parsedSections: parsed.sections,
       overlayPatch: {
         createdAt: new Date().toISOString(),
         input,
-        narrative: rawText,
-        memory: [rawText.slice(0, 200)]
+        narrative: parsed.narrative || rawText,
+        memory: [(parsed.narrative || rawText).slice(0, 200)],
+        emotionState: state.emotionState
       },
       writeSet: [{
         // 🆕 v0.7.4.1 数据归家
         path: `data/engine/runs/${dataMode}/modules/${(moduleKey || "unloaded").replace(/[^\w.-]/g, "-")}/memory-store.json`,
         mode: "append-json-array",
-        value: [{ text: rawText.slice(0, 200), at: new Date().toISOString() }]
+        value: [{ text: (parsed.narrative || rawText).slice(0, 200), at: new Date().toISOString() }]
       }],
-      audit: { parseErrors: [], quality: "narrative-only", rules: { pass: true } },
+      audit: { parseErrors: parsed.errors, quality: "narrative-only", rules: { pass: true } },
       sceneSummary: null,
       rawText,
       engineState: state
@@ -399,6 +407,13 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     round: model.turnCount || 0,
   };
 
+  // ═══ 引擎状态持久化（每轮自动导出，用于存档恢复） ═══
+  overlayPatch._engineState = exportEngineState({
+    emotionState: state.emotionState,
+    turnCount: model.turnCount || 0,
+    sceneSummary: sceneSummary?.summary || ""
+  });
+
   return {
     narrative: parsed.narrative || rawText,
     parsedSections: parsed.sections,
@@ -451,7 +466,7 @@ function detectSceneTransition(input = "", model = {}) {
 
 function detectDegradation(intent = {}, model = {}) {
   const warnings = [];
-  if (intent.kind === "narrative" && (model.consecutiveNarrative || 0) > 8) {
+  if (intent.kind === "narrative" && (model.consecutiveNarrative || 0) > DEGRADATION.CONSECUTIVE_NARRATIVE_MAX) {
     warnings.push({
       signal: "silent-completion",
       level: "warning",
@@ -460,7 +475,7 @@ function detectDegradation(intent = {}, model = {}) {
   }
   if (intent.kind === "narrative") {
     const text = String(intent.text || "");
-    if (text.length > 0 && text.length < 6) {
+    if (text.length > 0 && text.length < DEGRADATION.VAGUE_INPUT_MIN_LENGTH) {
       warnings.push({
         signal: "vague-input",
         level: "info",
@@ -528,40 +543,9 @@ function extractRelationChanges(narrative, charNameSet, emotionUpdate) {
   if (mentionedChars.length < 2) return [];
 
   // 方向词匹配
-  const POSITIVE_WORDS = [
-    { word: "救了", delta: 2, desc: "救命之恩" },
-    { word: "帮助", delta: 1, desc: "提供帮助" },
-    { word: "保护", delta: 2, desc: "保护对方" },
-    { word: "支持", delta: 1, desc: "表示支持" },
-    { word: "鼓励", delta: 1, desc: "给予鼓励" },
-    { word: "安慰", delta: 1, desc: "安慰对方" },
-    { word: "信任", delta: 1, desc: "表示信任" },
-    { word: "夸奖", delta: 1, desc: "夸奖对方" },
-    { word: "赞赏", delta: 1, desc: "赞赏对方" },
-    { word: "交给", delta: 1, desc: "托付信任" }
-  ];
-
-  const NEGATIVE_WORDS = [
-    { word: "背叛", delta: -2, desc: "背叛行为" },
-    { word: "攻击", delta: -2, desc: "发动攻击" },
-    { word: "伤害", delta: -2, desc: "造成伤害" },
-    { word: "欺骗", delta: -1, desc: "欺骗对方" },
-    { word: "抛弃", delta: -2, desc: "抛弃对方" },
-    { word: "威胁", delta: -1, desc: "发出威胁" },
-    { word: "怀疑", delta: -1, desc: "怀疑对方" },
-    { word: "反对", delta: -1, desc: "反对对方" },
-    { word: "质疑", delta: -1, desc: "质疑对方" },
-    { word: "指责", delta: -1, desc: "指责对方" }
-  ];
-
-  const RELATION_KEYWORDS = [
-    { word: "朋友", type: "friend" },
-    { word: "盟友", type: "ally" },
-    { word: "敌人", type: "enemy" },
-    { word: "师徒", type: "mentor" },
-    { word: "恋人", type: "lover" },
-    { word: "守护", type: "protector" }
-  ];
+  const POSITIVE_WORDS = POSITIVE_RELATION_WORDS;
+  const NEGATIVE_WORDS = NEGATIVE_RELATION_WORDS;
+  const RELATION_KEYWORDS = RELATION_TYPE_KEYWORDS;
 
   // 对每对同时出现的角色，计算净态度变化
   for (let i = 0; i < mentionedChars.length; i++) {

@@ -124,11 +124,18 @@ export function validateNarrativeAgainstDirection({ narrative = "", directionPac
     revisionInstructions.push(`请调整叙事以符合: ${c}`);
   }
 
-  // 综合评分
-  const score = Math.max(0, 100 - issues.length * 15);
+  // 综合评分：按问题类型加权
+  let penalty = 0;
+  for (const issue of issues) {
+    if (issue.startsWith("缺少 mustInclude")) penalty += 18;
+    else if (issue.startsWith("泄露 mustNotInclude")) penalty += 22;
+    else if (issue.includes("叙事输出为空")) penalty += 50;
+    else penalty += 12;
+  }
+  const score = Math.max(0, 100 - penalty);
   const severity = issues.length === 0 ? "none" :
-    issues.length <= 2 ? "minor" :
-    issues.length <= 4 ? "major" : "critical";
+    score >= 60 ? "minor" :
+    score >= 30 ? "major" : "critical";
 
   return {
     pass: issues.length === 0,
@@ -145,16 +152,31 @@ export function validateNarrativeAgainstDirection({ narrative = "", directionPac
  * @param {string[]} mustItems
  * @returns {string[]} 缺失项列表
  */
+// 中文感知的子串匹配：将文本拆为 2-gram 后检查覆盖度
+function chineseAwareMatch(text, keyword) {
+  if (!keyword) return false;
+  const norm = (s) => s.replace(/[，。！？、：；""''「」『』\s]/g, "").toLowerCase();
+  const t = norm(text);
+  const k = norm(keyword);
+  if (t.includes(k)) return true;
+  // 2-gram 模糊匹配：关键词长度≥4 时，拆为2字片段，≥60%命中即通过
+  if (k.length >= 4) {
+    const grams = [];
+    for (let i = 0; i < k.length - 1; i++) grams.push(k.slice(i, i + 2));
+    const hitCount = grams.filter((g) => t.includes(g)).length;
+    return hitCount / grams.length >= 0.6;
+  }
+  return false;
+}
+
 function checkMustInclude(narrative, mustItems) {
   if (!mustItems.length) return [];
   const text = String(narrative || "");
   return mustItems.filter((item) => {
-    // 提取关键词（去掉前缀标签）
     const keywords = item.replace(/^[^:]*[:：]?\s*/, "").trim();
     if (!keywords) return false;
-    // 拆成多个关键词，任一匹配即算通过
     const parts = keywords.split(/[,，、]/).map((s) => s.trim()).filter(Boolean);
-    return !parts.some((part) => text.includes(part));
+    return !parts.some((part) => chineseAwareMatch(text, part));
   });
 }
 
@@ -171,33 +193,34 @@ function checkMustNotInclude(narrative, mustNotItems) {
     const keywords = item.replace(/^[^:]*[:：]?\s*/, "").trim();
     if (!keywords) return false;
     const parts = keywords.split(/[,，、]/).map((s) => s.trim()).filter(Boolean);
-    return parts.some((part) => text.includes(part));
+    return parts.some((part) => chineseAwareMatch(text, part));
   });
 }
 
 /**
  * 检查叙事是否回应了玩家输入
  */
+const RESPONSE_MARKERS = [/她说|他说|回答道|回答|解释|告诉你|开口说|开口道|因为|原因|原来|其实|于是|便|回应|答道|轻声说|低声说|笑了笑|点了点头|叹了/];
+
 function checkPlayerResponse(narrative, userInput) {
   if (!userInput || !narrative) return { ok: true };
   const input = String(userInput).trim();
   const ntext = String(narrative);
 
-  // 玩家有问号 → 叙事必须有问号相关的回应
+  // 玩家有问号 → 叙事必须有回应
   if (/[？?]/.test(input)) {
-    // 简单检查：叙事中没有明显回应问句
-    const responseMarkers = [/她说|他说|回答|解释|告诉你|开口|开口说|因为|原因|原来|其实/];
-    const hasResponse = responseMarkers.some((m) => m.test(ntext));
+    const hasResponse = RESPONSE_MARKERS.some((m) => m.test(ntext));
     if (!hasResponse) {
       return { ok: false, detail: "玩家提出了问题，但叙事中没有明显的回应" };
     }
   }
 
-  // 玩家有动作描写 → 叙事应该提及
+  // 玩家有动作描写 → 叙事应体现结果
   if (/^(我|我们)/.test(input)) {
-    const action = input.replace(/^(我|我们)/, "").slice(0, 6).trim();
+    const action = input.replace(/^(我|我们)/, "").slice(0, 8).trim();
     if (action && action.length > 1 && !ntext.includes(action)) {
-      return { ok: false, detail: `玩家的动作「${action}」在叙事中未被体现` };
+      // 不直接阻断，降级为 warning（动作可能被解释性回应覆盖）
+      return { ok: true, detail: `玩家的动作「${action}」在叙事中未被直接体现（可接受）` };
     }
   }
 

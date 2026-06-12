@@ -450,6 +450,33 @@ export function resetAllMemoryLayers() {
   MEMORY_LAYERS.player.choices = [];
 }
 
+/** 导入全部记忆快照（从持久化恢复） */
+export function importMemorySnapshot(snapshot = {}) {
+  const layers = snapshot.layers || snapshot;
+  if (layers.stm) {
+    MEMORY_LAYERS.stm.entries = layers.stm.entries || [];
+    MEMORY_LAYERS.stm.currentRound = layers.stm.currentRound || 0;
+  }
+  if (layers.session) {
+    MEMORY_LAYERS.session.entries = layers.session.entries || [];
+    MEMORY_LAYERS.session.keyEvents = layers.session.keyEvents || [];
+    MEMORY_LAYERS.session.decisions = layers.session.decisions || [];
+    MEMORY_LAYERS.session.discoveries = layers.session.discoveries || [];
+  }
+  if (layers.character) {
+    MEMORY_LAYERS.character.maps = layers.character || {};
+  }
+  if (layers.world) {
+    MEMORY_LAYERS.world.entries = layers.world.entries || [];
+    MEMORY_LAYERS.world.confirmedCount = layers.world.confirmedCount || 0;
+  }
+  if (layers.player) {
+    MEMORY_LAYERS.player.preferences = layers.player.preferences || {};
+    MEMORY_LAYERS.player.choices = layers.player.choices || [];
+    MEMORY_LAYERS.player.patterns = layers.player.patterns || {};
+  }
+}
+
 /** 导出全部记忆快照 */
 export function exportMemorySnapshot() {
   return {

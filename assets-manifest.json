@@ -1,70 +1,13 @@
 {
-  "_note": "v0.7.5 资产清单。UI 图片由 Codex 管理，引擎侧记录元数据。Codex 新增/替换资产后更新此文件。",
-  "_version": "0.7.5",
-  "_updated": "2026-06-05",
-  "assets": [
-    {
-      "id": "world-tree-hero",
-      "file": "src/ui/world-tree-hero.png",
-      "type": "png",
-      "role": "主菜单主图",
-      "source": "用户提供",
-      "transparent": false,
-      "status": "active",
-      "codex_note": "主菜单无损展示，不使用滤镜/模糊/重绘"
-    },
-    {
-      "id": "world-tree-emblem",
-      "file": "src/ui/world-tree-emblem.svg",
-      "type": "svg",
-      "role": "主页徽章",
-      "source": "SVG 绘制",
-      "transparent": true,
-      "status": "active",
-      "codex_note": "v0.7.1 参考图风格圆环世界树徽章"
-    },
-    {
-      "id": "page-ornaments",
-      "file": "src/ui/page-ornaments.svg",
-      "type": "svg",
-      "role": "页面边框装饰",
-      "source": "SVG 绘制",
-      "transparent": true,
-      "status": "active",
-      "codex_note": "v0.7.3 边角枝叶纹样"
-    },
-    {
-      "id": "status-frame",
-      "file": "src/ui/status-frame.svg",
-      "type": "svg",
-      "role": "状态栏边框",
-      "source": "SVG 绘制",
-      "transparent": true,
-      "status": "active",
-      "codex_note": ""
-    },
-    {
-      "id": "image2-assets",
-      "file": "src/ui/*-image2*.png",
-      "type": "png",
-      "role": "archive/settings/monitor/dialogue 页背景和装饰",
-      "source": "Codex 从参考图生成",
-      "transparent": false,
-      "status": "deprecated",
-      "codex_note": "已迁移至 src/v0-out/ 静态资源输出体系。旧版 Codex 生成资产不再复制。",
-      "expected_files": [
-        "archive-library-bg-image2.png",
-        "settings-root-bg-image2.png",
-        "monitor-terminal-bg-image2.png",
-        "dialogue-paper-bg-image2.png",
-        "page-ornaments-image2-keyed.png",
-        "world-tree-emblem-image2-keyed.png",
-        "status-frame-image2-keyed.png"
-      ]
-    }
-  ],
-  "missing": [],
-  "codex_tasks": [
-    "已迁移至 src/v0-out/ 静态资源体系，src/ui/ 资产保留为旧版备用"
+  "_note": "v2.2.1 资产清单。所有 UI 资产已内联至 world-tree-console.html，无独立资产文件。",
+  "_version": "2.3.1",
+  "_updated": "2026-06-09",
+  "assets": [],
+  "archived_assets": [
+    "src/ui/world-tree-hero.png (deprecated v2.0)",
+    "src/ui/world-tree-emblem.svg (deprecated v2.0)",
+    "src/ui/page-ornaments.svg (deprecated v2.0)",
+    "src/ui/status-frame.svg (deprecated v2.0)",
+    "src/ui/*-image2*.png (deprecated v0.7.5)"
   ]
 }

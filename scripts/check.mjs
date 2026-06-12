@@ -3,9 +3,11 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const files = [
-  "src/main.cjs",
-  "src/preload.cjs",
-  "src/v0-out/index.html",
+  "server.js",
+  "world-tree-console.html",
+  "world-tree-console.css",
+  "world-tree-console.js",
+  "bin/world-tree.js",
   "src/core/data-store.js",
   "src/core/normalizers.js",
   "src/core/commands.js",
@@ -35,7 +37,7 @@ const files = [
   "src/core/data/prediction.js",
   "src/core/data/character-card.js",
   "src/core/data/processing-engine.js",
-  "src/adapters/hermes.js",
+  "legacy/adapters/hermes.js",
   "src/adapters/llm.js",
   "src/adapters/local.js"
 ];
@@ -74,7 +76,7 @@ await Promise.all([
   import("../src/core/data/prediction.js"),
   import("../src/core/data/character-card.js"),
   import("../src/core/data/processing-engine.js"),
-  import("../src/adapters/hermes.js"),
+  import("../legacy/adapters/hermes.js"),
   import("../src/adapters/llm.js"),
   import("../src/adapters/local.js")
 ]);

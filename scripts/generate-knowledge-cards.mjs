@@ -36,15 +36,15 @@ for (const mod of MODULES) {
     name: mod.name,
     version: "v12.19",
     type: mod.type,
-    summary: `${mod.id} ${mod.name} 的 Desktop LLM 适配知识卡。代码层执行可确定逻辑，LLM 层遵守叙事规则和标记段协议。`,
+    summary: `${mod.id} ${mod.name} 的 World Tree LLM 适配知识卡。代码层执行可确定逻辑，LLM 层遵守叙事规则和标记段协议。`,
     activatedBy: ["epic", "wuxia", "urban", "campus", "daily", "character_card", "minimal", "all"],
-    rules: moduleRules[mod.id] || [`${mod.name} 已在 Desktop 引擎中登记，运行时按激活模块注入。`],
+    rules: moduleRules[mod.id] || [`${mod.name} 已在 World Tree 引擎中登记，运行时按激活模块注入。`],
     edgeCases: [
       "解析失败不阻塞叙事，只跳过本轮状态写入。",
       "持久化只进入 _desktop_engine overlay。",
       "用户可在 Power User 中调整模块启停和上下文预算。"
     ],
-    referencePath: `engine-knowledge/fulltext/references/${mod.id}.md`
+    referencePath: `engine-profile/modules/${mod.id}.json`
   };
   await writeFile(resolve(outDir, `${mod.id.replace(/[^\w.-]/g, "_")}.json`), JSON.stringify(card, null, 2), "utf8");
 }

@@ -1,4 +1,5 @@
 // ===== 跑团模块 v1.0 =====
+// @hidden v2.3.0 — 模式未完成（status=hidden），不对用户暴露。引擎代码保留。
 // Tabletop RPG 模式专用模块。
 // 职责：骰子判定 / 角色属性 / 难度推断 / 遭遇生成 / 方向包注入
 // 不修改引擎核心，被 director/llm/world-engine 按需调用。

@@ -29,7 +29,7 @@ function compactJson(value, limit = 1600) {
   return text.length > limit ? `${text.slice(0, limit)}\n...` : text;
 }
 
-function moduleContext(model) {
+export function moduleContext(model) {
   const data = model.moduleData;
   if (!model.selected || !data) return "未加载世界树模组。以空白模组/创作前模式运行。";
   return [
@@ -44,7 +44,7 @@ function moduleContext(model) {
   ].join("\n");
 }
 
-function renderKnowledgeCards(cards = [], mode = "rules") {
+export function renderKnowledgeCards(cards = [], mode = "rules") {
   if (!cards.length) return "未加载模块知识卡；使用内置模块定义和全文检索兜底。";
   return cards.map((card) => {
     if (mode === "names-only") return `${card.moduleId || card.id}: ${card.name}`;

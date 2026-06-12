@@ -49,6 +49,10 @@ async function testAsync(name, fn) {
 console.log("\n📝 语法检查");
 
 const CORE_FILES = [
+  "server.js",
+  "world-tree-console.js",
+  "scripts/audit.mjs",
+  "scripts/interface-audit.mjs",
   "src/adapters/llm.js",
   "src/core/world-engine.js",
   "src/core/engine/guardian.js", "src/core/engine/guardian-llm.js",
@@ -57,6 +61,7 @@ const CORE_FILES = [
   "src/core/engine/emotion-state.js", "src/core/engine/director.js",
   "src/core/engine/direction-packet.js", "src/core/engine/commands.js",
   "src/core/engine/output-parser.js", "src/core/engine/modules.js",
+  "src/core/engine/constants.js", "src/core/engine/state-persistence.js",
   "src/core/engine/context-budget.js", "src/core/engine/archive-state.js",
   "src/core/engine/storytellers.js", "src/core/engine/content-registry.js",
   "src/core/engine/proposal-system.js",
@@ -69,7 +74,7 @@ const CORE_FILES = [
   "src/core/data/rules.js", "src/core/data/prediction.js",
   "src/core/data/random-events.js", "src/core/data/scenes.js",
   "src/core/data/race.js", "src/core/data/proximity-scope.js",
-  "src/core/data/creation-wizard.js",
+  "src/core/data/creation-wizard.js", "src/core/data/skill-parser.js",
   "src/core/normalizers.js", "src/core/cards.js",
   "src/core/commands.js", "src/core/data-store.js",
 ];
@@ -392,7 +397,7 @@ await testAsync("Memory Layers: 会话记忆写入", async () => {
 await testAsync("Branch System: 接口可用+错误处理", async () => {
   const { createBranch, getBranchTree, abandonBranch, reviveBranch } = await import(urlFor(join(PROJECT_ROOT, "src/core/engine/branch-system.js")));
   // 测试不存在世界的错误处理（不需要文件系统）
-  const tree = getBranchTree("/nonexistent", "missing-world");
+  const tree = await getBranchTree("/nonexistent", "missing-world");
   if (tree && tree.error) {
     // 正常：应该报世界不存在
   } else {
@@ -448,11 +453,11 @@ await testAsync("Processing Engine: 基础管线可用", async () => {
   }
 });
 
-// ── Hermes Adapter ──
-await testAsync("Hermes Adapter: 可导入", async () => {
-  const mod = await import(urlFor(join(PROJECT_ROOT, "src/adapters/hermes.js")));
+// ── Legacy Hermes Adapter ──
+await testAsync("Legacy Hermes Adapter: 可导入", async () => {
+  const mod = await import(urlFor(join(PROJECT_ROOT, "legacy/adapters/hermes.js")));
   const keys = Object.keys(mod);
-  if (keys.length === 0) throw new Error("hermes.js 应导出内容");
+  if (keys.length === 0) throw new Error("legacy hermes.js 应导出内容");
 });
 
 // ── Local Adapter ──
@@ -504,6 +509,24 @@ await testAsync("无悬空导入（world-engine.js）", async () => {
     await import(urlFor(join(PROJECT_ROOT, "src/core/world-engine.js")));
   } catch (err) {
     throw new Error(`world-engine.js 导入失败: ${err.message}`);
+  }
+});
+
+await testAsync("角色卡外部来源未配置时静默跳过", async () => {
+  const { listSkillFiles } = await import(urlFor(join(PROJECT_ROOT, "src/core/data/skill-parser.js")));
+  const skills = listSkillFiles();
+  if (!Array.isArray(skills) || skills.length !== 0) throw new Error("未配置 skillsDir 时不应扫描 Hermes 目录");
+});
+
+test("内置素材清单为空或路径有效", () => {
+  const manifestPath = join(PROJECT_ROOT, "defaults/examples/manifest.json");
+  if (!existsSync(manifestPath)) throw new Error("缺失 defaults/examples/manifest.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+  if (!Array.isArray(manifest.examples)) throw new Error("examples 必须是数组");
+  for (const item of manifest.examples) {
+    if (!item.id || !item.type || !item.path) throw new Error("示例条目缺少 id/type/path");
+    const full = join(PROJECT_ROOT, "defaults/examples", item.path);
+    if (!existsSync(full)) throw new Error(`示例路径不存在: ${item.path}`);
   }
 });
 
