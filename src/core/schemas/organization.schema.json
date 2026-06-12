@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/organization.schema.json",
+  "title": "组织",
+  "description": "世界树组织/势力实体定义",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "id": { "type": "string", "description": "唯一标识符" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "type": {
+      "type": "string",
+      "enum": ["国家", "军队", "商会", "宗教", "学派", "公会", "家族", "帮派", "秘密结社", "其他"]
+    },
+    "hierarchy": {
+      "type": "object",
+      "description": "组织层级结构",
+      "properties": {
+        "tiers": { "type": "array", "items": { "type": "string" } },
+        "leaderTitle": { "type": "string" },
+        "structure": { "type": "string", "description": "扁平/金字塔/矩阵等" }
+      }
+    },
+    "territory": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "势力范围/领地"
+    },
+    "keyFigures": {
+      "type": "array",
+      "description": "关键人物",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "influence": { "type": "string", "enum": ["高", "中", "低"] }
+        }
+      }
+    },
+    "relations": {
+      "type": "object",
+      "description": "与其他组织的关系",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "attitude": { "type": "string", "enum": ["盟友", "友好", "中立", "冷淡", "敌对", "战争"] },
+          "history": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "members": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "成员列表（角色名）"
+    },
+    "resources": {
+      "type": "object",
+      "description": "组织资源",
+      "properties": {
+        "wealth": { "type": "string" },
+        "military": { "type": "string" },
+        "influence": { "type": "string" }
+      }
+    },
+    "description": { "type": "string", "maxLength": 2000 },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

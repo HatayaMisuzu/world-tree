@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/scene.schema.json",
+  "title": "场景",
+  "description": "世界树场景实体定义",
+  "type": "object",
+  "required": ["title"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "唯一标识符，格式 scene-{timestamp}"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "场景标题"
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "场景摘要"
+    },
+    "location": {
+      "type": "string",
+      "description": "场景地点"
+    },
+    "time": {
+      "type": "string",
+      "description": "场景时间"
+    },
+    "atmosphere": {
+      "type": "string",
+      "description": "场景氛围/基调"
+    },
+    "weather": {
+      "type": "string",
+      "description": "天气"
+    },
+    "timeOfDay": {
+      "type": "string",
+      "enum": ["黎明", "早晨", "上午", "中午", "下午", "傍晚", "夜晚", "深夜", "凌晨"]
+    },
+    "participants": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "出场角色"
+    },
+    "props": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "场景中的重要道具"
+    },
+    "conflict": {
+      "type": "object",
+      "description": "当前冲突",
+      "properties": {
+        "type": { "type": "string" },
+        "parties": { "type": "array", "items": { "type": "string" } },
+        "intensity": { "type": "string", "enum": ["潜伏", "暗流", "公开", "爆发", "收束"] }
+      }
+    },
+    "clues": {
+      "type": "array",
+      "description": "已知线索",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "source": { "type": "string" },
+          "verified": { "type": "boolean", "default": false },
+          "leadsTo": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "default": []
+    },
+    "emotions": {
+      "type": "object",
+      "description": "角色情绪快照（角色名→情绪）",
+      "additionalProperties": { "type": "string" }
+    },
+    "transitions": {
+      "type": "array",
+      "description": "场景转换记录",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "reason": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "predictions": {
+      "type": "array",
+      "description": "场景走向预测（M18）",
+      "items": {
+        "type": "object",
+        "properties": {
+          "direction": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      },
+      "default": []
+    },
+    "roundNumber": {
+      "type": "integer",
+      "description": "当前叙事轮次"
+    },
+    "branchId": {
+      "type": "string",
+      "description": "所属分支"
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

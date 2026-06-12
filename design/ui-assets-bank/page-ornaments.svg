@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="none">
+  <defs>
+    <filter id="paperSoft">
+      <feGaussianBlur stdDeviation=".22"/>
+    </filter>
+    <g id="sprig" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M0 122 C38 86 79 58 136 43 C181 31 221 18 274 0"
+        stroke="#b7aa82" stroke-width="3.2" stroke-opacity=".54"/>
+      <path d="M42 86 C40 62 48 42 65 23" stroke="#b7aa82" stroke-width="2.1" stroke-opacity=".48"/>
+      <path d="M74 68 C76 44 88 26 108 11" stroke="#b7aa82" stroke-width="2.1" stroke-opacity=".48"/>
+      <path d="M111 50 C118 27 133 12 156 3" stroke="#b7aa82" stroke-width="2.1" stroke-opacity=".46"/>
+      <path d="M146 39 C158 18 176 7 203 3" stroke="#b7aa82" stroke-width="2.1" stroke-opacity=".42"/>
+      <path d="M181 28 C196 12 216 5 241 6" stroke="#b7aa82" stroke-width="2" stroke-opacity=".38"/>
+      <g fill="#93a874" fill-opacity=".42" stroke="#87996c" stroke-opacity=".34" stroke-width="1">
+        <ellipse cx="38" cy="70" rx="9" ry="22" transform="rotate(-33 38 70)"/>
+        <ellipse cx="62" cy="52" rx="8" ry="20" transform="rotate(27 62 52)"/>
+        <ellipse cx="76" cy="45" rx="9" ry="22" transform="rotate(-30 76 45)"/>
+        <ellipse cx="104" cy="31" rx="8" ry="20" transform="rotate(31 104 31)"/>
+        <ellipse cx="117" cy="29" rx="8" ry="19" transform="rotate(-26 117 29)"/>
+        <ellipse cx="148" cy="18" rx="7" ry="18" transform="rotate(34 148 18)"/>
+        <ellipse cx="157" cy="19" rx="7" ry="17" transform="rotate(-22 157 19)"/>
+        <ellipse cx="190" cy="12" rx="6" ry="16" transform="rotate(43 190 12)"/>
+      </g>
+    </g>
+    <g id="curl" fill="none" stroke="#c6ae7b" stroke-opacity=".32" stroke-width="1.6" stroke-linecap="round">
+      <path d="M0 78 C25 32 79 7 121 28 C157 46 151 91 111 94 C80 96 66 60 91 48"/>
+      <path d="M132 31 C164 10 209 15 234 43"/>
+      <path d="M27 93 C47 124 91 132 122 111"/>
+    </g>
+    <g id="cornerFull">
+      <use href="#sprig"/>
+      <use href="#curl" x="58" y="38"/>
+      <path d="M18 148 C86 126 128 129 193 154" fill="none" stroke="#d7ad5a" stroke-opacity=".16" stroke-width="1.2"/>
+    </g>
+  </defs>
+
+  <rect x="18" y="18" width="1564" height="864" rx="20" fill="none" stroke="#d7ad5a" stroke-opacity=".22" stroke-width="1.4"/>
+  <rect x="30" y="30" width="1540" height="840" rx="16" fill="none" stroke="#f8eed7" stroke-opacity=".18" stroke-width=".8"/>
+
+  <g filter="url(#paperSoft)">
+    <use href="#cornerFull" x="30" y="34" opacity=".96"/>
+    <g transform="translate(1570 34) scale(-1 1)"><use href="#cornerFull" opacity=".72"/></g>
+    <g transform="translate(30 866) scale(1 -1)"><use href="#cornerFull" opacity=".84"/></g>
+    <g transform="translate(1570 866) scale(-1 -1)"><use href="#cornerFull" opacity="1"/></g>
+  </g>
+
+  <g fill="none" stroke="#c6ae7b" stroke-width="1" stroke-linecap="round" opacity=".18">
+    <path d="M88 40 H260"/>
+    <path d="M1340 40 H1512"/>
+    <path d="M88 860 H260"/>
+    <path d="M1340 860 H1512"/>
+  </g>
+</svg>

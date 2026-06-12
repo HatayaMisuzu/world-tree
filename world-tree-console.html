@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>World Tree 观测终端 v2</title>
+<link rel="stylesheet" href="world-tree-console.css"></head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>🌳 世界树桌面</h1>
+      <div id="contextLine" class="context">启动中...</div>
+    </div>
+    <div class="toolbar">
+      <button id="homeBtn" class="ghost" title="返回模组选择">🏠 首页</button>
+      <span id="llmStatus" class="badge pending" style="cursor:default">未连接</span>
+    </div>
+  </header>
+  <nav id="tabs" class="tabs"></nav>
+  <main id="main"></main>
+<button class="debug-toggle" style="display:none" title="Ctrl+Shift+D \u5207\u6362\u8C03\u8BD5\u9762\u677F" onclick="document.querySelector('.debug-panel').classList.toggle('open')">\u{1F41B}</button>
+  <div class="debug-panel" id="debugPanel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>\u{1F41B} \u5F15\u64CE\u8C03\u8BD5\u65E5\u5FD7</strong><span style="font-size:11px;color:var(--muted)">Ctrl+Shift+D \u5207\u6362 \u00B7 \u9700 --debug \u6A21\u5F0F</span><button class="small" onclick="refreshDebugLogs()">\u{1F504}</button></div><div id="debugLogContent" class="dp-list"></div></div>
+  <footer class="statusbar">
+    <div id="statusLeft">World Tree Desktop · 直连 LLM 模式</div>
+    <div id="statusRight">等待配置</div>
+  </footer>
+</div>
+
+<script src="world-tree-console.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/timeline.schema.json",
+  "title": "时间线",
+  "description": "世界树时间线事件定义，支持因果链和依赖关系",
+  "type": "object",
+  "required": ["title", "time"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "唯一标识符"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "事件标题"
+    },
+    "time": {
+      "type": "string",
+      "description": "事件时间（可为人读格式）"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "事件描述"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["past", "present", "future", "foreshadowing", "branch"],
+      "description": "事件类型：过去/当前/未来/伏笔/分支"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["confirmed", "likely", "possible", "abandoned"],
+      "description": "事件确定性状态"
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "前置依赖事件 ID 列表（因果链）",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "affectedBy": {
+      "type": "array",
+      "description": "哪些事件会影响此事件",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "affects": {
+      "type": "array",
+      "description": "此事件会影响哪些事件",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "consequences": {
+      "type": "array",
+      "description": "事件后果/影响",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": { "type": "string", "description": "受影响实体（角色/组织/地点）" },
+          "effect": { "type": "string", "description": "影响描述" },
+          "severity": { "type": "string", "enum": ["minor", "moderate", "major", "world-changing"] }
+        }
+      },
+      "default": []
+    },
+    "relatedEntities": {
+      "type": "object",
+      "description": "关联实体",
+      "properties": {
+        "characters": { "type": "array", "items": { "type": "string" } },
+        "organizations": { "type": "array", "items": { "type": "string" } },
+        "locations": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "echoes": {
+      "type": "array",
+      "description": "命运回响：此事件在未来的延迟影响",
+      "items": {
+        "type": "object",
+        "properties": {
+          "trigger": { "type": "string", "description": "触发条件" },
+          "effect": { "type": "string", "description": "触发后的效果" },
+          "chapter": { "type": "string", "description": "预期触发章节" }
+        }
+      },
+      "default": []
+    },
+    "branchId": {
+      "type": "string",
+      "description": "所属分支（多分支叙事）"
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

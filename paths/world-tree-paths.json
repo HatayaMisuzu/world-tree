@@ -1,0 +1,82 @@
+{
+  "version": "0.1.1",
+  "generatedFor": "World Tree Desktop",
+  "notes": [
+    "This file is a packaged path catalog only. It uses package-relative paths by default.",
+    "The desktop app starts with an empty module list by default; choose a world folder when you need to import local content."
+  ],
+  "paths": [
+    {
+      "id": "default-data-root",
+      "label": "包内数据根",
+      "kind": "data-root",
+      "path": "data/",
+      "required": false,
+      "description": "便携包内的默认运行数据目录。"
+    },
+    {
+      "id": "module-wanjie",
+      "label": "世界模组目录",
+      "kind": "module-root",
+      "path": "data/modules/",
+      "required": false,
+      "description": "用户导入或创建的世界模组目录。"
+    },
+    {
+      "id": "engine-live",
+      "label": "引擎运行数据",
+      "kind": "engine-root",
+      "path": "data/engine/",
+      "required": false,
+      "description": "运行时 overlay、世界、长期记忆与会话数据。"
+    },
+    {
+      "id": "portable-pack",
+      "label": "默认引擎模板",
+      "kind": "package-root",
+      "path": "defaults/engine-profile/",
+      "required": false,
+      "description": "随应用分发的默认引擎配置。"
+    },
+    {
+      "id": "portable-pack-engine",
+      "label": "默认知识库",
+      "kind": "engine-root",
+      "path": "defaults/engine-knowledge/fulltext/",
+      "required": false,
+      "description": "随应用分发的全文知识检索资料。"
+    },
+    {
+      "id": "installed-skill",
+      "label": "人格预设",
+      "kind": "skill-root",
+      "path": "personas/",
+      "required": false,
+      "description": "应用内置的叙事人格与 DM 指南。"
+    },
+    {
+      "id": "writer-skill-mirror",
+      "label": "源码目录",
+      "kind": "skill-root",
+      "path": "./",
+      "required": false,
+      "description": "当前应用源码根目录。"
+    },
+    {
+      "id": "desktop-source",
+      "label": "桌面应用源码交付",
+      "kind": "app-source",
+      "path": "./",
+      "required": false,
+      "description": "本 Electron 小软件源码交付目录。"
+    },
+    {
+      "id": "desktop-portable",
+      "label": "桌面应用便携版",
+      "kind": "app-package",
+      "path": "../world-tree-desktop-portable/",
+      "required": false,
+      "description": "可直接运行的便携版目录。"
+    }
+  ]
+}

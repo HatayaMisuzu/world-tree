@@ -1,0 +1,15 @@
+{
+  "_note": "v0.1.0 开源初版资产清单。Web UI 拆分为 HTML/CSS/JS。",
+  "_version": "0.1.0",
+  "_updated": "2026-06-12",
+  "assets": [],
+  "archived_assets": [
+    "src/ui/world-tree-hero.png (deprecated v2.0)",
+    "src/ui/world-tree-emblem.svg (deprecated v2.0)",
+    "src/ui/page-ornaments.svg (deprecated v2.0)",
+    "src/ui/status-frame.svg (deprecated v2.0)"
+  ],
+  "codex_tasks": [
+    "资产已全部内联至 world-tree-console.html，无独立资产文件需要管理"
+  ]
+}

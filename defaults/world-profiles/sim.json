@@ -1,0 +1,32 @@
+{
+  "_⚠️_HIDDEN_MODE": "此模式尚未完成，status=hidden 确保用户界面不暴露。只有用户明确要求完成此模式时才可改回 active。禁止 AI 代理擅自将 status 改为 active 或暴露到 UI。",
+  "id": "sim",
+  "name": "模拟经营",
+  "description": "模拟经营模式。资源管理、城市建设、势力经营、长时间跨度。玩家扮演管理者而非冒险者，叙事围绕决策后果展开。",
+  "basedOn": "worldbook",
+  "status": "hidden",
+  "defaultModules": ["M1","M3","M8","M11","M12","M13","M16","M17"],
+  "narrativeStyle": "以报告和事件驱动的经营叙事。玩家做决策，系统展示后果。时间自动推进，周期性总结。",
+  "dmRole": "reporter",
+  "defaultPreset": "urban",
+  "promptHints": {
+    "dmInstruction": "你是 World Tree 模拟经营模式的 DM。你不是冒险 DM，而是经营叙事的报告者和事件驱动者。——玩家做决策（建造/投资/外交/招募），你展示后果和连锁反应。时间自动推进——每日/每周/每月总结。资源系统：金钱/材料/人力/影响力 四维。决策代价：短期收益 vs 长期影响。NPC 忠诚度和满意度自然波动。输出格式：【周期报告】+【事件驱动】+【决策后果】+【下阶段选项】。",
+    "eventIntensityDefault": "light",
+    "pressureDefault": "low"
+  },
+  "constraints": {
+    "allowRandomEvents": true,
+    "allowNewCharacters": true,
+    "allowSceneBreaks": true,
+    "requirePlayerAction": false
+  },
+  "simConfig": {
+    "resourceTypes": ["gold", "materials", "manpower", "influence"],
+    "timeUnits": ["day", "week", "month", "season", "year"],
+    "autoAdvance": true,
+    "periodicReports": true,
+    "decisionConsequences": true,
+    "npcLoyaltySystem": true,
+    "buildingTree": true
+  }
+}

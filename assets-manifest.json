@@ -1,0 +1,13 @@
+{
+  "_note": "v0.1.0 开源初版资产清单。当前不分发原创视觉素材。",
+  "_version": "0.1.0",
+  "_updated": "2026-06-12",
+  "assets": [],
+  "archived_assets": [
+    "src/ui/world-tree-hero.png (deprecated v2.0)",
+    "src/ui/world-tree-emblem.svg (deprecated v2.0)",
+    "src/ui/page-ornaments.svg (deprecated v2.0)",
+    "src/ui/status-frame.svg (deprecated v2.0)",
+    "src/ui/*-image2*.png (deprecated v0.7.5)"
+  ]
+}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <rect width="1600" height="900" fill="#13233a"/>
+  <radialGradient id="warm" cx=".76" cy=".15" r=".52"><stop offset="0" stop-color="#d7ad5a" stop-opacity=".15"/><stop offset=".68" stop-color="#13233a" stop-opacity="0"/></radialGradient>
+  <rect width="1600" height="900" fill="url(#warm)"/>
+  <path d="M810 110 C770 260 760 390 800 530 C835 650 810 750 742 900" fill="none" stroke="#f8eed7" stroke-opacity=".055" stroke-width="34"/>
+  <path d="M785 405 C650 320 520 305 380 350 M805 432 C970 340 1120 312 1285 355 M792 585 C650 610 520 700 410 842 M812 602 C960 630 1070 715 1190 864" fill="none" stroke="#d7ad5a" stroke-opacity=".07" stroke-width="7" stroke-linecap="round"/>
+</svg>

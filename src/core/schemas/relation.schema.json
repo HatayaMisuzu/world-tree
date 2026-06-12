@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/relation.schema.json",
+  "title": "Relation",
+  "description": "World Tree relationship edge between characters, factions, or organizations.",
+  "type": "object",
+  "required": ["source", "target"],
+  "properties": {
+    "id": { "type": "string" },
+    "source": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "target": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "type": {
+      "type": "string",
+      "enum": ["ally", "friendly", "neutral", "rival", "hostile", "family", "romance", "mentor", "unknown", "other"]
+    },
+    "attitude": {
+      "type": "string",
+      "enum": ["trusted", "friendly", "neutral", "cold", "hostile", "war", "unknown"]
+    },
+    "tension": { "type": "number", "minimum": 0, "maximum": 10 },
+    "trust": { "type": "number", "minimum": 0, "maximum": 10 },
+    "history": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 1000 }
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 1000 }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 64 }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

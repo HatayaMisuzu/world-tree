@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/item.schema.json",
+  "title": "物品",
+  "description": "世界树物品/道具实体定义",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "type": { "type": "string", "enum": ["武器", "防具", "道具", "神器", "魔法物品", "药水", "卷轴", "饰品", "材料", "其他"] },
+    "description": { "type": "string", "maxLength": 2000 },
+    "rarity": { "type": "string", "enum": ["普通", "稀有", "史诗", "传说", "神话"] },
+    "effects": { "type": "array", "items": { "type": "string" }, "description": "物品效果" },
+    "owner": { "type": "string", "description": "当前持有者" },
+    "origin": { "type": "string", "description": "来源/创造者" },
+    "value": { "type": "string" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

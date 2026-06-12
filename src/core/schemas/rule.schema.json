@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/rule.schema.json",
+  "title": "世界规则",
+  "description": "世界树规则定义，涵盖物理/魔法/社会/战力/时间等维度",
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "id": { "type": "string", "description": "唯一标识符" },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "description": "规则名称"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "规则描述"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["物理", "魔法", "社会", "战力", "时间", "经济", "宗教", "科技", "生物", "通用"],
+      "description": "规则分类"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["universal", "regional", "faction", "character", "temporary"],
+      "description": "规则作用范围",
+      "default": "universal"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["铁律", "规则", "惯例", "建议"],
+      "description": "规则严格程度",
+      "default": "规则"
+    },
+    "constraints": {
+      "type": "array",
+      "description": "具体约束条件",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "exceptions": {
+      "type": "array",
+      "description": "例外情况",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "violations": {
+      "type": "array",
+      "description": "违规后果",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "costs": {
+      "type": "array",
+      "description": "使用代价（魔法消耗等）",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "relatedRules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "关联规则 ID"
+    },
+    "supersedes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "替代的旧规则 ID"
+    },
+    "overridable": {
+      "type": "boolean",
+      "description": "是否可被更高级规则覆盖",
+      "default": true
+    },
+    "checkPatterns": {
+      "type": "array",
+      "description": "JS 正则检查模式",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pattern": { "type": "string", "description": "正则表达式" },
+          "message": { "type": "string", "description": "违规提示" },
+          "level": { "type": "string", "enum": ["warning", "violation", "critical"] }
+        }
+      },
+      "default": []
+    },
+    "active": {
+      "type": "boolean",
+      "description": "规则是否激活",
+      "default": true
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

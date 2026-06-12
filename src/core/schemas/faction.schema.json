@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/faction.schema.json",
+  "title": "势力",
+  "description": "世界树势力/阵营实体定义",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "type": { "type": "string", "enum": ["王国", "帝国", "共和国", "联盟", "教会", "学派", "商会", "家族", "帮派", "秘密结社", "其他"] },
+    "description": { "type": "string", "maxLength": 2000 },
+    "alignment": { "type": "string", "enum": ["守序善良", "中立善良", "混乱善良", "守序中立", "绝对中立", "混乱中立", "守序邪恶", "中立邪恶", "混乱邪恶"] },
+    "territory": { "type": "array", "items": { "type": "string" }, "description": "势力范围" },
+    "relations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "attitude": { "type": "string", "enum": ["盟友", "友好", "中立", "冷淡", "敌对", "战争"] },
+          "history": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "leader": { "type": "string" },
+    "members": { "type": "array", "items": { "type": "string" } },
+    "goals": { "type": "array", "items": { "type": "string" } },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}
