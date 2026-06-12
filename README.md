@@ -1,215 +1,176 @@
 # World Tree
 
-本地优先的 AI 叙事引擎 **Web 控制台**。纯浏览器访问，无需 Electron。
+本地优先的 AI 叙事引擎与 Web 控制台。
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v2.3.1-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)
 
-**当前版本: v2.3.1** 🎉
+**当前版本: v0.1.0**
 
-更多安全边界见 [SECURITY.md](SECURITY.md)，贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+World Tree 用一个普通的 Node.js 本地服务，把世界书、角色卡、叙事状态、对话历史和 LLM 调用组织在一起。它面向长篇互动叙事、角色扮演、世界设定管理和创作实验；默认只在本机运行，不依赖 Electron，也不绑定任何特定云服务。
 
 English documentation: [README.en.md](README.en.md)
 
----
+## 适合谁
+
+- 想把世界观、角色、规则和剧情推进整理成可持续运行系统的创作者。
+- 想用本地文件保存 AI 叙事项目，而不是把数据散落在聊天窗口里的用户。
+- 想研究叙事引擎、世界书、角色卡、状态机和 LLM 管线的开发者。
+- 想从自己的素材出发构建互动小说、跑团辅助、RP 场景或设定原型的维护者。
+
+## 当前边界
+
+这是开源初版 `0.1.0`。项目已经具备可运行的 Web 控制台、核心叙事管线、本地数据存储和检查脚本，但仍处在早期整理阶段：
+
+- 不内置故事、案例、角色卡等原创素材；`defaults/examples/manifest.json` 当前为空。
+- 默认面向本机使用，安全边界请先阅读 [SECURITY.md](SECURITY.md)。
+- LLM 需要用户自行配置 API Key；支持 OpenAI 兼容接口。
+- 数据格式会继续演进，重要项目请自行备份。
 
 ## 快速开始
 
+需要 Node.js 18 或更高版本。
+
 ```bash
-cd <ROOT>
-npm install        # 仅首次
-node server.js     # 启动 Web 服务器
-# → http://localhost:3000
+git clone https://github.com/HatayaMisuzu/world-tree.git
+cd world-tree
+npm install
+npm start
 ```
 
-也可以在发布到 npm 后使用：
+启动后打开：
+
+```text
+http://localhost:3000
+```
+
+也可以直接运行：
+
+```bash
+node server.js
+```
+
+发布到 npm 后，预期可用：
 
 ```bash
 npx world-tree
 ```
 
-**默认模型**: DeepSeek (`deepseek-v4-flash`) · 默认地址: `https://api.deepseek.com/v1`
+## 配置 LLM
 
----
+首次启动后，在 Web 控制台中填写 LLM 配置。默认配置面向 DeepSeek，也可以换成任意 OpenAI 兼容服务。
 
-## 架构
+| 配置项 | 默认值 |
+| --- | --- |
+| Base URL | `https://api.deepseek.com/v1` |
+| Model | `deepseek-v4-flash` |
+| API Key | 本机保存，不进入仓库 |
 
-```
-浏览器 (world-tree-console.html)
-  │  fetch() REST API
-  ▼
-server.js (Node.js HTTP 服务器)
-  │
-  ├─ /api/config              配置读写
-  ├─ /api/secrets             密钥管理
-  ├─ /api/llm/test            LLM 连接测试
-  ├─ /api/llm/chat            🆕 直连 LLM 叙事对话（含角色卡模式）
-  ├─ /api/modules             🆕 模组列表/创建/删除
-  ├─ /api/modules/{id}/history 🆕 对话历史加载
-  ├─ /api/examples            素材示例清单（当前为空，等待维护者提供）
-  ├─ /api/examples/install    按 manifest 将素材复制到本地数据目录
-  ├─ /api/alchemy/digest      🆕 炼金台→模组/角色卡创建
-  ├─ /api/alchemy/import      🆕 炼金台分析
-  ├─ /api/characters          🆕 角色卡管理（data/engine/characters）
-  ├─ /api/engine/manifest     引擎版本+模块清单
-  └─ → 直调 DeepSeek / OpenAI 兼容 API
+本地模型服务也可以使用 OpenAI 兼容地址，例如：
+
+```text
+http://localhost:11434/v1
 ```
 
----
+可以参考 [config.example.json](config.example.json) 创建自己的本地配置。不要提交真实 API Key。
 
-## 三模式（数据层）
+## 核心能力
 
-| 模式 | DM 角色 | 适用场景 |
-|------|---------|----------|
-| **世界书** | 完整 DM | 长篇叙事、世界设定驱动 |
-| **角色卡** | 隐退（纯 RP） | 一对一角色扮演 |
-| **预设** | 轻量 | 快速原型、少量设定 |
+- **世界书模式**：以世界设定、规则、角色、组织、时间线和状态为核心运行长篇叙事。
+- **角色卡模式**：以角色人格、说话风格和互动边界为核心进行 RP。
+- **预设模式**：用轻量配置快速测试叙事风格和玩法原型。
+- **内容炼金台**：把粘贴的设定、小说片段、角色资料或世界书材料解析成结构化数据。
+- **双段式叙事管线**：先生成方向包，再由 LLM 写作，并通过守门人检查输出。
+- **本地持久化**：对话、记忆、世界状态和引擎增量写入本地 JSON/JSONL 文件。
+- **健康诊断**：`/api/health` 返回版本、LLM 配置、密钥状态、数据目录和本地数据概览。
 
----
+## 数据如何保存
 
-## 双段式叙事管线
+World Tree 的核心原则是“一个世界就是一个文件夹”。世界数据默认保存在本地数据目录中，每个模组独立存放：
 
-```
-用户输入
-  → Director DM（JS/LLM 混合）→ Direction Packet
-  → Story Writer（LLM）→ 【叙事】+【状态建议】+【情绪反馈】
-  → Guardian（JS 优先，<50 分自动 LLM 修正）→ completeTurn → 自动存档
-```
-
----
-
-## 内容炼金台
-
-粘贴文档（小说/设定/角色卡）→ 自动解析角色/地点/组织 → 创建模组 → 直接对话。
-
-当前开源包不内置故事、案例或角色卡素材。`defaults/examples/manifest.json` 只保留空清单，后续由维护者提供并在 [docs/content-provenance.md](docs/content-provenance.md) 登记来源后再加入。
-
-```
-POST /api/alchemy/digest
-  1. 引擎解析 → items[]
-  2. items → worldbook entries + characters + locations + orgs
-  3. 写入 shared/worldbook.json + shared/characters.json + ...
-  4. 返回模组信息 → 出现在模组列表
+```text
+{world}/
+├── world.json
+├── shared/
+│   ├── worldbook.json
+│   ├── characters.json
+│   ├── scenes.json
+│   ├── organizations.json
+│   ├── relations.json
+│   ├── timeline.json
+│   └── world_state.json
+└── runtime/
+    ├── chat.jsonl
+    ├── memory.jsonl
+    ├── state.json
+    └── overlay/
 ```
 
----
+这些运行数据属于用户内容，默认不会进入 npm 包或 Git 仓库。
 
-## 全链路持久化
+## 项目结构
 
-每轮对话自动写入：
-
-| 文件 | 内容 | 写入方式 |
-|:----|:-----|:----|
-| `runtime/chat.jsonl` | 对话记录（用户+助手） | 追加 |
-| `runtime/memory.jsonl` | 叙事记忆快照 | 追加 |
-| `runtime/state.json` | 完整引擎状态+情绪 | 覆盖 |
-| `runtime/overlay/` | 引擎增量数据 | 合并/追加 |
-| `world.json` | 轮次计数+时间戳 | 覆盖 |
-
-选择模组时自动加载最近 50 轮历史 + 恢复引擎状态。
-
----
-
-## 模组文件格式
-
-```
-{name}/
-├── world.json                    ← 元数据
-├── shared/                       ← 静态数据
-│   ├── worldbook.json            ← 世界观条目
-│   ├── characters.json           ← 角色
-│   ├── scenes.json / locations.json
-│   ├── organizations.json / relations.json
-│   ├── timeline.json / world_state.json
-│   ├── races.json / rules.json
-├── runtime/                      ← 持久化
-│   ├── state.json                ← 引擎状态
-│   ├── chat.jsonl                ← 对话
-│   ├── memory.jsonl              ← 记忆
-│   └── overlay/                  ← 引擎增量
+```text
+server.js                  本地 HTTP 服务与 REST API
+world-tree-console.html    Web 控制台结构
+world-tree-console.css     Web 控制台样式
+world-tree-console.js      Web 控制台逻辑
+bin/world-tree.js          命令行启动入口
+src/adapters/llm.js        OpenAI 兼容 LLM 适配器
+src/core/world-engine.js   叙事上下文与 prompt 构建入口
+src/core/engine/           叙事引擎、守门人、状态、记忆和模式模块
+src/core/data/             内容导入、角色卡、世界书和结构化数据工具
+defaults/engine-profile/   引擎运行配置
+defaults/world-profiles/   内置模式配置
+defaults/examples/         示例素材清单入口（当前为空）
+tests/unit/                单元测试
+scripts/                   审计、接口联动和发布前检查脚本
 ```
 
-一个世界 = 一个文件夹 = 可复制、可备份、可分享。
-
----
-
-## 核心模块
-
-| 模块 | 内容 | 状态 |
-|------|------|:----:|
-| M1 | 世界书隔离容器 | ✅ |
-| M2 | 触发式条目（精确/语义/向量匹配） | ✅ |
-| M3-M10 | 世界状态、组织、角色、认知、种族 | ✅ |
-| M11 | 场景会话管理 | ✅ |
-| M12 | 故事模板 | ✅ |
-| M13 | 五层叙事引擎 | ✅ |
-| M15 | 世界规则 + 叙事质量审查 | ✅ |
-| M16-M18 | 时间、随机事件、场景预测 | ✅ |
-| M19 | 角色卡驱动模式 | ✅ |
-| M-创作 | 六阶段创作向导 | ✅ |
-| 内容炼金台 | 外部文档自动拆解导入 + 角色卡VC-3人格提炼 | ✅ |
-| 上下文引擎 | 统一全文检索+定向查表+合并排序（world-engine 当前调用） | ✅ |
-| 枝干系统 | 四态管理+嫁接合并 | ✅ |
-| 世界脉象 | 15维度叙事KPI+趋势追踪 | ✅ |
-| 角色卡引擎 | VC-3人格提炼+本地角色卡管理+人称规则修正 | ✅ |
-
----
-
-## 质量保障
+## 常用命令
 
 ```bash
-npm test              # 84 项集成/语法测试
-npm run check         # 关键文件存在性 + 无副作用核心模块导入检查
-npm run test:unit     # 51 项单元测试（Node 18+ 原生 test runner）
-npm run audit         # 版本一致性 / 危险路径 / 目录结构
-npm run interface-audit # 接口联动审计（IO校准/API契约/engineState链路）
-npm run preflight     # audit + check + test + interface-audit 一键跑通
+npm start               # 启动本地 Web 控制台
+npm test                # 集成/语法测试
+npm run test:unit       # 单元测试
+npm run audit           # 版本、目录、安全和开源卫生审计
+npm run interface-audit # API 与文件 IO 联动检查
+npm run preflight       # 发布前总检查
 ```
 
-## 安全与诊断
+建议每次提交前运行：
 
-- 服务仅面向本机使用，安全边界见 [SECURITY.md](SECURITY.md)。
-- `/api/health` 会返回版本、LLM 配置状态、API Key 是否存在、数据目录可写性和本地数据概览。
-- 错误响应包含 `userMsg`（给用户看的说明）和 `detail`（技术排障信息，前端写入 console）。
-
----
-
-## 源码结构
-
+```bash
+npm run preflight
 ```
-world-tree-console.html   Web UI 结构入口（~1.5KB）
-world-tree-console.css    独立样式表（~14KB）
-world-tree-console.js     独立脚本（~59KB）
-server.js                 HTTP 服务器（REST API）
-src/
-  adapters/llm.js         三角色LLM + 双段式管线
-  core/
-    world-engine.js       引擎入口 + Prompt构建
-    engine/               引擎核心（25+ 文件）
-      constants.js        集中可调参数（~200行）
-      state-persistence.js 引擎状态统一导出/导入层
-      director.js         叙事导演层 + 事件评分 + 节奏控制
-      guardian.js         JS守门人校验 + LLM自动修正
-      lifecycle.js        回合生命周期（prepareTurn/completeTurn）
-      ...
-    data/                 数据模块（17 文件）
-      skill-generator.js  VC-3 人格提炼引擎
-      skill-parser.js     SKILL.md → JSON 解析桥
-tests/
-  unit/                   单元测试（4 文件，51 条）
-    emotion-state.test.js   情绪状态机
-    direction-packet.test.js 方向包
-    output-parser.test.js   输出解析器
-    guardian.test.js        守门人校验
-scripts/
-  test.mjs                84 项集成/语法测试
-  check.mjs               关键文件和核心模块导入检查
-  audit.mjs               项目审计
-  interface-audit.mjs     接口联动审计
-data/
-  engine/characters/      炼金台产出角色卡（card.json + runtime/）
-defaults/
-  engine-profile/         引擎运行配置
-  world-profiles/         内置模式配置
-  examples/manifest.json  素材清单入口（当前为空）
+
+## 内容与素材政策
+
+开源包不附带来源未确认的故事、案例、角色卡或知识库材料。后续如果加入示例素材，需要同时满足：
+
+- 素材来源明确，可公开分发。
+- 在 [docs/content-provenance.md](docs/content-provenance.md) 登记来源与许可。
+- 在 `defaults/examples/manifest.json` 中登记安装入口。
+
+你自己的世界、角色卡和运行记录应保存在本地数据目录，不应直接提交到公开仓库。
+
+## 安全说明
+
+- 本项目默认用于本机 `localhost`。
+- API Key 保存在本机用户数据目录，不应提交到 Git。
+- `.gitignore` 已忽略常见密钥、配置和运行数据路径。
+- 详细边界见 [SECURITY.md](SECURITY.md)。
+
+## 参与贡献
+
+欢迎通过 Issue 和 Pull Request 参与。提交前请先跑通：
+
+```bash
+npm run preflight
 ```
+
+贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 许可证
+
+MIT License. 详见 [LICENSE](LICENSE)。

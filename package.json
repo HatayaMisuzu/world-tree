@@ -1,6 +1,6 @@
 {
   "name": "world-tree",
-  "version": "2.3.1",
+  "version": "0.1.0",
   "description": "World Tree — 本地优先的 AI 叙事引擎 Web 控制台",
   "type": "module",
   "main": "server.js",
@@ -46,6 +46,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/WorldTreeDAO/world-tree.git"
+    "url": "https://github.com/HatayaMisuzu/world-tree.git"
   }
 }
