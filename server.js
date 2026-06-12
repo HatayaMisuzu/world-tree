@@ -6,8 +6,9 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSy
 import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join, dirname, extname, resolve, basename } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(import.meta.dirname, ".");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
 const PORT = process.env.PORT || 3000;
 

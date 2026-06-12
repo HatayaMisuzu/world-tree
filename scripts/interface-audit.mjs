@@ -6,10 +6,11 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { readFileSync, existsSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
 import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let errors = 0, warnings = 0, passes = 0;
 
 function fail(msg) { errors++; console.error(`  ❌ ${msg}`); }

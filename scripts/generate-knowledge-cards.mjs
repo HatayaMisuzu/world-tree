@@ -1,8 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { MODULES } from "../src/core/engine/modules.js";
 
-const root = resolve(import.meta.dirname, "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = resolve(root, "defaults", "engine-profile", "modules");
 
 const moduleRules = {

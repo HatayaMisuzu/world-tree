@@ -5,10 +5,11 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const PROJECT_ROOT = resolve(import.meta.dirname, "..");
+const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const VERBOSE = process.argv.includes("--verbose");
 
 function urlFor(filePath) {

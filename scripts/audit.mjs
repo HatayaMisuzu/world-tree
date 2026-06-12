@@ -1,9 +1,10 @@
 // scripts/audit.mjs — 项目审计（兼容 preflight）
 // 检查：版本号 / 关键文件存在 / 目录结构 / 开源卫生
 import { readFileSync, existsSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let errors = 0;
 
 function pass(message) {
