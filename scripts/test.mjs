@@ -489,9 +489,10 @@ test("版本文件一致性", () => {
   if (!readme.includes(`v${pkg.version}`)) throw new Error(`README.md 中未找到版本号 v${pkg.version}`);
 });
 
-test("data/ 目录结构", () => {
-  for (const dir of ["data/engine/runs", "data/engine/worlds", "data/engine/global-memory", "data/modules", "data/profiles"]) {
-    if (!existsSync(join(PROJECT_ROOT, dir))) throw new Error(`缺失目录: ${dir}`);
+test("运行时 data/ 目录不随仓库分发", () => {
+  const gitignore = readFileSync(join(PROJECT_ROOT, ".gitignore"), "utf-8");
+  for (const dir of ["data/engine/runs/", "data/engine/worlds/", "data/engine/global-memory/"]) {
+    if (!gitignore.includes(dir)) throw new Error(`.gitignore 缺少运行时目录: ${dir}`);
   }
 });
 
