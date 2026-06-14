@@ -1,32 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>World Tree 观测终端 v2</title>
-<link rel="stylesheet" href="world-tree-console.css"></head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>World Tree 控制台</title>
+  <link rel="stylesheet" href="world-tree-console.css">
+</head>
 <body>
-<div class="app">
-  <header class="topbar">
-    <div class="brand">
-      <h1>🌳 世界树桌面</h1>
-      <div id="contextLine" class="context">启动中...</div>
-    </div>
-    <div class="toolbar">
-      <button id="homeBtn" class="ghost" title="返回模组选择">🏠 首页</button>
-      <span id="llmStatus" class="badge pending" style="cursor:default">未连接</span>
-    </div>
-  </header>
-  <nav id="tabs" class="tabs"></nav>
-  <main id="main"></main>
-<button class="debug-toggle" style="display:none" title="Ctrl+Shift+D \u5207\u6362\u8C03\u8BD5\u9762\u677F" onclick="document.querySelector('.debug-panel').classList.toggle('open')">\u{1F41B}</button>
-  <div class="debug-panel" id="debugPanel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>\u{1F41B} \u5F15\u64CE\u8C03\u8BD5\u65E5\u5FD7</strong><span style="font-size:11px;color:var(--muted)">Ctrl+Shift+D \u5207\u6362 \u00B7 \u9700 --debug \u6A21\u5F0F</span><button class="small" onclick="refreshDebugLogs()">\u{1F504}</button></div><div id="debugLogContent" class="dp-list"></div></div>
-  <footer class="statusbar">
-    <div id="statusLeft">World Tree Desktop · 直连 LLM 模式</div>
-    <div id="statusRight">等待配置</div>
-  </footer>
-</div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">WT</div>
+        <div>
+          <h1>World Tree</h1>
+          <p>叙事引擎 v0.1.8</p>
+        </div>
+      </div>
+      <nav id="primaryNav" class="primary-nav" aria-label="主导航"></nav>
+      <div class="sidebar-card">
+        <span class="label">当前世界</span>
+        <strong id="sideWorldName">未选择</strong>
+        <span id="sideWorldMeta">等待加载</span>
+      </div>
+    </aside>
 
-<script src="world-tree-console.js"></script>
+    <section class="app-main">
+      <header class="topbar">
+        <div>
+          <h2 id="viewTitle">工作台</h2>
+          <p id="contextLine">启动中...</p>
+        </div>
+        <div class="toolbar">
+          <span id="llmStatus" class="badge pending">未连接</span>
+          <button id="refreshBtn" class="ghost">刷新</button>
+          <button id="settingsBtn" class="ghost">设置</button>
+        </div>
+      </header>
+
+      <main id="main" class="main-content"></main>
+
+      <nav id="mobileNav" class="mobile-nav" aria-label="移动端导航"></nav>
+    </section>
+  </div>
+
+  <button id="debugToggle" class="debug-toggle" title="Ctrl+Shift+D 切换调试日志">Debug</button>
+  <div id="debugPanel" class="debug-panel">
+    <div class="debug-head">
+      <strong>引擎调试日志</strong>
+      <span>Ctrl+Shift+D</span>
+      <button class="small" data-action="refresh-debug">刷新</button>
+    </div>
+    <div id="debugLogContent"></div>
+  </div>
+
+  <div id="toastHost" class="toast-host"></div>
+  <script src="world-tree-console.js"></script>
 </body>
 </html>

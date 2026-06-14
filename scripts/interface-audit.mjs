@@ -78,6 +78,16 @@ const apiContracts = [
   { endpoint: "/api/examples", recvFields: ["status","examples"] },
   { endpoint: "/api/examples/install", sentFields: ["id"], recvFields: ["status","module"] },
   { endpoint: "/api/alchemy/digest", recvFields: ["status","module","entries","characters","locations","errorMsg"] },
+  { endpoint: "/api/alchemy/review", recvFields: ["status","items"] },
+  { endpoint: "/api/characters/import", recvFields: ["status","character","module"] },
+  { endpoint: "/api/worldbook", recvFields: ["status","entries"] },
+  { endpoint: "/api/worldbook/test", recvFields: ["status","hits"] },
+  { endpoint: "/api/connections", recvFields: ["status","items","templates","active"] },
+  { endpoint: "/api/chat/message", recvFields: ["status","message","messages"] },
+  { endpoint: "/api/turn/debug", recvFields: ["status","debug"] },
+  { endpoint: "/api/world-pack/export", recvFields: ["status","filename","pack"] },
+  { endpoint: "/api/world-pack/import", recvFields: ["status","preview","summary","module"] },
+  { endpoint: "/api/plugins", recvFields: ["status","plugins"] },
   { endpoint: "/api/health", recvFields: ["version","llm","data","debugMode"] },
 ];
 
@@ -159,7 +169,7 @@ if (combinedCode.includes("AS.isQuickStart") && combinedCode.includes("快速模
 
 console.log("\n🔑 密钥安全");
 
-if (serverCode.includes('/^\\*{6,}/') && serverCode.includes("saveLlmSecret"))
+if ((serverCode.includes('\\*{4,}') || serverCode.includes('/^\\*{6,}/')) && serverCode.includes("saveLlmSecret"))
   pass("saveLlmSecret 拒绝掩码格式 key");
 
 if (combinedCode.includes('hasApiKey') && !combinedCode.includes('value="${U.esc(AS.apiKey'))

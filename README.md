@@ -3,9 +3,9 @@
 本地优先的 AI 叙事引擎与 Web 控制台。
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.1.8-blue.svg)
 
-**当前版本: v0.1.0**
+**当前版本: v0.1.8**
 
 World Tree 用一个普通的 Node.js 本地服务，把世界书、角色卡、叙事状态、对话历史和 LLM 调用组织在一起。它面向长篇互动叙事、角色扮演、世界设定管理和创作实验；默认只在本机运行，不依赖 Electron，也不绑定任何特定云服务。
 
@@ -18,9 +18,22 @@ English documentation: [README.en.md](README.en.md)
 - 想研究叙事引擎、世界书、角色卡、状态机和 LLM 管线的开发者。
 - 想从自己的素材出发构建互动小说、跑团辅助、RP 场景或设定原型的维护者。
 
+## 当前版本重点
+
+`0.1.8` 是一次“创作者工作台”升级。项目已经具备可运行的 Web 控制台、核心叙事管线、本地数据存储和检查脚本，并新增了八组面向创作者的工作流：
+
+- 角色库：批量导入 SillyTavern v2/v3 JSON，并尝试解析带 `chara` 元数据的 PNG 角色卡；支持标签和说明编辑。
+- 世界书编辑器：新增、编辑、停用、删除、分组、批量导入导出条目，并测试触发命中和排序原因。
+- 连接档案：管理 DeepSeek、OpenAI-compatible、OpenRouter、Ollama、Claude-compatible 等连接模板，以及常用生成参数。
+- 聊天基础操作：复制、编辑、删除、收藏，以及助手候选回复 swipe 持久化和轻量分支索引。
+- 叙事黑盒：查看世界书命中、角色状态、记忆快照、Direction Packet、Guardian 结果和可读时间线。
+- 炼金台审核队列：提取结果先进入审核，支持确认、忽略和字段级合并，确认后才写入正式世界数据。
+- `.worldtree` 世界包：导出/导入世界设定、角色、世界书和来源说明，默认排除 secrets 与私密 runtime，并支持导出范围选择。
+- 插件接口 v0：只开放本地 importer / reviewer 两类插件，不加载远程脚本；支持本地 JSON 入口 dry-run。
+
 ## 当前边界
 
-这是开源初版 `0.1.0`。项目已经具备可运行的 Web 控制台、核心叙事管线、本地数据存储和检查脚本，但仍处在早期整理阶段：
+项目仍处在早期整理阶段：
 
 - 不内置故事、案例、角色卡等原创素材；`defaults/examples/manifest.json` 当前为空。
 - 默认面向本机使用，安全边界请先阅读 [SECURITY.md](SECURITY.md)。
@@ -80,6 +93,10 @@ http://localhost:11434/v1
 - **角色卡模式**：以角色人格、说话风格和互动边界为核心进行 RP。
 - **预设模式**：用轻量配置快速测试叙事风格和玩法原型。
 - **内容炼金台**：把粘贴的设定、小说片段、角色资料或世界书材料解析成结构化数据。
+- **审核队列**：炼金台提取结果默认先入队，用户确认后才写入正式世界。
+- **连接档案**：在本机管理多个模型服务配置，密钥独立保存在 secrets。
+- **世界包**：用 `.worldtree` 交换世界设定和 shared 数据，默认不包含私密运行记录。
+- **本地插件 v0**：识别本地插件 manifest，限制为导入器和审查器能力。
 - **双段式叙事管线**：先生成方向包，再由 LLM 写作，并通过守门人检查输出。
 - **本地持久化**：对话、记忆、世界状态和引擎增量写入本地 JSON/JSONL 文件。
 - **健康诊断**：`/api/health` 返回版本、LLM 配置、密钥状态、数据目录和本地数据概览。
@@ -107,6 +124,20 @@ World Tree 的核心原则是“一个世界就是一个文件夹”。世界数
 ```
 
 这些运行数据属于用户内容，默认不会进入 npm 包或 Git 仓库。
+
+## 主要 API
+
+| 端点 | 说明 |
+| --- | --- |
+| `/api/characters/import` / `/api/characters/update` | 导入 ST v2/v3 JSON 或 PNG metadata 角色卡，更新角色标签和说明 |
+| `/api/worldbook` | 读取和保存当前世界书 |
+| `/api/worldbook/test` | 测试世界书触发 |
+| `/api/connections` | 管理连接档案 |
+| `/api/chat/message` | 编辑、删除、收藏和候选回复管理 |
+| `/api/turn/debug` | 读取本轮叙事黑盒 |
+| `/api/alchemy/review` | 审核队列读写 |
+| `/api/world-pack/export` / `/api/world-pack/import` | `.worldtree` 世界包导入导出 |
+| `/api/plugins` | 本地插件列表、启用状态和 JSON dry-run |
 
 ## 项目结构
 

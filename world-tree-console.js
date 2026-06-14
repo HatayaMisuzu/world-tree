@@ -1,1157 +1,1419 @@
 "use strict";
 
-/* ═══════════════════════════════════════════════════════════════
- * World Tree 桌面控制台 — 直连 LLM 版
- * 模组选择 → 模组对话，内容炼金台集成
- * ═══════════════════════════════════════════════════════════════ */
-
 const CFG = {
-  version:"2.3.1",
-  tabs:[
-    {id:"home",label:"🏠 首页",prio:0},
-    {id:"chat",label:"💬 对话",prio:5},
-    {id:"worlds",label:"🌍 世界",prio:8},
-    {id:"archives",label:"📦 存档",prio:10},
-    {id:"telemetry",label:"📡 脉象",prio:44},
-    {id:"entities",label:"🏛 构成",prio:46},
-    {id:"narrative",label:"🧠 深度",prio:48},
-    {id:"commands",label:"⌨ 指令",prio:60},
-    {id:"health",label:"🔍 体检",prio:75},
-  ]
+  version: "0.1.8",
+  nav: [
+    { id: "workbench", label: "工作台", icon: "□", meta: "首页" },
+    { id: "chat", label: "对话", icon: "◇", meta: "创作" },
+    { id: "library", label: "资料库", icon: "▦", meta: "素材" },
+    { id: "worlds", label: "世界管理", icon: "◎", meta: "项目" },
+    { id: "observe", label: "观测", icon: "◌", meta: "调试" },
+    { id: "settings", label: "设置", icon: "⚙", meta: "配置" },
+  ],
 };
 
-/* ── 工具 ── */
 const U = {
-  qs(s,r){return (r||document).querySelector(s)},
-  qsa(s,r){return Array.from((r||document).querySelectorAll(s))},
-  esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")},
-  date(v){if(!v)return"未知";const d=v instanceof Date?v:new Date(v);if(isNaN(d.getTime()))return String(v);return d.toLocaleString("zh-CN",{hour12:false})},
-  rel(v){if(!v)return"未知";const d=v instanceof Date?v:new Date(v);if(isNaN(d.getTime()))return String(v);const diff=Date.now()-d.getTime(),a=Math.abs(diff);if(a<6e4)return"刚刚";if(a<36e5)return Math.round(a/6e4)+" 分钟前";if(a<864e5)return Math.round(a/36e5)+" 小时前";return Math.round(a/864e5)+" 天前"},
-  json(v){try{return JSON.stringify(v??null,null,2)}catch{return String(v)}},
-  compact(v,m=180){const t=typeof v==="string"?v:U.json(v);const c=t.replace(/\s+/g," ").trim();return c.length>m?c.slice(0,m)+"...":c},
-  slug(v,f="item"){return String(v||"").trim().replace(/[^\p{L}\p{N}_.-]+/gu,"_").replace(/^_+|_+$/g,"").slice(0,48)||f},
+  qs(s, r) { return (r || document).querySelector(s); },
+  qsa(s, r) { return Array.from((r || document).querySelectorAll(s)); },
+  esc(v) {
+    return String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  },
+  json(v) { try { return JSON.stringify(v ?? null, null, 2); } catch { return String(v); } },
+  compact(v, max = 160) {
+    const text = String(v ?? "").replace(/\s+/g, " ").trim();
+    return text.length > max ? `${text.slice(0, max)}...` : text;
+  },
+  date(v) {
+    if (!v) return "未知";
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return String(v);
+    return d.toLocaleString("zh-CN", { hour12: false });
+  },
+  rel(v) {
+    if (!v) return "未知";
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return String(v);
+    const diff = Date.now() - d.getTime();
+    const abs = Math.abs(diff);
+    if (abs < 60000) return "刚刚";
+    if (abs < 3600000) return `${Math.round(abs / 60000)} 分钟前`;
+    if (abs < 86400000) return `${Math.round(abs / 3600000)} 小时前`;
+    return `${Math.round(abs / 86400000)} 天前`;
+  },
 };
 
-/* ── API 调用 ── */
 const API = {
-  base:"",
-  async call(method,path,body){
-    const url = (API.base||"")+path;
-    const opts={method,headers:{"Content-Type":"application/json"}};
-    if(body)opts.body=JSON.stringify(body);
-    const r=await fetch(url,opts);
-    if(!r.ok){
-      const t=await r.text().catch(()=>"");
-      let payload=null;
-      try{payload=JSON.parse(t)}catch{}
-      if(payload?.detail)console.error("[API detail]",payload.code||r.status,payload.detail);
-      throw new Error(payload?.userMsg||payload?.errorMsg||payload?.error||`HTTP ${r.status}: ${t||r.statusText}`);
+  base: "",
+  async call(method, path, body) {
+    const opts = { method, headers: { "Content-Type": "application/json" } };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const res = await fetch((API.base || "") + path, opts);
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      let payload = null;
+      try { payload = JSON.parse(text); } catch {}
+      throw new Error(payload?.userMsg || payload?.errorMsg || payload?.error || `HTTP ${res.status}: ${text || res.statusText}`);
     }
-    return r.json();
+    return res.json();
   },
-  get(path){return API.call("GET",path)},
-  post(path,body){return API.call("POST",path,body)},
-
-  async loadModules(){return API.get("/api/modules")},
-  async createModule(data){return API.post("/api/modules/create",data)},
-  async deleteModule(id){return API.post("/api/modules/delete",{id})},
-  async loadExamples(){return API.get("/api/examples")},
-  async installExample(id){return API.post("/api/examples/install",{id})},
-  async loadConfig(){return API.get("/api/config")},
-  async saveConfig(data){return API.post("/api/config",data)},
-  async getSecrets(){return API.get("/api/secrets")},
-  async saveLlmKey(data){return API.post("/api/secrets/llm",data)},
-  async testLlm(data){return API.post("/api/llm/test",data)},
-  async chatSend(data){return API.post("/api/llm/chat",data)},
-  async alchemyImport(data){return API.post("/api/alchemy/import",data)},
-  async getStatus(){return API.get("/api/status")},
-  async loadCharacters(){return API.get("/api/characters")},
-  async loadCharacter(id){return API.post("/api/characters/load",{id})},
-  async dashboardTelemetry(moduleKey){return API.get(`/api/dashboard/telemetry?moduleKey=${encodeURIComponent(moduleKey)}`)},
-  async dashboardEntities(moduleKey){return API.get(`/api/dashboard/entities?moduleKey=${encodeURIComponent(moduleKey)}`)},
-  async dashboardNarrative(moduleKey){return API.get(`/api/dashboard/narrative?moduleKey=${encodeURIComponent(moduleKey)}`)},
+  get(path) { return API.call("GET", path); },
+  post(path, body) { return API.call("POST", path, body); },
+  loadModules() { return API.get("/api/modules"); },
+  createModule(data) { return API.post("/api/modules/create", data); },
+  deleteModule(id) { return API.post("/api/modules/delete", { id }); },
+  loadExamples() { return API.get("/api/examples"); },
+  installExample(id) { return API.post("/api/examples/install", { id }); },
+  loadConfig() { return API.get("/api/config"); },
+  saveConfig(data) { return API.post("/api/config", data); },
+  getSecrets() { return API.get("/api/secrets"); },
+  saveLlmKey(data) { return API.post("/api/secrets/llm", data); },
+  testLlm(data) { return API.post("/api/llm/test", data); },
+  chatSend(data) { return API.post("/api/llm/chat", data); },
+  chatMessage(data) { return API.post("/api/chat/message", data); },
+  alchemyImport(data) { return API.post("/api/alchemy/import", data); },
+  alchemyReview(data) { return data ? API.post("/api/alchemy/review", data) : API.get("/api/alchemy/review"); },
+  loadCharacters() { return API.get("/api/characters"); },
+  importCharacter(data) { return API.post("/api/characters/import", data); },
+  updateCharacter(data) { return API.post("/api/characters/update", data); },
+  loadCharacter(id) { return API.post("/api/characters/load", { id }); },
+  loadWorldbook(moduleKey) { return API.get(`/api/worldbook?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  saveWorldbook(data) { return API.post("/api/worldbook", data); },
+  testWorldbook(data) { return API.post("/api/worldbook/test", data); },
+  connections(data) { return data ? API.post("/api/connections", data) : API.get("/api/connections"); },
+  turnDebug(moduleKey) { return API.get(`/api/turn/debug?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  worldPackExport(data) {
+    return typeof data === "object"
+      ? API.post("/api/world-pack/export", data)
+      : API.get(`/api/world-pack/export?moduleKey=${encodeURIComponent(data || "")}`);
+  },
+  worldPackImport(data) { return API.post("/api/world-pack/import", data); },
+  plugins(data) { return data ? API.post("/api/plugins", data) : API.get("/api/plugins"); },
+  telemetry(moduleKey) { return API.get(`/api/dashboard/telemetry?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  entities(moduleKey) { return API.get(`/api/dashboard/entities?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  narrative(moduleKey) { return API.get(`/api/dashboard/narrative?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  health() { return API.get("/api/health"); },
 };
 
-/* ── 应用状态 ── */
 const AS = {
-  activeTab:"home",
-  modules:[],
-  health:null,
-  examples:[],
-  onboardingShown:false,
-  selectedModule:null,
-  config:{},
-  hasApiKey:false,
-  llmConnected:false,
-  llmTestResult:"",
-  messages:[],
-  historyKey:"",
-  busy:false,
-  quickStartContent:"",  // 快速开始的上下文内容
-  isQuickStart:false,     // 是否快速模式（不保存记录）
-  engineState:null,       // 从服务端恢复的引擎状态
-  lastScene:"",            // 上次对话的场景
-  showStatusPanel:true,    // 状态面板是否展开
-  lastStatusSections:{},   // 最新一轮的状态建议+情绪反馈
-  dashboardData:{},        // dashboard 数据缓存 {telemetry,entities,narrative}
-  _currentCharCard:null,    // 当前选择的角色卡数据（character_card 模式）
+  view: "workbench",
+  workbenchMode: "overview",
+  libraryTab: "characters",
+  observeTab: "summary",
+  settingsTab: "connections",
+  activeDrawer: "",
+  config: {},
+  hasApiKey: false,
+  llmConnected: false,
+  llmTestResult: "",
+  modules: [],
+  examples: [],
+  characters: [],
+  characterQuery: "",
+  selectedModule: null,
+  currentCharacterCard: null,
+  worldbookEntries: [],
+  worldbookTest: null,
+  reviewItems: [],
+  connections: null,
+  plugins: null,
+  pluginRunResult: null,
+  health: null,
+  messages: [],
+  busy: false,
+  quickStartContent: "",
+  isQuickStart: false,
+  engineState: null,
+  lastScene: "",
+  lastStatusSections: {},
+  dashboardData: {},
+  turnDebug: null,
+  worldPack: null,
+  importPreview: null,
+  pendingPack: null,
+  worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false },
 };
 
-/* 对话记录持久化 */
-const CH = {
-  keyPrefix:"wt3-chat-",
-  currentKey:"",
-  saveKey(m){return CH.keyPrefix+(m?.id||"global")},
-  load(m){const k=CH.saveKey(m);if(k===CH.currentKey||AS.isQuickStart)return;CH.currentKey=k;try{AS.messages=JSON.parse(localStorage.getItem(k)||"[]")}catch{AS.messages=[]}},
-  persist(){if(!CH.currentKey||AS.isQuickStart)return;localStorage.setItem(CH.currentKey,JSON.stringify(AS.messages.slice(-200)))},
-  add(role,content,ext){const msg={id:"m_"+Date.now()+"_"+Math.random().toString(16).slice(2),role,content,ts:new Date().toISOString(),...ext};AS.messages.push(msg);CH.persist();return msg},
-  clear(){AS.messages=[];CH.persist()},
-  /** 从服务端加载历史 */
-  async loadFromServer(m){
-    if(!m||m.id==="__quick__")return;
-    try{
-      const res=await API.get(`/api/modules/${encodeURIComponent(m.id)}/history?limit=50`);
-      if(res.status==="ok"&&res.messages?.length){
-        let idx=0;
-        AS.messages=res.messages.map(r=>({id:"h_"+Date.now()+"_"+idx++,role:r.role,content:r.content,ts:r.ts||"",round:r.round||0,sections:r.sections||null}));
-        CH.currentKey=CH.saveKey(m);
-        AS.selectedModule.turnCount=res.turnCount||0;
-        // 从历史中恢复最新的状态/情绪数据
-        for(let i=AS.messages.length-1;i>=0;i--){
-          const s=AS.messages[i].sections;
-          if(s){AS.lastStatusSections=s;break;}
-        }
-      }
-      // 恢复引擎状态（emotionState 等）
-      if(res.engineState) AS.engineState = res.engineState;
-      if(res.lastScene) AS.lastScene = res.lastScene;
-    }catch(e){console.warn("加载历史失败",e)}
-  },
-};
-
-/* ═══════════════════════════════════════════════════════════════
- * 视图渲染
- * ═══════════════════════════════════════════════════════════════ */
-
-/* ── 组件函数 ── */
 const C = {
-  badge(t,k="pending"){return`<span class="badge ${k}">${U.esc(t)}</span>`},
-  empty(t,d=""){return`<div class="empty"><strong>${U.esc(t)}</strong>${d?`<div>${U.esc(d)}</div>`:""}</div>`},
-  notice(t,k=""){return`<div class="notice ${k}">${U.esc(t)}</div>`},
-  stat(l,v,d=""){return`<div class="stat"><strong>${U.esc(v)}</strong><span>${U.esc(l)}</span>${d?`<span>${U.esc(d)}</span>`:""}</div>`},
-  dataModeLabel(m){
-    const map={worldbook:"📖 世界书",character_card:"🃏 角色卡",preset:"🎲 预设",standalone:"🔍 独立"};
-    return map[m?.dataMode]||m?.dataMode||"📖 世界书";
+  badge(text, tone = "pending") { return `<span class="badge ${tone}">${U.esc(text)}</span>`; },
+  stat(label, value, sub = "") {
+    return `<div class="stat"><span>${U.esc(label)}</span><strong>${U.esc(value)}</strong>${sub ? `<span>${U.esc(sub)}</span>` : ""}</div>`;
   },
-  typeIcon(m){
-    if(m?.type==="world")return"🌍";
-    if(m?.type==="profile")return"📋";
-    if(m?.type==="case")return"🔍";
-    return"📦";
+  empty(title, desc = "") {
+    return `<div class="empty"><strong>${U.esc(title)}</strong>${desc ? `<p class="sub">${U.esc(desc)}</p>` : ""}</div>`;
   },
-  moduleCard(m,selected){
-    const isSel=selected&&(selected.id===m.id);
-    const isProfile=m.type==="profile";
-    return`<div class="module-card ${isSel?"selected":""}" data-module-id="${U.esc(m.id)}" data-mode="${m.dataMode||""}" data-kind="${m.type||""}">
-      <div style="display:flex;justify-content:space-between;align-items:start">
-        <div class="name">${C.typeIcon(m)} ${U.esc(m.displayName||m.name)}</div>
-        <div class="tags">
-          ${C.badge(C.dataModeLabel(m),m.dataMode==="worldbook"?"info":m.dataMode==="character_card"?"purple":"cyan")}
-          ${m.turnCount>0?C.badge(m.turnCount+"轮","ok"):C.badge("新","warn")}
-          ${isProfile?'<span class="badge">模板</span>':''}
-          ${m.isPlaceholder?'<span class="badge warn">🙈 未完成</span>':''}
+  notice(text, tone = "") { return `<div class="notice ${tone}">${text}</div>`; },
+  tabs(items, active, attr) {
+    return `<div class="tabs">${items.map(t => `<button class="${active === t.id ? "active" : ""}" ${attr}="${U.esc(t.id)}">${U.esc(t.label)}${t.count !== undefined ? ` ${C.badge(t.count, "pending")}` : ""}</button>`).join("")}</div>`;
+  },
+  dataModeLabel(m) {
+    const mode = typeof m === "string" ? m : m?.dataMode;
+    return ({ worldbook: "世界书", character_card: "角色卡", preset: "预设", standalone: "独立" }[mode] || mode || "未知");
+  },
+  moduleCard(m) {
+    const selected = AS.selectedModule?.id === m.id;
+    return `<div class="module-card ${selected ? "selected" : ""}" data-module-id="${U.esc(m.id)}">
+      <div class="item-head">
+        <div>
+          <div class="item-title">${U.esc(m.displayName || m.name || m.id)}</div>
+          <div class="sub">${C.dataModeLabel(m)} · ${U.esc(m.subType || m.type || "default")}</div>
         </div>
+        ${C.badge(selected ? "当前" : (m.turnCount || 0) + " 回合", selected ? "ok" : "pending")}
       </div>
-      ${m.description?`<div class="desc">${U.esc(m.description)}</div>`:""}
-      <div class="meta">
-        <span>${U.esc(m.subType||"classic")}</span>
-        ${m.lastPlayed?`<span>上次: ${U.rel(m.lastPlayed)}</span>`:""}
-        ${m.createdAt?`<span>创建: ${U.date(m.createdAt)}</span>`:""}
-      </div>
+      <p class="muted tiny">${U.esc(U.compact(m.description || "本地创作模块", 100))}</p>
       <div class="actions">
-        ${m.type==="world"||m.dataMode==="character_card"
-          ? isSel
-            ? `<button class="small select-btn" style="background:var(--panel-2);border-color:var(--ok);color:var(--ok)" disabled>✓ 已选择</button><button class="danger small" data-action="delete-module">🗑</button><button class="small" data-action="export-module" title="导出模组数据">📥</button>`
-            : `<button class="primary small select-btn" data-action="select-module">选择</button><button class="danger small" data-action="delete-module">🗑</button>`
-          : `<button class="primary small select-btn" data-action="create-from-template">从模板创建</button>`}
+        <button class="small primary" data-action="select-module">加载</button>
+        <button class="small" data-action="export-module">导出</button>
+        <button class="small danger" data-action="delete-module">删除</button>
       </div>
     </div>`;
   },
-  configForm(){
-    const c=AS.config;
-    return`<div class="panel" style="max-width:600px">
-      <div class="panel-head"><h2>🔌 LLM 配置</h2><div class="actions"><button class="small" data-action="show-onboarding">启动引导</button><button class="small primary" id="saveLlmBtn">💾 保存</button><button class="small" id="testLlmBtn">🔗 测试</button></div></div>
-      <div class="grid" style="gap:8px">
-        <div class="config-row"><label>API地址</label><input id="cfgUrl" value="${U.esc(c.llmBaseUrl||"")}" placeholder="https://api.deepseek.com/v1"></div>
-        <div class="config-row"><label>模型</label><input id="cfgModel" value="${U.esc(c.llmModel||"")}" placeholder="deepseek-v4-flash"></div>
-        <div class="config-row"><label>API Key</label><div style="display:flex;gap:6px;align-items:center;width:100%"><input id="cfgKey" type="password" value="" placeholder="${AS.hasApiKey?"已配置，输入新 key 则覆盖":"sk-..."}" style="flex:1">${AS.hasApiKey?C.badge("已配置","ok"):""}</div></div>
+  chatMsg(m) {
+    const role = m.role || "assistant";
+    const tone = role === "user" ? "user" : role === "error" ? "error" : role === "system" ? "system" : "assistant";
+    const candidates = Array.isArray(m.candidates) ? m.candidates : [];
+    const selectedIndex = Math.max(0, candidates.findIndex(c => c.selected));
+    return `<div class="chat-message ${tone}" data-message-id="${U.esc(m.id || "")}">
+      <div class="chat-meta">
+        <strong>${role === "user" ? "你" : role === "assistant" ? "叙事引擎" : role}</strong>
+        ${m.favorite ? C.badge("收藏", "warn") : ""}
+        ${m.ts ? `<span>${U.date(m.ts)}</span>` : ""}
       </div>
-      <div style="margin-top:8px;font-size:12px">${AS.llmTestResult}</div>
+      <div class="chat-text">${U.esc(m.content || "")}</div>
+      ${candidates.length > 1 ? `<div class="candidate-row">
+        <button class="small" data-action="candidate-prev">上一个</button>
+        <span>候选 ${selectedIndex + 1} / ${candidates.length}</span>
+        <button class="small" data-action="candidate-next">下一个</button>
+      </div>` : ""}
+      <div class="message-tools">
+        <button data-action="copy-message">复制</button>
+        <button data-action="edit-message">编辑</button>
+        <button data-action="favorite-message">${m.favorite ? "取消收藏" : "收藏"}</button>
+        ${role === "assistant" ? `<button data-action="regen-message">重生成</button>` : ""}
+        <button class="danger" data-action="delete-message">删除</button>
+      </div>
     </div>`;
   },
-  onboardingPanel(){
-    return`<div class="panel onboarding-panel">
-      <div class="panel-head"><h2>首次启动</h2><div class="actions"><button class="small" data-action="onboarding-dismiss">不再显示</button></div></div>
-      <div class="onboarding-grid">
-        <button class="onboarding-step" data-action="onboarding-import"><strong>导入素材</strong><span>把你的世界设定、角色描述或文档放进炼金台。</span></button>
-        <button class="onboarding-step" data-action="onboarding-create"><strong>新建世界</strong><span>先创建空世界书，再逐步补充内容。</span></button>
-        <button class="onboarding-step" data-tab="health"><strong>检查环境</strong><span>确认服务、模型配置和数据目录状态。</span></button>
-      </div>
-    </div>`;
-  },
-  examplesPanel(){
-    if(!AS.examples?.length)return"";
-    return`<div class="panel">
-      <div class="panel-head"><h2>素材示例</h2><span class="sub">从 defaults/examples/manifest.json 导入到本地数据目录</span></div>
-      <div class="module-grid">${AS.examples.map(e=>`<div class="module-card" data-example-id="${U.esc(e.id)}" data-mode="${U.esc(e.dataMode||"worldbook")}" data-kind="${U.esc(e.type||"example")}">
-        <div class="name">${U.esc(e.name||e.id)}</div>
-        ${e.description?`<div class="desc">${U.esc(e.description)}</div>`:""}
-        <div class="tags">${(e.tags||[]).map(t=>C.badge(t,"info")).join("")}${C.badge(e.type==="character"?"角色卡":"世界书",e.type==="character"?"purple":"cyan")}</div>
-        <div class="actions"><button class="primary small" data-action="install-example">导入</button></div>
-      </div>`).join("")}</div>
-    </div>`;
-  },
-  chatContent(t){
-    const e=U.esc(t||"");
-    return e.replace(/【([^】]+)】/g,'<span class="wt-tag">【$1】</span>');
-  },
-  chatMsg(m){
-    const rl=m.role==="user"?"玩家":m.role==="assistant"?"世界树":"系统";
-    const cb=m.role==="assistant"?`<button class="small" data-chat-clip="${U.esc(m.id)}">📋</button>`:"";
-    return`<div class="chat-message ${U.esc(m.role)}"><div class="chat-meta-line"><strong>${U.esc(rl)}</strong><span>${U.date(m.ts)}</span><span class="actions">${cb}</span></div><div class="chat-content">${C.chatContent(m.content)}</div></div>`;
-  },
-  /* ── 状态面板组件 ── */
-  spCard(title,icon,data){
-    if(!data||typeof data!=="object")return"";
-    const rows=Object.entries(data).filter(([k])=>!k.startsWith("_")).map(([k,v])=>{const val=Array.isArray(v)?v.join(", "):String(v);return`<div class="sp-row"><span class="sp-label">${U.esc(k)}</span><span class="sp-val">${U.esc(val)}</span></div>`}).join("");
-    return rows?`<div class="sp-card"><h4>${icon} ${U.esc(title)}</h4>${rows}</div>`:"";
-  },
-  spEmotion(data){
-    if(!data)return"";
-    // data.player 可能是字符串 "engagement=7, tension=4..." 或对象 {engagement:7, tension:4, ...}
-    let items=[];
-    if(typeof data.player==="string"){
-      items=data.player.split(",").map(s=>s.trim());
-    }else if(typeof data.player==="object"&&data.player){
-      items=Object.entries(data.player).filter(([k])=>!k.startsWith("_")).map(([k,v])=>`${k}=${v}`);
-    }else{
-      // 尝试从 data 顶层读取情绪字段
-      items=Object.entries(data).filter(([k])=>["engagement","tension","fatigue","curiosity"].includes(k)).map(([k,v])=>`${k}=${v}`);
-    }
-    if(!items.length)return"";
-    const labels={engagement:["🎭 投入","#5b9cf5"],tension:["⚡ 紧张","#e8b339"],fatigue:["😴 疲劳","#b388ff"],curiosity:["🔍 好奇","#5cd4ff"]};
-    return`<div class="sp-card"><h4>🎯 情绪状态</h4>${items.map(p=>{const[k,v]=p.split("=");const info=labels[k.trim()]||[k,"#7a889b"];const pct=Math.min(100,Math.round((parseInt(v)||0)*10));return`<div class="emotion-bar"><span style="font-size:11px;min-width:36px">${info[0]}</span><div class="eb-track"><div class="eb-fill" style="width:${pct}%;background:${info[1]}"></div></div><span class="eb-val">${U.esc(v)}</span></div>`}).join("")}</div>`;
-  },
-  statusPanel(sections){
-    if(!sections||Object.keys(sections).length===0)return`<div class="sp-empty">暂无状态数据<br><span style="font-size:11px">发送消息后状态会显示在这里</span></div>`;
-    const parts=[];
-    if(sections["情绪反馈"])parts.push(C.spEmotion(sections["情绪反馈"]));
-    const st=sections["状态建议"];
-    if(st){if(st["场景状态"])parts.push(C.spCard("场景状态","🌍",st["场景状态"]));if(st["玩家状态"])parts.push(C.spCard("玩家状态","🧙",st["玩家状态"]));if(st["叙事状态"])parts.push(C.spCard("叙事状态","📖",st["叙事状态"]));}
-    return parts.join("")||`<div class="sp-empty">暂无状态数据</div>`;
-  },
-  table(rows,cols){
-    if(!rows?.length)return C.empty("无数据");
-    return`<table><thead><tr>${cols.map(c=>`<th>${U.esc(c.l||c.k)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>{const v=c.render?c.render(r):r[c.k];return`<td>${U.esc(v??"-")}</td>`}).join("")}</tr>`).join("")}</tbody></table>`;
-  },
-  dbJson(o){
-    if(!o||(typeof o==="object"&&Object.keys(o).length===0))return C.empty("无数据");
-    return`<pre class="dash-json">${U.esc(U.json(o))}</pre>`;
-  }
-};
-
-/* ═══════════════════════════════════════════════════════════════
- * 视图注册
- * ═══════════════════════════════════════════════════════════════ */
-
-const Views = {registry:new Map(),register(v){Views.registry.set(v.id,v)},get(id){return Views.registry.get(id)}};
-
-/* ── 首页：模组选择 + 炼金台 ── */
-Views.register({
-  id:"home",
-  render(){
-    const mods=AS.modules;
-    const worlds=mods.filter(m=>m.type==="world"||m.dataMode==="character_card"||m.type==="case");
-    const templates=mods.filter(m=>m.type==="profile"&&!m.isPlaceholder);
-    return`<div class="grid">
-      ${C.configForm()}
-      ${AS.config.firstRun!==false?C.onboardingPanel():""}
-      ${C.examplesPanel()}
-
-      <!-- 快速开始：即用即走 -->
-      <div class="panel">
-        <div class="panel-head"><h2>🚀 快速开始</h2><span class="sub">导入文件/粘贴文本，直接对话，不创建模组、不保存记录</span></div>
-        <div class="alchemy-drop" id="quickStartDrop" title="拖拽文件/文件夹或粘贴文本">
-          <div class="icon">📂</div>
-          <div class="hint">拖拽文件/文件夹，或粘贴文本，一键开聊</div>
-          <div class="supported">支持 .md .txt .json，自动遍历子目录</div>
-        </div>
-        <textarea id="quickStartText" placeholder="或在此粘贴叙事设定、小说开头、角色描述等内容..." style="margin-top:10px;min-height:100px;width:100%"></textarea>
-        <div class="actions" style="margin-top:8px">
-          <button class="primary" data-action="quick-start-chat">⚡ 开始对话（即用即走）</button>
-        </div>
-        <div style="margin-top:8px;font-size:12px;color:var(--warn)">💡 提示：对话不会保存，关闭页面即丢失。如需持久化，请使用炼金台导入后创建模组。</div>
-      </div>
-
-      <!-- 已有模组（持久化世界 + 角色卡 + 案例） -->
-      <div class="panel">
+  chatSurface() {
+    const m = AS.selectedModule;
+    const title = AS.isQuickStart ? "快速对话" : (m ? (m.displayName || m.name) : "未选择世界");
+    return `<div class="chat-layout">
+      <section class="panel chat-card">
         <div class="panel-head">
-          <h2>📦 已有模组</h2>
+          <div>
+            <h2>${U.esc(title)}</h2>
+            <p class="sub">${AS.isQuickStart ? "快速对话不保存正式记录" : m ? `${C.dataModeLabel(m)} · ${m.turnCount || 0} 回合` : "请先在工作台或世界管理中加载一个世界"}</p>
+          </div>
           <div class="actions">
-            <button class="small primary" data-action="refresh-modules">🔄 刷新</button>
+            <button class="small" data-action="open-command-panel">命令</button>
+            <button class="small danger" data-action="clear-chat">清空</button>
           </div>
         </div>
-        ${worlds.length
-          ?`<div class="module-grid">${worlds.map(m=>C.moduleCard(m,AS.selectedModule)).join("")}</div>`
-          :C.empty("暂无模组","通过炼金台下方的按钮新建世界书、角色卡或预设")}
-      </div>
-
-      <!-- 炼金台 + 创建 -->
-      <div class="panel">
-        <div class="panel-head"><h2>⚗️ 内容炼金台</h2><span class="sub">导入文档 → 自动拆解为世界书条目 → 创建持久化模组</span></div>
-        <div class="alchemy-drop" id="alchemyDrop" title="拖拽文件或点击选择">
-          <div class="icon">📄</div>
-          <div class="hint">拖拽文件到此处，或点击选择</div>
-          <div class="supported">支持 .md .txt .json</div>
-        </div>
-        <textarea id="alchemyText" placeholder="粘贴外部文档内容..." style="margin-top:10px;min-height:80px;width:100%"></textarea>
-        <div class="actions" style="margin-top:8px">
-          <button class="primary small" data-action="alchemy-import">🔮 分析并生成条目</button>
-          <button class="small" data-action="create-worldbook">📖 创建世界书</button>
-          <button class="small" data-action="create-character-card">🃏 创建角色卡</button>
-          <button class="small" data-action="create-preset">🎲 创建预设</button>
-        </div>
-        <div id="alchemyResult" style="margin-top:8px;font-size:12px"></div>
-      </div>
-    </div>`;
-  }
-});
-
-/* ── 对话 ── */
-Views.register({
-  id:"chat",
-  render(){
-    const m=AS.selectedModule;
-    if(!m)return`<div class="grid"><div class="panel" style="text-align:center;padding:60px 20px"><h2>💬 未选择模组</h2><p style="color:var(--muted);margin:12px 0">请先在首页选择一个模组</p><button class="primary" data-action="go-home">🏠 返回首页</button></div></div>`;
-    const spCollapsed=AS.showStatusPanel?"":"collapsed";
-    const spToggleIcon=AS.showStatusPanel?"−":"+";
-    return`<div class="chat-layout">
-      <section class="panel chat-space">
-        <div class="panel-head">
-          <div><h2>💬 ${AS.isQuickStart?"⚡ 快速对话":`${C.typeIcon(m)} ${U.esc(m.displayName||m.name)}`}</h2><div class="sub">${AS.isQuickStart?'<span style="color:var(--warn)">⚡ 快速模式 · 不保存记录</span>':`${C.dataModeLabel(m)} · ${U.esc(m.subType||"classic")}`}</div></div>
-          <div class="actions">
-            <button class="small primary" data-action="chat-send" ${AS.busy?"disabled":""}>发送</button>
-            <button class="small danger" data-action="chat-clear">🗑 清空</button>
-          </div>
-        </div>
-        <div id="chatMessages" class="chat-messages">${AS.messages.length?AS.messages.map(C.chatMsg).join(""):C.empty("开始对话","发送消息开始叙事")}</div>
-        <div class="chat-input-row">
-          <textarea id="chatInput" placeholder="输入你的行动或对话..." style="min-height:100px"></textarea>
+        <div id="chatMessages" class="chat-messages">${AS.messages.length ? AS.messages.map(C.chatMsg).join("") : C.empty("开始对话", "输入行动、台词或 / 命令。")}</div>
+        <div class="composer">
+          <textarea id="chatInput" placeholder="续写这一幕... 输入 / 调用命令，Enter 发送"></textarea>
+          <button class="primary" data-action="chat-send" ${AS.busy ? "disabled" : ""}>发送</button>
         </div>
       </section>
-      <aside class="chat-side">
-        <!-- 状态面板（可折叠，内嵌在侧栏） -->
-        <div class="panel tight">
-          <div class="sp-toggle" data-action="toggle-status-panel">
-            <h3>📊 状态</h3>
-            <span class="sp-toggle-btn">[${spToggleIcon}]</span>
-          </div>
-          <div class="sp-body ${spCollapsed}">${C.statusPanel(AS.lastStatusSections)}</div>
+      ${C.contextPanel()}
+    </div>`;
+  },
+  contextPanel() {
+    const hits = AS.turnDebug?.worldbookHits || AS.dashboardData.narrative?.worldbookHits || [];
+    const characterState = AS.turnDebug?.characterState || {};
+    const memory = AS.turnDebug?.memorySnapshot || AS.dashboardData.narrative?.memory?.recentEntries || [];
+    const guardian = AS.turnDebug?.guardian || {};
+    const assistants = AS.messages.filter(m => m.role === "assistant");
+    const candidateCount = assistants.reduce((sum, m) => sum + Math.max(0, (m.candidates || []).length - 1), 0);
+    const favorites = AS.messages.filter(m => m.favorite);
+    return `<aside class="context-stack">
+      <div class="panel tight">
+        <div class="panel-head"><h3>叙事上下文</h3><button class="small" data-action="load-context">刷新</button></div>
+        <div class="list">
+          <div class="item"><div class="item-head"><strong>世界书命中</strong>${C.badge(Array.isArray(hits) ? hits.length : 0, "info")}</div>${Array.isArray(hits) && hits.length ? hits.slice(0, 3).map(h => `<span class="tiny muted">${U.esc(h.title || h.keys?.[0] || "命中条目")}</span>`).join("") : `<span class="tiny muted">发送一轮对话后生成。</span>`}</div>
+          <div class="item"><strong>当前角色状态</strong><span class="tiny muted">${U.esc(U.compact(U.json(characterState), 120))}</span></div>
+          <div class="item"><strong>记忆快照</strong><span class="tiny muted">${Array.isArray(memory) && memory.length ? U.esc(U.compact(U.json(memory.slice(0, 3)), 120)) : "暂无快照"}</span></div>
+          <details><summary>技术细节（Direction Packet / Guardian）</summary><pre>${U.esc(U.json({ directionPacket: AS.turnDebug?.directionPacket || {}, guardian }))}</pre></details>
         </div>
-        <!-- 模组信息 -->
-        <div class="panel tight">
-          <h3>📊 模组信息</h3>
-          <div style="font-size:12px;display:grid;gap:4px">
-            <div>名称: ${U.esc(m.displayName||m.name)}</div>
-            <div>类型: ${C.dataModeLabel(m)}</div>
-            <div>子类型: ${U.esc(m.subType||"-")}</div>
-            <div>轮次: ${m.turnCount||0}</div>
-            ${AS.lastScene?`<div>场景: ${U.esc(AS.lastScene)}</div>`:""}
-            <div>${C.badge(AS.llmConnected?"已连接":"未连接",AS.llmConnected?"ok":"pending")}</div>
+      </div>
+      <div class="panel tight">
+        <h3>候选与分支</h3>
+        <div class="auto-grid compact">
+          ${C.stat("助手回复", assistants.length)}
+          ${C.stat("候选版本", candidateCount)}
+          ${C.stat("收藏", favorites.length)}
+        </div>
+        <div class="list">${assistants.filter(m => (m.candidates || []).length > 1 || m.favorite).slice(-4).map(m => `<div class="item"><strong>${m.favorite ? "收藏" : "候选"}</strong><span class="tiny muted">${U.esc(U.compact(m.content || "", 90))}</span></div>`).join("") || `<span class="tiny muted">重生成候选或收藏消息后，这里会形成轻量分支索引。</span>`}</div>
+      </div>
+    </aside>`;
+  },
+  worldbookRows(limit) {
+    const rows = (AS.worldbookEntries || []).slice(0, limit || 100);
+    if (!rows.length) return C.empty("暂无世界书条目", "选择世界后点击加载当前世界书。");
+    return rows.map(e => `<div class="item" data-entry-id="${U.esc(e.id || "")}">
+      <div class="item-head">
+        <div><div class="item-title">${U.esc(e.title || e.keys?.[0] || "未命名条目")}</div><div class="sub">关键词：${U.esc((e.keys || []).join(", ") || "-")}</div></div>
+        <div class="actions">${C.badge(e.group || "默认", "info")} ${C.badge(e.enabled === false ? "停用" : "启用", e.enabled === false ? "pending" : "ok")} ${C.badge("P" + (e.priority ?? 100), "pending")}</div>
+      </div>
+      <p class="tiny muted">${U.esc(U.compact(e.content || "", 160))}</p>
+      <div class="actions">
+        <button class="small" data-action="edit-worldbook-entry">编辑</button>
+        <button class="small" data-action="toggle-worldbook-entry">${e.enabled === false ? "启用" : "停用"}</button>
+        <button class="small danger" data-action="delete-worldbook-entry">删除</button>
+      </div>
+    </div>`).join("");
+  },
+};
+
+const CH = {
+  key(m) { return `wt-chat-${m?.id || "global"}`; },
+  loadLocal(m) {
+    try { AS.messages = JSON.parse(localStorage.getItem(CH.key(m)) || "[]"); } catch { AS.messages = []; }
+  },
+  persist() {
+    if (AS.isQuickStart || !AS.selectedModule) return;
+    localStorage.setItem(CH.key(AS.selectedModule), JSON.stringify(AS.messages.slice(-200)));
+  },
+  add(role, content, ext = {}) {
+    const msg = { id: `m_${Date.now()}_${Math.random().toString(16).slice(2)}`, role, content, ts: new Date().toISOString(), ...ext };
+    AS.messages.push(msg);
+    CH.persist();
+    return msg;
+  },
+  async loadServer(m) {
+    if (!m || m.id === "__quick__") return CH.loadLocal(m);
+    try {
+      const res = await API.get(`/api/modules/${encodeURIComponent(m.id)}/history?limit=80`);
+      AS.messages = Array.isArray(res.messages)
+        ? res.messages.map((r, i) => ({ id: r.id || `h_${i}`, role: r.role, content: r.content, ts: r.ts, favorite: !!r.favorite, candidates: r.candidates || [], sections: r.sections || null }))
+        : [];
+      AS.lastScene = res.lastScene || "";
+      if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
+    } catch {
+      CH.loadLocal(m);
+    }
+  },
+};
+
+const Views = {
+  workbench() {
+    if (AS.workbenchMode === "chat") {
+      return `<div class="grid">
+        <div class="actions">
+          <button class="ghost" data-action="workbench-overview">返回总览</button>
+          <button data-action="drawer-worldbook">世界书</button>
+          <button data-action="drawer-saves">存档</button>
+          ${AS.isQuickStart ? C.badge("快速对话 · 不保存正式记录", "warn") : ""}
+        </div>
+        ${C.chatSurface()}
+      </div>${renderDrawer()}`;
+    }
+
+    const current = AS.selectedModule || AS.modules.find(m => m.type === "world") || AS.modules[0];
+    const worldName = current ? (current.displayName || current.name) : "未选择世界";
+    const reviewCount = AS.reviewItems.length;
+    return `<div class="grid">
+      <section class="panel hero">
+        <div class="hero-row">
+          <div>
+            ${C.badge(current ? "当前世界" : "等待选择", current ? "ok" : "pending")}
+            <div class="hero-title">${U.esc(worldName)}</div>
+            <p class="sub">${current ? `${C.dataModeLabel(current)} · ${current.subType || "classic"}` : "创建或导入一个世界后开始创作。"}</p>
+          </div>
+          <div class="actions">
+            <button class="primary" data-action="load-and-chat">加载并开始对话</button>
+            <button data-action="create-world">新建世界</button>
+            <button data-action="library-alchemy">导入素材</button>
           </div>
         </div>
-        ${m.lastPlayed?`<div class="panel tight"><h3>⏱ 上次</h3><div style="font-size:12px">${U.rel(m.lastPlayed)}</div></div>`:""}
-        <div class="panel tight">
-          <h3>🔧 操作</h3>
-          <div class="actions" style="flex-direction:column;align-items:stretch">
-            <button class="small" data-action="go-home">🏠 切换模组</button>
+      </section>
+
+      <section class="cols-4">
+        ${C.stat("模型连接", AS.llmConnected ? "已连接" : "未连接", AS.config.llmModel || "")}
+        ${C.stat("当前回合", current?.turnCount || 0)}
+        ${C.stat("世界书条目", AS.worldbookEntries.length)}
+        ${C.stat("待审核", reviewCount, reviewCount ? "等待确认" : "无")}
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>快速开始</h2><p class="sub">拖拽或粘贴素材，直接进入快速对话（不保存正式记录）。</p></div></div>
+        <div id="quickStartDrop" class="drop-zone"><strong>拖拽文件 / 文件夹到此处，或点击选择</strong><span>支持 .md .txt .json</span></div>
+        <textarea id="quickStartText" placeholder="或在这里粘贴设定、片段、角色描述..."></textarea>
+        <div class="actions"><button class="primary" data-action="quick-start-chat">直接进入快速对话</button><span class="tiny muted">快速对话不保存正式记录。</span></div>
+      </section>
+
+      <section class="cols-2">
+        <div class="panel">
+          <div class="panel-head"><div><h2>世界书总览</h2><p class="sub">展示与快速进入，完整编辑在资料库。</p></div><button class="small" data-action="load-worldbook">加载</button></div>
+          <div class="list">${C.worldbookRows(3)}</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>存档总览</h2><p class="sub">最近故事和模块历史。</p></div>${C.badge(AS.messages.length + " 条消息", "pending")}</div>
+          ${AS.lastScene ? `<div class="notice">上一幕：${U.esc(U.compact(AS.lastScene, 120))}</div>` : ""}
+          <div class="list">
+            ${(AS.modules || []).slice(0, 4).map(m => `<div class="item"><div class="item-head"><strong>${U.esc(m.displayName || m.name)}</strong>${C.badge((m.turnCount || 0) + " 回合")}</div><span class="tiny muted">${m.lastPlayed ? U.rel(m.lastPlayed) : "未开始"}</span><button class="small" data-module-id="${U.esc(m.id)}" data-action="load-module-from-list">继续</button></div>`).join("") || C.empty("暂无存档")}
           </div>
         </div>
-      </aside>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>示例与模板</h2><p class="sub">当前开源包默认不携带原创素材；你后续放入 defaults/examples manifest 后可从这里安装。</p></div>${C.badge(AS.examples.length + " 个示例", "pending")}</div>
+        <div class="list">${AS.examples.length ? AS.examples.map(ex => `<div class="item" data-example-id="${U.esc(ex.id)}"><div class="item-head"><strong>${U.esc(ex.title || ex.name || ex.id)}</strong>${C.badge(ex.kind || "example", "info")}</div><span class="tiny muted">${U.esc(ex.description || "可安装为本地世界。")}</span><button class="small primary" data-action="install-example">安装示例</button></div>`).join("") : C.empty("暂无内置示例", "保持无授权素材策略，等待你后续提供素材。")}</div>
+      </section>
     </div>`;
-  }
-});
+  },
 
-/* ── 世界列表（保留兼容） ── */
-Views.register({
-  id:"worlds",
-  render(){
-    const mods=AS.modules.filter(m=>m.type==="world");
-    if(!mods.length)return C.notice("尚无世界","warn");
-    return`<div class="grid"><div class="panel"><h2>🌍 世界列表 (${mods.length})</h2>${C.table(mods,[{k:"displayName",l:"名称"},{k:"dataMode",l:"类型",render:r=>C.badge(r.dataMode||"-","info")},{k:"turnCount",l:"轮次"},{k:"subType",l:"子类型"},{k:"lastPlayed",l:"上次",render:r=>r.lastPlayed?U.rel(r.lastPlayed):"-"}])}</div></div>`;
-  }
-});
+  chat() { return C.chatSurface(); },
 
-/* ── 存档（保留兼容） ── */
-Views.register({
-  id:"archives",
-  render(){return C.empty("存档管理","存档数据在运行时自动保存，当前由引擎管理");}
-});
-
-/* ── 📡 世界脉象 ── */
-Views.register({
-  id:"telemetry",
-  render(){
-    const d=AS.dashboardData.telemetry;
-    if(!d)return`<div class="panel" style="text-align:center;padding:40px"><h2>📡 世界脉象</h2><p style="color:var(--muted)">请先选择一个模组</p></div>`;
-    const dims=d.telemetry?.dimensions||{};
-    const dimKeys=Object.keys(dims);
-    const labels={stability:"稳定度",chaos:"混乱度",mystery:"神秘度",war_risk:"战争风险",character_stress:"角色压力",faction_conflict:"阵营冲突",rule_completeness:"规则完整度",narrative_momentum:"叙事动能",memory_load:"记忆负载"};
-    return`<div class="grid">
-      <div class="panel"><h2>📡 世界脉象</h2><div class="sub">轮次: ${d.turnCount||0} · 场景: ${U.esc(d.lastScene||"未知")} · 分支: ${U.esc(d.activeBranch||"main")}</div>
-        ${dimKeys.length?`<div class="dash-grid">${dimKeys.map(k=>{const v=dims[k];const pct=Math.min(100,Math.max(0,v.value||0));const st=v.status||"normal";return`<div class="dash-card ${st}"><div class="dash-card-head"><strong>${U.esc(labels[k]||v.name||k)}</strong><span>${pct}%</span></div><div class="dash-bar"><div class="dash-fill" style="width:${pct}%;background:${st==="critical"?"var(--bad)":st==="warning"?"var(--warn)":"var(--ok)"}"></div></div><div class="dash-hint">${U.esc(v.description||"")}</div></div>`}).join("")}</div>`:C.empty("暂无脉象数据","运行几轮对话后脉象会自动生成")}
-      </div>
-      <div class="cols-2">
-        <div class="panel"><h3>📊 世界状态</h3>${C.dbJson(d.worldState)}</div>
-        <div class="panel"><h3>🎯 追踪</h3>${d.tracking?.length?C.table(d.tracking,[{k:"name",l:"项目"},{k:"count",l:"计数"}],true):C.empty("无追踪数据")}</div>
-      </div>
-    </div>`;
-  }
-});
-
-/* ── 🏛 世界构成 ── */
-Views.register({
-  id:"entities",
-  render(){
-    const d=AS.dashboardData.entities;
-    if(!d)return`<div class="panel" style="text-align:center;padding:40px"><h2>🏛 世界构成</h2><p style="color:var(--muted)">请先选择一个模组</p></div>`;
-    const chars=d.characters||[],scenes=d.scenes||[],orgs=d.organizations||[],locs=d.locations||[];
-    return`<div class="grid">
-      <div class="panel"><h2>🏛 世界构成</h2><div class="sub">${d.turnCount||0} 轮 · ${chars.length} 角色 · ${scenes.length} 场景 · ${orgs.length} 组织 · ${d.worldbookCount||0} 世界书条目</div></div>
-      <div class="cols-2">
-        <div class="panel"><h3>👤 角色 (${chars.length})</h3>${chars.length?`<div class="dash-list">${chars.map(c=>`<details><summary>${U.esc(c.name||"?")} ${c.role?C.badge(c.role,"info"):""} ${c.status?C.badge(c.status,"warn"):""}</summary><div style="font-size:12px;padding:8px">${c.traits?.length?`<div>性格: ${U.esc(c.traits.join(", "))}</div>`:""}${c.background?`<div>${U.esc(c.background)}</div>`:""}${c.location?`<div>位置: ${U.esc(c.location)}</div>`:""}</div></details>`).join("")}</div>`:C.empty("无角色")}</div>
-        <div class="panel"><h3>🎭 场景 (${scenes.length})</h3>${scenes.length?`<div class="dash-list">${scenes.map(s=>`<details><summary>${U.esc(s.title||"?")} ${s.time?C.badge(s.time,"cyan"):""}</summary><div style="font-size:12px;padding:8px">${s.location?`<div>位置: ${U.esc(s.location)}</div>`:""}${s.description?`<div>${U.esc(s.description)}</div>`:""}${s.characters?.length?`<div>角色: ${U.esc(s.characters.join(", "))}</div>`:""}</div></details>`).join("")}</div>`:C.empty("无场景")}</div>
-      </div>
-      <div class="cols-2">
-        <div class="panel"><h3>🏛 组织 (${orgs.length})</h3>${orgs.length?`<div class="dash-list">${orgs.map(o=>`<details><summary>${U.esc(o.name||"?")} ${o.type?C.badge(o.type,"purple"):""}</summary><div style="font-size:12px;padding:8px">${o.description?`<div>${U.esc(o.description)}</div>`:""}${o.goals?`<div>目标: ${U.esc(o.goals)}</div>`:""}${o.members?.length?`<div>成员: ${U.esc(o.members.join(", "))}</div>`:""}</div></details>`).join("")}</div>`:C.empty("无组织")}</div>
-        <div class="panel"><h3>📍 地点 (${locs.length})</h3>${locs.length?`<div class="dash-list">${locs.map(l=>`<details><summary>${U.esc(l.name||"?")} ${l.type?C.badge(l.type,"info"):""}</summary><div style="font-size:12px;padding:8px">${l.description?`<div>${U.esc(l.description)}</div>`:""}${l.region?`<div>区域: ${U.esc(l.region)}</div>`:""}${l.features?.length?`<div>特征: ${U.esc(l.features.join(", "))}</div>`:""}</div></details>`).join("")}</div>`:C.empty("无地点")}</div>
-      </div>
-    </div>`;
-  }
-});
-
-/* ── 🧠 叙事深度 ── */
-Views.register({
-  id:"narrative",
-  render(){
-    const d=AS.dashboardData.narrative;
-    if(!d)return`<div class="panel" style="text-align:center;padding:40px"><h2>🧠 叙事深度</h2><p style="color:var(--muted)">请先选择一个模组</p></div>`;
-    const mem=d.memory||{},brs=d.branches||[],cau=d.causality||{},rels=d.relations||[];
-    return`<div class="grid">
-      <div class="panel"><h2>🧠 叙事深度</h2><div class="sub">${d.turnCount||0} 轮 · ${mem.snapshots||0} 条记忆 · ${brs.length} 个分支 · ${cau.totalEvents||0} 个因果事件 · ${d.canonCount||0} 条正史</div></div>
-      <div class="cols-2">
-        <div class="panel"><h3>🧠 记忆层</h3>${mem.recentEntries?.length?`<div class="dash-list">${mem.recentEntries.map(e=>`<div class="dash-row"><span>${U.esc(e.summary||"")}</span><span style="color:var(--muted);font-size:11px">${U.rel(e.ts)}</span></div>`).join("")}</div>`:C.empty("无记忆快照","对话后自动生成")}</div>
-        <div class="panel"><h3>🌿 分支</h3>${brs.length?C.table(brs,[{k:"name",l:"名称"},{k:"status",l:"状态",render:r=>C.badge(r.status||"active",r.isActive?"ok":"pending")}]):C.empty("仅主分支")}</div>
-      </div>
-      <div class="cols-2">
-        <div class="panel"><h3>🔗 因果链</h3>${cau.events?.length?`<div class="dash-list">${cau.events.map(e=>`<details><summary>${U.esc(e.title||"?")} ${e.type?C.badge(e.type,"info"):""} ${e.time?`<span style="color:var(--muted)">${U.esc(e.time)}</span>`:""}</summary><div style="font-size:12px;padding:8px">${e.dependsOn?.length?`<div>依赖事件: ${U.esc(e.dependsOn.join(", "))}</div>`:""}</div></details>`).join("")}</div>`:C.empty("无因果链数据")}</div>
-        <div class="panel"><h3>🔗 关系网络</h3>${rels.length?C.table(rels,[{k:"key",l:"关系"},{k:"type",l:"类型",render:r=>C.badge(r.type||"中性","info")},{k:"attitude",l:"态度",render:r=>`<span style="color:${(r.attitude||0)>0?"var(--ok)":(r.attitude||0)<0?"var(--bad)":"var(--muted)"}">${r.attitude||0}</span>`}]):C.empty("无关系数据")}</div>
-      </div>
-    </div>`;
-  }
-});
-
-/* ── ⌨ 指令 ── */
-Views.register({
-  id:"commands",
-  render(){
-    const groups={
-      "引擎":["/引擎 status","/引擎 load [名]"],
-      "对话":["/推进","/推进 停止","/摘要链 show [N]","/压缩"],
-      "世界":["/世界 list","/世界 new [名]","/世界 load [名]"],
-      "存档/分支":["/存档 [名]","/读档 [名]","/存档列表","/分支 list","/分支 switch [名]"],
-      "角色":["/角色 list","/角色 create [名]","/角色 show [名]"],
-      "场景":["/场景 now","/场景 new [名]","/场景 move [名]","/场景 time [时间]"],
-      "追踪":["/追踪 status","/追踪 伏笔","/追踪 冲突"],
-      "审查":["/审查 check"],
-      "模块":["/模块 list","/模块 on|off [ID]","/模块 preset [类型]"],
-      "预设":["/预设 list","/预设 use [名]"],
-    };
-    return`<div class="grid"><div class="panel"><h2>⌨ 斜杠指令</h2><div class="sub">在对话输入框中输入以下指令来控制引擎行为</div><div class="dash-cmd-grid">${Object.entries(groups).map(([g,cmds])=>`<div class="panel tight"><h3>${U.esc(g)}</h3><div>${cmds.map(c=>`<code style="display:block;margin:2px 0;font-size:12px">${U.esc(c)}</code>`).join("")}</div></div>`).join("")}</div></div></div>`;
-  }
-});
-
-/* ── 体检 ── */
-Views.register({
-  id:"health",
-  render(){
-    const h=AS.health;
-    const items=[
-      {n:"控制台版本",v:CFG.version,st:"ok"},
-      {n:"已连接 LLM",v:AS.llmConnected?"✅":"❌",st:AS.llmConnected?"ok":"bad"},
-      {n:"已选择模组",v:AS.selectedModule?.displayName||"无",st:AS.selectedModule?"ok":"pending"},
-      {n:"可用模组数",v:AS.modules.length,st:AS.modules.length?"ok":"pending"},
-      {n:"对话轮次",v:AS.messages.filter(m=>m.role==="assistant").length,st:"info"},
-      {n:"API Key",v:h?.llm?.hasApiKey?"已保存":"未保存",st:h?.llm?.hasApiKey?"ok":"bad"},
-      {n:"数据目录可写",v:h?.data?.writable?"✅":"未知",st:h?.data?.writable?"ok":"pending"},
+  library() {
+    const tabs = [
+      { id: "characters", label: "角色库", count: AS.characters.length },
+      { id: "worldbook", label: "世界书", count: AS.worldbookEntries.length },
+      { id: "worlddata", label: "世界数据" },
+      { id: "alchemy", label: "炼金台" },
+      { id: "review", label: "审核队列", count: AS.reviewItems.length },
     ];
-    return`<div class="grid"><div class="panel"><h2>🔍 诊断</h2><div class="cols-auto">${items.map(i=>C.stat(i.n,i.v)).join("")}</div>${h?`<div class="panel tight"><h3>服务状态</h3><pre>${U.esc(U.json({version:h.version,llm:h.llm,data:h.data,debugMode:h.debugMode}))}</pre></div>`:`<div class="sub">状态正在加载...</div>`}</div></div>`;
-  }
-});
+    const body = {
+      characters: renderCharacters,
+      worldbook: renderWorldbook,
+      worlddata: renderWorldData,
+      alchemy: renderAlchemy,
+      review: renderReview,
+    }[AS.libraryTab]();
+    return `<div class="grid">
+      <div><h2>资料库</h2><p class="sub">角色、世界书、世界数据、炼金台与审核队列。</p></div>
+      ${C.tabs(tabs, AS.libraryTab, "data-library-tab")}
+      ${body}
+    </div>`;
+  },
 
-/* ═══════════════════════════════════════════════════════════════
- * 渲染引擎
- * ═══════════════════════════════════════════════════════════════ */
+  worlds() {
+    return `<div class="grid">
+      <div><h2>世界管理</h2><p class="sub">世界、模块、存档、备份、世界包与危险操作。</p></div>
+      <section class="cols-2">
+        <div class="panel">
+          <div class="panel-head"><h2>世界 / 模块列表</h2><button class="small" data-action="refresh-modules">刷新</button></div>
+          <div class="module-grid">${AS.modules.length ? AS.modules.map(C.moduleCard).join("") : C.empty("暂无世界", "请新建世界或导入世界包。")}</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>创建</h2></div>
+          <div class="actions">
+            <button class="primary" data-action="create-world">空白世界</button>
+            <button data-action="create-from-material">从素材创建</button>
+            <button data-action="library-alchemy">打开炼金台</button>
+          </div>
+          <div class="notice warn" style="margin-top:12px">删除、覆盖导入、清空 runtime 等危险操作必须二次确认。</div>
+        </div>
+      </section>
+      <section class="layout-2">
+        <div class="panel">
+          <div class="panel-head"><h2>.worldtree 世界包</h2></div>
+          <div class="check-grid">
+            ${[
+              ["includeWorldbook", "世界书"],
+              ["includeCharacters", "角色"],
+              ["includeSharedData", "其他 shared 数据"],
+              ["includeRuntimeState", "运行状态"],
+              ["includeReviewQueue", "审核队列"]
+            ].map(([key, label]) => `<label><input type="checkbox" data-pack-option="${key}" ${AS.worldPackOptions[key] ? "checked" : ""}> ${label}</label>`).join("")}
+          </div>
+          <div class="actions"><button class="primary" data-action="export-worldpack">导出当前世界</button><button data-action="import-worldpack">导入世界包</button></div>
+          <div style="margin-top:12px">${AS.worldPack ? `<pre>${U.esc(U.json(AS.worldPack.summary || AS.worldPack))}</pre><div class="actions"><button class="primary" data-action="download-worldpack">下载 .worldtree</button></div>` : AS.importPreview ? `<div class="notice ${AS.importPreview.summary?.hasConflict ? "warn" : "ok"}">导入预览：${AS.importPreview.preview ? "等待确认" : "已跳过预览"}${AS.importPreview.summary?.hasConflict ? "，检测到同名世界，将自动重命名导入" : ""}</div><pre>${U.esc(U.json(AS.importPreview.summary || AS.importPreview))}</pre><button class="primary" data-action="confirm-worldpack-import">确认导入</button>` : C.empty("尚未选择导入或导出")}</div>
+        </div>
+        <aside class="panel">
+          <h3>默认排除</h3>
+          <div class="list"><div class="item">API Key / secrets</div><div class="item">runtime/chat.jsonl</div><div class="item">runtime/memory.jsonl</div><div class="item">runtime/state.json</div><div class="item">未确认素材</div></div>
+        </aside>
+      </section>
+    </div>`;
+  },
 
-async function loadDashboardData(){
-  const mk=AS.selectedModule?.id;
-  if(!mk||mk==="__quick__")return;
-  const tabs=AS.activeTab;
-  try{
-    if(tabs==="telemetry"&&!AS.dashboardData.telemetry){
-      AS.dashboardData.telemetry=await API.dashboardTelemetry(mk);
-      if(AS.activeTab==="telemetry")render();
-    }
-    if(tabs==="entities"&&!AS.dashboardData.entities){
-      AS.dashboardData.entities=await API.dashboardEntities(mk);
-      if(AS.activeTab==="entities")render();
-    }
-    if(tabs==="narrative"&&!AS.dashboardData.narrative){
-      AS.dashboardData.narrative=await API.dashboardNarrative(mk);
-      if(AS.activeTab==="narrative")render();
-    }
-  }catch(e){console.warn("dashboard 加载失败",e)}
+  observe() {
+    const tabs = [
+      { id: "summary", label: "摘要" },
+      { id: "blackbox", label: "叙事黑盒" },
+      { id: "telemetry", label: "世界脉象" },
+      { id: "entities", label: "世界构成" },
+      { id: "health", label: "健康体检" },
+    ];
+    const body = {
+      summary: renderObserveSummary,
+      blackbox: renderBlackbox,
+      telemetry: renderTelemetry,
+      entities: renderEntities,
+      health: renderHealth,
+    }[AS.observeTab]();
+    return `<div class="grid">
+      <div><h2>观测</h2><p class="sub">理解与调试叙事引擎，技术细节默认折叠。</p></div>
+      <div class="actions">${C.tabs(tabs, AS.observeTab, "data-observe-tab")}<button data-action="refresh-observe">刷新观测</button></div>
+      ${body}
+    </div>`;
+  },
+
+  settings() {
+    const tabs = [
+      { id: "connections", label: "模型连接" },
+      { id: "plugins", label: "插件" },
+      { id: "data", label: "数据与备份" },
+      { id: "appearance", label: "外观" },
+      { id: "advanced", label: "高级" },
+    ];
+    const body = {
+      connections: renderConnections,
+      plugins: renderPlugins,
+      data: renderDataSettings,
+      appearance: renderAppearance,
+      advanced: renderAdvanced,
+    }[AS.settingsTab]();
+    return `<div class="grid">
+      <div><h2>设置</h2><p class="sub">低频、敏感与技术性操作集中在这里。</p></div>
+      ${C.tabs(tabs, AS.settingsTab, "data-settings-tab")}
+      ${body}
+    </div>`;
+  },
+};
+
+function renderCharacters() {
+  const q = (AS.characterQuery || "").toLowerCase();
+  const list = (AS.characters || []).filter(c => !q || [c.name, c.description, (c.tags || []).join(" ")].join(" ").toLowerCase().includes(q));
+  return `<section class="layout-2">
+    <div class="panel">
+      <div class="panel-head"><div><h2>角色库</h2><p class="sub">支持 ST v2/v3 JSON，PNG metadata 会尝试解析。</p></div><button class="small" data-action="refresh-characters">刷新</button></div>
+      <div class="actions"><button class="primary" data-action="import-character-json">批量导入 JSON/PNG</button><input id="characterSearch" placeholder="搜索角色 / 标签" value="${U.esc(AS.characterQuery)}"></div>
+      <p class="tiny muted">数据位置：<code>data/engine/characters</code></p>
+      <div class="module-grid">${list.length ? list.map(c => `<div class="module-card" data-character-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.name)}</strong>${C.badge(c.format || "native", "info")}</div><p class="tiny muted">${U.esc(U.compact(c.description || "无描述", 100))}</p><div class="chip-row">${(c.tags || []).slice(0, 6).map(t => `<span class="chip">${U.esc(t)}</span>`).join("") || `<span class="tiny muted">暂无标签</span>`}</div><div class="actions"><button class="small primary" data-action="rp-character">开始 RP</button><button class="small" data-action="preview-character">预览</button><button class="small" data-action="edit-character-meta">标签/说明</button><button class="small" data-action="backup-character">备份</button><button class="small danger" data-action="delete-character">删除</button></div></div>`).join("") : C.empty("暂无角色卡", "导入角色卡后会显示在这里。")}</div>
+    </div>
+    <aside class="panel">${AS.currentCharacterCard ? `<h3>角色预览</h3><pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>` : C.empty("角色预览", "选择一张角色卡查看详情。")}</aside>
+  </section>`;
 }
 
-function renderTabs(active){
-  return CFG.tabs.map(t=>`<button class="tab ${active===t.id?"active":""}" data-tab="${U.esc(t.id)}">${U.esc(t.label)}</button>`).join("");
+function renderWorldbook() {
+  const groups = [...new Set((AS.worldbookEntries || []).map(e => e.group || "默认"))];
+  return `<section class="layout-2">
+    <div class="panel">
+      <div class="panel-head"><div><h2>世界书</h2><p class="sub">兼容 <code>shared/worldbook.json</code>，支持批量导入导出和分组。</p></div><div class="actions"><button class="small" data-action="load-worldbook">加载</button><button class="small" data-action="import-worldbook-json">导入</button><button class="small" data-action="export-worldbook-json">导出</button><button class="small primary" data-action="new-worldbook-entry">新增条目</button></div></div>
+      <div class="chip-row">${groups.map(g => `<span class="chip">${U.esc(g)}</span>`).join("") || `<span class="tiny muted">暂无分组</span>`}</div>
+      <div class="list">${C.worldbookRows()}</div>
+    </div>
+    <aside class="panel">
+      <h3>触发测试</h3>
+      <textarea id="worldbookTestInput" placeholder="输入玩家行动或场景文本，测试会命中哪些条目。"></textarea>
+      <button class="primary" data-action="test-worldbook">测试触发</button>
+      <div class="list" style="margin-top:10px">${AS.worldbookTest?.hits?.length ? AS.worldbookTest.hits.map(h => `<div class="item"><strong>${U.esc(h.title || h.keys?.[0] || "命中条目")}</strong><span class="tiny muted">${U.esc(h.reason || "")}</span><pre>${U.esc(h.content || "")}</pre></div>`).join("") : C.empty("等待测试", "命中条目会显示排序原因。")}</div>
+    </aside>
+  </section>`;
 }
 
-async function render(){
-  try{
-    const tab=AS.activeTab;
-    U.qs("#tabs").innerHTML=renderTabs(tab);
-    const ctx=AS.selectedModule?AS.selectedModule.displayName||AS.selectedModule.name:"未选择模组";
-    U.qs("#contextLine").textContent=ctx;
-    U.qs("#statusRight").textContent=`${AS.modules.length||0} 模组 · ${AS.messages.length} 条消息`;
-    const st=U.qs("#llmStatus");
-    if(st){st.className="badge "+(AS.llmConnected?"ok":"pending");st.textContent=AS.llmConnected?"已连接":"未连接"}
-    const view=Views.get(tab);
-    if(!view){U.qs("#main").innerHTML=C.empty("未知标签");bindEvents();return}
-    U.qs("#main").innerHTML=view.render();
+function renderWorldData() {
+  const d = AS.dashboardData.entities || {};
+  const rows = [
+    ["角色", d.characters?.length || 0],
+    ["场景", d.scenes?.length || 0],
+    ["组织", d.organizations?.length || 0],
+    ["地点", d.locations?.length || 0],
+    ["世界书条目", d.worldbookCount || AS.worldbookEntries.length],
+  ];
+  return `<section class="grid">
+    <div class="auto-grid">${rows.map(([k, v]) => C.stat(k, v)).join("")}</div>
+    <div class="panel"><div class="panel-head"><h2>结构化世界数据</h2><button class="small" data-action="load-worlddata">刷新</button></div><pre>${U.esc(U.json({ characters: d.characters || [], scenes: d.scenes || [], organizations: d.organizations || [], locations: d.locations || [] }))}</pre></div>
+  </section>`;
+}
+
+function renderAlchemy() {
+  return `<section class="panel">
+    <div class="panel-head"><div><h2>炼金台</h2><p class="sub">把素材提取为待审核条目，不直接写入正式世界。</p></div></div>
+    <div id="alchemyDrop" class="drop-zone"><strong>拖拽文件或点击选择</strong><span>支持 .md .txt .json .png</span></div>
+    <textarea id="alchemyText" placeholder="或在这里粘贴素材文本..."></textarea>
+    <div class="actions"><button class="primary" data-action="alchemy-import">提取到审核队列</button><span id="alchemyResult" class="tiny muted"></span></div>
+  </section>`;
+}
+
+function renderReview() {
+  const items = AS.reviewItems || [];
+  return `<section class="panel">
+    <div class="panel-head"><div><h2>审核队列</h2><p class="sub">未确认内容不得写入正式世界数据。</p></div><button class="small" data-action="load-review">刷新</button></div>
+    <textarea id="reviewSourceText" placeholder="粘贴素材，先提取进入审核队列。"></textarea>
+    <div class="actions"><button class="primary" data-action="enqueue-review">提取入队</button><span class="tiny muted">当前目标：${AS.selectedModule ? U.esc(AS.selectedModule.displayName || AS.selectedModule.name) : "未选择"}</span></div>
+    <div class="list" style="margin-top:12px">${items.length ? items.map(item => `<div class="item" data-review-id="${U.esc(item.id)}"><div class="item-head"><strong>${U.esc(item.entity || item.name || "待审核实体")}</strong><div>${C.badge(item.typeName || item.typeId || item.type || "实体", "info")} ${C.badge(Math.round((item.confidence || 0) * 100) + "%", "warn")}</div></div><p class="tiny muted">${U.esc(U.compact(item.sourceSnippet || item.source || "", 180))}</p><details><summary>结构数据</summary><pre>${U.esc(U.json(item.data || item.structured || {}))}</pre></details><div class="actions"><button class="small primary" data-action="confirm-review">确认写入</button><button class="small" data-action="merge-review">合并/修正</button><button class="small danger" data-action="ignore-review">忽略</button></div></div>`).join("") : C.empty("队列为空", "炼金台提取结果会先停在这里。")}</div>
+  </section>`;
+}
+
+function renderObserveSummary() {
+  const hits = AS.turnDebug?.worldbookHits?.length || 0;
+  const dims = AS.dashboardData.telemetry?.telemetry?.dimensions || {};
+  const top = Object.entries(dims).sort((a, b) => (b[1].value || 0) - (a[1].value || 0))[0];
+  return `<section class="auto-grid">
+    ${C.stat("Guardian", AS.turnDebug?.guardian?.verdict || AS.turnDebug?.guardian?.score || "待生成")}
+    ${C.stat("世界书命中", hits)}
+    ${C.stat("记忆负载", dims.memory_load?.value ?? "未知")}
+    ${C.stat("突出脉象", top ? `${top[0]} ${top[1].value}` : "暂无")}
+  </section>`;
+}
+
+function renderBlackbox() {
+  const dbg = AS.turnDebug;
+  const trace = dbg ? [
+    ["输入进入", AS.selectedModule?.displayName || AS.selectedModule?.name || "当前世界"],
+    ["世界书命中", `${(dbg.worldbookHits || []).length} 条`],
+    ["角色状态", Object.keys(dbg.characterState || {}).length ? "已读取" : "无"],
+    ["记忆快照", Object.keys(dbg.memorySnapshot || {}).length ? "已生成" : "无"],
+    ["Direction Packet", Object.keys(dbg.directionPacket || {}).length ? "已组装" : "无"],
+    ["Guardian", dbg.guardian?.verdict || dbg.guardian?.score || "待生成"]
+  ] : [];
+  return `<section class="panel">
+    <div class="panel-head"><h2>叙事黑盒</h2><button class="small" data-action="load-context">刷新</button></div>
+    ${dbg ? `<div class="timeline">${trace.map(([k, v]) => `<div class="timeline-step"><strong>${U.esc(k)}</strong><span>${U.esc(v)}</span></div>`).join("")}</div><div class="list">
+      <details open><summary>世界书命中</summary><pre>${U.esc(U.json(dbg.worldbookHits || []))}</pre></details>
+      <details><summary>角色状态</summary><pre>${U.esc(U.json(dbg.characterState || {}))}</pre></details>
+      <details><summary>记忆快照</summary><pre>${U.esc(U.json(dbg.memorySnapshot || {}))}</pre></details>
+      <details><summary>Direction Packet</summary><pre>${U.esc(U.json(dbg.directionPacket || {}))}</pre></details>
+      <details><summary>Guardian 结果</summary><pre>${U.esc(U.json(dbg.guardian || {}))}</pre></details>
+    </div>` : C.empty("暂无叙事黑盒", "发送一轮对话后会生成。")}
+  </section>`;
+}
+
+function renderTelemetry() {
+  const d = AS.dashboardData.telemetry;
+  const dims = d?.telemetry?.dimensions || {};
+  const labels = { stability: "稳定度", chaos: "混乱度", mystery: "神秘度", war_risk: "战争风险", character_stress: "角色压力", faction_conflict: "阵营冲突", rule_completeness: "规则完整度", narrative_momentum: "叙事动能", memory_load: "记忆负载" };
+  return `<section class="panel"><div class="panel-head"><h2>世界脉象</h2><button class="small" data-action="load-telemetry">刷新</button></div><div class="grid">${Object.keys(labels).map(k => { const v = dims[k]?.value ?? 0; return `<div class="meter"><div class="meter-head"><span>${labels[k]}</span><strong>${v}</strong></div><div class="meter-track"><div class="meter-fill" style="width:${Math.max(0, Math.min(100, v))}%"></div></div></div>`; }).join("")}</div></section>`;
+}
+
+function renderEntities() {
+  return `<section class="panel"><div class="panel-head"><h2>世界构成</h2><button class="small" data-action="load-worlddata">刷新</button></div>${renderWorldData()}</section>`;
+}
+
+function renderHealth() {
+  const h = AS.health;
+  return `<section class="grid"><div class="auto-grid">
+    ${C.stat("控制台版本", CFG.version)}
+    ${C.stat("LLM 连接", AS.llmConnected ? "已连接" : "未连接")}
+    ${C.stat("API Key", AS.hasApiKey ? "已配置" : "缺失")}
+    ${C.stat("数据目录", h?.data?.writable ? "可写" : "未知")}
+    ${C.stat("世界数量", h?.data?.worldsCount ?? AS.modules.length)}
+    ${C.stat("对话回合", h?.data?.totalTurns ?? 0)}
+  </div><div class="panel"><h3>服务状态</h3><pre>${U.esc(U.json(h || {}))}</pre></div></section>`;
+}
+
+function renderConnections() {
+  const data = AS.connections || { items: [], templates: [] };
+  return `<section class="layout-2">
+    <div class="panel">
+      <div class="panel-head"><h2>连接档案</h2><button class="small" data-action="load-connections">刷新</button></div>
+      <div class="list">${(data.items || []).map(c => `<div class="item" data-connection-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.label || c.name)}</strong>${C.badge(c.active ? "默认" : "档案", c.active ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(c.provider || "openai-compatible")} · ${U.esc(c.model || "")}</span><div class="chip-row"><span class="chip">temp ${c.temperature ?? "-"}</span><span class="chip">max ${c.maxTokens ?? "-"}</span><span class="chip">top_p ${c.topP ?? "-"}</span>${c.hasApiKey ? `<span class="chip ok">key ${U.esc(c.maskedKey || "saved")}</span>` : `<span class="chip warn">no key</span>`}</div><div class="actions"><button class="small" data-action="set-default-connection">设为默认</button><button class="small" data-action="test-connection">测试</button><button class="small" data-action="duplicate-connection">复制</button><button class="small danger" data-action="delete-connection">删除</button></div></div>`).join("") || C.empty("暂无连接档案")}</div>
+    </div>
+    <aside class="panel">
+      <h3>新增 / 更新连接</h3>
+      <label>模板<select id="connTemplate">${(data.templates || []).map(t => `<option value="${U.esc(t.id)}">${U.esc(t.label)}</option>`).join("")}</select></label>
+      <label>名称<input id="connLabel" placeholder="DeepSeek / Local Ollama"></label>
+      <label>Base URL<input id="connBaseUrl" placeholder="https://api.deepseek.com/v1"></label>
+      <label>模型<input id="connModel" placeholder="deepseek-v4-flash"></label>
+      <div class="cols-3">
+        <label>Temperature<input id="connTemperature" type="number" step="0.1" min="0" max="2" placeholder="0.7"></label>
+        <label>Max tokens<input id="connMaxTokens" type="number" min="1" placeholder="4096"></label>
+        <label>Top P<input id="connTopP" type="number" step="0.05" min="0" max="1" placeholder="1"></label>
+      </div>
+      <label>API Key<input id="connKey" type="password" placeholder="留空则不覆盖"></label>
+      <div class="actions"><button class="primary" data-action="save-connection">保存档案</button><button data-action="apply-connection-template">套用模板</button></div>
+      ${C.notice("API Key 只写入本机 secrets，不进入仓库或 .worldtree。", "ok")}
+    </aside>
+  </section>`;
+}
+
+function renderPlugins() {
+  const plugins = AS.plugins?.plugins || [];
+  return `<section class="panel">
+    <div class="panel-head"><div><h2>本地插件</h2><p class="sub">仅支持 importer / reviewer，不提供远程插件市场。</p></div><button class="small" data-action="load-plugins">刷新</button></div>
+    <div class="list">${plugins.length ? plugins.map(p => `<div class="item" data-plugin-id="${U.esc(p.id)}"><div class="item-head"><strong>${U.esc(p.name)}</strong>${C.badge(p.enabled ? "启用" : "禁用", p.enabled ? "ok" : "pending")}</div><div class="actions">${(p.capabilities || []).map(x => C.badge(x, "info")).join("")}</div>${p.errors?.length ? C.notice(U.esc(p.errors.join("；")), "bad") : ""}<details><summary>权限与 Manifest</summary><pre>${U.esc(U.json({ permissions: p.permissions || [], entry: p.entry, manifest: p.manifest || {} }))}</pre></details><div class="actions"><button class="small" data-action="${p.enabled ? "disable-plugin" : "enable-plugin"}">${p.enabled ? "禁用" : "启用"}</button><button class="small" data-action="run-plugin">Dry-run</button></div></div>`).join("") : C.empty("暂无本地插件", "把插件目录放到 userData/plugins/{plugin}/plugin.json。")}</div>
+    ${AS.pluginRunResult ? `<div class="panel tight" style="margin-top:12px"><h3>插件运行结果</h3><pre>${U.esc(U.json(AS.pluginRunResult))}</pre></div>` : ""}
+  </section>`;
+}
+
+function renderDataSettings() {
+  return `<section class="panel"><h2>数据与备份</h2><div class="list"><div class="item"><strong>本地优先</strong><span class="tiny muted">世界、角色、运行记录默认保存在本机数据目录。</span></div><div class="item"><strong>旧版导入导出</strong><span class="tiny muted">高级用户仍可使用旧版 /api/data/export 和 /api/data/import。</span></div></div><div class="actions"><button data-action="legacy-export">导出当前模块 JSON</button><button data-action="legacy-import">导入旧版 JSON</button></div></section>`;
+}
+
+function renderAppearance() {
+  return `<section class="panel"><h2>外观</h2><p class="sub">中文优先，关键技术词保留英文辅助。当前版本使用固定浅色创作者工作台主题。</p></section>`;
+}
+
+function renderAdvanced() {
+  return `<section class="grid"><div class="panel"><h2>高级模式</h2><p class="sub">原始 JSON、debug logs、engine manifest 和内部模块 id 仅在这里展示。</p><div class="actions"><button data-action="refresh-debug">刷新 debug logs</button><button data-action="toggle-debug">打开日志面板</button></div></div><div class="panel"><h3>Engine Manifest</h3><pre>${U.esc(U.json({ version: CFG.version, modules: "M1-M19", selectedModule: AS.selectedModule?.id || null, api: ["/api/data/export", "/api/data/import"] }))}</pre></div></section>`;
+}
+
+function renderDrawer() {
+  if (!AS.activeDrawer) return "";
+  const title = AS.activeDrawer === "worldbook" ? "世界书 · 快速查看" : "存档 · 快速切换";
+  const body = AS.activeDrawer === "worldbook"
+    ? `<div class="list">${C.worldbookRows(8)}</div>`
+    : `<div class="list">${AS.modules.slice(0, 8).map(m => `<div class="item"><strong>${U.esc(m.displayName || m.name)}</strong><span class="tiny muted">${m.turnCount || 0} 回合</span><button class="small" data-module-id="${U.esc(m.id)}" data-action="load-module-from-list">切换</button></div>`).join("")}</div>`;
+  return `<div class="overlay-backdrop open" data-action="close-drawer"><div class="drawer" onclick="event.stopPropagation()"><div class="overlay-head"><h3>${title}</h3><button data-action="close-drawer">关闭</button></div>${body}</div></div>`;
+}
+
+function renderNav() {
+  const nav = CFG.nav.map(n => `<button class="nav-btn ${AS.view === n.id ? "active" : ""}" data-view="${n.id}"><span class="nav-icon">${n.icon}</span><strong>${n.label}</strong><span class="nav-meta">${n.meta}</span></button>`).join("");
+  U.qs("#primaryNav").innerHTML = nav;
+  const mobile = CFG.nav.slice(0, 5).map(n => `<button class="${AS.view === n.id ? "active" : ""}" data-view="${n.id}"><span>${n.icon}</span><span>${n.label}</span></button>`).join("");
+  U.qs("#mobileNav").innerHTML = mobile;
+}
+
+function render() {
+  try {
+    renderNav();
+    const viewDef = CFG.nav.find(v => v.id === AS.view) || CFG.nav[0];
+    U.qs("#viewTitle").textContent = viewDef.label;
+    const currentName = AS.selectedModule ? (AS.selectedModule.displayName || AS.selectedModule.name) : "未选择世界";
+    U.qs("#contextLine").textContent = currentName;
+    U.qs("#sideWorldName").textContent = currentName;
+    U.qs("#sideWorldMeta").textContent = `${AS.messages.length} 条消息 · ${AS.modules.length} 个模块`;
+    const llm = U.qs("#llmStatus");
+    llm.textContent = AS.llmConnected ? "已连接" : "未连接";
+    llm.className = `badge ${AS.llmConnected ? "ok" : "pending"}`;
+    U.qs("#main").innerHTML = Views[AS.view] ? Views[AS.view]() : C.empty("未知页面");
     bindEvents();
-    if(["telemetry","entities","narrative"].includes(tab))loadDashboardData();
-  }catch(e){
-    console.error("render 出错",e);
-    U.qs("#main").innerHTML=`<div class="panel" style="text-align:center;padding:40px"><h2>⚠️ 页面渲染出错</h2><p style="color:var(--bad)">${U.esc(e.message)}</p><button class="primary" onclick="location.reload()">🔄 刷新页面</button></div>`;
+  } catch (err) {
+    console.error(err);
+    U.qs("#main").innerHTML = `<div class="panel">${C.notice(`页面渲染失败：${U.esc(err.message)}`, "bad")}<button onclick="location.reload()">刷新页面</button></div>`;
   }
 }
 
-async function selectInstalledModule(moduleId){
-  const mod=AS.modules.find(m=>m.id===moduleId);
-  if(!mod)return false;
-  AS.selectedModule=mod;
-  CH.clear();AS.dashboardData={};
-  if(mod.dataMode==="character_card"){
-    try{
-      const res=await API.loadCharacter(mod._characterId||mod.id.replace("char:",""));
-      if(res.status==="ok"&&res.card)AS._currentCharCard=res.card;
-    }catch(e){}
-  }else{
-    await CH.loadFromServer(mod);
+async function loadViewData() {
+  try {
+    if (AS.view === "library" && AS.libraryTab === "characters") AS.characters = await API.loadCharacters();
+    if ((AS.view === "library" && AS.libraryTab === "worldbook") || AS.view === "workbench") await loadWorldbookIfPossible();
+    if (AS.view === "library" && AS.libraryTab === "review") AS.reviewItems = (await API.alchemyReview()).items || [];
+    if (AS.view === "settings" && AS.settingsTab === "connections") AS.connections = await API.connections();
+    if (AS.view === "settings" && AS.settingsTab === "plugins") AS.plugins = await API.plugins();
+    if (AS.view === "observe") await refreshObserve();
+  } catch (err) {
+    console.warn("加载视图数据失败", err);
   }
-  AS.activeTab="chat";
-  return true;
 }
 
-/* ═══════════════════════════════════════════════════════════════
- * 事件绑定
- * ═══════════════════════════════════════════════════════════════ */
+async function loadWorldbookIfPossible() {
+  const m = AS.selectedModule;
+  if (!m || m.id === "__quick__" || m.id.startsWith("char:")) return;
+  const wb = await API.loadWorldbook(m.id);
+  if (wb.status === "ok") AS.worldbookEntries = wb.entries || [];
+}
 
-function bindEvents(){
-  // Tab 切换
-  for(const btn of U.qsa("[data-tab]"))
-    btn.onclick=()=>{AS.activeTab=btn.dataset.tab;render();if(["telemetry","entities","narrative"].includes(btn.dataset.tab))loadDashboardData()};
+async function refreshObserve() {
+  if (!AS.selectedModule || AS.selectedModule.id === "__quick__") return;
+  const id = AS.selectedModule.id;
+  const jobs = [
+    API.turnDebug(id).then(d => { AS.turnDebug = d.debug || null; }).catch(() => {}),
+    API.telemetry(id).then(d => { AS.dashboardData.telemetry = d; }).catch(() => {}),
+    API.entities(id).then(d => { AS.dashboardData.entities = d; }).catch(() => {}),
+    API.narrative(id).then(d => { AS.dashboardData.narrative = d; }).catch(() => {}),
+  ];
+  await Promise.all(jobs);
+}
 
-  // 首页按钮
-  U.qs("#homeBtn").onclick=()=>{AS.activeTab="home";render()};
-
-  for(const btn of U.qsa("[data-action='show-onboarding']")){
-    btn.onclick=async()=>{AS.config.firstRun=true;await API.saveConfig({firstRun:true});render()};
+async function selectModule(id, targetView = "chat") {
+  const mod = AS.modules.find(m => m.id === id);
+  if (!mod) return;
+  AS.selectedModule = mod;
+  AS.isQuickStart = false;
+  AS.quickStartContent = "";
+  AS.dashboardData = {};
+  AS.turnDebug = null;
+  if (mod.dataMode === "character_card") {
+    try {
+      const res = await API.loadCharacter(mod._characterId || mod.id.replace("char:", ""));
+      if (res.status === "ok") AS.currentCharacterCard = res.card;
+    } catch {}
   }
-  for(const btn of U.qsa("[data-action='onboarding-dismiss']")){
-    btn.onclick=async()=>{AS.config.firstRun=false;await API.saveConfig({firstRun:false});render()};
-  }
-  for(const btn of U.qsa("[data-action='onboarding-import']")){
-    btn.onclick=()=>{
-      const ta=U.qs("#alchemyText");
-      if(ta){ta.focus();ta.scrollIntoView({behavior:"smooth",block:"center"});}
+  await CH.loadServer(mod);
+  await loadWorldbookIfPossible();
+  AS.view = targetView;
+}
+
+async function refreshModules() {
+  const mods = await API.loadModules();
+  let chars = [];
+  try { chars = await API.loadCharacters(); } catch {}
+  AS.characters = chars || [];
+  const charModules = AS.characters.map(c => ({
+    id: `char:${c.id}`,
+    name: c.displayName || c.name,
+    displayName: c.displayName || c.name,
+    description: c.description || "",
+    dataMode: "character_card",
+    type: "character",
+    subType: "default",
+    turnCount: 0,
+    _characterId: c.id,
+  }));
+  AS.modules = [...(mods || []), ...charModules];
+  if (!AS.selectedModule && AS.modules.length) AS.selectedModule = AS.modules[0];
+}
+
+async function installExample(id) {
+  if (!id) return;
+  const res = await API.installExample(id);
+  if (res.status !== "ok") throw new Error(res.errorMsg || "示例安装失败");
+  await refreshModules();
+  if (res.module?.id) await selectModule(res.module.id, "workbench");
+  AS.workbenchMode = "chat";
+  createToast("示例已安装");
+  render();
+}
+
+function bindEvents() {
+  U.qsa("[data-view]").forEach(btn => {
+    btn.onclick = async () => {
+      AS.view = btn.dataset.view;
+      AS.workbenchMode = AS.view === "workbench" ? AS.workbenchMode : AS.workbenchMode;
+      await loadViewData();
+      render();
     };
-  }
-  for(const btn of U.qsa("[data-action='onboarding-create']")){
-    btn.onclick=()=>showCreateDialog("worldbook","世界书");
-  }
-  for(const btn of U.qsa("[data-action='install-example']")){
-    const card=btn.closest("[data-example-id]");
-    if(!card)continue;
-    btn.onclick=async()=>{
-      try{
-        btn.disabled=true;
-        const res=await API.installExample(card.dataset.exampleId);
-        if(res.status==="ok"&&res.module){
-          await refreshModules();
-          await selectInstalledModule(res.module.id);
-          AS.config.firstRun=false;
-          await API.saveConfig({firstRun:false});
-          createToast(`已导入: ${res.module.displayName||res.module.name}`);
-          render();
-        }
-      }catch(e){createToast("导入失败: "+e.message,"bad")}
-      finally{btn.disabled=false}
-    };
-  }
-
-  // ── LLM 配置 ──
-  const saveBtn=U.qs("#saveLlmBtn");
-  if(saveBtn)saveBtn.onclick=async()=>{
-    const url=U.qs("#cfgUrl")?.value;const model=U.qs("#cfgModel")?.value;const key=U.qs("#cfgKey")?.value;
-    try{
-      if(url)await API.saveConfig({llmBaseUrl:url,llmModel:model||"deepseek-v4-flash"});
-      // 只有用户填了新 key 才更新，留空则保留服务端已有 key
-      if(key)await API.saveLlmKey({value:key});
-      const cfg=await API.loadConfig();Object.assign(AS.config,cfg);
-      // 更新 hasApiKey：检查服务端是否还有 key
-      try{const sec=await API.getSecrets();AS.hasApiKey=sec?.llm?.items?.length>0}catch{}
-      createToast("配置已保存");
-      // 自动测试
-      AS.llmTestResult="<span class='loading'>测试中...</span>";render();
-      try{const t=await API.testLlm({config:AS.config});if(t.status==="ok"){AS.llmConnected=true;AS.hasApiKey=true}else{AS.llmConnected=false};AS.llmTestResult=t.status==="ok"?`<span style="color:var(--ok)">✅ 连接成功 (${t.latencyMs}ms)</span>`:`<span style="color:var(--bad)">❌ ${U.esc(t.errorMsg||"连接失败")}</span>`;updateLlmStatusBadge();render()}catch(e){AS.llmTestResult=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;render()}
-    }catch(e){createToast("保存失败: "+e.message,"bad")}
-  };
-
-  const testBtn=U.qs("#testLlmBtn");
-  if(testBtn)testBtn.onclick=async()=>{
-    const url=U.qs("#cfgUrl")?.value;
-    // 服务端从 secrets.json 读取真实 Key，前端只传配置
-    AS.llmTestResult="<span class='loading'>测试中...</span>";render();
-    try{const t=await API.testLlm({config:{...AS.config,llmBaseUrl:url}});if(t.status==="ok"){AS.llmConnected=true;AS.hasApiKey=true}else{AS.llmConnected=false};AS.llmTestResult=t.status==="ok"?`<span style="color:var(--ok)">✅ 连接成功 (${t.latencyMs}ms)</span>`:`<span style="color:var(--bad)">❌ ${U.esc(t.errorMsg||"连接失败")}</span>`;updateLlmStatusBadge();render()}catch(e){AS.llmTestResult=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;render()}
-  };
-
-  // ── 模组操作 ──
-  for(const btn of U.qsa("[data-action='select-module']")){
-    const card=btn.closest("[data-module-id]");
-    if(!card)continue;
-    btn.onclick=async()=>{
-      const id=card.dataset.moduleId;
-      const mod=AS.modules.find(m=>m.id===id);
-      if(!mod)return;
-      if(mod.dataMode==="character_card"){
-        // 角色卡选择：加载角色数据
-        AS.selectedModule=mod;
-        CH.clear();AS.dashboardData={};
-        try{
-          const res=await API.loadCharacter(mod._characterId||id.replace("char:",""));
-          if(res.status==="ok"&&res.card) AS._currentCharCard=res.card;
-        }catch(e){}
-        AS.activeTab="chat";
-        createToast(`已选择: ${mod.displayName||id} 🃏`);
-        render();
-      }else{
-        // 普通模组选择
-        AS.selectedModule=mod;
-        CH.clear();AS.dashboardData={};
-        await CH.loadFromServer(mod);
-        AS.activeTab="chat";
-        createToast(`已选择: ${mod.displayName||mod.name}${AS.messages.length?" · "+AS.messages.length+" 条历史":""}`);
-        render();
-      }
-    };
-  }
-
-  // 从模板创建
-  for(const btn of U.qsa("[data-action='create-from-template']")){
-    const card=btn.closest("[data-module-id]");
-    if(!card)continue;
-    btn.onclick=async()=>{
-      const id=card.dataset.moduleId;
-      const tmpl=AS.modules.find(m=>m.id===id);
-      if(!tmpl)return;
-      // 生成模组名
-      const baseName=tmpl.displayName||tmpl.name||"新世界";
-      const name=prompt(`从「${baseName}」创建新模组，请输入名称:`, baseName);
-      if(!name||!name.trim())return;
-      try{
-        const data={name:name.trim(),displayName:name.trim(),dataMode:tmpl.dataMode||"worldbook",subType:tmpl.subType||"classic",preset:tmpl.preset||"epic"};
-        const res=await API.createModule(data);
-        if(res.status==="ok"){
-          await refreshModules();
-          // 自动选中新模组
-          const newMod=AS.modules.find(m=>m.id===res.module.id);
-          if(newMod){AS.selectedModule=newMod;await CH.loadFromServer(newMod);AS.activeTab="chat";createToast(`✅ 已创建并选择: ${name}`);render()}
-        }else{createToast(`创建失败: ${res.errorMsg}`,"bad")}
-      }catch(e){createToast("创建失败: "+e.message,"bad")}
-    };
-  }
-
-  for(const btn of U.qsa("[data-action='delete-module']")){
-    const card=btn.closest("[data-module-id]");
-    if(!card)continue;
-    btn.onclick=async()=>{
-      const id=card.dataset.moduleId;
-      const mod=AS.modules.find(m=>m.id===id);
-      const isChar=mod?.dataMode==="character_card";
-      const typeLabel=isChar?"角色卡":"模组";
-      if(!confirm(`确定删除${typeLabel}「${mod?.displayName||id}」？${isChar?"\n\n将从 data/engine/characters/ 中永久移除该角色卡。此操作不可恢复！":"\n\n删除后所有对话记录和设定数据将永久丢失。"}`))return;
-      try{
-        if(isChar){
-          const res=await API.post("/api/characters/delete",{id:mod._characterId||id.replace("char:","")});
-          if(res.status==="ok"){
-            if(AS.selectedModule?.id===id)AS.selectedModule=null;
-            createToast("角色卡已删除");
-          }else{createToast("删除失败: "+(res.errorMsg||"未知错误"),"bad");return}
-        }else{
-          await API.deleteModule(id);
-          createToast("已删除");
-        }
-        await refreshModules();
-      }catch(e){createToast("删除失败: "+e.message,"bad")}
-    };
-  }
-
-  const refreshBtn=U.qsa("[data-action='refresh-modules']");
-  for(const btn of refreshBtn)btn.onclick=async()=>{await refreshModules();};
-
-  // ── 新建模组 ──
-  const createWorldbook=U.qsa("[data-action='create-worldbook']");
-  for(const btn of createWorldbook)btn.onclick=()=>showCreateDialog("worldbook","经典");
-  const createCharCard=U.qsa("[data-action='create-character-card']");
-  for(const btn of createCharCard)btn.onclick=async()=>{
-    const textArea=U.qs("#alchemyText");
-    const text=textArea?.value?.trim();
-    if(!text){createToast("请先输入或拖拽角色内容","bad");return}
-    const name=prompt("输入角色卡名称:");
-    if(!name||!name.trim())return;
-    const resultEl=U.qs("#alchemyResult");
-    if(resultEl)resultEl.innerHTML="<span class='loading'>🧬 正在分析角色人格...</span>";
-    try{
-      const res=await API.post("/api/alchemy/digest",{text,worldName:name.trim(),dataMode:"character_card"});
-      if(res.status==="ok"){
-        resultEl.innerHTML=`<span style="color:var(--ok)">✅ 角色卡「${U.esc(res.module?.displayName||name)}」已创建</span>`;
-        createToast(`角色卡已就绪: ${res.module?.displayName||name}`);
-        // 刷新模组列表（含角色卡）并自动选择新角色卡
-        await refreshModules();
-        const newModId="char:"+(res.module?.id?.replace(/^char:/,""));
-        const newMod=AS.modules.find(m=>m.id===newModId);
-        if(newMod){AS.selectedModule=newMod;CH.clear();AS.activeTab="chat";createToast(`已选择: ${newMod.displayName||name} 🃏`);render()}
-      }else{
-        resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(res.errorMsg)}</span>`;
-      }
-    }catch(e){
-      if(resultEl)resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;
-    }
-  };
-  const createPreset=U.qsa("[data-action='create-preset']");
-  for(const btn of createPreset)btn.onclick=()=>showCreateDialog("preset","预设");
-
-  // ── 对话─
-  if(AS.activeTab==="chat")bindChat();
-
-  // ── 炼金台 ──
-  bindAlchemy();
-
-  // ── 回到首页 ──
-  for(const btn of U.qsa("[data-action='go-home']"))
-    btn.onclick=()=>{AS.activeTab="home";render()};
-
-  // ── 状态面板切换 ──
-  for(const btn of U.qsa("[data-action='toggle-status-panel']"))
-    btn.onclick=()=>{AS.showStatusPanel=!AS.showStatusPanel;render()};
-
-  // ── 快速开始 ──
-  const qsDrop=U.qs("#quickStartDrop");
-  if(qsDrop){
-    qsDrop.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';qsDrop.classList.add("dragover")};
-      qsDrop.ondragleave=()=>qsDrop.classList.remove("dragover");
-      qsDrop.ondrop=async e=>{
-          e.preventDefault();e.stopPropagation();qsDrop.classList.remove("dragover");
-          const texts=[];
-          const items=e.dataTransfer?.items;
-          const files=e.dataTransfer?.files;
-          // 诊断信息
-          let dbg=[`items:${items?.length||0} files:${files?.length||0}`];
-          // 方法1: items + webkitGetAsEntry（唯一支持文件夹递归的方式）
-          if(items?.length){
-            let fileCount=0,dirCount=0;
-            for(let i=0;i<items.length;i++){
-              const item=items[i];
-              dbg.push(`item[${i}].kind=${item.kind}`);
-              if(item.kind!=="file")continue;
-              const entry=item.getAsEntry?item.getAsEntry():item.webkitGetAsEntry?item.webkitGetAsEntry():null;
-              if(!entry){dbg.push(`item[${i}]: getAsEntry=null`);continue}
-              dbg.push(`item[${i}]: ${entry.isDirectory?"📁dir":"📄file"} name=${entry.name||"?"}`);
-              if(entry.isDirectory){
-                dirCount++;
-                // 递归读取目录
-                async function readDir(dir,path){
-                  const reader=dir.createReader();
-                  const all=[];
-                  while(true){
-                    const batch=await new Promise(rs=>reader.readEntries(rs));
-                    if(!batch.length)break;
-                    all.push(...batch);
-                  }
-                  for(const c of all){
-                    if(c.isFile){
-                      fileCount++;
-                      try{
-                        const f=await new Promise((rs,rj)=>c.file(rs,rj));
-                        const ext=f.name.split('.').pop().toLowerCase();
-                        if(['md','txt','json'].includes(ext)){
-                          texts.push(`【${path?path+'/':''}${f.name}】\n${await f.text()}\n`);
-                        }
-                      }catch(e){dbg.push(`读文件错误:${e.message}`)}
-                    }else if(c.isDirectory){
-                      await readDir(c,path?path+'/'+c.name:c.name);
-                    }
-                  }
-                }
-                await readDir(entry,"");
-              }else if(entry.isFile){
-                fileCount++;
-                try{
-                  const f=await new Promise((rs,rj)=>entry.file(rs,rj));
-                  const ext=f.name.split('.').pop().toLowerCase();
-                  if(['md','txt','json'].includes(ext)){
-                    texts.push(`【${f.name}】\n${await f.text()}\n`);
-                  }
-                }catch(e){dbg.push(`读文件错误:${e.message}`)}
-              }
-            }
-            dbg.push(`扫描到 ${fileCount} 个文件, ${dirCount} 个文件夹`);
-          }
-          // 方法2: 回退 files
-          if(!texts.length&&files?.length){
-            dbg.push("回退到 files 路径");
-            for(let i=0;i<files.length;i++){
-              const f=files[i];
-              const ext=f.name.split('.').pop().toLowerCase();
-              if(['md','txt','json'].includes(ext)){
-                texts.push(`【${f.name}】\n${await f.text()}\n`);
-              }
-            }
-          }
-        if(texts.length){
-          const ta=U.qs("#quickStartText");
-          if(ta)ta.value=texts.join("\n---\n");
-          createToast(`已读取 ${texts.length} 个文件`)
-        }else{createToast(`未找到支持的文本文件 · ${dbg.join(" | ")}`,"warn")}
-      };
-    qsDrop.onclick=()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".md,.txt,.json";inp.webkitdirectory=true;inp.onchange=async()=>{const files=inp.files;if(!files?.length)return;const texts=[];for(const f of files){const ext=f.name.split('.').pop().toLowerCase();if(['md','txt','json'].includes(ext)){texts.push(`【${f.webkitRelativePath||f.name}】\n${await f.text()}\n`)}}const ta=U.qs("#quickStartText");if(ta)ta.value=texts.join("\n---\n");createToast(`已读取 ${texts.length} 个文件`)};inp.click()};
-  }
-  const qsBtn=U.qs("[data-action='quick-start-chat']");
-  if(qsBtn)qsBtn.onclick=()=>{
-    const ta=U.qs("#quickStartText");
-    const content=ta?.value?.trim();
-    if(!content){createToast("请先粘贴内容或拖拽文件","bad");return}
-    AS.quickStartContent=content;
-    AS.isQuickStart=true;
-    AS.selectedModule={id:"__quick__",name:"快速对话",displayName:"快速对话",dataMode:"worldbook",subType:"classic",turnCount:0};
-    CH.clear();
-    // 快速模式：不往可见对话塞设定文本，改为在 doSend 里以 system 消息静默传递
-    AS.activeTab="chat";
-    createToast("⚡ 快速模式 · 不保存记录");
-    render();
-  };
-}
-
-/* ── 对话绑定 ── */
-function bindChat(){
-  const chatInput=U.qs("#chatInput");
-  const sendBtn=U.qs("[data-action='chat-send']");
-
-  async function doSend(){
-    if(AS.busy||!chatInput?.value?.trim())return;
-    const txt=chatInput.value.trim();chatInput.value="";
-    AS.busy=true;sendBtn.disabled=true;
-    // 显示进度条
-    const msgsEl2=U.qs("#chatMessages");
-    if(msgsEl2){const pg=document.createElement("div");pg.className="chat-progress";pg.id="chatProgress";pg.innerHTML='<div class="pg-bar"><div class="pg-fill" style="width:30%"></div></div><div class="pg-stages"><span class="pg-stage active">\u{1F50D} 分析中\u2026</span></div>';msgsEl2.appendChild(pg);msgsEl2.scrollTo(0,msgsEl2.scrollHeight)}
-    // 添加用户消息
-    CH.add("user",txt);
-    // 回显
-    const msgs=U.qs("#chatMessages");
-    if(msgs)msgs.innerHTML=AS.messages.map(C.chatMsg).join("");
-    msgs?.scrollTo(0,msgs.scrollHeight);
-    try{
-      // 调用 LLM
-      let msgPayload=AS.messages.map(m=>({role:m.role,content:m.content})).slice(-40);
-      // 快速模式：把设定背景作为 system 消息静默传递，不显示在聊天界面
-      if(AS.isQuickStart&&AS.quickStartContent){
-        msgPayload=[{role:"system",content:"以下为叙事设定背景：\n"+AS.quickStartContent},...msgPayload];
-      }
-      const res=await API.chatSend({
-        input:txt,
-        moduleKey:AS.selectedModule?.id||"",
-        dataMode:AS.selectedModule?.dataMode||"worldbook",
-        engineState:AS.engineState||{turnCount:AS.selectedModule?.turnCount||0,dataMode:AS.selectedModule?.dataMode||"worldbook",emotionState:{engagement:5,tension:5,fatigue:5,curiosity:5}},
-        messages:msgPayload
-      });
-      if(res.status==="ok"){
-        // 更新进度条为完成状态
-        const pgEl=U.qs("#chatProgress");
-        if(pgEl&&res._progress){
-          const stages=res._progress.stages||[];
-          const fillPct=90+Math.min(10,stages.filter(function(s){return s.active}).length*2);
-          pgEl.innerHTML='<div class="pg-bar"><div class="pg-fill" style="width:'+fillPct+'%"></div></div><div class="pg-stages">'+stages.map(function(s,i){return '<span class="pg-stage '+((s.active?'done':'')+(i===stages.length-1?' active':''))+'">'+(s.active?'\u2705':'\u23F3')+' '+s.name+'</span>'}).join('')+'<span class="pg-ms">'+res._progress.totalMs+'ms</span></div>';
-          setTimeout(function(){var e=U.qs("#chatProgress");if(e)e.remove();},3000);
-        }else if(pgEl)pgEl.remove();
-        CH.add("assistant",res.narrative||"（无回应）");
-        // 捕获状态/情绪数据用于侧栏面板
-        AS.lastStatusSections=res.parsedSections||{};
-        if(res.engineState) AS.engineState = res.engineState;
-        if(res.turnCount&&AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
-        // 清除 dashboard 缓存，下次打开时重新加载最新数据
-        AS.dashboardData = {};
-        // 刷新状态面板内容
-        const spc=U.qs(".sp-body");
-        if(spc)spc.innerHTML=C.statusPanel(AS.lastStatusSections);
-      }else{
-        var pgErr=U.qs("#chatProgress");if(pgErr)pgErr.remove();
-        CH.add("error",res.errorMsg||"LLM 返回错误");
-      }
-      if(msgs)msgs.innerHTML=AS.messages.map(C.chatMsg).join("");
-      msgs?.scrollTo(0,msgs.scrollHeight);
-    }catch(e){
-      var pgCatch=U.qs("#chatProgress");if(pgCatch)pgCatch.remove();
-      CH.add("error",String(e.message||e));
-      if(msgs)msgs.innerHTML=AS.messages.map(C.chatMsg).join("");
-    }
-    AS.busy=false;if(sendBtn)sendBtn.disabled=false;
-  }
-
-  const msgsEl=U.qs("#chatMessages");
-  if(msgsEl)msgsEl.onclick=e=>{
-    const btn=e.target.closest("[data-chat-clip]");
-    if(!btn)return;
-    const mid=btn.dataset.chatClip;
-    const msg=AS.messages.find(m=>m.id===mid);
-    if(msg){navigator.clipboard?.writeText?.(msg.content);createToast("已复制")}
-  };
-
-  if(sendBtn)sendBtn.onclick=doSend;
-  if(chatInput)chatInput.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();doSend()}};
-
-  const clearBtn=U.qs("[data-action='chat-clear']");
-  if(clearBtn)clearBtn.onclick=()=>{if(confirm("清空当前对话？")){CH.clear();render()}};
-}
-
-/* ── 炼金台绑定 ── */
-function bindAlchemy(){
-  const drop=U.qs("#alchemyDrop");
-  const textArea=U.qs("#alchemyText");
-  const importBtn=U.qs("[data-action='alchemy-import']");
-
-  // 拖拽
-  if(drop){
-    drop.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';drop.classList.add("dragover")};
-    drop.ondragleave=()=>drop.classList.remove("dragover");
-    drop.ondrop=async e=>{
-      e.preventDefault();e.stopPropagation();drop.classList.remove("dragover");
-      const files=e.dataTransfer?.files;
-      if(files?.length){
-        const texts=[];
-        for(const f of files){
-          const ext=f.name.split('.').pop().toLowerCase();
-          if(['md','txt','json'].includes(ext)){
-            texts.push(await f.text());
-          }
-        }
-        if(texts.length&&textArea)textArea.value=texts.join("\n---\n");
-        createToast(`已读取 ${texts.length} 个文件`);
-      }
-    };
-    drop.onclick=()=>{
-      const inp=document.createElement("input");inp.type="file";inp.accept=".md,.txt,.json,.png";
-      inp.onchange=async()=>{
-        const f=inp.files?.[0];if(!f)return;
-        const txt=await f.text();
-        if(textArea)textArea.value=txt;
-        createToast(`已读取: ${f.name}`);
-      };inp.click();
-    };
-  }
-
-  // 导入按钮 → 炼金台消化：分析内容 → 自动创建模组
-  if(importBtn)importBtn.onclick=async()=>{
-    const text=textArea?.value?.trim();
-    if(!text){createToast("请先输入或拖拽内容","bad");return}
-    const resultEl=U.qs("#alchemyResult");
-    if(resultEl)resultEl.innerHTML="<span class='loading'>分析并创建模组中...</span>";
-    try{
-      const res=await API.post("/api/alchemy/digest",{text,worldName:("解析_"+Date.now().toString(36))});
-      if(res.status==="ok"){
-        resultEl.innerHTML=`<span style="color:var(--ok)">✅ 模组已创建 · ${res.entries} 条目 / ${res.characters} 角色 / ${res.locations} 地点</span>`;
-        createToast(`炼金台: "${res.module?.displayName}" 已就绪`);
-        await refreshModules();
-        // 自动选择新模组 → 跳转对话
-        const newMod=AS.modules.find(m=>m.id===res.module?.id);
-        if(newMod){AS.selectedModule=newMod;CH.clear();await CH.loadFromServer(newMod);AS.activeTab="chat";createToast(`已选择: ${newMod.displayName||newMod.name}`);render()}
-      }else{
-        resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(res.errorMsg)}</span>`;
-      }
-    }catch(e){
-      if(resultEl)resultEl.innerHTML=`<span style="color:var(--bad)">❌ ${U.esc(e.message)}</span>`;
-    }
-  };
-}
-
-/* ── 创建模组对话框 ── */
-function showCreateDialog(dataMode,label){
-  const name=prompt(`输入新${label}的名称:`);
-  if(!name||!name.trim())return;
-  (async()=>{
-    try{
-      const data={name:name.trim(),displayName:name.trim(),dataMode};
-      data.subType=dataMode==="worldbook"?"classic":"default";
-      data.preset=dataMode==="worldbook"?"epic":"minimal";
-      const res=await API.createModule(data);
-      if(res.status==="ok"){
-        createToast(`✅ 已创建: ${name}`);
-        await refreshModules();
-      }else{
-        createToast(`创建失败: ${res.errorMsg}`,"bad");
-      }
-    }catch(e){createToast("创建失败: "+e.message,"bad")}
-  })();
-}
-
-/* ── 刷新模组列表 ── */
-async function refreshModules(){
-  try{
-    const mods=await API.loadModules();
-    // 同时加载角色卡，合并到模组列表
-    let chars=[];
-    try{chars=await API.loadCharacters();}catch{}
-    const charModules=(chars||[]).map(c=>({
-      id:"char:"+c.id,
-      name:c.displayName||c.name,
-      displayName:c.displayName||c.name,
-      dataMode:"character_card",
-      subType:"default",
-      preset:"minimal",
-      turnCount:0,
-      description:c.description||"",
-      _characterId:c.id
-    }));
-    AS.modules=[...mods,...charModules];
-    // 如果当前选中的模组还在，保留选择
-    if(AS.selectedModule){
-      const stillExists=AS.modules.find(m=>m.id===AS.selectedModule.id);
-      if(!stillExists)AS.selectedModule=null;
-    }
-    render();
-    const worldCount=mods.filter(m=>m.type==="world").length;
-    const charCount=charModules.length;
-    const extra=charCount?` + ${charCount} 个角色卡`:"";
-    createToast(`已刷新 · ${worldCount} 个模组${extra}`);
-  }catch(e){createToast("刷新失败: "+e.message,"bad")}
-}
-
-/* ── Toast ── */
-let toastTimer;
-let currentToast=null;
-function createToast(msg,tone=""){
-  if(currentToast)currentToast.remove();
-  const t=document.createElement("div");
-  t.style.cssText=`position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 20px;border-radius:8px;border:1px solid ${tone==="bad"?"rgba(229,77,77,.5)":"rgba(62,207,142,.4)"};background:${tone==="bad"?"#1f1212":"#0f1f18"};color:${tone==="bad"?"#ffadad":"#b8f0d0"};font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,.5);max-width:80vw;text-align:center`;
-  t.textContent=msg;document.body.appendChild(t);
-  currentToast=t;
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.remove();if(currentToast===t)currentToast=null},3500);
-}
-
-/* ═══════════════════════════════════════════════════════════════
- * 初始化
- * ═══════════════════════════════════════════════════════════════ */
-
-async function refreshDebugLogs(){
-    try{
-      var d=await API.call("GET","/api/debug/logs?limit=50");
-      var el=U.qs("#debugLogContent");
-      if(el&&d.logs)el.innerHTML=d.logs.map(function(l){return '<div class="dp-entry"><span class="dp-ts">'+(l.ts||"").slice(11,19)+'</span><span class="dp-cat">'+(l.category||"")+'</span><span class="dp-msg">'+U.esc(l.message)+(l.data?' <span style="color:var(--muted)">'+U.esc(l.data)+'</span>':'')+'</span></div>'}).join("")||"无日志";
-    }catch(e){}
-  }
-  // Ctrl+Shift+D 切换调试面板
-  document.addEventListener("keydown",function(e){
-    if(e.ctrlKey&&e.shiftKey&&e.key==="D"){
-      e.preventDefault();
-      var dp=document.querySelector(".debug-panel");
-      if(dp){dp.classList.toggle("open");if(dp.classList.contains("open"))refreshDebugLogs()}
-    }
   });
 
-  async function exportModule(id){try{const w=window.open("","_blank");if(!w){createToast("请允许弹出窗口以下载导出文件","warn");return}const res=await API.call("GET","/api/data/export?moduleKey="+encodeURIComponent(id));const blob=new Blob([JSON.stringify(res,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);w.location.href=url;setTimeout(()=>{URL.revokeObjectURL(url);w.close()},1000)}catch(e){createToast("导出失败: "+e.message,"bad")}}
+  U.qsa("[data-library-tab]").forEach(btn => {
+    btn.onclick = async () => { AS.libraryTab = btn.dataset.libraryTab; await loadViewData(); render(); };
+  });
+  U.qsa("[data-observe-tab]").forEach(btn => {
+    btn.onclick = async () => { AS.observeTab = btn.dataset.observeTab; await loadViewData(); render(); };
+  });
+  U.qsa("[data-settings-tab]").forEach(btn => {
+    btn.onclick = async () => { AS.settingsTab = btn.dataset.settingsTab; await loadViewData(); render(); };
+  });
 
-function updateLlmStatusBadge(){var b=U.qs("#llmStatus");if(!b)return;b.className="badge "+(AS.llmConnected?"ok":"bad");b.textContent=AS.llmConnected?"已连接":"未连接"}
+  const search = U.qs("#characterSearch");
+  if (search) search.oninput = () => { AS.characterQuery = search.value; render(); };
 
-async function init(){
-  // 检测 API base
-  const bases=["http://localhost:3000",window.location.origin];
-  for(const b of bases){
-    try{
-      const r=await fetch(b+"/api/status");
-      if(r.ok){API.base=b;break}
-    }catch{}
-  }
+  U.qsa("[data-pack-option]").forEach(input => {
+    input.onchange = () => {
+      AS.worldPackOptions[input.dataset.packOption] = input.checked;
+    };
+  });
 
-  // 加载配置
-  try{
-    const cfg=await API.loadConfig();
-    Object.assign(AS.config,cfg);
-  }catch(e){console.warn("配置加载失败",e)}
+  const chatInput = U.qs("#chatInput");
+  if (chatInput) chatInput.onkeydown = e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  };
 
-  try{
-    const ex=await API.loadExamples();
-    AS.examples=Array.isArray(ex?.examples)?ex.examples:[];
-  }catch(e){AS.examples=[]}
+  bindDrop("#quickStartDrop", "#quickStartText", ".md,.txt,.json", true);
+  bindDrop("#alchemyDrop", "#alchemyText", ".md,.txt,.json,.png", false);
 
-  // 获取密钥状态
-  try{
-    const sec=await API.getSecrets();
-    AS.hasApiKey=sec?.llm?.items?.length>0;
-  }catch(e){}
-
-  // 自动测试 LLM 连接（如果有已保存的 key）
-  if(AS.hasApiKey&&AS.config.llmBaseUrl){
-    try{
-      const t=await API.testLlm({config:AS.config});
-      if(t.status==="ok"){AS.llmConnected=true}
-      updateLlmStatusBadge();
-    }catch(e){}
-  }
-
-  // 加载模组+角色卡（合并列表）
-  try{
-    await refreshModules();
-  }catch(e){console.warn("模组+角色卡加载失败",e)}
-
-  render();
-  createToast("🌳 世界树桌面已启动");
-  async function updateStatusBar(){
-    try{
-      var h=await API.call("GET","/api/health");
-      AS.health=h;
-      var left=U.qs("#statusLeft");
-      var right=U.qs("#statusRight");
-      if(h&&h.llm){
-        var icon=h.llm.status==="connected"?"🟢":"🔴";
-        if(left)left.innerHTML="World Tree v"+h.version+" · "+icon+" "+h.llm.model;
-        if(right)right.innerHTML="⏱ "+h.uptime+"s · 💾 "+Math.round((h.data&&h.data.sizeBytes||0)/1024)+"KB · 🌍 "+(h.data&&h.data.worldsCount||0)+"世界 · "+((h.data&&h.data.totalTurns)||0)+"轮";
-        if(h.debugMode){var dt=U.qs(".debug-toggle");if(dt)dt.style.display="block"}
-      }
-    }catch(e){}
-    setTimeout(updateStatusBar,30000);
-  }
-  updateStatusBar();
+  U.qsa("[data-action]").forEach(btn => {
+    btn.onclick = e => handleAction(e, btn);
+  });
 }
+
+function bindDrop(dropSel, textSel, accept, directory) {
+  const drop = U.qs(dropSel);
+  const ta = U.qs(textSel);
+  if (!drop || !ta) return;
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("dragover"); };
+  drop.ondragleave = () => drop.classList.remove("dragover");
+  drop.ondrop = async e => {
+    e.preventDefault();
+    drop.classList.remove("dragover");
+    const texts = await readDroppedTexts(e.dataTransfer);
+    if (texts.length) ta.value = texts.join("\n\n---\n\n");
+    else createToast("没有读取到支持的文本文件", "warn");
+  };
+  drop.onclick = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    if (directory) input.webkitdirectory = true;
+    input.onchange = async () => {
+      const texts = [];
+      for (const f of Array.from(input.files || [])) {
+        if (/\.(md|txt|json)$/i.test(f.name)) texts.push(`【${f.webkitRelativePath || f.name}】\n${await f.text()}`);
+      }
+      if (texts.length) ta.value = texts.join("\n\n---\n\n");
+    };
+    input.click();
+  };
+}
+
+async function readDroppedTexts(dt) {
+  const files = Array.from(dt?.files || []);
+  const texts = [];
+  for (const f of files) {
+    if (/\.(md|txt|json)$/i.test(f.name)) texts.push(`【${f.name}】\n${await f.text()}`);
+  }
+  return texts;
+}
+
+async function handleAction(e, btn) {
+  e.stopPropagation();
+  const action = btn.dataset.action;
+  try {
+    if (action === "refresh-debug") return refreshDebugLogs();
+    if (action === "toggle-debug") return toggleDebugPanel();
+    if (action === "close-drawer") { AS.activeDrawer = ""; return render(); }
+    if (action === "drawer-worldbook") { AS.activeDrawer = "worldbook"; return render(); }
+    if (action === "drawer-saves") { AS.activeDrawer = "saves"; return render(); }
+    if (action === "workbench-overview") { AS.workbenchMode = "overview"; AS.activeDrawer = ""; return render(); }
+    if (action === "load-and-chat") return loadAndChat();
+    if (action === "quick-start-chat") return quickStartChat();
+    if (action === "chat-send") return sendChat();
+    if (action === "clear-chat") return confirmClearChat();
+    if (action === "open-command-panel") return openCommandPanel();
+    if (action === "load-context") { await refreshObserve(); return render(); }
+    if (action === "refresh-observe") { await refreshObserve(); return render(); }
+    if (action === "load-telemetry") { if (AS.selectedModule) AS.dashboardData.telemetry = await API.telemetry(AS.selectedModule.id); return render(); }
+    if (action === "load-worlddata") { if (AS.selectedModule) AS.dashboardData.entities = await API.entities(AS.selectedModule.id); return render(); }
+    if (action === "refresh-modules") { await refreshModules(); return render(); }
+    if (action === "load-module-from-list") { await selectModule(btn.dataset.moduleId, "workbench"); AS.workbenchMode = "chat"; return render(); }
+    if (action === "install-example") return installExample(btn.closest("[data-example-id]")?.dataset.exampleId);
+    if (action === "select-module") { await selectModule(btn.closest("[data-module-id]")?.dataset.moduleId, "chat"); return render(); }
+    if (action === "delete-module") return deleteModule(btn.closest("[data-module-id]")?.dataset.moduleId);
+    if (action === "export-module") return legacyExport(btn.closest("[data-module-id]")?.dataset.moduleId);
+    if (action === "create-world") return showCreateDialog("worldbook", "世界");
+    if (action === "create-from-material" || action === "library-alchemy") { AS.view = "library"; AS.libraryTab = "alchemy"; return render(); }
+    if (action === "refresh-characters") { AS.characters = await API.loadCharacters(); return render(); }
+    if (action === "import-character-json") return importCharacterFile();
+    if (action === "preview-character") return previewCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
+    if (action === "edit-character-meta") return editCharacterMeta(btn.closest("[data-character-id]")?.dataset.characterId);
+    if (action === "rp-character") return rpCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
+    if (action === "backup-character") return backupCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
+    if (action === "delete-character") return deleteCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
+    if (action === "load-worldbook") { await loadWorldbookIfPossible(); return render(); }
+    if (action === "import-worldbook-json") return importWorldbookJson();
+    if (action === "export-worldbook-json") return exportWorldbookJson();
+    if (action === "new-worldbook-entry") return editWorldbookEntry();
+    if (action === "edit-worldbook-entry") return editWorldbookEntry(btn.closest("[data-entry-id]")?.dataset.entryId);
+    if (action === "toggle-worldbook-entry") return toggleWorldbookEntry(btn.closest("[data-entry-id]")?.dataset.entryId);
+    if (action === "delete-worldbook-entry") return deleteWorldbookEntry(btn.closest("[data-entry-id]")?.dataset.entryId);
+    if (action === "test-worldbook") return testWorldbook();
+    if (action === "alchemy-import") return alchemyImport();
+    if (action === "enqueue-review") return enqueueReview();
+    if (action === "load-review") { AS.reviewItems = (await API.alchemyReview()).items || []; return render(); }
+    if (["confirm-review", "ignore-review", "merge-review"].includes(action)) return reviewAction(action, btn.closest("[data-review-id]")?.dataset.reviewId);
+    if (action === "export-worldpack") return exportWorldpack();
+    if (action === "download-worldpack") return downloadWorldpack();
+    if (action === "import-worldpack") return importWorldpack();
+    if (action === "confirm-worldpack-import") return confirmWorldpackImport();
+    if (action === "load-connections") { AS.connections = await API.connections(); return render(); }
+    if (action === "apply-connection-template") return applyConnectionTemplate();
+    if (action === "save-connection") return saveConnection();
+    if (["set-default-connection", "test-connection", "duplicate-connection", "delete-connection"].includes(action)) return connectionAction(action, btn.closest("[data-connection-id]")?.dataset.connectionId);
+    if (action === "load-plugins") { AS.plugins = await API.plugins(); return render(); }
+    if (["enable-plugin", "disable-plugin"].includes(action)) return pluginAction(action, btn.closest("[data-plugin-id]")?.dataset.pluginId);
+    if (action === "run-plugin") return runPlugin(btn.closest("[data-plugin-id]")?.dataset.pluginId);
+    if (["copy-message", "edit-message", "favorite-message", "delete-message", "regen-message", "candidate-prev", "candidate-next"].includes(action)) return messageAction(action, btn.closest("[data-message-id]")?.dataset.messageId);
+    if (action === "legacy-export") return legacyExport(AS.selectedModule?.id);
+    if (action === "legacy-import") return createToast("旧版 JSON 导入入口已保留在高级工具中，当前演示未自动覆盖数据。", "warn");
+  } catch (err) {
+    createToast(err.message || String(err), "bad");
+  }
+}
+
+async function loadAndChat() {
+  if (!AS.selectedModule && AS.modules.length) AS.selectedModule = AS.modules[0];
+  if (!AS.selectedModule) return createToast("请先创建或导入一个世界", "warn");
+  await selectModule(AS.selectedModule.id, "workbench");
+  AS.workbenchMode = "chat";
+  AS.view = "workbench";
+  render();
+}
+
+function quickStartChat() {
+  const text = U.qs("#quickStartText")?.value.trim();
+  if (!text) return createToast("请先粘贴内容或拖拽文件", "warn");
+  AS.quickStartContent = text;
+  AS.isQuickStart = true;
+  AS.selectedModule = { id: "__quick__", name: "快速对话", displayName: "快速对话", dataMode: "worldbook", turnCount: 0 };
+  AS.messages = [];
+  AS.workbenchMode = "chat";
+  AS.view = "workbench";
+  render();
+}
+
+async function sendChat() {
+  const input = U.qs("#chatInput");
+  const text = input?.value.trim();
+  if (!text || AS.busy) return;
+  if (!AS.selectedModule) return createToast("请先加载一个世界", "warn");
+  input.value = "";
+  AS.busy = true;
+  CH.add("user", text);
+  render();
+  try {
+    let messages = AS.messages.map(m => ({ role: m.role, content: m.content })).slice(-40);
+    if (AS.isQuickStart && AS.quickStartContent) messages = [{ role: "system", content: `以下为叙事设定背景：\n${AS.quickStartContent}` }, ...messages];
+    const res = await API.chatSend({
+      input: text,
+      moduleKey: AS.selectedModule.id,
+      dataMode: AS.selectedModule.dataMode || "worldbook",
+      engineState: AS.engineState || { turnCount: AS.selectedModule.turnCount || 0, dataMode: AS.selectedModule.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
+      messages,
+    });
+    if (res.status === "ok") {
+      const narrative = res.narrative || "（无回应）";
+      CH.add("assistant", narrative, { id: res.persistedIds?.assistantId, candidates: res.persistedIds?.assistantId ? [{ id: `${res.persistedIds.assistantId}-c0`, content: narrative, selected: true, createdAt: new Date().toISOString() }] : [] });
+      AS.lastStatusSections = res.parsedSections || {};
+      AS.engineState = res.engineState || AS.engineState;
+      if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
+      if (AS.selectedModule?.id !== "__quick__") await refreshObserve();
+    } else {
+      CH.add("error", res.errorMsg || "LLM 返回错误");
+    }
+  } catch (err) {
+    CH.add("error", err.message || String(err));
+  }
+  AS.busy = false;
+  render();
+}
+
+function confirmClearChat() {
+  if (!confirm("清空当前对话显示？")) return;
+  AS.messages = [];
+  CH.persist();
+  render();
+}
+
+function openCommandPanel() {
+  const commands = ["/recap", "/world", "/save", "/branch", "/who", "/审查 check"].join("\n");
+  alert(`可用命令：\n${commands}`);
+}
+
+async function messageAction(action, id) {
+  const msg = AS.messages.find(m => m.id === id);
+  if (!msg) return;
+  if (action === "copy-message") {
+    await navigator.clipboard?.writeText(msg.content);
+    return createToast("已复制");
+  }
+  if (action === "edit-message") {
+    const content = prompt("编辑消息", msg.content);
+    if (content == null) return;
+    msg.content = content;
+    CH.persist();
+    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "edit", content }).catch(() => {});
+  }
+  if (action === "favorite-message") {
+    msg.favorite = !msg.favorite;
+    CH.persist();
+    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "favorite", favorite: msg.favorite }).catch(() => {});
+  }
+  if (action === "delete-message") {
+    if (!confirm("删除这条消息？")) return;
+    AS.messages = AS.messages.filter(m => m.id !== id);
+    CH.persist();
+    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "delete" }).catch(() => {});
+  }
+  if (action === "regen-message") {
+    const content = prompt("添加一个候选回复版本", msg.content);
+    if (!content) return;
+    msg.candidates = Array.isArray(msg.candidates) && msg.candidates.length ? msg.candidates : [{ id: `${id}-c0`, content: msg.content, selected: true, createdAt: msg.ts }];
+    const candidate = { id: `${id}-c${msg.candidates.length}`, content, selected: false, createdAt: new Date().toISOString() };
+    msg.candidates.push(candidate);
+    CH.persist();
+    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "add-candidate", content }).catch(() => {});
+  }
+  if (action === "candidate-prev" || action === "candidate-next") {
+    const candidates = msg.candidates || [];
+    if (!candidates.length) return;
+    const current = Math.max(0, candidates.findIndex(c => c.selected));
+    const next = action === "candidate-next" ? (current + 1) % candidates.length : (current - 1 + candidates.length) % candidates.length;
+    msg.candidates = candidates.map((c, i) => ({ ...c, selected: i === next }));
+    msg.content = msg.candidates[next].content;
+    CH.persist();
+    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "select-candidate", candidateId: msg.candidates[next].id }).catch(() => {});
+  }
+  render();
+}
+
+function showCreateDialog(dataMode, label) {
+  const name = prompt(`输入${label}名称`);
+  if (!name?.trim()) return;
+  API.createModule({ name: name.trim(), displayName: name.trim(), dataMode, subType: dataMode === "worldbook" ? "classic" : "default", preset: dataMode === "worldbook" ? "epic" : "minimal" })
+    .then(async res => {
+      if (res.status !== "ok") throw new Error(res.errorMsg || "创建失败");
+      await refreshModules();
+      AS.selectedModule = AS.modules.find(m => m.id === res.module.id) || AS.selectedModule;
+      createToast("已创建");
+      render();
+    })
+    .catch(err => createToast(err.message, "bad"));
+}
+
+async function deleteModule(id) {
+  if (!id) return;
+  const mod = AS.modules.find(m => m.id === id);
+  if (!confirm(`确定删除「${mod?.displayName || mod?.name || id}」？此操作不可恢复。`)) return;
+  if (mod?.dataMode === "character_card") await API.post("/api/characters/delete", { id: mod._characterId || id.replace("char:", "") });
+  else await API.deleteModule(id);
+  if (AS.selectedModule?.id === id) AS.selectedModule = null;
+  await refreshModules();
+  render();
+}
+
+async function importCharacterFile() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json,.png";
+  input.multiple = true;
+  input.onchange = async () => {
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    let ok = 0;
+    const failed = [];
+    for (const file of files) {
+      try {
+        let content;
+        let encoding = "text";
+        if (file.name.toLowerCase().endsWith(".png")) {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          let binary = "";
+          for (const b of bytes) binary += String.fromCharCode(b);
+          content = btoa(binary);
+          encoding = "base64";
+        } else {
+          content = await file.text();
+        }
+        const res = await API.importCharacter({ filename: file.name, content, encoding });
+        if (res.status !== "ok") throw new Error(res.errorMsg || "导入失败");
+        ok += 1;
+      } catch (err) {
+        failed.push(`${file.name}: ${err.message || err}`);
+      }
+    }
+    AS.characters = await API.loadCharacters();
+    await refreshModules();
+    createToast(`角色卡导入 ${ok}/${files.length}${failed.length ? "，有失败项" : ""}`, failed.length ? "warn" : "");
+    if (failed.length) console.warn("角色导入失败", failed);
+    render();
+  };
+  input.click();
+}
+
+async function editCharacterMeta(id) {
+  if (!id) return;
+  const current = AS.characters.find(c => c.id === id) || {};
+  const name = prompt("角色显示名", current.name || id);
+  if (name == null) return;
+  const tags = prompt("标签，用逗号分隔", (current.tags || []).join(", "));
+  if (tags == null) return;
+  const description = prompt("短说明", current.description || "");
+  if (description == null) return;
+  const res = await API.updateCharacter({ id, name, tags, description });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "更新失败");
+  AS.characters = await API.loadCharacters();
+  await refreshModules();
+  createToast("角色信息已更新");
+  render();
+}
+
+async function previewCharacter(id) {
+  if (!id) return;
+  const res = await API.loadCharacter(id);
+  if (res.status === "ok") AS.currentCharacterCard = res.card;
+  render();
+}
+
+async function rpCharacter(id) {
+  if (!id) return;
+  let mod = AS.modules.find(m => m.id === `char:${id}`);
+  if (!mod) {
+    const c = AS.characters.find(x => x.id === id);
+    mod = { id: `char:${id}`, displayName: c?.name || id, dataMode: "character_card", _characterId: id };
+    AS.modules.push(mod);
+  }
+  await selectModule(mod.id, "chat");
+  render();
+}
+
+async function backupCharacter(id) {
+  if (!id) return;
+  await API.post("/api/characters/backup", { id });
+  createToast("角色卡已备份");
+}
+
+async function deleteCharacter(id) {
+  if (!id || !confirm("确定删除这张角色卡？")) return;
+  await API.post("/api/characters/delete", { id });
+  AS.characters = await API.loadCharacters();
+  await refreshModules();
+  render();
+}
+
+async function editWorldbookEntry(id) {
+  if (!AS.selectedModule) return createToast("请先选择世界", "warn");
+  const entry = AS.worldbookEntries.find(e => (e.id || "") === id) || {};
+  const title = prompt("条目标题", entry.title || entry.keys?.[0] || "");
+  if (!title) return;
+  const keys = prompt("关键词，用逗号分隔", Array.isArray(entry.keys) ? entry.keys.join(", ") : title) || title;
+  const group = prompt("分组", entry.group || "默认") || "默认";
+  const content = prompt("条目内容", entry.content || "") || "";
+  const priority = Number(prompt("优先级", entry.priority ?? 100) || entry.priority || 100);
+  const res = await API.saveWorldbook({ moduleKey: AS.selectedModule.id, action: "upsert", entry: { ...entry, title, keys, group, content, priority, enabled: entry.enabled !== false } });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "保存失败");
+  AS.worldbookEntries = res.entries || [];
+  render();
+}
+
+function exportWorldbookJson() {
+  if (!AS.selectedModule) return createToast("请先选择世界", "warn");
+  downloadJsonFile(`${AS.selectedModule.id}-worldbook.json`, { entries: AS.worldbookEntries || [] });
+}
+
+function importWorldbookJson() {
+  if (!AS.selectedModule) return createToast("请先选择世界", "warn");
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const json = JSON.parse(await file.text());
+    const entries = Array.isArray(json) ? json : (json.entries || json.worldbook?.entries || []);
+    if (!Array.isArray(entries) || !entries.length) return createToast("没有识别到世界书 entries", "bad");
+    const res = await API.saveWorldbook({ moduleKey: AS.selectedModule.id, action: "append", entries });
+    if (res.status !== "ok") throw new Error(res.errorMsg || "导入失败");
+    AS.worldbookEntries = res.entries || [];
+    createToast(`已导入 ${entries.length} 条世界书`);
+    render();
+  };
+  input.click();
+}
+
+async function toggleWorldbookEntry(id) {
+  const entry = AS.worldbookEntries.find(e => (e.id || "") === id);
+  const res = await API.saveWorldbook({ moduleKey: AS.selectedModule.id, action: "toggle", id, enabled: entry?.enabled === false });
+  if (res.status === "ok") AS.worldbookEntries = res.entries || [];
+  render();
+}
+
+async function deleteWorldbookEntry(id) {
+  if (!id || !confirm("删除该世界书条目？")) return;
+  const res = await API.saveWorldbook({ moduleKey: AS.selectedModule.id, action: "delete", id });
+  if (res.status === "ok") AS.worldbookEntries = res.entries || [];
+  render();
+}
+
+async function testWorldbook() {
+  if (!AS.selectedModule) return createToast("请先选择世界", "warn");
+  AS.worldbookTest = await API.testWorldbook({ moduleKey: AS.selectedModule.id, input: U.qs("#worldbookTestInput")?.value || "" });
+  render();
+}
+
+async function alchemyImport() {
+  const text = U.qs("#alchemyText")?.value.trim();
+  if (!text) return createToast("请先粘贴素材", "warn");
+  const res = await API.alchemyImport({ text });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "提取失败");
+  AS.reviewItems = (await API.alchemyReview()).items || [];
+  createToast(`已加入审核队列 ${res.reviewItems?.length || 0} 项`);
+  AS.libraryTab = "review";
+  render();
+}
+
+async function enqueueReview() {
+  const text = U.qs("#reviewSourceText")?.value.trim();
+  if (!text) return createToast("请先粘贴素材", "warn");
+  const res = await API.alchemyImport({ text });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "提取失败");
+  AS.reviewItems = (await API.alchemyReview()).items || [];
+  render();
+}
+
+async function reviewAction(action, id) {
+  if (!id) return;
+  const payload = { id, moduleKey: AS.selectedModule?.id };
+  if (action === "confirm-review") payload.action = "confirm";
+  if (action === "ignore-review") payload.action = "ignore";
+  if (action === "merge-review") {
+    payload.action = "merge";
+    const item = AS.reviewItems.find(x => x.id === id) || {};
+    const entity = prompt("实体名修正", item.entity || "");
+    if (entity) payload.entity = entity;
+    const patch = prompt("字段修正 JSON（可留空）", "{}");
+    if (patch && patch.trim() && patch.trim() !== "{}") {
+      try { payload.data = JSON.parse(patch); }
+      catch { return createToast("字段 JSON 格式不正确", "bad"); }
+    }
+  }
+  const res = await API.alchemyReview(payload);
+  AS.reviewItems = res.items || [];
+  render();
+}
+
+async function exportWorldpack() {
+  if (!AS.selectedModule) return createToast("请先选择世界", "warn");
+  AS.worldPack = await API.worldPackExport({ moduleKey: AS.selectedModule.id, ...AS.worldPackOptions });
+  AS.importPreview = null;
+  render();
+}
+
+function downloadWorldpack() {
+  if (!AS.worldPack?.pack) return;
+  downloadJsonFile(AS.worldPack.filename || "world.worldtree", AS.worldPack.pack);
+}
+
+function importWorldpack() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".worldtree,.json";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    AS.pendingPack = JSON.parse(await file.text());
+    AS.importPreview = await API.worldPackImport({ pack: AS.pendingPack, preview: true });
+    AS.worldPack = null;
+    render();
+  };
+  input.click();
+}
+
+async function confirmWorldpackImport() {
+  if (!AS.pendingPack) return;
+  const res = await API.worldPackImport({ pack: AS.pendingPack, confirm: true });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "导入失败");
+  await refreshModules();
+  AS.importPreview = null;
+  createToast("世界包已导入");
+  render();
+}
+
+function downloadJsonFile(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function applyConnectionTemplate() {
+  const id = U.qs("#connTemplate")?.value;
+  const t = AS.connections?.templates?.find(x => x.id === id);
+  if (!t) return;
+  U.qs("#connLabel").value = t.label || "";
+  U.qs("#connBaseUrl").value = t.baseUrl || "";
+  U.qs("#connModel").value = t.model || "";
+  if (U.qs("#connTemperature")) U.qs("#connTemperature").value = t.temperature ?? "";
+  if (U.qs("#connMaxTokens")) U.qs("#connMaxTokens").value = t.maxTokens ?? "";
+  if (U.qs("#connTopP")) U.qs("#connTopP").value = t.topP ?? "";
+}
+
+async function saveConnection() {
+  const profile = {
+    label: U.qs("#connLabel")?.value,
+    baseUrl: U.qs("#connBaseUrl")?.value,
+    model: U.qs("#connModel")?.value,
+    temperature: U.qs("#connTemperature")?.value,
+    maxTokens: U.qs("#connMaxTokens")?.value,
+    topP: U.qs("#connTopP")?.value,
+    apiKey: U.qs("#connKey")?.value,
+    provider: U.qs("#connTemplate")?.value
+  };
+  AS.connections = await API.connections({ action: "upsert", profile, setDefault: true });
+  createToast("连接档案已保存");
+  render();
+}
+
+async function connectionAction(action, id) {
+  const map = { "set-default-connection": "setDefault", "test-connection": "test", "duplicate-connection": "duplicate", "delete-connection": "delete" };
+  const res = await API.connections({ action: map[action], id });
+  if (action === "test-connection") createToast(res.status === "ok" ? `连接成功 ${res.latencyMs}ms` : (res.errorMsg || "连接失败"), res.status === "ok" ? "" : "bad");
+  else { AS.connections = res; render(); }
+}
+
+async function pluginAction(action, id) {
+  AS.plugins = await API.plugins({ id, action: action === "enable-plugin" ? "enable" : "disable" });
+  render();
+}
+
+async function runPlugin(id) {
+  if (!id) return;
+  const res = await API.plugins({ id, action: "run" });
+  AS.pluginRunResult = res;
+  createToast(res.status === "ok" ? "插件 dry-run 完成" : (res.errorMsg || "插件运行失败"), res.status === "ok" ? "" : "bad");
+  render();
+}
+
+async function legacyExport(id) {
+  if (!id) return createToast("请先选择模块", "warn");
+  const res = await API.get(`/api/data/export?moduleKey=${encodeURIComponent(id)}`);
+  downloadJsonFile(`${id}.json`, res);
+}
+
+async function refreshDebugLogs() {
+  try {
+    const res = await API.get("/api/debug/logs?limit=80");
+    U.qs("#debugLogContent").innerHTML = (res.logs || []).map(l => `<div class="debug-entry"><span>${U.esc((l.ts || "").slice(11, 19))}</span><span>${U.esc(l.category || "")}</span><span>${U.esc(l.message || "")} ${l.data ? U.esc(l.data) : ""}</span></div>`).join("") || "暂无日志";
+  } catch (err) {
+    U.qs("#debugLogContent").innerHTML = U.esc(err.message);
+  }
+}
+
+function toggleDebugPanel() {
+  U.qs("#debugPanel").classList.toggle("open");
+  if (U.qs("#debugPanel").classList.contains("open")) refreshDebugLogs();
+}
+
+function createToast(msg, tone = "") {
+  const host = U.qs("#toastHost");
+  const el = document.createElement("div");
+  el.className = `toast ${tone}`;
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+async function updateHealth() {
+  try {
+    AS.health = await API.health();
+    if (AS.health?.llm?.status === "connected") AS.llmConnected = true;
+    const debug = U.qs("#debugToggle");
+    if (debug && AS.health?.debugMode) debug.style.display = "block";
+  } catch {}
+}
+
+async function init() {
+  for (const base of ["http://localhost:3000", window.location.origin]) {
+    try {
+      const res = await fetch(`${base}/api/status`);
+      if (res.ok) { API.base = base; break; }
+    } catch {}
+  }
+  try { Object.assign(AS.config, await API.loadConfig()); } catch {}
+  try {
+    const secrets = await API.getSecrets();
+    AS.hasApiKey = !!secrets?.llm?.items?.length;
+  } catch {}
+  try {
+    const ex = await API.loadExamples();
+    AS.examples = ex.examples || [];
+  } catch {}
+  await refreshModules().catch(err => createToast(`模块加载失败：${err.message}`, "bad"));
+  await Promise.all([
+    API.connections().then(d => { AS.connections = d; }).catch(() => {}),
+    API.alchemyReview().then(d => { AS.reviewItems = d.items || []; }).catch(() => {}),
+    updateHealth(),
+  ]);
+  if (AS.hasApiKey && AS.config.llmBaseUrl) {
+    API.testLlm({ config: AS.config }).then(res => { AS.llmConnected = res.status === "ok"; render(); }).catch(() => {});
+  }
+  if (AS.selectedModule) {
+    await CH.loadServer(AS.selectedModule);
+    await loadWorldbookIfPossible().catch(() => {});
+  }
+  render();
+  setInterval(updateHealth, 30000);
+}
+
+U.qs("#refreshBtn").onclick = async () => { await refreshModules(); await loadViewData(); render(); };
+U.qs("#settingsBtn").onclick = async () => { AS.view = "settings"; await loadViewData(); render(); };
+U.qs("#debugToggle").onclick = toggleDebugPanel;
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
+    e.preventDefault();
+    toggleDebugPanel();
+  }
+});
 
 init();

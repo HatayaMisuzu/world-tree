@@ -2,6 +2,21 @@
 
 > 审查记录。AI 无需阅读此文件。
 
+## v0.1.8 — 创作者工作台升级 (2026-06-14)
+
+- **工作台 UI**：新增三栏式创作者工作台页面，覆盖角色库、世界书、连接档案、审核队列、世界包、本地插件和叙事黑盒。
+- **角色库**：新增 `/api/characters/import`，支持 ST v2/v3 JSON，并尝试解析 PNG `chara` 元数据；导入写入 `data/engine/characters/`。
+- **角色库增强**：支持批量导入 JSON/PNG，并可在 UI 中编辑角色显示名、说明和标签。
+- **世界书编辑器**：新增 `/api/worldbook` 与 `/api/worldbook/test`，支持条目 CRUD、启停、关键词、分组、批量导入导出和优先级触发测试。
+- **连接档案**：新增 `/api/connections`，提供 DeepSeek、OpenAI-compatible、OpenRouter、Ollama、Claude-compatible 模板，密钥仍写本地 secrets，并可记录 temperature、max tokens、top_p。
+- **聊天操作**：新增 `/api/chat/message`，支持复制、编辑、删除、收藏、候选回复 swipe；世界和角色卡运行目录均可持久化消息。
+- **聊天分支索引**：对话右侧上下文新增收藏、候选版本和轻量分支摘要。
+- **叙事黑盒**：新增 `/api/turn/debug`，保存每轮世界书命中、角色状态、记忆快照、Direction Packet 和 Guardian 结果，并在 UI 中提供可读时间线。
+- **炼金台审核**：`/api/alchemy/import` 默认把提取结果加入审核队列；新增 `/api/alchemy/review`，支持确认、忽略和字段级合并后再写入正式世界数据。
+- **世界包**：新增 `/api/world-pack/export` 与 `/api/world-pack/import`，默认排除 secrets、私密 runtime 和未确认素材；UI 支持导出范围选择与导入冲突预览。
+- **插件接口 v0**：新增 `/api/plugins`，只识别本地 importer / reviewer manifest，不加载远程脚本；支持本地 JSON 入口 dry-run。
+- **版本同步**：`package.json`、`package-lock.json`、README、README.en、AI-GUIDE、manifest 同步到 `0.1.8`。
+
 ## v0.1.0 — 开源初版 + 状态持久化 + 前端拆分 + 单元测试 (2026-06-12)
 
 ### 🧭 开源准备修复（2026-06-12）

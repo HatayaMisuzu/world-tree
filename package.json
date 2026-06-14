@@ -1,6 +1,6 @@
 {
   "name": "world-tree",
-  "version": "0.1.0",
+  "version": "0.1.8",
   "description": "World Tree — 本地优先的 AI 叙事引擎 Web 控制台",
   "type": "module",
   "main": "server.js",

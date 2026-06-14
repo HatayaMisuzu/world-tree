@@ -1,7 +1,7 @@
 # World Tree — AI 开发指南
 
 > 本文档供 AI agent / LLM 阅读，快速理解项目架构、文件路径和修改规则。
-> 最后更新: v0.1.0 (2026-06-12)
+> 最后更新: v0.1.8 (2026-06-14)
 
 ## 项目定位
 
@@ -136,13 +136,23 @@ data/engine/worlds/{name}/
 |:----|:----:|:-----|:--------------|
 | `/api/llm/chat` | POST | 双段式叙事对话 | `llm.js sendDualStageTurn()` |
 | `/api/alchemy/digest` | POST | 解析文本→创建模组/角色卡 | `alchemy importFile()` / `skill-generator.js` |
-| `/api/alchemy/import` | POST | 解析文本→返回 items | `alchemy importFile()` |
+| `/api/alchemy/import` | POST | 解析文本→返回 items，并加入审核队列 | `alchemy importFile()` |
+| `/api/alchemy/review` | GET/POST | 审核队列读写，确认后写入正式世界数据 | `server.js` |
 | `/api/modules` | GET | 列出所有模组 | 扫描 `data/engine/worlds/` |
 | `/api/modules/create` | POST | 创建新模组 | 写 `world.json` + `shared/` + `runtime/` |
 | `/api/modules/{id}/history` | GET | 加载对话历史 | 读 `runtime/chat.jsonl` |
 | `/api/characters` | GET | 列出角色卡 | 扫描 `data/engine/characters/` |
+| `/api/characters/import` | POST | 导入 ST v2/v3 JSON 或 PNG metadata 角色卡 | `st-card.js` |
 | `/api/characters/load` | POST | 加载角色卡（card.json） | `character-card.js` |
 | `/api/characters/delete` | POST | 删除角色卡 | — |
+| `/api/worldbook` | GET/POST | 当前世界书读取与保存 | `shared/worldbook.json` |
+| `/api/worldbook/test` | POST | 测试世界书触发和排序原因 | `worldbook.js matchEntries()` |
+| `/api/connections` | GET/POST | 连接档案 CRUD、测试、设为默认 | `userData/connections.json` + `secrets.json` |
+| `/api/chat/message` | POST | 消息编辑、删除、收藏、候选回复管理 | `runtime/chat.jsonl` |
+| `/api/turn/debug` | GET | 读取本轮叙事黑盒 | `userData/turn-debug/` |
+| `/api/world-pack/export` | GET/POST | 导出 `.worldtree` 世界包 | `world.json` + `shared/` |
+| `/api/world-pack/import` | POST | 预览/确认导入 `.worldtree` 世界包 | `data/engine/worlds/` |
+| `/api/plugins` | GET/POST | 本地 importer/reviewer 插件 manifest 与启用状态 | `userData/plugins/` |
 | `/api/secrets/llm-value` | GET | 获取密钥（脱敏，仅返回掩码） | 读 `secrets.json`（不返回明文） |
 
 ---

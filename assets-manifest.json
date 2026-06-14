@@ -1,7 +1,7 @@
 {
-  "_note": "v0.1.0 开源初版资产清单。当前不分发原创视觉素材。",
-  "_version": "0.1.0",
-  "_updated": "2026-06-12",
+  "_note": "v0.1.8 创作者工作台升级。当前不分发原创视觉素材。",
+  "_version": "0.1.8",
+  "_updated": "2026-06-14",
   "assets": [],
   "archived_assets": [
     "src/ui/world-tree-hero.png (deprecated v2.0)",
