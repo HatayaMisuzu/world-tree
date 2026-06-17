@@ -77,7 +77,7 @@ export async function classify({ chunks = [], llmCall } = {}) {
 /**
  * 解析 LLM 分类响应
  */
-function parseClassifierResponse(response, chunks) {
+export function parseClassifierResponse(response, chunks = []) {
   const text = String(response || "");
 
   // 尝试提取 JSON 数组（平衡括号匹配，避免嵌套/多数组错误）

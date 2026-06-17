@@ -1,7 +1,7 @@
 {
-  "_note": "v0.1.9 本地安全边界加固。Web UI 仍拆分为 HTML/CSS/JS。",
+  "_note": "v0.1.10 P0/P1 安全与运行时一致性修复 + P0.5 残留补丁。",
   "_version": "0.1.10",
-  "_updated": "2026-06-15",
+  "_updated": "2026-06-17",
   "assets": [],
   "archived_assets": [
     "src/ui/world-tree-hero.png (deprecated v2.0)",

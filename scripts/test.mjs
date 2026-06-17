@@ -83,6 +83,7 @@ const CORE_FILES = [
   "src/core/data/alchemy/classifier.js",
   "src/core/data/alchemy/extractor.js",
   "tests/unit/worldbook.test.js",
+  "tests/unit/alchemy.test.js",
 ];
 
 for (const file of CORE_FILES) {

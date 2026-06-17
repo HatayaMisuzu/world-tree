@@ -168,7 +168,7 @@ export function matchEntries(worldbook, input = "", options = {}) {
       const rangeMap = { "近距": 3, "中距": 5, "远程": 10, "全局": 999, "near": 3, "mid": 5, "far": 10, "global": 999 };
       const range = rangeMap[depth] || 5;
       if (depth === "全局" || depth === "global" || !scanMessages.length) return entry;
-      const recentText = scanMessages.slice(0, range).map((m) => String(m || "").toLowerCase()).join(" ");
+      const recentText = scanMessages.slice(-range).map((m) => String(m || "").toLowerCase()).join(" ");
       const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean);
       const inRange = keys.some((key) => recentText.includes(String(key).toLowerCase()));
       if (!inRange) entry.inject = false;

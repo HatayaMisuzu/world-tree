@@ -21,7 +21,7 @@ function buildExtractorPrompt(typeId, chunks) {
 /**
  * 解析 LLM 提取响应
  */
-function parseExtractorResponse(response) {
+export function parseExtractorResponse(response) {
   const text = String(response || "").trim();
 
   // 空响应检测

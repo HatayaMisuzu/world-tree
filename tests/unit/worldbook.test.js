@@ -179,21 +179,38 @@ results.push(test("scene: 场景未变化不触发", () => {
 //  组 6: scanDepth 扫描深度
 // ═══════════════════════════════════════════════════════════════
 
-results.push(test("depth: near 只扫描前 3 条消息", () => {
+results.push(test("depth: near 只扫描最近 3 条消息", () => {
   const entries = normalizeWorldbookEntries([{
     keys: ["魔法"], content: "魔法设定",
     mode: "trigger", matchMode: "exact", depth: "near"
   }]);
-  // matchEntries 中 scanMessages.slice(0, range) 取前 N 条（按传入顺序）
-  // 把 "魔法" 放在前 3 条内，模拟"最近消息含关键词"
+  // slice(-3) 取最后 3 条（最近消息），"魔法" 在第 4 条不应命中
   const scanMessages = [
-    "今天学了魔法", "天气不错", "我们来探索",
-    "无关对话", "更早的无关"
+    "很早的消息", "稍早的消息", "无关对话", "今天学了魔法"
   ];
   const hits = matchEntries({ entries }, "魔法", {
     mode: "exact", limit: 5, scanMessages
   });
-  if (hits.length === 0) throw new Error("expected hit: 魔法 in first 3 scanMessages (near range)");
+  // "魔法" 在第 4 条（从末尾数是第 1），slice(-3) 取的是索引 1,2,3 → "稍早/无关/魔法"
+  // 等等：数组 ["很早", "稍早", "无关", "魔法"]，slice(-3) = ["稍早", "无关", "魔法"] → 含"魔法" ✓
+  // 换一个更明确的：把"魔法"放在更远处
+  // 不，这个已经是对的。让我简化为更直接验证：
+  if (hits.length === 0) throw new Error("expected hit: 魔法 in last 3 scanMessages");
+}));
+
+results.push(test("depth: near 关键词在旧消息不命中", () => {
+  const entries = normalizeWorldbookEntries([{
+    keys: ["魔法"], content: "魔法设定",
+    mode: "trigger", matchMode: "exact", depth: "near"
+  }]);
+  // "魔法" 在第 1 条（最早），slice(-3) 取最后 3 条不含"魔法"
+  const scanMessages = [
+    "今天学了魔法", "天气不错", "无关对话", "更晚的消息"
+  ];
+  const hits = matchEntries({ entries }, "魔法", {
+    mode: "exact", limit: 5, scanMessages
+  });
+  if (hits.length > 0) throw new Error("expected miss: 魔法 only in early message, not in last 3 (near range)");
 }));
 
 results.push(test("depth: global 不受 scanMessages 限制", () => {
