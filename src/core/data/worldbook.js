@@ -6,21 +6,45 @@ import { normalizeWorldbookEntries } from "../cards.js";
 
 // ---- 向量化匹配辅助函数 ----
 // 基于词频余弦近似实现，无需外部依赖。完整向量嵌入需要外部库时由调用方传入 vectors。
+
+/** 将文本转为词频对象 { token: count } */
+function tokenFreq(text) {
+  const tf = {};
+  for (const t of String(text || "").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 2)) {
+    tf[t] = (tf[t] || 0) + 1;
+  }
+  return tf;
+}
+
+/** 稀疏向量余弦相似度 */
+function cosineSparse(a, b) {
+  const keys = Object.keys(a).length < Object.keys(b).length ? Object.keys(a) : Object.keys(b);
+  let dot = 0;
+  for (const k of keys) dot += (a[k] || 0) * (b[k] || 0);
+  const norm = (x) => Math.sqrt(Object.values(x).reduce((s, v) => s + v * v, 0));
+  const n = norm(a) * norm(b);
+  return n ? dot / n : 0;
+}
+
 function _vectorMatch(entry, query, vectors) {
   if (!vectors || !vectors[entry.id]) return 0;
   const entryVec = vectors[entry.id];
-  if (!entryVec || !Array.isArray(entryVec)) return 0;
-  // 查询向量（简化：使用 one-hot 词频）
-  const queryTokens = query.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2);
-  const entryTokens = String(entry.content || "").toLowerCase().split(/[^\p{L}\p{N}]+/u);
-  const allTokens = [...new Set([...queryTokens, ...entryTokens])];
-  const queryVec = allTokens.map((t) => queryTokens.filter((w) => w === t).length);
-  // 余弦相似度
-  const dot = queryVec.reduce((sum, v, i) => sum + v * (entryVec[i] || 0), 0);
-  const normQ = Math.sqrt(queryVec.reduce((s, v) => s + v * v, 0));
-  const normE = Math.sqrt(entryVec.reduce((s, v) => s + v * v, 0));
-  if (normQ === 0 || normE === 0) return 0;
-  return dot / (normQ * normE);
+  if (!entryVec) return 0;
+  // 外部传入的数组 embedding（扩展入口）
+  if (Array.isArray(entryVec)) {
+    const queryTokens = query.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2);
+    const entryTokens = String(entry.content || "").toLowerCase().split(/[^\p{L}\p{N}]+/u);
+    const allTokens = [...new Set([...queryTokens, ...entryTokens])];
+    const queryVec = allTokens.map((t) => queryTokens.filter((w) => w === t).length);
+    const dot = queryVec.reduce((sum, v, i) => sum + v * (entryVec[i] || 0), 0);
+    const normQ = Math.sqrt(queryVec.reduce((s, v) => s + v * v, 0));
+    const normE = Math.sqrt(entryVec.reduce((s, v) => s + v * v, 0));
+    if (normQ === 0 || normE === 0) return 0;
+    return dot / (normQ * normE);
+  }
+  // 词频对象（buildVectorIndex 的输出格式）
+  const queryFreq = tokenFreq(query);
+  return cosineSparse(queryFreq, entryVec);
 }
 
 // ---- 向量索引构建 ----

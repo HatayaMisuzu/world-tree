@@ -120,6 +120,7 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   const { messages: historyMessages = [], temperature: optTemp, max_tokens: optMaxTokens } = options;
   const temperature = optTemp ?? (role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85);
   const maxTokens   = optMaxTokens ?? (role === "director" ? 1024 : role === "guardian" ? 1024 : 4096);
+  const timeoutMs   = Number(options.timeoutMs || config.llmTimeoutMs || 60000);
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -132,25 +133,27 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   const urlCandidates  = buildUrlCandidates(role, config);
 
   let lastError = null;
+  const attempts = [];
 
-  // 尝试所有 (model, url) 组合，直至成功或全部失败
-  for (let i = 0; i < modelCandidates.length && i < urlCandidates.length; i++) {
-    const modelName = modelCandidates[i];
-    const targetUrl = urlCandidates[i] || urlCandidates[0]; // url 少于 model 时复用第一个
+  // 笛卡尔积遍历：endpoint × model，按优先级排序
+  for (const targetUrl of urlCandidates) {
+    for (const modelName of modelCandidates) {
+      if (!modelName || !targetUrl) continue;
 
-    if (!modelName || !targetUrl) continue;
+      attempts.push({ role, targetUrl, modelName });
 
-    const body = { model: modelName, messages, temperature, max_tokens: maxTokens };
+      const body = { model: modelName, messages, temperature, max_tokens: maxTokens };
 
-    try {
-      const response = await fetch(targetUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(body)
-      });
+      try {
+        const response = await fetch(targetUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(timeoutMs)
+        });
 
       const text = await response.text();
 
@@ -173,9 +176,16 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
         parsedContent: rawResponse,
         modelUsed: modelName,
         endpointUsed: targetUrl,
-        modelPath: i === 0 ? "role_specific" : i === 1 ? "default" : "fallback"
+        modelPath: "cartesian"
       };
     } catch (err) {
+      // 超时错误 → 尝试下一个
+      if (err.name === "AbortError" || err.name === "TimeoutError") {
+        console.warn(`[LLM] ${role} 端点 "${targetUrl}" 超时 (${timeoutMs}ms)，尝试候补...`);
+        lastError = new Error(`LLM_TIMEOUT: ${role} 请求超时 (${timeoutMs}ms)`);
+        lastError.code = "LLM_TIMEOUT";
+        continue;
+      }
       // 网络错误 → 尝试下一个
       if (err.name === "TypeError" || err.message?.includes("fetch")) {
         console.warn(`[LLM] ${role} 端点 "${targetUrl}" 连接失败，尝试候补...`);
@@ -184,9 +194,10 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
       }
       throw err;
     }
+    }
   }
 
-  throw lastError || new Error(`LLM 调用失败：所有候选均不可用 (role=${role})`);
+  throw lastError || new Error(`LLM 调用失败：所有候选均不可用 (role=${role}, attempts=${attempts.length})`);
 }
 
 /** 🆕 v0.9.5 构建模型候选列表：[角色专属, 默认, 兜底] */

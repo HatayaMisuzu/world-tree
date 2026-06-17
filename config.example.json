@@ -1,6 +1,7 @@
 {
   "llmBaseUrl": "https://api.deepseek.com/v1",
   "llmModel": "deepseek-v4-flash",
+  "llmTimeoutMs": 60000,
   "theme": "dark",
   "language": "zh-CN",
   "firstRun": true,

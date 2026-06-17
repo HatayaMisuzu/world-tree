@@ -3,9 +3,9 @@
 本地优先的 AI 叙事引擎与 Web 控制台。
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.1.8-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.1.10-blue.svg)
 
-**当前版本: v0.1.8**
+**当前版本: v0.1.10**
 
 World Tree 用一个普通的 Node.js 本地服务，把世界书、角色卡、叙事状态、对话历史和 LLM 调用组织在一起。它面向长篇互动叙事、角色扮演、世界设定管理和创作实验；默认只在本机运行，不依赖 Electron，也不绑定任何特定云服务。
 
@@ -20,7 +20,7 @@ English documentation: [README.en.md](README.en.md)
 
 ## 当前版本重点
 
-`0.1.8` 是一次“创作者工作台”升级。项目已经具备可运行的 Web 控制台、核心叙事管线、本地数据存储和检查脚本，并新增了八组面向创作者的工作流：
+`0.1.9` 是一次安全加固补丁，保留 `0.1.8` 的“创作者工作台”功能，并重点收紧本地服务访问、路径解析、导入边界和请求体限制。
 
 - 角色库：批量导入 SillyTavern v2/v3 JSON，并尝试解析带 `chara` 元数据的 PNG 角色卡；支持标签和说明编辑。
 - 世界书编辑器：新增、编辑、停用、删除、分组、批量导入导出条目，并测试触发命中和排序原因。

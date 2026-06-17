@@ -5,12 +5,14 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync, createReadStream, rmSync } from "node:fs";
 import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { join, dirname, extname, resolve, basename } from "node:path";
+import { join, dirname, extname, resolve, basename, relative, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.WORLD_TREE_HOST || "127.0.0.1";
+const MAX_BODY_BYTES = Number(process.env.WORLD_TREE_MAX_BODY_BYTES || 20 * 1024 * 1024);
 
 // ═══════════════════════════════════════════════════════════════
 //  安全：仅允许本地访问（桌面应用）
@@ -65,9 +67,42 @@ function debugLog(category, message, data = null) {
   console.log(`[${category}] ${message}`);
 }
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+function isLoopbackAddress(addr = "") {
+  addr = String(addr || "");
+  return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
+}
+
+function parseOriginHost(value = "") {
+  try { return value ? new URL(value).hostname : ""; }
+  catch { return ""; }
+}
+
 function isLocalRequest(req) {
-  // 桌面应用 — 本地服务器，速率限制已足够，不检查来源
+  const remote = req.socket?.remoteAddress || "";
+  if (!isLoopbackAddress(remote)) return false;
+  const host = String(req.headers.host || "").split(":")[0];
+  if (host && !LOCAL_HOSTS.has(host)) return false;
+  const originHost = parseOriginHost(req.headers.origin || "");
+  if (originHost && !LOCAL_HOSTS.has(originHost)) return false;
+  const refererHost = parseOriginHost(req.headers.referer || "");
+  if (refererHost && !LOCAL_HOSTS.has(refererHost)) return false;
   return true;
+}
+
+function isLocalAddress(value = "") {
+  const addr = String(value || "").replace(/^::ffff:/, "");
+  return addr === "127.0.0.1" || addr === "::1" || addr === "localhost";
+}
+
+function isLocalUrl(value = "") {
+  try {
+    const host = new URL(value).hostname;
+    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+  } catch {
+    return false;
+  }
 }
 
 function checkRateLimit(remoteAddr, limit) {
@@ -150,6 +185,7 @@ const DEFAULT_CONFIG = {
   hermesBaseUrl: "http://127.0.0.1:8642",
   llmBaseUrl: "https://api.deepseek.com/v1",
   llmModel: "deepseek-v4-flash",
+  llmTimeoutMs: 60000,
   connectionProfileId: "deepseek",
   lastModuleKey: "",
   moduleHistory: [],
@@ -552,8 +588,8 @@ async function createModule(body) {
 
 /** 删除世界模组 */
 async function deleteModule(moduleId) {
-  const worldName = moduleId.replace(/^world:/, "");
-  const worldDir = join(WORLDS_DIR(), worldName);
+  const worldDir = moduleWorldDir(moduleId);
+  if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir)) return { status: "error", errorMsg: "模组 ID 无效" };
   if (!existsSync(worldDir)) return { status: "error", errorMsg: "模组不存在" };
   rmSync(worldDir, { recursive: true, force: true });
   return { status: "ok" };
@@ -561,10 +597,10 @@ async function deleteModule(moduleId) {
 
 /** 构建引擎 model 对象（从新目录结构加载，含 chat 历史） */
 async function buildModuleModel(moduleId) {
-  const worldName = moduleId.replace(/^world:/, "");
-  const worldDir = join(WORLDS_DIR(), worldName);
+  const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, ""), "");
+  const worldDir = moduleWorldDir(moduleId);
   const empty = { loaded: true, selected: { id: worldName, name: worldName, path: worldDir, branch: "main" }, moduleData: { characters: [], scenes: [], worldbook: { entries: [] }, relations: {}, timeline: {}, worldState: {}, organizations: [], races: [], runtime: {}, tracking: [], canon: {} }, entities: [], turnCount: 0 };
-  if (!existsSync(worldDir)) return empty;
+  if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir) || !existsSync(worldDir)) return empty;
 
   const world = readJsonSync(join(worldDir, "world.json"), {});
   const state = readJsonSync(join(worldDir, "runtime", "state.json"), {}) || readJsonSync(join(worldDir, "runtime.json"), {}); // 兼容旧格式
@@ -609,8 +645,9 @@ function readOverlayData(worldDir) {
 /** 完整持久化：保存引擎状态 + 对话记录 + 记忆快照 + overlay writeSet */
 async function persistTurn(moduleId, input, result, engineState) {
   const isCharacter = String(moduleId || "").startsWith("char:");
-  const worldName = moduleId.replace(/^world:/, "").replace(/^char:/, "");
-  const baseDir = isCharacter ? join(CHARACTERS_DIR(), worldName) : join(WORLDS_DIR(), worldName);
+  const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, "").replace(/^char:/, ""), "");
+  const baseDir = isCharacter ? join(CHARACTERS_DIR(), worldName) : moduleWorldDir(moduleId);
+  if (!worldName || !baseDir || !pathWithinRoot(isCharacter ? CHARACTERS_DIR() : WORLDS_DIR(), baseDir)) return null;
   if (!existsSync(baseDir)) return null;
   const rtDir = join(baseDir, "runtime");
   ensureDir(rtDir);
@@ -718,14 +755,22 @@ async function handleLlmChat(body) {
   // 标准化引擎状态
   const normState = normalizeEngineState(engineState || DEFAULT_ENGINE_STATE);
 
-  // 计算世界书注入条目（引擎根据输入匹配世界书）
-  const { worldbookEntriesFromModel, injectionPreview } = await import("./src/core/cards.js");
+  // 计算世界书注入条目（使用统一 matchEntries 引擎）
+  const { worldbookEntriesFromModel } = await import("./src/core/cards.js");
+  const { matchEntries, buildVectorIndex } = await import("./src/core/data/worldbook.js");
   const { budgetFor } = await import("./src/core/engine/context-budget.js");
   const budget = budgetFor(normState.contextBudget || "balanced");
-  const injectedWorldbook = injectionPreview(
-    worldbookEntriesFromModel(model, {}),
-    input || ""
-  ).slice(0, budget.worldbookEntries || 10);
+  const entries = worldbookEntriesFromModel(model, {});
+  const vectors = buildVectorIndex(entries);
+  const injectedWorldbook = matchEntries({ entries }, input || "", {
+    limit: budget.worldbookEntries || 10,
+    mode: "both",
+    scanMessages: (messages || []).slice(-10).map(m => m.content || ""),
+    sceneName: normState?.sceneName || "",
+    previousScene: normState?.previousSceneName || "",
+    vectors,
+    vectorThreshold: normState?.vectorThreshold || 0.5
+  });
 
   debugLog("engine", `世界书匹配: ${injectedWorldbook.length} 条注入`, { dataMode: dataMode || "worldbook", moduleKey });
 
@@ -739,9 +784,10 @@ async function handleLlmChat(body) {
 
       // 从 data/engine/characters/{charId}/card.json 加载角色卡数据
       let cardData = null;
-      const charId = (moduleKey || "").replace(/^world:/, "").replace(/^char:/, "");
+      const charId = safeEntityId(String(moduleKey || "").replace(/^world:/, "").replace(/^char:/, ""), "");
       if (charId) {
-        const cardJsonPath = join(dataRoot(), "engine", "characters", charId, "card.json");
+        const charDir = join(CHARACTERS_DIR(), charId);
+        const cardJsonPath = pathWithinRoot(CHARACTERS_DIR(), charDir) ? join(charDir, "card.json") : "";
         if (existsSync(cardJsonPath)) {
           cardData = readJsonSync(cardJsonPath, null);
         }
@@ -812,14 +858,58 @@ async function handleLlmChat(body) {
 //  内容炼金台
 // ═══════════════════════════════════════════════════════════════
 
+/** 构建炼金台 LLM 调用适配器 */
+function buildAlchemyLlmCall(config, apiKey) {
+  if (!apiKey || !config.llmBaseUrl || !config.llmModel) return null;
+  const baseUrl = String(config.llmBaseUrl).replace(/\/$/, "");
+  const timeoutMs = Number(config.llmTimeoutMs || 60000);
+  return async (system, user) => {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: config.llmModel,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user }
+        ],
+        temperature: 0.3,
+        max_tokens: 2048
+      }),
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`LLM HTTP ${response.status}: ${text.slice(0, 200)}`);
+    }
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content || "";
+    try {
+      return { parsed: JSON.parse(content), raw: content };
+    } catch {
+      return { parsed: null, raw: content, parseError: true };
+    }
+  };
+}
+
 async function handleAlchemyImport(body) {
   const { text } = body || {};
   if (!text) return { status: "error", errorMsg: "导入内容为空" };
   try {
+    const config = await loadConfig();
+    const apiKey = await getActiveLlmValue();
+    const llmCall = buildAlchemyLlmCall(config, apiKey);
     const { importFile } = await import("./src/core/data/alchemy/alchemy-engine.js");
-    const result = await importFile(text, { llmCall: async () => ({ parsed: null }), options: { autoRelations: true } });
+    const result = await importFile(text, { llmCall, options: { autoRelations: true } });
     const reviewItems = await enqueueReviewItems(result?.items || [], { source: "alchemy-import", snippet: String(text).slice(0, 240) });
-    return { status: "ok", format: result?.format, items: result?.items || [], reviewItems, stats: result?.stats || {}, phases: result?.phases || [] };
+    return {
+      status: "ok",
+      format: result?.format,
+      items: result?.items || [],
+      reviewItems,
+      stats: { ...(result?.stats || {}), mode: llmCall ? "llm" : "js-only" },
+      phases: result?.phases || []
+    };
   } catch (err) { return { status: "error", errorMsg: err?.message || "炼金台导入失败" }; }
 }
 
@@ -828,9 +918,12 @@ async function handleAlchemyDigest(body) {
   const { text, worldName, dataMode = "worldbook", subType = "classic", preset = "epic" } = body || {};
   if (!text) return { status: "error", errorMsg: "内容为空" };
   try {
+    const config = await loadConfig();
+    const apiKey = await getActiveLlmValue();
+    const llmCall = buildAlchemyLlmCall(config, apiKey);
     // 1. 调用炼金台引擎解析
     const { importFile } = await import("./src/core/data/alchemy/alchemy-engine.js");
-    const result = await importFile(text, { llmCall: async () => ({ parsed: null }), options: { autoRelations: true } });
+    const result = await importFile(text, { llmCall, options: { autoRelations: true } });
     const items = result?.items || [];
     if (!items.length) return { status: "error", errorMsg: "未提取到有效内容" };
 
@@ -848,7 +941,8 @@ async function handleAlchemyDigest(body) {
       const refineRes = await fetch(refineUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: config.llmModel, messages, temperature: 0.3, max_tokens: 4096 })
+        body: JSON.stringify({ model: config.llmModel, messages, temperature: 0.3, max_tokens: 4096 }),
+        signal: AbortSignal.timeout(config.llmTimeoutMs || 60000)
       });
       if (!refineRes.ok) return { status: "error", errorMsg: `LLM 调用失败: HTTP ${refineRes.status}` };
       const refineData = await refineRes.json();
@@ -879,7 +973,8 @@ async function handleAlchemyDigest(body) {
         status: "ok",
         module: { id: `char:${charName}`, name: charName, displayName: cardJson.名称 || charName, type: "character_card", dataMode: "character_card", subType: "default", preset: "minimal", turnCount: 0 },
         entries: 0, characters: 1, locations: 0, organizations: 0, rules: 0,
-        characterCard: true
+        characterCard: true,
+        alchemyMode: "llm"
       };
     }
 
@@ -918,14 +1013,17 @@ async function handleAlchemyDigest(body) {
     if (module.status !== "ok") return module;
 
     // 4. 写入 shared 数据
-    const worldDir = join(WORLDS_DIR(), module.module.id);
+    const worldDir = moduleWorldDir(module.module.id);
+    if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir)) {
+      return { status: "error", errorMsg: "新世界目录无效，已阻止写入。" };
+    }
     await writeJson(join(worldDir, "shared", "worldbook.json"), { entries });
     await writeJson(join(worldDir, "shared", "characters.json"), characters);
     if (locations.length) await writeJson(join(worldDir, "shared", "locations.json"), locations);
     if (orgs.length) await writeJson(join(worldDir, "shared", "organizations.json"), orgs);
     if (rules.length) await writeJson(join(worldDir, "shared", "rules.json"), rules);
 
-    return { status: "ok", module: module.module, entries: entries.length, characters: characters.length, locations: locations.length, organizations: orgs.length, rules: rules.length };
+    return { status: "ok", module: module.module, entries: entries.length, characters: characters.length, locations: locations.length, organizations: orgs.length, rules: rules.length, alchemyMode: llmCall ? "llm" : "js-only" };
   } catch (err) { return { status: "error", errorMsg: err?.message || "炼金台消化失败" }; }
 }
 
@@ -934,20 +1032,36 @@ function objToText(data, fields) {
 }
 
 function sanitizeFileKey(key = "") {
-  const clean = String(key || "").replace(/\\/g, "/").replace(/^\/+/, "");
-  const target = resolve("/", clean);
-  if (target.includes("..")) return "";
-  return clean.replace(/^\.\//, "");
+  const clean = String(key || "").replace(/\\/g, "/").replace(/^\/+/, "").replace(/^\.\//, "");
+  if (!clean || clean.includes("\0")) return "";
+  const parts = clean.split("/");
+  if (parts.some(part => !part || part === "." || part === "..")) return "";
+  if (isAbsolute(clean)) return "";
+  return clean;
 }
 
 function pathWithinRoot(rootPath, targetPath) {
   const root = resolve(rootPath);
   const target = resolve(targetPath);
-  return target === root || target.startsWith(root + "\\") || target.startsWith(root + "/");
+  const rel = relative(root, target);
+  return rel === "" || (rel && !rel.startsWith("..") && !isAbsolute(rel));
+}
+
+function resolveInside(rootPath, unsafePath = "") {
+  const clean = String(unsafePath || "").replace(/\\/g, "/");
+  if (!clean || clean.includes("\0") || isAbsolute(clean)) return null;
+  const target = resolve(rootPath, clean);
+  return pathWithinRoot(rootPath, target) ? target : null;
+}
+
+function safeEntityId(value = "", fallback = "item") {
+  const raw = String(value || "").trim();
+  if (!raw) return fallback;
+  return /^[\w\u4e00-\u9fff-]+$/u.test(raw) ? raw.slice(0, 48) : fallback;
 }
 
 function moduleWorldDir(moduleKey = "") {
-  const worldName = String(moduleKey || "").replace(/^world:/, "");
+  const worldName = safeEntityId(String(moduleKey || "").replace(/^world:/, ""), "");
   if (!worldName || worldName.startsWith("__") || worldName.startsWith("char:")) return null;
   return join(WORLDS_DIR(), worldName);
 }
@@ -955,14 +1069,20 @@ function moduleWorldDir(moduleKey = "") {
 function moduleRuntimeDir(moduleKey = "") {
   const key = String(moduleKey || "");
   if (!key || key.startsWith("__")) return null;
-  if (key.startsWith("char:")) return join(CHARACTERS_DIR(), key.replace(/^char:/, ""), "runtime");
+  if (key.startsWith("char:")) {
+    const charId = safeEntityId(key.replace(/^char:/, ""), "");
+    return charId ? join(CHARACTERS_DIR(), charId, "runtime") : null;
+  }
   const worldDir = moduleWorldDir(key);
   return worldDir ? join(worldDir, "runtime") : null;
 }
 
 function moduleMetaPath(moduleKey = "") {
   const key = String(moduleKey || "");
-  if (key.startsWith("char:")) return join(CHARACTERS_DIR(), key.replace(/^char:/, ""), "runtime", "state.json");
+  if (key.startsWith("char:")) {
+    const charId = safeEntityId(key.replace(/^char:/, ""), "");
+    return charId ? join(CHARACTERS_DIR(), charId, "runtime", "state.json") : null;
+  }
   const worldDir = moduleWorldDir(key);
   return worldDir ? join(worldDir, "runtime", "state.json") : null;
 }
@@ -1106,7 +1226,7 @@ async function handleCharacterImport(body = {}) {
 }
 
 async function handleCharacterUpdate(body = {}) {
-  const id = String(body.id || "").trim();
+  const id = safeEntityId(body.id || "", "");
   if (!id) return { status: "error", errorMsg: "缺少角色卡 ID。" };
   const charDir = join(CHARACTERS_DIR(), id);
   const cardPath = join(charDir, "card.json");
@@ -1509,12 +1629,14 @@ async function handleWorldPackImport(body = {}) {
   const pack = body.pack || body;
   if (!pack || pack.spec !== "worldtree-pack" || !pack.files) return { status: "error", errorMsg: "这不是有效的 .worldtree 世界包。" };
   const files = Object.keys(pack.files || {}).filter(sanitizeFileKey);
+  const conflictName = safeEntityId(pack.world?.name || pack.summary?.worldName || pack.summary?.name || "", "");
+  const conflictDir = conflictName ? moduleWorldDir(`world:${conflictName}`) : null;
   const summary = {
     name: pack.summary?.name || pack.world?.displayName || pack.world?.name || "未命名世界",
     fileCount: files.length,
     sharedFiles: files.filter(f => f.startsWith("shared/")),
     runtimeFiles: files.filter(f => f.startsWith("runtime/")),
-    hasConflict: Boolean(pack.world?.name || pack.summary?.worldName || pack.summary?.name) && existsSync(join(WORLDS_DIR(), pack.world?.name || pack.summary?.worldName || pack.summary?.name || "")),
+    hasConflict: Boolean(conflictDir) && existsSync(conflictDir),
     excludes: pack.summary?.excludes || [],
     exportedAt: pack.exportedAt || ""
   };
@@ -1522,13 +1644,15 @@ async function handleWorldPackImport(body = {}) {
 
   const worldName = uniqueDirName(WORLDS_DIR(), body.name || pack.world?.name || summary.name);
   const worldDir = join(WORLDS_DIR(), worldName);
+  if (!pathWithinRoot(WORLDS_DIR(), worldDir)) return { status: "error", errorMsg: "世界包目标目录无效。" };
   mkdirSync(worldDir, { recursive: true });
   ensureDir(join(worldDir, "shared"));
   ensureDir(join(worldDir, "runtime"));
   for (const [key, value] of Object.entries(pack.files)) {
     const clean = sanitizeFileKey(key);
     if (!clean || clean.startsWith("runtime/") || clean.includes("secret") || clean.includes("config")) continue;
-    const target = clean === "world.json" ? join(worldDir, "world.json") : join(worldDir, clean);
+    const target = clean === "world.json" ? join(worldDir, "world.json") : resolveInside(worldDir, clean);
+    if (!target) continue;
     ensureDir(dirname(target));
     await writeJson(target, clean === "world.json" ? { ...(value || {}), name: worldName, displayName: body.displayName || value.displayName || summary.name, importedAt: new Date().toISOString() } : value);
   }
@@ -1570,11 +1694,13 @@ async function handlePlugins(body = {}, method = "GET") {
     plugins.push({ id: entry.name, name: manifest.name || entry.name, version: manifest.version || "", capabilities, entry: manifest.entry || "", permissions: manifest.permissions || [], enabled: Boolean(state.enabled[entry.name]) && !errors.length, errors: [...errors, ...(state.errors[entry.name] || [])] });
   }
   if (method === "GET") return { status: "ok", plugins };
-  const id = String(body.id || "");
+  const id = safeEntityId(body.id || "", "");
+  if (!id) return { status: "error", errorMsg: "插件 ID 无效。" };
   if (body.action === "enable") state.enabled[id] = true;
   if (body.action === "disable") state.enabled[id] = false;
   if (body.action === "run") {
     const pluginDir = join(PLUGINS_DIR(), id);
+    if (!pathWithinRoot(PLUGINS_DIR(), pluginDir)) return { status: "error", errorMsg: "插件目录无效。" };
     const manifest = readJsonSync(join(pluginDir, "plugin.json"), null);
     if (!manifest) return { status: "error", errorMsg: "插件 manifest 不存在。" };
     const capabilities = Array.isArray(manifest.capabilities) ? manifest.capabilities : [];
@@ -1622,7 +1748,8 @@ async function handleModuleHistory(moduleId, limit = 50) {
 
 async function handleDashboardTelemetry(moduleId) {
   const model = await buildModuleModel(moduleId);
-  const state = readJsonSync(join(WORLDS_DIR(), moduleId.replace(/^world:/, ""), "runtime", "state.json"), {});
+  const statePath = moduleStatePath(moduleId);
+  const state = statePath ? readJsonSync(statePath, {}) : {};
   const engineState = state.engineState || {};
   let telemetry = null;
   try {
@@ -1682,8 +1809,11 @@ async function handleDashboardEntities(moduleId) {
 
 async function handleDashboardNarrative(moduleId) {
   const model = await buildModuleModel(moduleId);
-  const worldName = moduleId.replace(/^world:/, "");
-  const worldDir = join(WORLDS_DIR(), worldName);
+  const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, ""), "");
+  const worldDir = moduleWorldDir(moduleId);
+  if (!worldName || !worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir)) {
+    return { status: "error", errorMsg: "模组 ID 无效。" };
+  }
 
   // 记忆层
   let memoryStats = { snapshots: 0, recentCount: 0 };
@@ -1751,25 +1881,38 @@ const MIME = {
   ".ttf": "font/ttf"
 };
 
+const PUBLIC_STATIC_FILES = new Map([
+  ["/", "world-tree-console.html"],
+  ["/world-tree-console.html", "world-tree-console.html"],
+  ["/world-tree-console.css", "world-tree-console.css"],
+  ["/world-tree-console.js", "world-tree-console.js"]
+]);
+
 async function serveStatic(req, res) {
   // 速率限制
   if (!checkRateLimit(req.socket?.remoteAddress || "127.0.0.1", RATE_MAX_STATIC)) {
     res.writeHead(429, { "Content-Type": "text/plain" });
     return res.end("Too Many Requests");
   }
-  let filePath = join(ROOT, req.url === "/" ? "world-tree-console.html" : req.url);
-  // 路径遍历防护：使用 normalize + realpath 语义确保路径在 ROOT 内
-  const normalized = resolve(filePath);
-  if (!normalized.toLowerCase().startsWith(ROOT.toLowerCase())) {
-    filePath = join(ROOT, "world-tree-console.html");
-  } else {
-    filePath = normalized;
+  const pathname = (() => {
+    try { return decodeURIComponent(new URL(req.url, "http://localhost").pathname); }
+    catch { return "/"; }
+  })();
+  const publicFile = PUBLIC_STATIC_FILES.get(pathname);
+  if (!publicFile) {
+    if (extname(pathname)) return jsonError(res, 404, "STATIC_NOT_FOUND", "静态资源不存在。");
+    return serveConsoleShell(res);
   }
-  if (!existsSync(filePath)) {
-    filePath = join(ROOT, "world-tree-console.html");
-  }
+  const filePath = join(ROOT, publicFile);
+  if (!existsSync(filePath)) return serveConsoleShell(res);
   const ext = extname(filePath).toLowerCase();
   res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+  createReadStream(filePath).pipe(res);
+}
+
+function serveConsoleShell(res) {
+  const filePath = join(ROOT, "world-tree-console.html");
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
   createReadStream(filePath).pipe(res);
 }
 
@@ -1794,14 +1937,52 @@ function jsonError(res, status, code, userMsg, detail = "") {
   return jsonResponse(res, errorPayload(code, userMsg, detail), status);
 }
 
-function readBody(req) {
-  return new Promise((resolve) => {
+// ═══════════════════════════════════════════════════════════════
+//  HTTP 错误类与请求体解析
+// ═══════════════════════════════════════════════════════════════
+
+class HttpError extends Error {
+  constructor(status, code, userMsg, detail = "") {
+    super(userMsg);
+    Object.assign(this, { status, code, userMsg, detail });
+  }
+}
+
+function readBody(req, limit = MAX_BODY_BYTES) {
+  return new Promise((resolve, reject) => {
+    const len = Number(req.headers["content-length"] || 0);
+    if (len > limit) {
+      reject(new HttpError(413, "BODY_TOO_LARGE", "导入内容过大，请缩小文件后重试。", `content-length=${len}`));
+      return;
+    }
     const chunks = [];
-    req.on("data", chunk => chunks.push(chunk));
+    let total = 0;
+    req.on("data", chunk => {
+      total += chunk.length;
+      if (total > limit) {
+        req.destroy(new Error("BODY_TOO_LARGE"));
+        reject(new HttpError(413, "BODY_TOO_LARGE", "请求内容过大。", `received=${total}`));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("error", err => {
+      reject(err);
+    });
     req.on("end", () => {
-      const body = Buffer.concat(chunks).toString("utf-8");
-      try { resolve(JSON.parse(body)); }
-      catch { resolve({}); }
+      const text = Buffer.concat(chunks).toString("utf-8").trim();
+      if (!text) { resolve({}); return; }
+      let data;
+      try { data = JSON.parse(text); }
+      catch (err) {
+        reject(new HttpError(400, "INVALID_JSON", "请求内容不是有效 JSON。", err.message));
+        return;
+      }
+      if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        reject(new HttpError(400, "INVALID_JSON_BODY", "请求内容必须是 JSON 对象。", `type=${typeof data}`));
+        return;
+      }
+      resolve(data);
     });
   });
 }
@@ -1816,15 +1997,31 @@ async function handleAPI(req, res) {
     return jsonError(res, 429, "RATE_LIMITED", "请求太频繁了。请稍等一分钟再试。", "API rate limit exceeded");
   }
 
-  // CORS — 仅允许本地来源
+  // CORS — 仅允许本地来源，不反射攻击者 Origin
   const origin = req.headers.origin || "";
-  const allowedOrigin = isLocalRequest(req) ? (origin || "http://localhost:3000") : "";
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (method === "OPTIONS") return res.writeHead(204).end();
+  const originHost = parseOriginHost(origin);
+  // OPTIONS 预检也必须走本地来源判断
+  if (method === "OPTIONS") {
+    if (!isLocalRequest(req)) {
+      return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。", "Forbidden: non-local preflight");
+    }
+    res.setHeader("Access-Control-Allow-Origin", origin || "http://localhost:3000");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    return res.writeHead(204).end();
+  }
+  // 非法 Origin → 403，不设置 ACAO
+  if (originHost && !LOCAL_HOSTS.has(originHost)) {
+    return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。请不要从公网或其他设备调用此服务。", `Forbidden: non-local Origin ${originHost}`);
+  }
+  // 本地 Origin 或无 Origin（CLI 请求）→ 设置正确的 CORS 头
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
   if (!isLocalRequest(req)) {
-    return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。请不要从公网或其他设备调用此服务。", "Forbidden: non-local Origin/Referer");
+    return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。请不要从公网或其他设备调用此服务。", "Forbidden: non-local request");
   }
 
   try {
@@ -1855,6 +2052,7 @@ async function handleAPI(req, res) {
     if (path === "/api/modules/load" && method === "POST") {
       const { id } = await readBody(req);
       if (!id) return jsonError(res, 400, "MODULE_ID_MISSING", "缺少模组 ID。请重新选择模组后再试。");
+      if (!moduleWorldDir(id)) return jsonError(res, 400, "MODULE_ID_INVALID", "模组 ID 无效。");
       const model = await buildModuleModel(id);
       return jsonResponse(res, { status: "ok", model });
     }
@@ -1888,7 +2086,8 @@ async function handleAPI(req, res) {
     if (path === "/api/characters/import" && method === "POST") return jsonResponse(res, await handleCharacterImport(await readBody(req)));
     if (path === "/api/characters/update" && method === "POST") return jsonResponse(res, await handleCharacterUpdate(await readBody(req)));
     if (path === "/api/characters/load" && method === "POST") {
-      const { id } = await readBody(req);
+      const body = await readBody(req);
+      const id = safeEntityId(body.id || "", "");
       if (!id) return jsonError(res, 400, "CHARACTER_ID_MISSING", "缺少角色卡 ID。请重新选择角色卡后再试。");
       const { parseCharacterCard } = await import("./src/core/data/character-card.js");
       const cardJsonPath = join(dataRoot(), "engine", "characters", id, "card.json");
@@ -1898,9 +2097,11 @@ async function handleAPI(req, res) {
       return jsonResponse(res, { status: "ok", card: parsed });
     }
     if (path === "/api/characters/delete" && method === "POST") {
-      const { id } = await readBody(req);
+      const body = await readBody(req);
+      const id = safeEntityId(body.id || "", "");
       if (!id) return jsonError(res, 400, "CHARACTER_ID_MISSING", "缺少角色卡 ID。请重新选择角色卡后再试。");
       const targetDir = join(dataRoot(), "engine", "characters", id);
+      if (!pathWithinRoot(CHARACTERS_DIR(), targetDir)) return jsonError(res, 400, "CHARACTER_ID_INVALID", "角色卡 ID 无效。");
       if (!existsSync(targetDir)) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "角色卡不存在，可能已经被删除。");
       try {
         rmSync(targetDir, { recursive: true, force: true });
@@ -1911,9 +2112,11 @@ async function handleAPI(req, res) {
     }
     if (path === "/api/characters/backup" && method === "POST") {
       // 角色卡备份：复制 data/engine/characters/ 到 data/characters-archive/
-      const { id } = await readBody(req);
+      const body = await readBody(req);
+      const id = safeEntityId(body.id || "", "");
       if (!id) return jsonError(res, 400, "CHARACTER_ID_MISSING", "缺少角色卡 ID。请重新选择角色卡后再试。");
       const srcDir = join(dataRoot(), "engine", "characters", id);
+      if (!pathWithinRoot(CHARACTERS_DIR(), srcDir)) return jsonError(res, 400, "CHARACTER_ID_INVALID", "角色卡 ID 无效。");
       if (!existsSync(srcDir)) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "角色卡不存在，无法备份。");
       try {
         const archiveDir = join(ROOT, "data", "characters-archive");
@@ -2074,8 +2277,9 @@ async function handleAPI(req, res) {
     if (path === "/api/data/export" && method === "GET") {
       const moduleKey = url.searchParams.get("moduleKey") || "";
       if (!moduleKey) return jsonError(res, 400, "MODULE_KEY_MISSING", "缺少模组标识。请先选择一个模组。");
-      const worldName = moduleKey.replace(/^world:/, "");
-      const worldDir = join(WORLDS_DIR(), worldName);
+      const worldName = safeEntityId(moduleKey.replace(/^world:/, ""), "");
+      const worldDir = moduleWorldDir(moduleKey);
+      if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir)) return jsonError(res, 400, "MODULE_KEY_INVALID", "模组标识无效。");
       if (!existsSync(worldDir)) return jsonError(res, 404, "MODULE_NOT_FOUND", "模组不存在，可能已经被删除或移动。");
       try {
         // 收集所有数据文件
@@ -2107,12 +2311,21 @@ async function handleAPI(req, res) {
       try {
         const body = await readBody(req);
         if (!body.worldName || !body.files) return jsonError(res, 400, "IMPORT_PAYLOAD_INVALID", "导入包缺少必要字段，无法导入。");
-        const worldName = String(body.worldName).replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "").slice(0, 48);
+        const worldName = safeEntityId(String(body.worldName).replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "").slice(0, 48), "");
+        if (!worldName) return jsonError(res, 400, "IMPORT_WORLD_NAME_INVALID", "导入世界名无效。");
         const worldDir = join(WORLDS_DIR(), worldName);
+        if (!pathWithinRoot(WORLDS_DIR(), worldDir)) return jsonError(res, 400, "IMPORT_WORLD_NAME_INVALID", "导入世界名无效。");
         if (existsSync(worldDir)) return jsonError(res, 409, "IMPORT_NAME_CONFLICT", "目标模组名称已存在。请先重命名导入内容或删除旧模组。");
-        mkdirSync(worldDir, { recursive: true });
+        const filesToWrite = [];
         for (const [key, content] of Object.entries(body.files)) {
-          const targetPath = join(worldDir, key);
+          const clean = sanitizeFileKey(key);
+          if (!clean || !/\.(json|jsonl)$/i.test(clean)) return jsonError(res, 400, "IMPORT_FILE_KEY_INVALID", `导入文件路径无效：${key}`);
+          const targetPath = resolveInside(worldDir, clean);
+          if (!targetPath) return jsonError(res, 400, "IMPORT_FILE_KEY_INVALID", `导入文件路径越界：${key}`);
+          filesToWrite.push([targetPath, content]);
+        }
+        mkdirSync(worldDir, { recursive: true });
+        for (const [targetPath, content] of filesToWrite) {
           ensureDir(dirname(targetPath));
           writeFileSync(targetPath, String(content), "utf-8");
         }
@@ -2133,6 +2346,12 @@ async function handleAPI(req, res) {
     jsonError(res, 404, "NOT_FOUND", "没有找到这个接口。请检查请求路径。", path);
 
   } catch (err) {
+    if (err instanceof HttpError) {
+      return jsonError(res, err.status, err.code, err.userMsg, err.detail);
+    }
+    if (err?.code === "BODY_TOO_LARGE") {
+      return jsonError(res, 413, "BODY_TOO_LARGE", "请求内容太大。请拆分素材或减少导入包体积。", err.message);
+    }
     console.error("[API]", path, err);
     jsonError(res, 500, "INTERNAL_ERROR", "服务端处理失败。请查看控制台日志获取技术细节。", err.message);
   }
@@ -2158,7 +2377,7 @@ ensureDir(CHARACTERS_DIR());
 ensureDir(PLUGINS_DIR());
 
 // 检测端口占用
-function tryListen(server, port) {
+function tryListen(server, port, host = HOST) {
   return new Promise((resolve, reject) => {
     server.once("error", (err) => {
       if (err.code === "EADDRINUSE") {
@@ -2170,13 +2389,13 @@ function tryListen(server, port) {
         reject(err);
       }
     });
-    server.listen(port, () => resolve(port));
+    server.listen(port, host, () => resolve(port));
   });
 }
 
 tryListen(server, PORT).then((p) => {
   console.log(`🌳 World Tree Web 服务启动`);
-  console.log(`   URL: http://localhost:${p}`);
+  console.log(`   URL: http://${HOST}:${p}`);
   console.log(`   配置: ${configPath()}`);
   console.log(`   数据: ${dataRoot()}`);
 }).catch((err) => {

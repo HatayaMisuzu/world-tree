@@ -2,6 +2,27 @@
 
 > 审查记录。AI 无需阅读此文件。
 
+## v0.1.10 — P0/P1 安全与运行时一致性修复 (2026-06-17)
+
+### P0 安全与稳定性
+- **本地访问边界强化**：`isLocalRequest` 新增 Host header 检查、`isLoopbackAddress` 严格 IP 校验、`parseOriginHost` 辅助；CORS 禁止反射非本地 Origin，非法 Origin 直接 403。
+- **请求体安全**：新增 `HttpError` 类、`readBody` 增加 `Content-Length` 预检查、JSON 解析失败返回 `INVALID_JSON`（不再静默 `{}`）、非 object JSON 返回 `INVALID_JSON_BODY`、超限时 `destroy req`。
+- **LLM 调用超时**：`DEFAULT_CONFIG` 与 `config.example.json` 新增 `llmTimeoutMs`（默认 60000）；`callLLMByRole` 所有 `fetch` 增加 `AbortSignal.timeout`；炼金台人格提炼 fetch 复用同一 timeout 策略；超时捕获为 `LLM_TIMEOUT` 可恢复错误。
+
+### P1 运行时一致性
+- **统一世界书匹配器**：`handleLlmChat` 改用 `matchEntries` + `buildVectorIndex`（来自 `src/core/data/worldbook.js`）替代简单 `injectionPreview`，支持语义匹配、向量匹配、场景变化触发、扫描深度等完整世界书功能。
+- **向量匹配修复**：实现 `tokenFreq` + `cosineSparse` 稀疏向量余弦相似度；`buildVectorIndex` 输出的词频对象与 `_vectorMatch` 现在一致；保留 `Array.isArray` 外部 embedding 扩展入口。
+- **炼金台真实 LLM**：新增 `buildAlchemyLlmCall` 适配器，复用 OpenAI-compatible API；`handleAlchemyImport` 和 `handleAlchemyDigest` 在配置 LLM 时使用真实深度解析，未配置时自动降级 JS-only；返回 `stats.mode` / `alchemyMode` 标注当前模式。
+- **Fallback 矩阵修复**：`callLLMByRole` 从同 index 配对改为 `endpoint × model` 笛卡尔积遍历，记录 `attempts` 数组；修复废弃的 `i` 变量引用。
+
+## v0.1.9 — 本地安全边界加固 (2026-06-15)
+
+- **本地访问边界**：Web 服务默认绑定 `127.0.0.1`，API 请求会校验本地 remote address、Origin 和 Referer。
+- **路径遍历防护**：收紧静态文件、角色卡、世界包、旧数据导入、插件入口、Dashboard 数据读取等路径解析，统一限制在项目数据目录内。
+- **导入安全**：旧 `/api/data/import` 和 `.worldtree` 导入会过滤越界路径、绝对路径、空路径和非 JSON/JSONL 文件，并避免失败导入留下半成品目录。
+- **请求体限制**：API JSON 请求体默认限制为 20MB，可通过 `WORLD_TREE_MAX_BODY_BYTES` 调整，超限返回可读错误。
+- **版本同步**：`package.json`、`package-lock.json`、README、README.en、AI-GUIDE、manifest 同步到 `0.1.9`。
+
 ## v0.1.8 — 创作者工作台升级 (2026-06-14)
 
 - **工作台 UI**：新增三栏式创作者工作台页面，覆盖角色库、世界书、连接档案、审核队列、世界包、本地插件和叙事黑盒。
