@@ -78,6 +78,11 @@ const CORE_FILES = [
   "src/core/data/creation-wizard.js", "src/core/data/skill-parser.js",
   "src/core/normalizers.js", "src/core/cards.js",
   "src/core/commands.js", "src/core/data-store.js",
+  "src/core/data/worldbook.js",
+  "src/core/data/alchemy/alchemy-engine.js",
+  "src/core/data/alchemy/classifier.js",
+  "src/core/data/alchemy/extractor.js",
+  "tests/unit/worldbook.test.js",
 ];
 
 for (const file of CORE_FILES) {

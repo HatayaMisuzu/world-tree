@@ -213,5 +213,54 @@ console.log("\n🧹 开源卫生");
   else pass("内容来源决策已存档");
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  版本事实源一致性（v0.1.10+）
+// ═══════════════════════════════════════════════════════════════
+
+console.log("\n📌 版本事实源");
+
+// package-lock.json 与 package.json 版本一致
+{
+  const lockPath = join(ROOT, "package-lock.json");
+  if (!existsSync(lockPath)) {
+    fail("缺少 package-lock.json");
+  } else {
+    try {
+      const lock = JSON.parse(readFileSync(lockPath, "utf-8"));
+      const lockVersion = lock.version || "";
+      const lockPackagesVersion = (lock.packages && lock.packages[""]) ? lock.packages[""].version : "";
+      if (lockVersion !== version) fail(`package-lock.json 顶层 version=${lockVersion}, 期望 ${version}`);
+      else pass(`package-lock.json 顶层 version: ${version}`);
+      if (lockPackagesVersion && lockPackagesVersion !== version) fail(`package-lock.json packages[""].version=${lockPackagesVersion}, 期望 ${version}`);
+      else pass(`package-lock.json packages[""].version: ${version}`);
+    } catch (err) {
+      fail(`package-lock.json 解析失败: ${err.message}`);
+    }
+  }
+}
+
+// AI-GUIDE.md 最后更新版本
+{
+  const aiGuide = readText("AI-GUIDE.md");
+  const m = aiGuide.match(/最后更新:\s*v?(\d+\.\d+\.\d+)/);
+  if (!m) fail("AI-GUIDE.md 缺少'最后更新'版本号");
+  else if (m[1] !== version) fail(`AI-GUIDE.md 最后更新 v${m[1]}, 期望 v${version}`);
+  else pass(`AI-GUIDE.md 最后更新: v${version}`);
+}
+
+// world-tree-console.html 不含旧版本硬编码
+{
+  const html = readText("world-tree-console.html");
+  // 检查是否仍硬编码旧版本（历史上出现过 v0.1.8）
+  const oldVersions = [];
+  for (const oldVer of ["0.1.8", "0.1.9"]) {
+    if (new RegExp(`v?${oldVer.replace(/\./g, "\\.")}`).test(html)) {
+      oldVersions.push(oldVer);
+    }
+  }
+  if (oldVersions.length) fail(`world-tree-console.html 仍含旧版本硬编码: ${oldVersions.join(", ")}`);
+  else pass("world-tree-console.html 无旧版本硬编码");
+}
+
 console.log(`\n审计完成: ${errors} 错误`);
 process.exit(errors ? 1 : 0);

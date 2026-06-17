@@ -5,13 +5,22 @@ function uid(prefix = "card") {
 export function normalizeWorldbookEntries(entries) {
   const raw = Array.isArray(entries) ? entries : Object.values(entries || {});
   return raw.map((entry, index) => ({
+    ...entry,
     id: String(entry.id || entry.uid || entry.key || `entry-${index}`),
     title: entry.comment || entry.name || entry.title || entry.trigger?.[0] || entry.keys?.[0] || `Entry ${index + 1}`,
     keys: entry.keys || entry.key || entry.trigger || [],
     content: entry.content || entry.text || "",
     mode: entry.mode || "",
     priority: Number(entry.priority ?? entry.order ?? 100),
-    enabled: entry.enabled !== false && entry.disable !== true
+    enabled: entry.enabled !== false && entry.disable !== true,
+    matchMode: entry.matchMode || entry.match_mode || entry.matchModeCN || "",
+    logic: entry.logic || entry.match || "any",
+    triggerType: entry.triggerType || entry.trigger_type || "",
+    depth: entry.depth || entry.scanDepth || entry.scan_depth || "中距",
+    scanDepth: entry.scanDepth || entry.depth || entry.scan_depth || "中距",
+    probability: Number(entry.probability ?? entry.triggerProb ?? entry.trigger_prob ?? 100),
+    triggerProb: Number(entry.triggerProb ?? entry.probability ?? entry.trigger_prob ?? 100),
+    layer: entry.layer || "context"
   }));
 }
 

@@ -79,10 +79,20 @@ function parseOriginHost(value = "") {
   catch { return ""; }
 }
 
+/** 解析 Host header，正确处理 [::1]:3000 等 IPv6 格式 */
+function parseHostHeader(host = "") {
+  const value = String(host || "").trim();
+  if (value.startsWith("[")) {
+    const end = value.indexOf("]");
+    return end >= 0 ? value.slice(0, end + 1) : value;
+  }
+  return value.split(":")[0];
+}
+
 function isLocalRequest(req) {
   const remote = req.socket?.remoteAddress || "";
   if (!isLoopbackAddress(remote)) return false;
-  const host = String(req.headers.host || "").split(":")[0];
+  const host = parseHostHeader(req.headers.host || "");
   if (host && !LOCAL_HOSTS.has(host)) return false;
   const originHost = parseOriginHost(req.headers.origin || "");
   if (originHost && !LOCAL_HOSTS.has(originHost)) return false;
@@ -858,7 +868,7 @@ async function handleLlmChat(body) {
 //  内容炼金台
 // ═══════════════════════════════════════════════════════════════
 
-/** 构建炼金台 LLM 调用适配器 */
+/** 构建炼金台 LLM 调用适配器（协议：返回 content 字符串，匹配 classifier/extractor 的 String() 解析） */
 function buildAlchemyLlmCall(config, apiKey) {
   if (!apiKey || !config.llmBaseUrl || !config.llmModel) return null;
   const baseUrl = String(config.llmBaseUrl).replace(/\/$/, "");
@@ -883,12 +893,7 @@ function buildAlchemyLlmCall(config, apiKey) {
       throw new Error(`LLM HTTP ${response.status}: ${text.slice(0, 200)}`);
     }
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content || "";
-    try {
-      return { parsed: JSON.parse(content), raw: content };
-    } catch {
-      return { parsed: null, raw: content, parseError: true };
-    }
+    return data?.choices?.[0]?.message?.content || "";
   };
 }
 
@@ -2362,6 +2367,11 @@ async function handleAPI(req, res) {
 // ═══════════════════════════════════════════════════════════════
 
 const server = createServer((req, res) => {
+  // 静态资源也走本地访问校验（防御纵深：即使误绑 0.0.0.0 也不暴露 UI）
+  if (!isLocalRequest(req)) {
+    res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+    return res.end("Forbidden: World Tree 只允许本机访问。");
+  }
   if (req.url.startsWith("/api/")) {
     handleAPI(req, res);
   } else {

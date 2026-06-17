@@ -9,6 +9,14 @@
 - **请求体安全**：新增 `HttpError` 类、`readBody` 增加 `Content-Length` 预检查、JSON 解析失败返回 `INVALID_JSON`（不再静默 `{}`）、非 object JSON 返回 `INVALID_JSON_BODY`、超限时 `destroy req`。
 - **LLM 调用超时**：`DEFAULT_CONFIG` 与 `config.example.json` 新增 `llmTimeoutMs`（默认 60000）；`callLLMByRole` 所有 `fetch` 增加 `AbortSignal.timeout`；炼金台人格提炼 fetch 复用同一 timeout 策略；超时捕获为 `LLM_TIMEOUT` 可恢复错误。
 
+### P0.5 残留修复（同日补丁）
+- **世界书高级字段保真**：`normalizeWorldbookEntries` 改为 `...entry` 展开 + 显式规范化 `matchMode`/`logic`/`triggerType`/`depth`/`scanDepth`/`probability`/`triggerProb`/`layer`，确保 semantic/vector/scene/depth/probability 能力在运行时可用。
+- **炼金台协议修复**：`buildAlchemyLlmCall` 返回内容字符串而非 `{parsed, raw}` 对象，匹配 `classifier`/`extractor` 的 `String()` 解析协议，避免 `[object Object]` 问题。
+- **版本事实源统一**：同步 `package-lock.json`、`world-tree-console.html`、`AI-GUIDE.md`、`README.md` 版本到 v0.1.10；audit 新增 lockfile/AI-GUIDE/HTML 版本漂移检查。
+- **IPv6 Host 解析**：新增 `parseHostHeader` 函数处理 `[::1]:3000` 格式，替换 `split(":")[0]`。
+- **静态资源安全**：`createServer` 入口对所有请求（含静态文件）统一执行 `isLocalRequest`，阻止误绑 `0.0.0.0` 时暴露 UI。
+- **测试门禁**：新增 `tests/unit/worldbook.test.js`（24 项，覆盖 normalize/语义/向量/场景/深度/概率）；`test:unit` 和 `CORE_FILES` 扩展覆盖 worldbook/alchemy。
+
 ### P1 运行时一致性
 - **统一世界书匹配器**：`handleLlmChat` 改用 `matchEntries` + `buildVectorIndex`（来自 `src/core/data/worldbook.js`）替代简单 `injectionPreview`，支持语义匹配、向量匹配、场景变化触发、扫描深度等完整世界书功能。
 - **向量匹配修复**：实现 `tokenFreq` + `cosineSparse` 稀疏向量余弦相似度；`buildVectorIndex` 输出的词频对象与 `_vectorMatch` 现在一致；保留 `Array.isArray` 外部 embedding 扩展入口。
