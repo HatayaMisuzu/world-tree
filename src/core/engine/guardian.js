@@ -94,6 +94,23 @@ export function validateNarrativeAgainstDirection({ narrative = "", directionPac
     };
   }
 
+  // Stable constraint checks for plain Chinese/English keywords. This guards the
+  // legacy fuzzy matcher from silently dropping items without a type prefix.
+  for (const item of cp.mustInclude || []) {
+    const keyword = normalizeConstraintItem(item);
+    if (keyword && !String(narrative).toLowerCase().includes(keyword.toLowerCase())) {
+      issues.push(`缺少 mustInclude: ${item}`);
+      revisionInstructions.push(`请确保叙事中包含「${item}」`);
+    }
+  }
+  for (const item of cp.mustNotInclude || []) {
+    const keyword = normalizeConstraintItem(item);
+    if (keyword && String(narrative).toLowerCase().includes(keyword.toLowerCase())) {
+      issues.push(`泄露 mustNotInclude: ${item}`);
+      revisionInstructions.push(`请移除叙事中「${item}」相关内容`);
+    }
+  }
+
   // 1. must_include 检查
   const mustItems = cp.mustInclude || [];
   const mustMissing = checkMustInclude(narrative, mustItems);
@@ -169,12 +186,20 @@ function chineseAwareMatch(text, keyword) {
   return false;
 }
 
+function normalizeConstraintItem(item) {
+  const raw = String(item || "").trim();
+  if (!raw) return "";
+  const colon = raw.search(/[:：]/);
+  return (colon >= 0 ? raw.slice(colon + 1) : raw).trim();
+}
+
 function checkMustInclude(narrative, mustItems) {
   if (!mustItems.length) return [];
   const text = String(narrative || "");
   return mustItems.filter((item) => {
     const keywords = item.replace(/^[^:]*[:：]?\s*/, "").trim();
     if (!keywords) return false;
+    if (chineseAwareMatch(text, keywords)) return false;
     const parts = keywords.split(/[,，、]/).map((s) => s.trim()).filter(Boolean);
     return !parts.some((part) => chineseAwareMatch(text, part));
   });
@@ -192,6 +217,7 @@ function checkMustNotInclude(narrative, mustNotItems) {
   return mustNotItems.filter((item) => {
     const keywords = item.replace(/^[^:]*[:：]?\s*/, "").trim();
     if (!keywords) return false;
+    if (chineseAwareMatch(text, keywords)) return true;
     const parts = keywords.split(/[,，、]/).map((s) => s.trim()).filter(Boolean);
     return parts.some((part) => chineseAwareMatch(text, part));
   });
@@ -200,7 +226,10 @@ function checkMustNotInclude(narrative, mustNotItems) {
 /**
  * 检查叙事是否回应了玩家输入
  */
-const RESPONSE_MARKERS = [/她说|他说|回答道|回答|解释|告诉你|开口说|开口道|因为|原因|原来|其实|于是|便|回应|答道|轻声说|低声说|笑了笑|点了点头|叹了/];
+const RESPONSE_MARKERS = [
+  /answers?|replies?|responds?|explains?|says?|tells?|because|points?|nods?|shakes?\s+her\s+head|shakes?\s+his\s+head/i,
+  /她说|他说|回答道|回答|解释|告诉你|开口说|开口道|因为|原因|原来|其实|于是|便|回应|答道|轻声说|低声说|笑了笑|点了点头|叹了/
+];
 
 function checkPlayerResponse(narrative, userInput) {
   if (!userInput || !narrative) return { ok: true };
@@ -211,7 +240,7 @@ function checkPlayerResponse(narrative, userInput) {
   if (/[？?]/.test(input)) {
     const hasResponse = RESPONSE_MARKERS.some((m) => m.test(ntext));
     if (!hasResponse) {
-      return { ok: false, detail: "玩家提出了问题，但叙事中没有明显的回应" };
+      return { ok: false, detail: "Player asked a question, but the narrative has no clear response." };
     }
   }
 
@@ -236,6 +265,10 @@ function checkWritingConstraints(narrative, constraints = {}) {
 
   const length = constraints.length || "medium";
   const charCount = text.length;
+
+  if (charCount > 0 && charCount < 12) {
+    issues.push(`叙事输出过短，实际约 ${charCount} 字符`);
+  }
 
   if (length === "short" && charCount > 800) {
     issues.push(`要求 short（≤800字），实际约 ${charCount} 字`);

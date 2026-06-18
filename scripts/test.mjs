@@ -82,8 +82,13 @@ const CORE_FILES = [
   "src/core/data/alchemy/alchemy-engine.js",
   "src/core/data/alchemy/classifier.js",
   "src/core/data/alchemy/extractor.js",
+  "src/server/module-service.js",
+  "src/server/persistence-service.js",
+  "src/server/data-import-service.js",
   "tests/unit/worldbook.test.js",
   "tests/unit/alchemy.test.js",
+  "tests/integration/data-import.test.js",
+  "tests/integration/overlay-persistence.test.js",
 ];
 
 for (const file of CORE_FILES) {

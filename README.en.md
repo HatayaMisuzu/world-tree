@@ -1,11 +1,11 @@
 # World Tree
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.2.1-blue.svg)
 
 World Tree is a local-first AI narrative engine with a browser-based web console. It runs as a plain Node.js HTTP server: no Electron, no build step, and no external runtime service beyond the LLM endpoint you configure.
 
-Current version: `v0.2.0`.
+Current version: `v0.2.1`.
 
 Chinese documentation: [README.md](README.md)
 

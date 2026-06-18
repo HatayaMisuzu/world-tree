@@ -1,11 +1,9 @@
-// tests/unit/guardian.test.js
-
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   validatePathWithinRoot,
   runGuardian,
-  validateNarrativeAgainstDirection,
+  validateNarrativeAgainstDirection
 } from "../../src/core/engine/guardian.js";
 
 describe("guardian", () => {
@@ -19,17 +17,11 @@ describe("guardian", () => {
     });
 
     it("rejects path outside root", () => {
-      assert.equal(
-        validatePathWithinRoot("/data", "/etc/passwd"),
-        false
-      );
+      assert.equal(validatePathWithinRoot("/data", "/etc/passwd"), false);
     });
 
     it("normalizes backslashes", () => {
-      assert.equal(
-        validatePathWithinRoot("C:\\data", "C:\\data\\engine\\file.json"),
-        true
-      );
+      assert.equal(validatePathWithinRoot("C:\\data", "C:\\data\\engine\\file.json"), true);
     });
 
     it("handles empty inputs", () => {
@@ -42,20 +34,16 @@ describe("guardian", () => {
     it("checks module loaded status", () => {
       const result = runGuardian({
         model: { loaded: false, selected: null },
-        intent: { kind: "narrative" },
+        intent: { kind: "narrative" }
       });
       assert.equal(result.ok, false);
-      const modCheck = result.checks.find((c) => c.id === "module-loaded");
-      assert.equal(modCheck.ok, false);
+      assert.equal(result.checks.find((c) => c.id === "module-loaded")?.ok, false);
     });
 
     it("passes with loaded module", () => {
       const result = runGuardian({
-        model: {
-          loaded: true,
-          selected: { id: "test-module", name: "Test" },
-        },
-        intent: { kind: "narrative" },
+        model: { loaded: true, selected: { id: "test-module", name: "Test" } },
+        intent: { kind: "narrative" }
       });
       assert.equal(result.ok, true);
     });
@@ -63,82 +51,73 @@ describe("guardian", () => {
     it("blocks continuation without loaded module", () => {
       const result = runGuardian({
         model: { loaded: false, selected: null },
-        intent: { kind: "narrative" },
+        intent: { kind: "narrative" }
       });
-      const cs = result.checks.find((c) => c.id === "continuation-safety");
-      assert.ok(cs);
-      assert.equal(cs.ok, false);
+      assert.equal(result.checks.find((c) => c.id === "continuation-safety")?.ok, false);
     });
   });
 
   describe("validateNarrativeAgainstDirection", () => {
-    it("passes when mustInclude items are present", () => {
+    it("fails when mustInclude items are missing and reports the item", () => {
       const result = validateNarrativeAgainstDirection({
-        narrative: "国王对冒险者说：这是你的任务。",
+        narrative: "The adventurer watches the road in silence.",
         directionPacket: {
-          contentPlan: { mustInclude: ["任务"] },
-          writingConstraints: { length: "medium" },
-        },
+          contentPlan: { mustInclude: ["mission-token"], mustNotInclude: [] },
+          writingConstraints: { length: "medium" }
+        }
       });
-      assert.equal(result.pass, true);
+      assert.equal(result.pass, false);
+      assert.ok(result.issues.some((issue) => issue.includes("mission-token")));
     });
 
-    it("fails when mustInclude items are missing", () => {
+    it("fails when mustNotInclude items appear and reports the item", () => {
       const result = validateNarrativeAgainstDirection({
-        narrative: "冒险者看着远方的山。",
+        narrative: "The forbidden artifact opens a bright gate.",
         directionPacket: {
-          contentPlan: { mustInclude: ["任务"] },
-          writingConstraints: { length: "medium" },
-        },
+          contentPlan: { mustInclude: [], mustNotInclude: ["forbidden artifact"] },
+          writingConstraints: { length: "medium" }
+        }
       });
-      // When mustInclude is missing AND narrative is empty/poor, severity should reflect issues
-      assert.ok(
-        typeof result.pass === "boolean",
-        "should return a pass/fail result"
-      );
+      assert.equal(result.pass, false);
+      assert.ok(result.issues.some((issue) => issue.includes("forbidden artifact")));
     });
 
-    it("handles empty narrative", () => {
+    it("flags missing response to player question", () => {
+      const result = validateNarrativeAgainstDirection({
+        narrative: "Rain keeps falling over the empty street.",
+        userInput: "Where is Mira?",
+        directionPacket: {
+          contentPlan: { mustInclude: [], mustNotInclude: [] },
+          writingConstraints: { length: "medium" }
+        }
+      });
+      assert.equal(result.pass, false);
+      assert.ok(result.issues.some((issue) => issue.includes("no clear response") || issue.includes("没有明显的回应")));
+    });
+
+    it("flags empty output", () => {
       const result = validateNarrativeAgainstDirection({
         narrative: "",
         directionPacket: {
-          contentPlan: { mustInclude: ["anything"] },
-          writingConstraints: { length: "medium" },
-        },
+          contentPlan: { mustInclude: ["anything"], mustNotInclude: [] },
+          writingConstraints: { length: "medium" }
+        }
       });
       assert.equal(result.pass, false);
+      assert.equal(result.severity, "critical");
     });
 
-    it("returns severity levels", () => {
+    it("passes good output", () => {
       const result = validateNarrativeAgainstDirection({
-        narrative: "国王对冒险者说：这是你的任务，去消灭巨龙。",
+        narrative: "Mira answers that the bridge guard carries the mission-token, then points toward the north road.",
+        userInput: "Where is the mission-token?",
         directionPacket: {
-          contentPlan: {
-            mustInclude: ["任务", "国王"],
-            mustNotInclude: ["巨龙"],
-          },
-          writingConstraints: { length: "medium" },
-        },
+          contentPlan: { mustInclude: ["mission-token"], mustNotInclude: ["forbidden artifact"] },
+          writingConstraints: { length: "medium" }
+        }
       });
-      assert.ok(
-        ["none", "minor", "major", "critical"].includes(result.severity)
-      );
-    });
-
-    it("detects mustNotInclude violations", () => {
-      const result = validateNarrativeAgainstDirection({
-        narrative: "冒险者发现了隐藏的宝藏和秘密通道。",
-        directionPacket: {
-          contentPlan: {
-            mustInclude: [],
-            mustNotInclude: ["宝藏", "秘密通道"],
-          },
-          writingConstraints: { length: "medium" },
-        },
-      });
-      // "宝藏" and "秘密通道" appear in narrative — check if guardian flags them
-      assert.ok(typeof result.pass === "boolean", "should return a pass/fail result");
-      assert.ok(Array.isArray(result.issues), "should return issues array");
+      assert.equal(result.pass, true);
+      assert.equal(result.severity, "none");
     });
   });
 });

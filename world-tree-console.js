@@ -1,7 +1,7 @@
 "use strict";
 
 const CFG = {
-  version: "0.1.8",
+  version: "unknown",
   nav: [
     { id: "workbench", label: "工作台", icon: "□", meta: "首页" },
     { id: "chat", label: "对话", icon: "◇", meta: "创作" },
@@ -589,7 +589,7 @@ function renderEntities() {
 function renderHealth() {
   const h = AS.health;
   return `<section class="grid"><div class="auto-grid">
-    ${C.stat("控制台版本", CFG.version)}
+    ${C.stat("控制台版本", h?.version || CFG.version)}
     ${C.stat("LLM 连接", AS.llmConnected ? "已连接" : "未连接")}
     ${C.stat("API Key", AS.hasApiKey ? "已配置" : "缺失")}
     ${C.stat("数据目录", h?.data?.writable ? "可写" : "未知")}
@@ -641,7 +641,7 @@ function renderAppearance() {
 }
 
 function renderAdvanced() {
-  return `<section class="grid"><div class="panel"><h2>高级模式</h2><p class="sub">原始 JSON、debug logs、engine manifest 和内部模块 id 仅在这里展示。</p><div class="actions"><button data-action="refresh-debug">刷新 debug logs</button><button data-action="toggle-debug">打开日志面板</button></div></div><div class="panel"><h3>Engine Manifest</h3><pre>${U.esc(U.json({ version: CFG.version, modules: "M1-M19", selectedModule: AS.selectedModule?.id || null, api: ["/api/data/export", "/api/data/import"] }))}</pre></div></section>`;
+  return `<section class="grid"><div class="panel"><h2>高级模式</h2><p class="sub">原始 JSON、debug logs、engine manifest 和内部模块 id 仅在这里展示。</p><div class="actions"><button data-action="refresh-debug">刷新 debug logs</button><button data-action="toggle-debug">打开日志面板</button></div></div><div class="panel"><h3>Engine Manifest</h3><pre>${U.esc(U.json({ version: AS.health?.version || CFG.version, modules: "M1-M19", selectedModule: AS.selectedModule?.id || null, api: ["/api/data/export", "/api/data/import"] }))}</pre></div></section>`;
 }
 
 function renderDrawer() {
@@ -1367,6 +1367,9 @@ function createToast(msg, tone = "") {
 async function updateHealth() {
   try {
     AS.health = await API.health();
+    if (AS.health?.version) CFG.version = AS.health.version;
+    const versionNode = U.qs("#appVersion");
+    if (versionNode) versionNode.textContent = `叙事引擎 v${CFG.version}`;
     if (AS.health?.llm?.status === "connected") AS.llmConnected = true;
     const debug = U.qs("#debugToggle");
     if (debug && AS.health?.debugMode) debug.style.display = "block";

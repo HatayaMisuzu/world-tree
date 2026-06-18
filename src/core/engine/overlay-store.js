@@ -1,8 +1,31 @@
-// 🆕 v0.7.4.1 数据归家：overlay 根从 _desktop_engine 改为 data/engine
-export const OVERLAY_ROOT = "data/engine";
-export const ENGINE_VERSION = "world-tree-v12.19-desktop-full";
+export const OVERLAY_ROOT = "runtime/overlay";
+export const ENGINE_VERSION = "world-tree-v0.2.1";
 
-// ---- 写入签名 ----
+export const OVERLAY_FILES = Object.freeze({
+  RUNTIME: "runtime-overlay.json",
+  CANON: "canon-overlay.json",
+  CHARACTERS: "characters-overlay.json",
+  WORLDBOOK: "worldbook-overlay.json",
+  SCENE_CHAIN: "scene-chain.json",
+  MEMORY: "memory-store.json",
+  COMMAND_LOG: "command-log.jsonl",
+  PATCH_LOG: "patch-log.jsonl",
+  AUDIT_LOG: "audit-log.jsonl",
+  PENDING: "pending.jsonl",
+  MANUAL: "manual.jsonl"
+});
+
+export const WRITE_POLICY = Object.freeze({
+  AUTO: { level: "auto", confirmRequired: false, label: "auto" },
+  CONFIRM: { level: "confirm", confirmRequired: true, label: "confirm" },
+  MANUAL_ONLY: { level: "manual", confirmRequired: false, label: "manual_only" }
+});
+
+export const WRITE_LEVELS = WRITE_POLICY;
+
+const PENDING_QUEUES = new Map();
+const MAX_PENDING_AGE = 3;
+
 export function signWrite(data, operation = "merge") {
   return {
     ...(data || {}),
@@ -23,98 +46,98 @@ export function stripSignature(data) {
   return clean;
 }
 
-export function moduleOverlayPath(moduleKey = "unloaded", dataMode = "worldbook") {
-  const modeDir = String(dataMode || "worldbook").replace(/[^\w.-]/g, "-");
-  const modDir = String(moduleKey || "unloaded").replace(/[^\w.-]/g, "-");
-  return `${OVERLAY_ROOT}/runs/${modeDir}/modules/${modDir}`;
+export function moduleOverlayPath() {
+  return OVERLAY_ROOT;
 }
 
-export function archiveOverlayPath(dataMode = "worldbook") {
-  const modeDir = String(dataMode || "worldbook").replace(/[^\w.-]/g, "-");
-  return `${OVERLAY_ROOT}/runs/${modeDir}/archives`;
+export function archiveOverlayPath() {
+  return `${OVERLAY_ROOT}/archives`;
 }
 
 export function auditRootPath() {
-  return `${OVERLAY_ROOT}/audit`;
+  return OVERLAY_ROOT;
 }
 
-export function overlayFiles(moduleKey, dataMode) {
-  const root = moduleOverlayPath(moduleKey, dataMode);
+export function overlayFiles() {
+  const root = OVERLAY_ROOT;
   return {
     root,
-    runtime: `${root}/runtime-overlay.json`,
-    canon: `${root}/canon-overlay.json`,
-    characters: `${root}/characters-overlay.json`,
-    worldbook: `${root}/worldbook-overlay.json`,
-    sceneChain: `${root}/scene-chain.json`,
-    memory: `${root}/memory-store.json`,
-    commandLog: `${root}/command-log.jsonl`,
-    patchLog: `${root}/patch-log.jsonl`,
-    auditLog: `${root}/audit-log.jsonl`,
+    runtime: `${root}/${OVERLAY_FILES.RUNTIME}`,
+    canon: `${root}/${OVERLAY_FILES.CANON}`,
+    characters: `${root}/${OVERLAY_FILES.CHARACTERS}`,
+    worldbook: `${root}/${OVERLAY_FILES.WORLDBOOK}`,
+    sceneChain: `${root}/${OVERLAY_FILES.SCENE_CHAIN}`,
+    memory: `${root}/${OVERLAY_FILES.MEMORY}`,
+    commandLog: `${root}/${OVERLAY_FILES.COMMAND_LOG}`,
+    patchLog: `${root}/${OVERLAY_FILES.PATCH_LOG}`,
+    auditLog: `${root}/${OVERLAY_FILES.AUDIT_LOG}`,
+    pending: `${root}/${OVERLAY_FILES.PENDING}`,
+    manual: `${root}/${OVERLAY_FILES.MANUAL}`,
     backups: `${root}/backups`
   };
 }
 
+function operation(file, op, payload, policy) {
+  return {
+    file,
+    path: `${OVERLAY_ROOT}/${file}`,
+    op,
+    mode: op,
+    payload,
+    value: payload,
+    policy: policy.level,
+    writePolicy: policy.level
+  };
+}
+
 export function buildOverlayWriteSet(moduleKey, overlayPatch, dataMode = "worldbook") {
-  const files = overlayFiles(moduleKey, dataMode);
+  void moduleKey;
+  void dataMode;
+  const patch = overlayPatch || {};
   return [
-    { path: files.runtime, mode: "merge-json", value: signWrite(overlayPatch.runtime || {}, "merge") },
-    { path: files.canon, mode: "merge-json", value: signWrite(overlayPatch.canon || {}, "merge") },
-    { path: files.characters, mode: "merge-json", value: signWrite(overlayPatch.characters || {}, "merge") },
-    { path: files.worldbook, mode: "merge-json", value: signWrite(overlayPatch.worldbook || {}, "merge") },
-    { path: files.memory, mode: "append-json-array", value: overlayPatch.memory || [] },
-    { path: files.sceneChain, mode: "merge-json", value: signWrite({ prediction: overlayPatch.prediction || {}, updatedAt: overlayPatch.createdAt }, "merge") },
-    { path: files.patchLog, mode: "append-jsonl", value: overlayPatch },
-    { path: files.auditLog, mode: "append-jsonl", value: { audit: overlayPatch.audit, ruleCheck: overlayPatch.ruleCheck, at: new Date().toISOString() } }
+    operation(OVERLAY_FILES.RUNTIME, "merge-json", signWrite(patch.runtime || patch._engineState || {}, "merge"), WRITE_POLICY.AUTO),
+    operation(OVERLAY_FILES.CANON, "merge-json", signWrite(patch.canon || {}, "merge"), WRITE_POLICY.AUTO),
+    operation(OVERLAY_FILES.CHARACTERS, "merge-json", signWrite(patch.characters || {}, "merge"), WRITE_POLICY.CONFIRM),
+    operation(OVERLAY_FILES.WORLDBOOK, "merge-json", signWrite(patch.worldbook || {}, "merge"), WRITE_POLICY.CONFIRM),
+    operation(OVERLAY_FILES.MEMORY, "append-json-array", Array.isArray(patch.memory) ? patch.memory : (patch.memory ? [patch.memory] : []), WRITE_POLICY.AUTO),
+    operation(OVERLAY_FILES.SCENE_CHAIN, "merge-json", signWrite({ prediction: patch.prediction || {}, updatedAt: patch.createdAt }, "merge"), WRITE_POLICY.CONFIRM),
+    operation(OVERLAY_FILES.PATCH_LOG, "append-jsonl", patch, WRITE_POLICY.AUTO),
+    operation(OVERLAY_FILES.AUDIT_LOG, "append-jsonl", { audit: patch.audit, ruleCheck: patch.ruleCheck, at: new Date().toISOString() }, WRITE_POLICY.AUTO)
   ];
 }
 
-// ---- 三级写入权限 ----
-export const WRITE_LEVELS = {
-  AUTO: { level: "auto", confirmRequired: false, label: "自动执行" },
-  CONFIRM: { level: "confirm", confirmRequired: true, label: "弹框确认" },
-  MANUAL_ONLY: { level: "manual", confirmRequired: false, label: "仅导出补丁" }
-};
+function fileFromOperation(operation = {}) {
+  if (operation.file) return String(operation.file);
+  const path = String(operation.path || "").replaceAll("\\", "/");
+  return path.split("/").pop() || "";
+}
 
 export function classifyWriteLevel(operation = {}) {
-  const path = operation.path || "";
-  const mode = operation.mode || "merge-json";
-  // AUTO: overlay 下的日志/记忆/临时文件
-  if (path.includes("patch-log") || path.includes("audit-log") || path.includes("command-log")) return WRITE_LEVELS.AUTO;
-  if (path.includes("memory-store")) return WRITE_LEVELS.AUTO;
-  // CONFIRM: 角色/世界书/场景链的 overlay 写入
-  if (path.includes("characters-overlay") || path.includes("worldbook-overlay") || path.includes("scene-chain")) return WRITE_LEVELS.CONFIRM;
-  // MANUAL_ONLY: 任何非 overlay 路径或 _engine/ 路径
-  if (!path.includes(OVERLAY_ROOT)) return WRITE_LEVELS.MANUAL_ONLY;
-  if (path.includes("_engine/") || path.includes("_engine\\")) return WRITE_LEVELS.MANUAL_ONLY;
-  // 默认：auto 级别（runtime/canon overlay）
-  return WRITE_LEVELS.AUTO;
+  const file = fileFromOperation(operation);
+  const explicit = operation.policy || operation.writePolicy || operation.level;
+  if (explicit === WRITE_POLICY.AUTO.level) return WRITE_POLICY.AUTO;
+  if (explicit === WRITE_POLICY.CONFIRM.level) return WRITE_POLICY.CONFIRM;
+  if (explicit === WRITE_POLICY.MANUAL_ONLY.level || explicit === "manual_only") return WRITE_POLICY.MANUAL_ONLY;
+
+  if ([OVERLAY_FILES.PATCH_LOG, OVERLAY_FILES.AUDIT_LOG, OVERLAY_FILES.COMMAND_LOG, OVERLAY_FILES.MEMORY, OVERLAY_FILES.RUNTIME, OVERLAY_FILES.CANON].includes(file)) {
+    return WRITE_POLICY.AUTO;
+  }
+  if ([OVERLAY_FILES.CHARACTERS, OVERLAY_FILES.WORLDBOOK, OVERLAY_FILES.SCENE_CHAIN].includes(file)) {
+    return WRITE_POLICY.CONFIRM;
+  }
+  return WRITE_POLICY.MANUAL_ONLY;
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  v0.8.0 采纳机制 — 待确认队列
-//  CONFIRM 级别的写入暂存在 pending 队列中，用户确认后才落盘。
-//  3 轮后自动清理未被采纳的条目。
-// ═══════════════════════════════════════════════════════════════
-
-// 内存中的待确认队列（每个 moduleKey 独立）
-const PENDING_QUEUES = new Map();
-const MAX_PENDING_AGE = 3; // 3 轮后自动清理
-
-/** 生成人类可读的变更摘要 */
 function summarizePendingChange(op) {
-  const path = op.path || "";
-  if (path.includes("characters-overlay")) return "角色数据变更";
-  if (path.includes("worldbook-overlay")) return "世界书条目变更";
-  if (path.includes("scene-chain")) return "场景链更新";
-  if (path.includes("runtime-overlay")) return "运行时状态更新";
-  if (path.includes("canon-overlay")) return "正史记录更新";
-  return "数据变更";
+  const file = fileFromOperation(op);
+  if (file === OVERLAY_FILES.CHARACTERS) return "character overlay change";
+  if (file === OVERLAY_FILES.WORLDBOOK) return "worldbook overlay change";
+  if (file === OVERLAY_FILES.SCENE_CHAIN) return "scene-chain overlay change";
+  if (file === OVERLAY_FILES.RUNTIME) return "runtime overlay change";
+  if (file === OVERLAY_FILES.CANON) return "canon overlay change";
+  return "overlay change";
 }
 
-/**
- * 添加一条待确认的写入操作
- */
 export function addToPending(moduleKey, operation, options = {}) {
   if (!PENDING_QUEUES.has(moduleKey)) PENDING_QUEUES.set(moduleKey, []);
   const queue = PENDING_QUEUES.get(moduleKey);
@@ -125,18 +148,19 @@ export function addToPending(moduleKey, operation, options = {}) {
     age: 0,
     createdRound,
     expiresAtRound: createdRound + MAX_PENDING_AGE,
-    path: operation.path,
-    mode: operation.mode,
-    value: operation.value,
+    file: fileFromOperation(operation),
+    path: operation.path || `${OVERLAY_ROOT}/${fileFromOperation(operation)}`,
+    mode: operation.mode || operation.op,
+    op: operation.op || operation.mode,
+    value: operation.value ?? operation.payload,
+    payload: operation.payload ?? operation.value,
+    policy: classifyWriteLevel(operation).level,
     summary: summarizePendingChange(operation)
   };
   queue.push(entry);
   return entry;
 }
 
-/**
- * 列出所有待确认项（同时增加 age 并清理过期项）
- */
 export function listPending(moduleKey) {
   return [...(PENDING_QUEUES.get(moduleKey) || [])];
 }
@@ -144,17 +168,12 @@ export function listPending(moduleKey) {
 export function tickPending(moduleKey, currentRound = 0) {
   const queue = PENDING_QUEUES.get(moduleKey) || [];
   const round = Number.isFinite(Number(currentRound)) ? Number(currentRound) : 0;
-  for (const item of queue) {
-    item.age = Math.max(0, round - (Number(item.createdRound) || 0));
-  }
+  for (const item of queue) item.age = Math.max(0, round - (Number(item.createdRound) || 0));
   const next = queue.filter((item) => item.age <= MAX_PENDING_AGE);
   PENDING_QUEUES.set(moduleKey, next);
   return [...next];
 }
 
-/**
- * 采纳一条待确认项（返回被采纳的操作，供调用方实际写入）
- */
 export function adoptPending(moduleKey, pendingId) {
   const queue = PENDING_QUEUES.get(moduleKey) || [];
   const idx = queue.findIndex((item) => item.id === pendingId);
@@ -164,9 +183,6 @@ export function adoptPending(moduleKey, pendingId) {
   return adopted;
 }
 
-/**
- * 拒绝一条待确认项
- */
 export function rejectPending(moduleKey, pendingId) {
   const queue = PENDING_QUEUES.get(moduleKey) || [];
   const idx = queue.findIndex((item) => item.id === pendingId);
@@ -176,19 +192,15 @@ export function rejectPending(moduleKey, pendingId) {
   return true;
 }
 
-/**
- * 将一轮的写入操作分为「自动执行」和「待确认」两组
- */
 export function splitWriteSet(writeSet = []) {
   const auto = [];
   const pending = [];
   const manual = [];
   for (const op of writeSet) {
     const level = classifyWriteLevel(op);
-    if (level.level === "auto") auto.push(op);
-    else if (level.level === "confirm") pending.push(op);
+    if (level.level === WRITE_POLICY.AUTO.level) auto.push(op);
+    else if (level.level === WRITE_POLICY.CONFIRM.level) pending.push(op);
     else manual.push(op);
-    // manual 级别直接丢弃
   }
   return { auto, pending, manual };
 }

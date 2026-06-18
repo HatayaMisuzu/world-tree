@@ -4,7 +4,7 @@ import { budgetFor } from "./context-budget.js";
 import { runGuardian } from "./guardian.js";
 import { normalizeEngineState } from "./modules.js";
 import { parseMarkedOutput, sectionsToOverlayPatch } from "./output-parser.js";
-import { buildOverlayWriteSet } from "./overlay-store.js";
+import { buildOverlayWriteSet, OVERLAY_FILES, OVERLAY_ROOT, WRITE_POLICY } from "./overlay-store.js";
 import { auditNarrative, checkFeasibility } from "../data/rules.js";
 import { predictDirections } from "../data/prediction.js";
 import { eventChance, proposeRandomEvent } from "../data/random-events.js";
@@ -172,9 +172,12 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
         emotionState: state.emotionState
       },
       writeSet: [{
-        // 🆕 v0.7.4.1 数据归家
-        path: `data/engine/runs/${dataMode}/modules/${(moduleKey || "unloaded").replace(/[^\w.-]/g, "-")}/memory-store.json`,
+        file: OVERLAY_FILES.MEMORY,
+        path: `${OVERLAY_ROOT}/${OVERLAY_FILES.MEMORY}`,
+        op: "append-json-array",
         mode: "append-json-array",
+        policy: WRITE_POLICY.AUTO.level,
+        payload: [{ text: (parsed.narrative || rawText).slice(0, 200), at: new Date().toISOString() }],
         value: [{ text: (parsed.narrative || rawText).slice(0, 200), at: new Date().toISOString() }]
       }],
       audit: { parseErrors: parsed.errors, quality: "narrative-only", rules: { pass: true } },
@@ -608,5 +611,4 @@ function extractRelationChanges(narrative, charNameSet, emotionUpdate) {
 
   return changes;
 }
-
 

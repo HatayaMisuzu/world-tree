@@ -5,8 +5,11 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync, createReadStream, rmSync } from "node:fs";
 import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { join, dirname, extname, resolve, basename, relative, isAbsolute } from "node:path";
+import { join, dirname, extname, resolve, relative, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
+import { applyOverlayWriteSet } from "./src/server/persistence-service.js";
+import { prepareImportFiles } from "./src/server/data-import-service.js";
+import { sanitizeWorldName } from "./src/server/module-service.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -696,29 +699,12 @@ async function persistTurn(moduleId, input, result, engineState) {
     await appendJsonl(join(rtDir, "memory.jsonl"), result.overlayPatch.memorySnapshot);
   }
 
-  // execute overlay writeSet — 引擎产的增量数据写进 runtime/overlay/
+  // execute overlay writeSet — only whitelisted runtime/overlay files are writable.
   if (result.writeSet?.length) {
-    const overlayDir = join(rtDir, "overlay");
-    ensureDir(overlayDir);
-    for (const op of result.writeSet) {
-      try {
-        const opPath = join(overlayDir, basename(op.path));
-        if (op.mode === "append-json-array" && Array.isArray(op.value)) {
-          const existing = readJsonSync(opPath, []);
-          if (!Array.isArray(existing)) {  await writeJson(opPath, op.value); continue; }
-          existing.push(...op.value);
-          await writeJson(opPath, existing.slice(-200));
-        } else if (op.mode === "merge-json") {
-          const existing = readJsonSync(opPath, {});
-          await writeJson(opPath, { ...existing, ...(op.value || {}) });
-        } else if (op.mode === "write-json") {
-          await writeJson(opPath, op.value || {});
-        } else if (op.mode === "append-jsonl") {
-          await appendJsonl(opPath + ".jsonl", op.value || {});
-        } else {
-          console.warn("[persistTurn] 未知 writeSet 模式:", op.mode, op.path);
-        }
-      } catch (e) { console.warn("[persistTurn] writeSet 执行失败:", op.path, e.message); }
+    try {
+      await applyOverlayWriteSet(rtDir, result.writeSet);
+    } catch (e) {
+      console.warn("[persistTurn] writeSet 执行失败:", e.message);
     }
   }
 
@@ -2329,27 +2315,21 @@ async function handleAPI(req, res) {
       try {
         const body = await readBody(req);
         if (!body.worldName || !body.files) return jsonError(res, 400, "IMPORT_PAYLOAD_INVALID", "导入包缺少必要字段，无法导入。");
-        const worldName = safeEntityId(String(body.worldName).replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "").slice(0, 48), "");
+        const worldName = safeEntityId(sanitizeWorldName(body.worldName), "");
         if (!worldName) return jsonError(res, 400, "IMPORT_WORLD_NAME_INVALID", "导入世界名无效。");
         const worldDir = join(WORLDS_DIR(), worldName);
         if (!pathWithinRoot(WORLDS_DIR(), worldDir)) return jsonError(res, 400, "IMPORT_WORLD_NAME_INVALID", "导入世界名无效。");
         if (existsSync(worldDir)) return jsonError(res, 409, "IMPORT_NAME_CONFLICT", "目标模组名称已存在。请先重命名导入内容或删除旧模组。");
-        const filesToWrite = [];
-        for (const [key, content] of Object.entries(body.files)) {
-          const clean = sanitizeFileKey(key);
-          if (!clean || !/\.(json|jsonl)$/i.test(clean)) return jsonError(res, 400, "IMPORT_FILE_KEY_INVALID", `导入文件路径无效：${key}`);
-          const targetPath = resolveInside(worldDir, clean);
-          if (!targetPath) return jsonError(res, 400, "IMPORT_FILE_KEY_INVALID", `导入文件路径越界：${key}`);
-          filesToWrite.push([targetPath, content]);
-        }
+        const filesToWrite = prepareImportFiles(worldDir, body.files);
         mkdirSync(worldDir, { recursive: true });
-        for (const [targetPath, content] of filesToWrite) {
+        for (const { targetPath, content } of filesToWrite) {
           ensureDir(dirname(targetPath));
           writeFileSync(targetPath, String(content), "utf-8");
         }
         return jsonResponse(res, { status: "ok", worldName });
       } catch (err) {
-        return jsonError(res, 500, "IMPORT_FAILED", "导入失败。请确认文件结构完整且内容合法。", err.message);
+        const status = String(err.code || "").startsWith("IMPORT_") ? 400 : 500;
+        return jsonError(res, status, err.code || "IMPORT_FAILED", "导入失败。请确认文件结构完整且内容合法。", err.message);
       }
     }
 

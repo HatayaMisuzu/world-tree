@@ -2,6 +2,17 @@
 
 > 审查记录。AI 无需阅读此文件。
 
+## v0.2.1 — 稳定性重构版 (2026-06-18)
+
+- **版本事实源统一**：前端不再硬编码控制台版本，改为从 `/api/health.version` 读取；HTML 初始状态显示 `unknown`，服务可用后自动更新。
+- **Overlay 写入收口**：`overlay-store` 改为 `{world}/runtime/overlay/` 白名单文件和 `AUTO / CONFIRM / MANUAL_ONLY` 策略；服务端执行时不再根据任意 path basename 落盘。
+- **待确认/手动队列落盘**：自动写入直接应用，确认类写入进入 `pending.jsonl`，未知或手动类写入进入 `manual.jsonl`。
+- **导入校验原子化**：`/api/data/import` 在创建目标目录前完整校验所有 `.json` / `.jsonl` 内容，JSONL 错误返回文件路径和行号。
+- **低风险服务拆分**：新增 `src/server/module-service.js`、`src/server/persistence-service.js`、`src/server/data-import-service.js`，保留现有 HTTP 路由行为。
+- **Guardian 稳定性补强**：新增中英文约束项精确检查、英文回应标记和过短输出检查；单测覆盖 mustInclude、mustNotInclude、玩家问题回应、空输出和正常输出。
+- **集成门禁补强**：新增 `tests/integration/data-import.test.js` 和 `tests/integration/overlay-persistence.test.js`，`preflight` 纳入 `npm run test:integration`。
+- **版本同步**：`package.json`、`package-lock.json`、README、README.en、AI-GUIDE、manifest 同步到 `0.2.1`。
+
 ## v0.2.0 — 运行时一致性版 (2026-06-18)
 
 - **世界书运行时统一**：新增 `src/core/runtime/worldbook-runtime.js`，让 `/api/worldbook/test`、`/api/llm/chat` 和 turn-debug 共用同一套匹配、扫描深度、场景触发、向量阈值和预算裁剪逻辑。
