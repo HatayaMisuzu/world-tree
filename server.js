@@ -1100,6 +1100,33 @@ function readWorldShared(moduleKey = "") {
   };
 }
 
+function splitWorldbookKeys(value = "") {
+  return String(value || "")
+    .split(/[,，\n]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function normalizeWorldbookEntryForSave(entry = {}, { now = new Date().toISOString(), index = 0, source = "manual", group = "默认", titleFallback = "" } = {}) {
+  const keys = Array.isArray(entry.keys) ? entry.keys : splitWorldbookKeys(entry.keys || entry.keywords || entry.key || "");
+  const id = entry.id || `wb-import-${Date.now()}-${index}`;
+  return {
+    ...entry,
+    id,
+    title: entry.title || entry.name || keys[0] || titleFallback || id,
+    keys,
+    content: String(entry.content || entry.text || entry.description || ""),
+    priority: Number(entry.priority ?? 100),
+    enabled: entry.enabled !== false,
+    mode: entry.mode || "trigger",
+    group: String(entry.group || entry.category || group).trim() || group,
+    notes: String(entry.notes || "").trim(),
+    source: entry.source || source,
+    updatedAt: now,
+    createdAt: entry.createdAt || now
+  };
+}
+
 function normalizeSTCardToNative(card = {}) {
   const now = new Date().toISOString();
   return {
@@ -1386,39 +1413,16 @@ async function handleWorldbook(body = {}, method = "GET", url = null) {
   let next = entries.map((entry, index) => ({ id: entry.id || `entry-${index + 1}`, enabled: entry.enabled !== false, ...entry }));
   const action = body.action || "replace";
   if (action === "replace") {
-    next = Array.isArray(body.entries) ? body.entries : next;
+    next = Array.isArray(body.entries) ? body.entries.map((entry, index) => normalizeWorldbookEntryForSave(entry, { now, index, source: "manual" })) : next;
   } else if (action === "upsert") {
     const entry = body.entry || {};
     const id = entry.id || `wb-${Date.now()}`;
-    const normalized = {
-      id,
-      title: entry.title || entry.name || entry.keys?.[0] || id,
-      keys: Array.isArray(entry.keys) ? entry.keys : String(entry.keys || "").split(/[,，\n]/).map(s => s.trim()).filter(Boolean),
-      content: String(entry.content || ""),
-      priority: Number(entry.priority ?? 100),
-      enabled: entry.enabled !== false,
-      mode: entry.mode || "trigger",
-      group: String(entry.group || entry.category || "默认").trim() || "默认",
-      notes: String(entry.notes || "").trim(),
-      source: entry.source || "manual",
-      updatedAt: now,
-      createdAt: entry.createdAt || now
-    };
+    const normalized = normalizeWorldbookEntryForSave({ ...entry, id }, { now, source: "manual" });
     next = [normalized, ...next.filter(e => e.id !== id)];
   } else if (action === "append") {
-    const additions = (Array.isArray(body.entries) ? body.entries : []).map((entry, index) => ({
-      id: entry.id || `wb-import-${Date.now()}-${index}`,
-      title: entry.title || entry.name || entry.keys?.[0] || `导入条目 ${index + 1}`,
-      keys: Array.isArray(entry.keys) ? entry.keys : String(entry.keys || entry.keywords || "").split(/[,，\n]/).map(s => s.trim()).filter(Boolean),
-      content: String(entry.content || entry.text || entry.description || ""),
-      priority: Number(entry.priority ?? 100),
-      enabled: entry.enabled !== false,
-      mode: entry.mode || "trigger",
-      group: String(entry.group || entry.category || "导入").trim() || "导入",
-      source: entry.source || "bulk-import",
-      createdAt: now,
-      updatedAt: now
-    })).filter(e => e.content || e.keys.length);
+    const additions = (Array.isArray(body.entries) ? body.entries : [])
+      .map((entry, index) => normalizeWorldbookEntryForSave(entry, { now, index, source: "bulk-import", group: "导入" }))
+      .filter(e => e.content || e.keys.length);
     const ids = new Set(additions.map(e => e.id));
     next = [...additions, ...next.filter(e => !ids.has(e.id))];
   } else if (action === "delete") {

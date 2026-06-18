@@ -10,6 +10,8 @@
 - **命中原因标准化**：世界书命中条目新增 `reason`、`matchedKeys`、`semanticScore`、`vectorScore`，原因统一为 `persistent`、`exact:key`、`semantic:score`、`vector:score`、`sceneChanged`。
 - **中英文向量匹配修复**：`buildVectorIndex` 改用词频对象余弦相似度，中文连续文本会生成 2-gram token；外部数组 embedding 需要同维 query vector，避免隐性错配。
 - **测试门禁补强**：新增 `tests/unit/worldbook-runtime.test.js`，覆盖公共运行时诊断和中文向量匹配；`test:unit` 纳入该测试。
+- **字段保真尾巴修复**：`/api/worldbook` 的 replace/upsert/append 保存路径保留 `matchMode`、`triggerType`、`depth`、`probability`、`layer` 等高级字段。
+- **Preflight 门禁补齐**：`npm run preflight` 现在会执行 `npm run test:unit`；炼金台单测改为原生 `node:test`，异步断言会被正确 await。
 - **版本同步**：`package.json`、`package-lock.json`、README、README.en、AI-GUIDE、HTML、manifest 同步到 `0.2.0`。
 ## v0.1.10 — P0/P1 安全与运行时一致性修复 (2026-06-17)
 
