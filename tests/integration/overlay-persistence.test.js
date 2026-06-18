@@ -41,6 +41,8 @@ describe("overlay persistence service", () => {
       assert.deepEqual(readJson(join(runtimeDir, "overlay", OVERLAY_FILES.RUNTIME)).turnCount, 1);
       assert.ok(existsSync(join(runtimeDir, "overlay", OVERLAY_FILES.PENDING)));
       assert.ok(existsSync(join(runtimeDir, "overlay", OVERLAY_FILES.MANUAL)));
+      const pendingLine = readFileSync(join(runtimeDir, "overlay", OVERLAY_FILES.PENDING), "utf-8").trim();
+      assert.ok(JSON.parse(pendingLine).id);
       assert.equal(existsSync(join(runtimeDir, "overlay", "unknown.json")), false);
     } finally {
       await rm(runtimeDir, { recursive: true, force: true });

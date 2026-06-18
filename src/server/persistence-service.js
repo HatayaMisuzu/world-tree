@@ -78,8 +78,11 @@ export async function applyOverlayOperation(runtimeDir, op = {}) {
 }
 
 async function appendQueue(runtimeDir, file, entries) {
-  for (const entry of entries) {
-    await appendJsonl(join(runtimeDir, "overlay", file), entry);
+  for (const [index, entry] of entries.entries()) {
+    await appendJsonl(join(runtimeDir, "overlay", file), {
+      ...entry,
+      id: entry.id || `overlay-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`
+    });
   }
 }
 

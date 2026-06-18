@@ -535,6 +535,7 @@ export async function sendGameTurn({ model, config, apiKey, personaText, engineP
   if (!canUseDirectLlm(config, Boolean(apiKey))) {
     throw new Error("Please configure LLM Base URL, model, and API key.");
   }
+  const timeoutMs = Number(config.llmTimeoutMs || 60000);
 
   const system = buildSystemPrompt({ model, config, personaText, enginePacket, dataMode, injectedWorldbook, cards });
 
@@ -554,7 +555,8 @@ export async function sendGameTurn({ model, config, apiKey, personaText, engineP
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs)
   });
 
   const text = await response.text();

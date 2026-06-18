@@ -5,6 +5,12 @@
 ## v0.2.2 — 安全硬化与测试补齐 (2026-06-18)
 
 ### Fixed
+- **Dashboard telemetry 状态读取修复**：补齐 `moduleStatePath()`，`/api/dashboard/telemetry` 现在能读取真实 `runtime/state.json`，返回正确 `turnCount`、`lastScene` 和 `engineState`。
+- **事件循环阻塞缓解**：聊天记录编辑路径改为异步读取；健康检查数据目录大小统计改为异步限时扫描；`buildModuleModel()` 增加短 TTL 缓存并在创建、删除、回合持久化后失效，减少 dashboard 连续 tab 请求重复读盘。
+- **Guardian 评分去重**：mustInclude/mustNotInclude 的稳定检查与旧模糊检查结果会在评分前去重，避免同一问题双倍扣分并触发不必要的 LLM 自动修正。
+- **旧版 LLM 入口超时**：`sendGameTurn()` 增加 `AbortSignal.timeout(config.llmTimeoutMs || 60000)`，与主 LLM 调用路径保持一致。
+- **运行时内存清理与恢复**：回合持久化保存完整 `engineSnapshot`；加载模组时恢复快照；删除模组时清理对应 Director 预测缓存和 overlay pending 内存队列。
+- **Overlay pending 可消费**：新增 `/api/overlay/pending` GET/POST，可列出 pending/manual 队列，并支持 adopt/reject/clear pending 项。
 - **导入路径必须 reject**：`data-import-service.js` 不再静默清洗 `..` / `.` / 空段，而是直接 reject。绝对路径、Windows 盘符路径、非 `.json`/`.jsonl` 扩展名一律拒绝。多文件导入时只要一个 key 无效，整批不写。
 - **未知 overlay 文件不能被 policy:auto 升级**：`classifyWriteLevel()` 先检查文件是否属于 overlay 白名单，未知文件永远归为 `MANUAL_ONLY`，即使 operation 声称 `policy:auto`。敏感文件（characters/worldbook/scene-chain）不能被 auto 自动升级，仍需 confirm。
 - **Guardian overlay 检查更新**：旧的 `data/engine` overlay-only 检查已替换为 `runtime/overlay` 白名单检查。新增 `isApprovedOverlayTarget()` helper，只有白名单文件路径能通过。
@@ -15,6 +21,9 @@
 - 单元测试：Guardian overlay 白名单检查（`guardian-overlay.test.js`）
 - 集成测试：module lifecycle（`module-lifecycle.test.js`）
 - 集成测试：export/import roundtrip（`data-roundtrip.test.js`）
+- 集成测试：dashboard telemetry state 回读（`dashboard-telemetry.test.js`）
+- 集成测试：overlay pending API adopt 流程（`overlay-pending-api.test.js`）
+- 单元测试：`sendGameTurn()` 超时（`llm.test.js`）
 - 测试用服务器 helper（`tests/integration/helpers/server-process.js`）
 
 ### Changed

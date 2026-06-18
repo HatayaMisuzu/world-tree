@@ -37,6 +37,12 @@ export function createModuleService(deps) {
     pathWithinRoot,
     safeEntityId
   } = deps;
+  const MODEL_CACHE_TTL_MS = Number(deps.modelCacheTtlMs || 1000);
+  const modelCache = new Map();
+
+  function clone(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
 
   function worldsDir() {
     return deps.worldsDir ? deps.worldsDir() : join(dataRoot(), "engine", "worlds");
@@ -50,6 +56,16 @@ export function createModuleService(deps) {
     const worldName = safeEntityId(String(moduleKey || "").replace(/^world:/, ""), "");
     if (!worldName || worldName.startsWith("__") || worldName.startsWith("char:")) return null;
     return join(worldsDir(), worldName);
+  }
+
+  function clearModuleCache(moduleId = "") {
+    if (!moduleId) {
+      modelCache.clear();
+      return;
+    }
+    const normalized = normalizeModuleKey(moduleId);
+    modelCache.delete(normalized);
+    modelCache.delete(`world:${normalized}`);
   }
 
   function listModules() {
@@ -138,6 +154,7 @@ export function createModuleService(deps) {
       await writeJson(join(worldDir, "shared", file), dflt);
     }
 
+    clearModuleCache(worldName);
     return { status: "ok", module: { id: worldName, name: worldName, displayName: displayName || worldName, type: "world", dataMode, subType, preset, turnCount: 0 } };
   }
 
@@ -146,6 +163,7 @@ export function createModuleService(deps) {
     if (!worldDir || !pathWithinRoot(worldsDir(), worldDir)) return { status: "error", errorMsg: "模组 ID 无效" };
     if (!existsSync(worldDir)) return { status: "error", errorMsg: "模组不存在" };
     rmSync(worldDir, { recursive: true, force: true });
+    clearModuleCache(moduleId);
     return { status: "ok" };
   }
 
@@ -166,12 +184,15 @@ export function createModuleService(deps) {
     const worldDir = moduleWorldDir(moduleId);
     const empty = { loaded: true, selected: { id: worldName, name: worldName, path: worldDir, branch: "main" }, moduleData: { characters: [], scenes: [], worldbook: { entries: [] }, relations: {}, timeline: {}, worldState: {}, organizations: [], races: [], runtime: {}, tracking: [], canon: {} }, entities: [], turnCount: 0 };
     if (!worldDir || !pathWithinRoot(worldsDir(), worldDir) || !existsSync(worldDir)) return empty;
+    const cacheKey = normalizeModuleKey(moduleId);
+    const cached = modelCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return clone(cached.model);
 
     const world = readJsonSync(join(worldDir, "world.json"), {});
     const state = readJsonSync(join(worldDir, "runtime", "state.json"), {}) || readJsonSync(join(worldDir, "runtime.json"), {}); // 兼容旧格式
     const shared = join(worldDir, "shared");
 
-    return {
+    const model = {
       loaded: true,
       selected: { id: worldName, name: worldName, path: worldDir, branch: state.activeBranch || "main" },
       moduleData: {
@@ -193,6 +214,8 @@ export function createModuleService(deps) {
       // 读取上轮 overlay 数据（runtime/overlay/ 下的增量文件）
       _overlay: readOverlayData(worldDir)
     };
+    modelCache.set(cacheKey, { expiresAt: Date.now() + MODEL_CACHE_TTL_MS, model: clone(model) });
+    return model;
   }
 
   return {
@@ -203,6 +226,7 @@ export function createModuleService(deps) {
     createModule,
     deleteModule,
     readOverlayData,
-    buildModuleModel
+    buildModuleModel,
+    clearModuleCache
   };
 }

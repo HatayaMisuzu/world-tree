@@ -34,6 +34,11 @@ export function importPredictionStores(data = {}) {
   }
 }
 
+export function clearPredictionStore(worldName = null) {
+  if (worldName) PREDICTION_STORES.delete(String(worldName));
+  else PREDICTION_STORES.clear();
+}
+
 function getPredictionStore(worldName = "_default") {
   if (!PREDICTION_STORES.has(worldName)) {
     PREDICTION_STORES.set(worldName, { events: [], maxSize: PREDICTION_CACHE.MAX_SIZE, counter: 0 });
@@ -791,4 +796,3 @@ export function parseEmotionSection(sections = {}) {
   }
   return Object.keys(result).length ? result : null;
 }
-

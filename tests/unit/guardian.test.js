@@ -70,6 +70,18 @@ describe("guardian", () => {
       assert.ok(result.issues.some((issue) => issue.includes("mission-token")));
     });
 
+    it("does not duplicate mustInclude issues or double-penalize score", () => {
+      const result = validateNarrativeAgainstDirection({
+        narrative: "The adventurer watches the road in silence.",
+        directionPacket: {
+          contentPlan: { mustInclude: ["mission-token"], mustNotInclude: [] },
+          writingConstraints: { length: "medium" }
+        }
+      });
+      assert.equal(result.issues.filter((issue) => issue.includes("mission-token")).length, 1);
+      assert.equal(result.score, 82);
+    });
+
     it("fails when mustNotInclude items appear and reports the item", () => {
       const result = validateNarrativeAgainstDirection({
         narrative: "The forbidden artifact opens a bright gate.",

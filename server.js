@@ -3,13 +3,16 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync, createReadStream, rmSync } from "node:fs";
-import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, appendFile, readdir, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join, dirname, extname, resolve, relative, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyOverlayWriteSet } from "./src/server/persistence-service.js";
+import { applyOverlayOperation, applyOverlayWriteSet } from "./src/server/persistence-service.js";
 import { prepareImportFiles } from "./src/server/data-import-service.js";
 import { sanitizeWorldName, createModuleService } from "./src/server/module-service.js";
+import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
+import { clearPredictionStore } from "./src/core/engine/director.js";
+import { importEngineState } from "./src/core/engine/state-persistence.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -170,18 +173,57 @@ async function readJsonlTail(filePath, N = 50) {
         offset -= readSize;
         const buf = Buffer.alloc(readSize);
         await fd.read(buf, 0, readSize, offset);
-        chunks.unshift(buf.toString("utf-8"));
-        lines = chunks.join("").split("\n").filter(Boolean);
+        chunks.unshift(buf);
+        lines = Buffer.concat(chunks).toString("utf-8").split("\n").filter(Boolean);
       }
     } finally {
       await fd.close();
     }
+    if (offset > 0 && lines.length) lines.shift();
     const tail = lines.slice(-N);
     return tail.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean);
   } catch (err) {
     console.warn("[readJsonlTail] 读取失败:", filePath, err.message);
     return [];
   }
+}
+
+async function calcDirectorySizeLimited(rootDir, { maxEntries = 5000, maxMs = 250 } = {}) {
+  const deadline = Date.now() + maxMs;
+  let entries = 0;
+  let truncated = false;
+
+  async function walk(dir) {
+    if (Date.now() > deadline || entries >= maxEntries) {
+      truncated = true;
+      return 0;
+    }
+    let size = 0;
+    let list = [];
+    try {
+      list = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return 0;
+    }
+    for (const entry of list) {
+      if (Date.now() > deadline || entries >= maxEntries) {
+        truncated = true;
+        break;
+      }
+      entries += 1;
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        size += await walk(p);
+      } else {
+        try { size += (await stat(p)).size; } catch {}
+      }
+    }
+    return size;
+  }
+
+  if (!existsSync(rootDir)) return { sizeBytes: 0, entries: 0, truncated: false };
+  const sizeBytes = await walk(rootDir);
+  return { sizeBytes, entries, truncated };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -542,12 +584,25 @@ async function createModule(body) {
 
 /** 删除世界模组 */
 async function deleteModule(moduleId) {
-  return moduleService.deleteModule(moduleId);
+  const result = await moduleService.deleteModule(moduleId);
+  if (result?.status === "ok") {
+    const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, ""), "");
+    if (worldName) {
+      clearPredictionStore(worldName);
+      resetPendingStore(worldName);
+    }
+  }
+  return result;
 }
 
 /** 构建引擎 model 对象（从新目录结构加载，含 chat 历史） */
 async function buildModuleModel(moduleId) {
-  return moduleService.buildModuleModel(moduleId);
+  const model = await moduleService.buildModuleModel(moduleId);
+  const snapshot = model?.moduleData?.runtime?.engineSnapshot || model?._overlay?.runtime?.engineSnapshot;
+  if (snapshot?.version) {
+    try { importEngineState(snapshot); } catch (err) { console.warn("[buildModuleModel] engine snapshot restore failed:", err.message); }
+  }
+  return model;
 }
 
 function readOverlayData(worldDir) {
@@ -569,6 +624,7 @@ async function persistTurn(moduleId, input, result, engineState) {
   const now = new Date().toISOString();
   const userId = `turn-${turnCount}-user`;
   const assistantId = `turn-${turnCount}-assistant`;
+  const engineSnapshot = result.overlayPatch?._engineState || null;
 
   // 🔄 自动备份 chat.jsonl（保留最近 5 个备份）
   const chatPath = join(rtDir, "chat.jsonl");
@@ -587,7 +643,7 @@ async function persistTurn(moduleId, input, result, engineState) {
   }
 
   // state.json — 完整覆盖
-  await writeJson(join(rtDir, "state.json"), { turnCount, activeBranch: "main", lastScene: result.parsedSections?.["状态"]?.scene || "", lastInput: input, engineState: engineState || {}, updatedAt: now });
+  await writeJson(join(rtDir, "state.json"), { turnCount, activeBranch: "main", lastScene: result.parsedSections?.["状态"]?.scene || "", lastInput: input, engineState: engineState || {}, engineSnapshot, updatedAt: now });
 
   // chat.jsonl — 追加用户+助手消息（截断阈值放宽：上下文窗口充足无需过度紧缩）
   await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, role: "user", content: input.slice(0, 8000), round: turnCount, ts: now, favorite: false });
@@ -610,12 +666,13 @@ async function persistTurn(moduleId, input, result, engineState) {
   // world.json — 更新轮次
   if (isCharacter) {
     const st = readJsonSync(join(rtDir, "state.json"), {});
-    await writeJson(join(rtDir, "state.json"), { ...st, turnCount, lastInput: input, engineState: engineState || {}, updatedAt: now });
+    await writeJson(join(rtDir, "state.json"), { ...st, turnCount, lastInput: input, engineState: engineState || {}, engineSnapshot, updatedAt: now });
   } else {
     const wj = readJsonSync(join(baseDir, "world.json"), {});
     wj.turnCount = turnCount; wj.updatedAt = now;
     await writeJson(join(baseDir, "world.json"), wj);
   }
+  moduleService.clearModuleCache?.(moduleId);
   return { userId, assistantId, turnCount };
 }
 
@@ -971,6 +1028,10 @@ function moduleMetaPath(moduleKey = "") {
   }
   const worldDir = moduleWorldDir(key);
   return worldDir ? join(worldDir, "runtime", "state.json") : null;
+}
+
+function moduleStatePath(moduleKey = "") {
+  return moduleMetaPath(moduleKey);
 }
 
 function readWorldShared(moduleKey = "") {
@@ -1345,20 +1406,24 @@ async function handleWorldbookTest(body = {}) {
   return { status: "ok", input: body.input || "", hits, diagnostics: runtime.diagnostics };
 }
 
-function readChatRecords(moduleKey = "") {
+async function readChatRecords(moduleKey = "") {
   const rtDir = moduleRuntimeDir(moduleKey);
   if (!rtDir) return [];
   const chatPath = join(rtDir, "chat.jsonl");
   if (!existsSync(chatPath)) return [];
-  const text = readFileSync(chatPath, "utf-8").trim();
-  return text ? text.split("\n").map((line, index) => {
-    try {
-      const record = JSON.parse(line);
-      return { id: record.id || `line-${index + 1}`, ...record };
-    } catch {
-      return null;
-    }
-  }).filter(Boolean) : [];
+  try {
+    const text = (await readFile(chatPath, "utf-8")).trim();
+    return text ? text.split("\n").map((line, index) => {
+      try {
+        const record = JSON.parse(line);
+        return { id: record.id || `line-${index + 1}`, ...record };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
 }
 
 async function writeChatRecords(moduleKey = "", records = []) {
@@ -1371,7 +1436,7 @@ async function writeChatRecords(moduleKey = "", records = []) {
 
 async function handleChatMessage(body = {}) {
   const moduleKey = body.moduleKey || "";
-  const records = readChatRecords(moduleKey);
+  const records = await readChatRecords(moduleKey);
   const idx = records.findIndex(r => r.id === body.messageId || r.id === body.id);
   if (idx < 0) return { status: "error", errorMsg: "没有找到这条已持久化的消息。旧消息可能需要重新加载后再编辑。" };
   const action = body.action || "edit";
@@ -1618,6 +1683,71 @@ async function handlePlugins(body = {}, method = "GET") {
   }
   await writeJson(statePath, state);
   return handlePlugins({}, "GET");
+}
+
+function overlayQueuePath(moduleKey = "", file = OVERLAY_FILES.PENDING) {
+  const rtDir = moduleRuntimeDir(moduleKey);
+  if (!rtDir) return null;
+  const queuePath = join(rtDir, "overlay", file);
+  return pathWithinRoot(rtDir, queuePath) ? queuePath : null;
+}
+
+async function readOverlayQueue(moduleKey = "", file = OVERLAY_FILES.PENDING) {
+  const queuePath = overlayQueuePath(moduleKey, file);
+  if (!queuePath || !existsSync(queuePath)) return [];
+  try {
+    const text = await readFile(queuePath, "utf-8");
+    return text.split(/\r?\n/).filter(Boolean).map((line, index) => {
+      try {
+        const item = JSON.parse(line);
+        return { id: item.id || `line-${index + 1}`, ...item };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function writeOverlayQueue(moduleKey = "", file = OVERLAY_FILES.PENDING, items = []) {
+  const queuePath = overlayQueuePath(moduleKey, file);
+  if (!queuePath) return false;
+  await mkdir(dirname(queuePath), { recursive: true });
+  await writeFile(queuePath, items.map(item => JSON.stringify(item)).join("\n") + (items.length ? "\n" : ""), "utf-8");
+  return true;
+}
+
+async function handleOverlayPending(body = {}, method = "GET", url = null) {
+  const moduleKey = method === "GET" ? (url?.searchParams.get("moduleKey") || "") : (body.moduleKey || "");
+  if (!moduleKey) return { status: "error", errorMsg: "缺少模组标识。请先选择一个模组。" };
+  const rtDir = moduleRuntimeDir(moduleKey);
+  if (!rtDir || !pathWithinRoot(dataRoot(), rtDir)) return { status: "error", errorMsg: "模组标识无效。" };
+
+  const pending = await readOverlayQueue(moduleKey, OVERLAY_FILES.PENDING);
+  const manual = await readOverlayQueue(moduleKey, OVERLAY_FILES.MANUAL);
+  if (method === "GET") return { status: "ok", pending, manual };
+
+  const action = body.action || "list";
+  if (action === "clear") {
+    await writeOverlayQueue(moduleKey, OVERLAY_FILES.PENDING, []);
+    return { status: "ok", pending: [], manual };
+  }
+
+  const id = body.id || body.pendingId;
+  if (!id) return { status: "error", errorMsg: "缺少 pending id。" };
+  const idx = pending.findIndex(item => item.id === id);
+  if (idx < 0) return { status: "error", errorMsg: "没有找到这条 pending overlay。" };
+  const [item] = pending.splice(idx, 1);
+
+  if (action === "adopt" || action === "confirm") {
+    await applyOverlayOperation(rtDir, { ...item, policy: "auto" });
+  } else if (action !== "reject") {
+    return { status: "error", errorMsg: `不支持的 pending 操作：${action}` };
+  }
+
+  await writeOverlayQueue(moduleKey, OVERLAY_FILES.PENDING, pending);
+  return { status: "ok", item, pending, manual };
 }
 
 async function saveTurnDebug(moduleKey, debug) {
@@ -2055,6 +2185,10 @@ async function handleAPI(req, res) {
     if (path === "/api/plugins" && method === "GET") return jsonResponse(res, await handlePlugins({}, "GET"));
     if (path === "/api/plugins" && method === "POST") return jsonResponse(res, await handlePlugins(await readBody(req), "POST"));
 
+    // ── Overlay pending 队列 ──
+    if (path === "/api/overlay/pending" && method === "GET") return jsonResponse(res, await handleOverlayPending({}, "GET", url));
+    if (path === "/api/overlay/pending" && method === "POST") return jsonResponse(res, await handleOverlayPending(await readBody(req), "POST", url));
+
     // ── Dashboard ──
     if (path === "/api/dashboard/telemetry" && method === "GET") {
       const moduleKey = url.searchParams.get("moduleKey") || "";
@@ -2138,18 +2272,11 @@ async function handleAPI(req, res) {
 
       // 计算数据目录大小
       let dataSizeBytes = 0;
+      let dataSizeTruncated = false;
       try {
-        const calcSize = (dir) => {
-          if (!existsSync(dir)) return 0;
-          let size = 0;
-          for (const entry of readdirSync(dir, { withFileTypes: true })) {
-            const p = join(dir, entry.name);
-            if (entry.isDirectory()) size += calcSize(p);
-            else size += statSync(p).size;
-          }
-          return size;
-        };
-        dataSizeBytes = calcSize(dataRoot());
+        const sizeInfo = await calcDirectorySizeLimited(dataRoot());
+        dataSizeBytes = sizeInfo.sizeBytes;
+        dataSizeTruncated = sizeInfo.truncated;
       } catch {}
 
       const worlds = listModules().filter(m => m.type === "world");
@@ -2169,7 +2296,7 @@ async function handleAPI(req, res) {
           baseUrl: config.llmBaseUrl,
           detail: llmDetail
         },
-        data: { root: dataRoot(), writable, writableDetail, sizeBytes: dataSizeBytes, worldsCount: worlds.length, totalTurns },
+        data: { root: dataRoot(), writable, writableDetail, sizeBytes: dataSizeBytes, sizeTruncated: dataSizeTruncated, worldsCount: worlds.length, totalTurns },
         debugMode: DEBUG_MODE
       });
     }

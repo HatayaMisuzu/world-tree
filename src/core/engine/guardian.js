@@ -155,24 +155,26 @@ export function validateNarrativeAgainstDirection({ narrative = "", directionPac
   }
 
   // 综合评分：按问题类型加权
+  const finalIssues = [...new Set(issues)];
+  const finalRevisionInstructions = [...new Set(revisionInstructions)];
   let penalty = 0;
-  for (const issue of issues) {
+  for (const issue of finalIssues) {
     if (issue.startsWith("缺少 mustInclude")) penalty += 18;
     else if (issue.startsWith("泄露 mustNotInclude")) penalty += 22;
     else if (issue.includes("叙事输出为空")) penalty += 50;
     else penalty += 12;
   }
   const score = Math.max(0, 100 - penalty);
-  const severity = issues.length === 0 ? "none" :
+  const severity = finalIssues.length === 0 ? "none" :
     score >= 60 ? "minor" :
     score >= 30 ? "major" : "critical";
 
   return {
-    pass: issues.length === 0,
+    pass: finalIssues.length === 0,
     severity,
     score,
-    issues,
-    revisionInstructions: [...new Set(revisionInstructions)]
+    issues: finalIssues,
+    revisionInstructions: finalRevisionInstructions
   };
 }
 
