@@ -1,7 +1,7 @@
 {
-  "_note": "v0.1.9 本地安全边界加固。当前不分发原创视觉素材。",
-  "_version": "0.1.10",
-  "_updated": "2026-06-15",
+  "_note": "v0.2.0 运行时一致性版。当前不分发原创视觉素材。",
+  "_version": "0.2.0",
+  "_updated": "2026-06-18",
   "assets": [],
   "archived_assets": [
     "src/ui/world-tree-hero.png (deprecated v2.0)",

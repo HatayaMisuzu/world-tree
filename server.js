@@ -765,24 +765,21 @@ async function handleLlmChat(body) {
   // 标准化引擎状态
   const normState = normalizeEngineState(engineState || DEFAULT_ENGINE_STATE);
 
-  // 计算世界书注入条目（使用统一 matchEntries 引擎）
-  const { worldbookEntriesFromModel } = await import("./src/core/cards.js");
-  const { matchEntries, buildVectorIndex } = await import("./src/core/data/worldbook.js");
-  const { budgetFor } = await import("./src/core/engine/context-budget.js");
-  const budget = budgetFor(normState.contextBudget || "balanced");
-  const entries = worldbookEntriesFromModel(model, {});
-  const vectors = buildVectorIndex(entries);
-  const injectedWorldbook = matchEntries({ entries }, input || "", {
-    limit: budget.worldbookEntries || 10,
-    mode: "both",
-    scanMessages: (messages || []).slice(-10).map(m => m.content || ""),
-    sceneName: normState?.sceneName || "",
-    previousScene: normState?.previousSceneName || "",
-    vectors,
-    vectorThreshold: normState?.vectorThreshold || 0.5
+  const { prepareWorldbookInjection } = await import("./src/core/runtime/worldbook-runtime.js");
+  const worldbookRuntime = prepareWorldbookInjection({
+    model,
+    input,
+    engineState: normState,
+    messages: messages || [],
+    mode: "both"
   });
+  const injectedWorldbook = worldbookRuntime.injectedWorldbook;
 
-  debugLog("engine", `世界书匹配: ${injectedWorldbook.length} 条注入`, { dataMode: dataMode || "worldbook", moduleKey });
+  debugLog("engine", `世界书匹配: ${injectedWorldbook.length} 条注入`, {
+    dataMode: dataMode || "worldbook",
+    moduleKey,
+    droppedByBudget: worldbookRuntime.diagnostics.droppedByBudget.length
+  });
 
   try {
     // 按 dataMode 构建模式专属 writer 包（仅角色卡模式走 buildCharacterCardPacket）
@@ -851,6 +848,7 @@ async function handleLlmChat(body) {
         input,
         summary: `${injectedWorldbook.length} 条世界书命中，Guardian ${result.guardianResult?.score ?? "未评分"}`,
         worldbookHits: injectedWorldbook,
+        worldbookRuntime: worldbookRuntime.diagnostics,
         characterState: dataMode === "character_card" ? { moduleKey, mode: "character_card" } : { characters: model.moduleData?.characters || [] },
         memorySnapshot: result.overlayPatch?.memorySnapshot || {},
         directionPacket: result.directorResult?.packet || result.directionPacket || result._dualStage?.directionPacket || {},
@@ -1436,17 +1434,28 @@ async function handleWorldbookTest(body = {}) {
   const ctx = readWorldShared(body.moduleKey || "");
   if (!ctx) return { status: "error", errorMsg: "请先选择一个世界模组。" };
   const worldbook = readJsonSync(join(ctx.sharedDir, "worldbook.json"), { entries: [] });
-  const { matchEntries } = await import("./src/core/data/worldbook.js");
-  const hits = matchEntries(worldbook, body.input || "", { limit: body.limit || 10 }).map((entry, index) => ({
+  const { normalizeEngineState, DEFAULT_ENGINE_STATE } = await import("./src/core/engine/modules.js");
+  const { prepareWorldbookInjection } = await import("./src/core/runtime/worldbook-runtime.js");
+  const engineState = normalizeEngineState(body.engineState || DEFAULT_ENGINE_STATE);
+  const runtime = prepareWorldbookInjection({
+    worldbook,
+    input: body.input || "",
+    engineState,
+    messages: body.messages || [],
+    limit: body.limit || null,
+    mode: body.mode || "both"
+  });
+  const hits = runtime.injectedWorldbook.map((entry, index) => ({
     id: entry.id || entry.keys?.[0] || `hit-${index + 1}`,
     title: entry.title || entry.name || entry.keys?.[0] || "未命名条目",
     keys: entry.keys || [],
     priority: entry.priority ?? 100,
     matchType: entry.matchType || "unknown",
-    reason: entry.matchType === "persistent" ? "常驻条目" : entry.matchType === "exact" ? "关键词精确命中" : entry.matchType === "semantic" ? "语义近似命中" : entry.matchType === "scene" ? "场景变化命中" : "排序命中",
+    reason: entry.reason || "matched",
+    budgetCost: entry.budgetCost || 0,
     content: entry.content || ""
   }));
-  return { status: "ok", input: body.input || "", hits };
+  return { status: "ok", input: body.input || "", hits, diagnostics: runtime.diagnostics };
 }
 
 function readChatRecords(moduleKey = "") {

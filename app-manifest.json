@@ -1,7 +1,7 @@
 {
-  "_note": "v0.1.10 P0/P1 安全与运行时一致性修复 + P0.5 残留补丁。",
-  "_version": "0.1.10",
-  "_updated": "2026-06-17",
+  "_note": "v0.2.0 运行时一致性版。世界书测试、聊天注入与叙事黑盒共用匹配诊断。",
+  "_version": "0.2.0",
+  "_updated": "2026-06-18",
   "assets": [],
   "archived_assets": [
     "src/ui/world-tree-hero.png (deprecated v2.0)",

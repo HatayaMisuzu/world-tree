@@ -1,7 +1,16 @@
-# World Tree · CHANGELOG
+﻿# World Tree · CHANGELOG
 
 > 审查记录。AI 无需阅读此文件。
 
+## v0.2.0 — 运行时一致性版 (2026-06-18)
+
+- **世界书运行时统一**：新增 `src/core/runtime/worldbook-runtime.js`，让 `/api/worldbook/test`、`/api/llm/chat` 和 turn-debug 共用同一套匹配、扫描深度、场景触发、向量阈值和预算裁剪逻辑。
+- **预算从条数升级到上下文字符预算**：`context-budget` 新增 `worldbookChars` / `maxContextChars`，世界书注入会同时按条数和字符预算裁剪，并记录被裁掉的条目与原因。
+- **叙事黑盒可解释性增强**：每轮 debug 保存 `worldbookRuntime`，包含 selected、droppedByBudget、misses、activeEntryCount、candidateCount、usedChars 等诊断信息。
+- **命中原因标准化**：世界书命中条目新增 `reason`、`matchedKeys`、`semanticScore`、`vectorScore`，原因统一为 `persistent`、`exact:key`、`semantic:score`、`vector:score`、`sceneChanged`。
+- **中英文向量匹配修复**：`buildVectorIndex` 改用词频对象余弦相似度，中文连续文本会生成 2-gram token；外部数组 embedding 需要同维 query vector，避免隐性错配。
+- **测试门禁补强**：新增 `tests/unit/worldbook-runtime.test.js`，覆盖公共运行时诊断和中文向量匹配；`test:unit` 纳入该测试。
+- **版本同步**：`package.json`、`package-lock.json`、README、README.en、AI-GUIDE、HTML、manifest 同步到 `0.2.0`。
 ## v0.1.10 — P0/P1 安全与运行时一致性修复 (2026-06-17)
 
 ### P0 安全与稳定性

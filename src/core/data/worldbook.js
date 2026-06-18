@@ -10,10 +10,23 @@ import { normalizeWorldbookEntries } from "../cards.js";
 /** 将文本转为词频对象 { token: count } */
 function tokenFreq(text) {
   const tf = {};
-  for (const t of String(text || "").toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 2)) {
+  for (const t of vectorTokens(text)) {
     tf[t] = (tf[t] || 0) + 1;
   }
   return tf;
+}
+
+function vectorTokens(text) {
+  const normalized = String(text || "").toLowerCase();
+  const latinTokens = normalized
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w.length >= 2 && !/[\u4e00-\u9fff]/u.test(w));
+  const cjkTokens = [];
+  for (const segment of normalized.match(/[\u4e00-\u9fff]+/gu) || []) {
+    if (segment.length === 1) cjkTokens.push(segment);
+    for (let i = 0; i < segment.length - 1; i++) cjkTokens.push(segment.slice(i, i + 2));
+  }
+  return [...latinTokens, ...cjkTokens];
 }
 
 /** 稀疏向量余弦相似度 */
@@ -26,16 +39,14 @@ function cosineSparse(a, b) {
   return n ? dot / n : 0;
 }
 
-function _vectorMatch(entry, query, vectors) {
+function _vectorMatch(entry, query, vectors, queryVector = null) {
   if (!vectors || !vectors[entry.id]) return 0;
   const entryVec = vectors[entry.id];
   if (!entryVec) return 0;
   // 外部传入的数组 embedding（扩展入口）
   if (Array.isArray(entryVec)) {
-    const queryTokens = query.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2);
-    const entryTokens = String(entry.content || "").toLowerCase().split(/[^\p{L}\p{N}]+/u);
-    const allTokens = [...new Set([...queryTokens, ...entryTokens])];
-    const queryVec = allTokens.map((t) => queryTokens.filter((w) => w === t).length);
+    const queryVec = Array.isArray(queryVector) ? queryVector : vectors.__query;
+    if (!Array.isArray(queryVec) || queryVec.length !== entryVec.length) return 0;
     const dot = queryVec.reduce((sum, v, i) => sum + v * (entryVec[i] || 0), 0);
     const normQ = Math.sqrt(queryVec.reduce((s, v) => s + v * v, 0));
     const normE = Math.sqrt(entryVec.reduce((s, v) => s + v * v, 0));
@@ -51,11 +62,8 @@ function _vectorMatch(entry, query, vectors) {
 export function buildVectorIndex(entries = [], contentField = "content") {
   const vectors = {};
   for (const entry of entries) {
-    const text = String(entry[contentField] || "").toLowerCase();
-    const tokens = text.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 2);
-    const tf = {};
-    for (const t of tokens) { tf[t] = (tf[t] || 0) + 1; }
-    vectors[entry.id || entry.keys?.[0] || `entry-${Math.random().toString(36).slice(2, 8)}`] = tf;
+    const key = entry.id || entry.keys?.[0] || `entry-${Math.random().toString(36).slice(2, 8)}`;
+    vectors[key] = tokenFreq(`${entry.title || ""} ${entry.keys || ""} ${entry[contentField] || ""}`);
   }
   return vectors;
 }
@@ -88,10 +96,12 @@ export function matchEntries(worldbook, input = "", options = {}) {
       if (entry.mode === "persistent" || entry.mode === "常驻") {
         entry.inject = true;
         entry.matchType = "persistent";
+        entry.reason = "persistent";
         return entry;
       }
       entry.inject = false;
       entry.matchType = "";
+      entry.reason = "";
       return entry;
     })
     .map((entry) => {
@@ -117,17 +127,30 @@ export function matchEntries(worldbook, input = "", options = {}) {
         if (!allHit) {
           // 语义回退
           if (mode !== "exact" && _supportsSemantic(entry)) {
-            if (_semanticMatch(entry, query)) { entry.inject = true; entry.matchType = "semantic"; }
+            const semantic = _semanticStats(entry, query);
+            if (semantic.hit) {
+              entry.inject = true;
+              entry.matchType = "semantic";
+              entry.semanticScore = semantic.score;
+              entry.reason = `semantic:${semantic.score.toFixed(2)}`;
+            }
           }
           // 向量回退
           if (!entry.inject && _supportsVector(mode, entry)) {
-            const vs = _vectorMatch(entry, query, options.vectors);
-            if (vs > (options.vectorThreshold || 0.5)) { entry.inject = true; entry.matchType = "vector"; entry.vectorScore = vs; }
+            const vs = _vectorMatch(entry, query, options.vectors, options.queryVector);
+            if (vs > (options.vectorThreshold || 0.5)) {
+              entry.inject = true;
+              entry.matchType = "vector";
+              entry.vectorScore = vs;
+              entry.reason = `vector:${vs.toFixed(2)}`;
+            }
           }
           return entry;
         }
         entry.inject = true;
         entry.matchType = "exact";
+        entry.matchedKeys = keys;
+        entry.reason = `exact:${keys.join(",")}`;
         return entry;
       }
 
@@ -135,18 +158,31 @@ export function matchEntries(worldbook, input = "", options = {}) {
       if (matchedExact.length > 0) {
         entry.inject = true;
         entry.matchType = "exact";
+        entry.matchedKeys = matchedExact;
+        entry.reason = `exact:${matchedExact.join(",")}`;
         return entry;
       }
 
       // === 步骤3：语义回退 ===
       if (mode !== "exact" && _supportsSemantic(entry)) {
-        if (_semanticMatch(entry, query)) { entry.inject = true; entry.matchType = "semantic"; }
+        const semantic = _semanticStats(entry, query);
+        if (semantic.hit) {
+          entry.inject = true;
+          entry.matchType = "semantic";
+          entry.semanticScore = semantic.score;
+          entry.reason = `semantic:${semantic.score.toFixed(2)}`;
+        }
       }
 
       // === 步骤3.5：向量化匹配（v12.18+）===
       if (!entry.inject && _supportsVector(mode, entry)) {
-        const vs = _vectorMatch(entry, query, options.vectors);
-        if (vs > (options.vectorThreshold || 0.5)) { entry.inject = true; entry.matchType = "vector"; entry.vectorScore = vs; }
+        const vs = _vectorMatch(entry, query, options.vectors, options.queryVector);
+        if (vs > (options.vectorThreshold || 0.5)) {
+          entry.inject = true;
+          entry.matchType = "vector";
+          entry.vectorScore = vs;
+          entry.reason = `vector:${vs.toFixed(2)}`;
+        }
       }
 
       return entry;
@@ -157,7 +193,7 @@ export function matchEntries(worldbook, input = "", options = {}) {
       if (sceneChanged && (entry.triggerType === "场景变化" || entry.triggerType === "scene" || entry.triggerType === "both" || entry.triggerType === "两者")) {
         const sceneKeywords = Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean);
         const sceneHit = sceneKeywords.some((key) => sceneName.toLowerCase().includes(String(key).toLowerCase()));
-        if (sceneHit) { entry.inject = true; entry.matchType = "scene"; }
+        if (sceneHit) { entry.inject = true; entry.matchType = "scene"; entry.reason = "sceneChanged"; }
       }
       return entry;
     })
@@ -171,7 +207,7 @@ export function matchEntries(worldbook, input = "", options = {}) {
       const recentText = scanMessages.slice(-range).map((m) => String(m || "").toLowerCase()).join(" ");
       const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean);
       const inRange = keys.some((key) => recentText.includes(String(key).toLowerCase()));
-      if (!inRange) entry.inject = false;
+      if (!inRange) { entry.inject = false; entry.dropReason = `scanDepth:${depth}`; }
       return entry;
     })
     // === 步骤6：触发概率检查 ===
@@ -181,7 +217,7 @@ export function matchEntries(worldbook, input = "", options = {}) {
       const prob = entry.probability ?? entry.triggerProb ?? 100;
       if (prob >= 100) return entry;
       const roll = Math.floor(Math.random() * 100) + 1;
-      if (roll > prob) entry.inject = false;
+      if (roll > prob) { entry.inject = false; entry.dropReason = `probability:${prob}`; }
       return entry;
     })
     // === 步骤7：过滤+排序 ===
@@ -206,6 +242,10 @@ function _supportsVector(mode, entry) {
 }
 
 function _semanticMatch(entry, query) {
+  return _semanticStats(entry, query).hit;
+}
+
+function _semanticStats(entry, query) {
   // 中文2-gram分词 + 权重匹配
   const tokenize = (s) => {
     const cleaned = String(s || "").toLowerCase().replace(/[，。！？、：；\"\"''「」『』\s]/g, "");
@@ -222,11 +262,12 @@ function _semanticMatch(entry, query) {
 
   const contentTokens = tokenize(entry.content || "");
   const queryTokens = tokenize(query);
-  if (!queryTokens.length) return false;
+  if (!queryTokens.length) return { hit: false, hitCount: 0, total: 0, score: 0 };
 
   const hitCount = queryTokens.filter((t) => contentTokens.some((ct) => ct === t || ct.includes(t))).length;
   // 至少命中2个token，或查询词只有一个时命中即可
-  return queryTokens.length >= 2 ? hitCount >= 2 : hitCount >= 1;
+  const hit = queryTokens.length >= 2 ? hitCount >= 2 : hitCount >= 1;
+  return { hit, hitCount, total: queryTokens.length, score: hitCount / queryTokens.length };
 }
 
 export function proposeEntry({ keys = [], content = "", priority = 100, source = "llm" }) {
