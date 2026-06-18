@@ -5,7 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 ![Version](https://img.shields.io/badge/version-v0.2.1-blue.svg)
 
-**当前版本: v0.2.1**
+**当前版本: v0.2.2**
 
 World Tree 用一个普通的 Node.js 本地服务，把世界书、角色卡、叙事状态、对话历史和 LLM 调用组织在一起。它面向长篇互动叙事、角色扮演、世界设定管理和创作实验；默认只在本机运行，不依赖 Electron，也不绑定任何特定云服务。
 

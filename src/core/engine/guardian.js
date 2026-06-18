@@ -1,11 +1,22 @@
 // ===== M1 守门人校验 =====
 // 所有数据读写前执行统一校验
 
+import { OVERLAY_ROOT, OVERLAY_FILES } from "./overlay-store.js";
+
 export function validatePathWithinRoot(rootPath, targetPath) {
   if (!rootPath || !targetPath) return false;
   const normalizedRoot = String(rootPath).replaceAll("\\", "/").replace(/\/+$/, "").toLowerCase();
   const normalizedTarget = String(targetPath).replaceAll("\\", "/").toLowerCase();
   return normalizedTarget === normalizedRoot || normalizedTarget.startsWith(`${normalizedRoot}/`);
+}
+
+export function isApprovedOverlayTarget(targetPath = "") {
+  const normalized = String(targetPath || "").replaceAll("\\", "/");
+  if (!normalized) return false;
+
+  return Object.values(OVERLAY_FILES).some((file) => {
+    return normalized.endsWith(`${OVERLAY_ROOT}/${file}`);
+  });
 }
 
 export function runGuardian({ model, intent, targetPath = "" }) {
@@ -38,12 +49,14 @@ export function runGuardian({ model, intent, targetPath = "" }) {
   }
 
   // 4. overlay 路径约束
-  // 🆕 v0.7.4.1 数据归家
-  if (targetPath && !targetPath.includes("data/engine")) {
+  if (targetPath) {
+    const overlayOk = isApprovedOverlayTarget(targetPath);
     checks.push({
       id: "overlay-only",
-      ok: false,
-      detail: "Desktop 引擎只写入 data/engine/ overlay，不得直接写核心 JSON。"
+      ok: overlayOk,
+      detail: overlayOk
+        ? "写入目标是 runtime/overlay 白名单文件"
+        : "Desktop 引擎只允许写入 runtime/overlay 白名单文件，不得直接写 shared 或核心 JSON。"
     });
   }
 

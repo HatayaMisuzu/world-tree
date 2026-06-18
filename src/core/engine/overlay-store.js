@@ -106,25 +106,66 @@ export function buildOverlayWriteSet(moduleKey, overlayPatch, dataMode = "worldb
   ];
 }
 
-function fileFromOperation(operation = {}) {
+export const AUTO_OVERLAY_FILES = Object.freeze([
+  OVERLAY_FILES.PATCH_LOG,
+  OVERLAY_FILES.AUDIT_LOG,
+  OVERLAY_FILES.COMMAND_LOG,
+  OVERLAY_FILES.MEMORY,
+  OVERLAY_FILES.RUNTIME,
+  OVERLAY_FILES.CANON
+]);
+
+export const CONFIRM_OVERLAY_FILES = Object.freeze([
+  OVERLAY_FILES.CHARACTERS,
+  OVERLAY_FILES.WORLDBOOK,
+  OVERLAY_FILES.SCENE_CHAIN
+]);
+
+export function fileFromOperation(operation = {}) {
   if (operation.file) return String(operation.file);
   const path = String(operation.path || "").replaceAll("\\", "/");
   return path.split("/").pop() || "";
 }
 
+export function isKnownOverlayFile(file = "") {
+  return Object.values(OVERLAY_FILES).includes(String(file || ""));
+}
+
+export function isAutoOverlayFile(file = "") {
+  return AUTO_OVERLAY_FILES.includes(String(file || ""));
+}
+
+export function isConfirmOverlayFile(file = "") {
+  return CONFIRM_OVERLAY_FILES.includes(String(file || ""));
+}
+
 export function classifyWriteLevel(operation = {}) {
   const file = fileFromOperation(operation);
-  const explicit = operation.policy || operation.writePolicy || operation.level;
-  if (explicit === WRITE_POLICY.AUTO.level) return WRITE_POLICY.AUTO;
-  if (explicit === WRITE_POLICY.CONFIRM.level) return WRITE_POLICY.CONFIRM;
-  if (explicit === WRITE_POLICY.MANUAL_ONLY.level || explicit === "manual_only") return WRITE_POLICY.MANUAL_ONLY;
 
-  if ([OVERLAY_FILES.PATCH_LOG, OVERLAY_FILES.AUDIT_LOG, OVERLAY_FILES.COMMAND_LOG, OVERLAY_FILES.MEMORY, OVERLAY_FILES.RUNTIME, OVERLAY_FILES.CANON].includes(file)) {
-    return WRITE_POLICY.AUTO;
+  // Unknown files are never auto or confirm, even if the operation claims policy:auto.
+  if (!isKnownOverlayFile(file)) {
+    return WRITE_POLICY.MANUAL_ONLY;
   }
-  if ([OVERLAY_FILES.CHARACTERS, OVERLAY_FILES.WORLDBOOK, OVERLAY_FILES.SCENE_CHAIN].includes(file)) {
+
+  const explicit = operation.policy || operation.writePolicy || operation.level;
+
+  // Sensitive known files require confirmation even if a caller requests auto.
+  if (isConfirmOverlayFile(file)) {
+    if (explicit === WRITE_POLICY.MANUAL_ONLY.level || explicit === "manual_only") {
+      return WRITE_POLICY.MANUAL_ONLY;
+    }
     return WRITE_POLICY.CONFIRM;
   }
+
+  // Known auto-safe files may be downgraded by explicit policy, but not upgraded from unknown.
+  if (isAutoOverlayFile(file)) {
+    if (explicit === WRITE_POLICY.CONFIRM.level) return WRITE_POLICY.CONFIRM;
+    if (explicit === WRITE_POLICY.MANUAL_ONLY.level || explicit === "manual_only") {
+      return WRITE_POLICY.MANUAL_ONLY;
+    }
+    return WRITE_POLICY.AUTO;
+  }
+
   return WRITE_POLICY.MANUAL_ONLY;
 }
 

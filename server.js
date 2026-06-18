@@ -9,13 +9,16 @@ import { join, dirname, extname, resolve, relative, isAbsolute } from "node:path
 import { fileURLToPath } from "node:url";
 import { applyOverlayWriteSet } from "./src/server/persistence-service.js";
 import { prepareImportFiles } from "./src/server/data-import-service.js";
-import { sanitizeWorldName } from "./src/server/module-service.js";
+import { sanitizeWorldName, createModuleService } from "./src/server/module-service.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.WORLD_TREE_HOST || "127.0.0.1";
 const MAX_BODY_BYTES = Number(process.env.WORLD_TREE_MAX_BODY_BYTES || 20 * 1024 * 1024);
+const DATA_ROOT_OVERRIDE = process.env.WORLD_TREE_DATA_DIR
+  ? resolve(process.env.WORLD_TREE_DATA_DIR)
+  : "";
 
 // ═══════════════════════════════════════════════════════════════
 //  安全：仅允许本地访问（桌面应用）
@@ -44,18 +47,21 @@ const DEBUG_MAX = 200;
 
 // 异步检查 GitHub 最新版本（非阻塞）
 let latestVersion = null;
-(async () => {
-  try {
-    const resp = await fetch("https://api.github.com/repos/HatayaMisuzu/world-tree/releases/latest", {
-      headers: { "User-Agent": "world-tree" },
-      signal: AbortSignal.timeout(5000)
-    });
-    if (resp.ok) {
-      const release = await resp.json();
-      latestVersion = release.tag_name?.replace(/^v/, "") || null;
-    }
-  } catch { /* 网络不可达，静默忽略 */ }
-})();
+
+if (process.env.WORLD_TREE_DISABLE_UPDATE_CHECK !== "1") {
+  (async () => {
+    try {
+      const resp = await fetch("https://api.github.com/repos/HatayaMisuzu/world-tree/releases/latest", {
+        headers: { "User-Agent": "world-tree" },
+        signal: AbortSignal.timeout(5000)
+      });
+      if (resp.ok) {
+        const release = await resp.json();
+        latestVersion = release.tag_name?.replace(/^v/, "") || null;
+      }
+    } catch { /* 网络不可达，静默忽略 */ }
+  })();
+}
 
 function debugLog(category, message, data = null) {
   if (!DEBUG_MODE) return;
@@ -183,7 +189,7 @@ async function readJsonlTail(filePath, N = 50) {
 // ═══════════════════════════════════════════════════════════════
 
 function dataRoot() {
-  return join(ROOT, "data");
+  return DATA_ROOT_OVERRIDE || join(ROOT, "data");
 }
 
 function configPath() {
@@ -338,6 +344,22 @@ const CONNECTIONS_PATH = () => join(ROOT, "userData", "connections.json");
 const REVIEW_QUEUE_PATH = () => join(ROOT, "userData", "alchemy-review.json");
 const PLUGINS_DIR = () => join(ROOT, "userData", "plugins");
 const TURN_DEBUG_DIR = (moduleId = "global") => join(ROOT, "userData", "turn-debug", slugName(moduleId, "global"));
+
+// ═══════════════════════════════════════════════════════════════
+//  Module Service（工厂函数注入）
+// ═══════════════════════════════════════════════════════════════
+
+const moduleService = createModuleService({
+  dataRoot,
+  profilesDir: PROFILES_DIR,
+  worldsDir: WORLDS_DIR,
+  charactersDir: CHARACTERS_DIR,
+  readJsonSync,
+  writeJson,
+  ensureDir,
+  pathWithinRoot,
+  safeEntityId
+});
 
 function slugName(value, fallback = "item") {
   return String(value || fallback)
@@ -510,149 +532,26 @@ async function installExample(body = {}) {
 
 /** 列出所有可用模组（世界 + 配置模板） */
 function listModules() {
-  const modules = [];
-
-  // 1. 已有世界（data/engine/worlds/）
-  const worldsDir = WORLDS_DIR();
-  if (existsSync(worldsDir)) {
-    for (const entry of readdirSync(worldsDir, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        const meta = readJsonSync(join(worldsDir, entry.name, "world.json"), {});
-        const rt = readJsonSync(join(worldsDir, entry.name, "runtime", "state.json"), {}) || readJsonSync(join(worldsDir, entry.name, "runtime.json"), {});
-        modules.push({
-          id: entry.name,
-          name: meta.displayName || entry.name,
-          displayName: meta.displayName || entry.name,
-          type: "world",
-          dataMode: meta.dataMode || "worldbook",
-          subType: meta.subType || "classic",
-          preset: meta.preset || "epic",
-          turnCount: rt.turnCount || 0,
-          lastPlayed: rt.updatedAt || "",
-          createdAt: meta.createdAt || "",
-          source: "data/engine/worlds"
-        });
-      }
-    }
-  }
-
-  // 2. 世界配置模板（defaults/world-profiles/）
-  const profilesDir = PROFILES_DIR();
-  if (existsSync(profilesDir)) {
-    for (const entry of readdirSync(profilesDir, { withFileTypes: true })) {
-      if (entry.isFile() && entry.name.endsWith(".json")) {
-        const profile = readJsonSync(join(profilesDir, entry.name), {});
-        if (profile.status === "active") {
-          modules.push({
-            id: `profile:${profile.id}`,
-            name: profile.name || profile.id,
-            displayName: profile.name || profile.id,
-            type: "profile",
-            dataMode: profile.basedOn || "worldbook",
-            subType: profile.id,
-            preset: profile.defaultPreset || "epic",
-            turnCount: 0,
-            description: profile.description || "",
-            isPlaceholder: false,
-            source: "defaults/world-profiles"
-          });
-        }
-      }
-    }
-  }
-
-  return modules.sort((a, b) => b.turnCount - a.turnCount || b.name?.localeCompare?.(a.name, "zh-CN") || 0);
+  return moduleService.listModules();
 }
 
 /** 从配置模板创建新世界（新目录结构 shared/ + runtime/） */
 async function createModule(body) {
-  const { name, displayName, dataMode, subType, preset } = body || {};
-  // 安全截断：使用 Array.from 确保多字节字符（emoji/生僻字）不被截断
-  const rawName = String(name || displayName || "新世界");
-  const cleaned = rawName.replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "");
-  const safeChars = Array.from(cleaned);
-  const worldName = safeChars.slice(0, 48).join("") || `world_${Date.now()}`;
-  const worldsDir = WORLDS_DIR();
-  ensureDir(worldsDir);
-  const worldDir = join(worldsDir, worldName);
-  if (existsSync(worldDir)) return { status: "error", errorMsg: `模组「${worldName}」已存在` };
-  mkdirSync(worldDir, { recursive: true });
-  mkdirSync(join(worldDir, "shared"), { recursive: true });
-  mkdirSync(join(worldDir, "runtime"), { recursive: true });
-
-  const worldData = { name: worldName, displayName: displayName || worldName, dataMode: dataMode || "worldbook", subType: subType || "classic", preset: preset || "epic", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), turnCount: 0 };
-  await writeJson(join(worldDir, "world.json"), worldData);
-  // state.json 包含完整引擎状态
-  await writeJson(join(worldDir, "runtime", "state.json"), {
-    turnCount: 0, activeBranch: "main", lastScene: "", lastInput: "",
-    engineState: { dataMode: dataMode || "worldbook", directorMode: "hybrid", preset: preset || "epic", contextBudget: "balanced", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-  });
-  // 初始化空日志
-  await writeFile(join(worldDir, "runtime", "chat.jsonl"), "", "utf-8");
-  await writeFile(join(worldDir, "runtime", "memory.jsonl"), "", "utf-8");
-  // 初始化 shared — 引擎所有模块可能读的文件
-  for (const [file, dflt] of [["worldbook.json",{entries:[]}],["characters.json",[]],["scenes.json",[]],["relations.json",{}],["timeline.json",{}],["world_state.json",{}],["organizations.json",[]],["locations.json",[]],["races.json",[]],["rules.json",[]]]) {
-    await writeJson(join(worldDir, "shared", file), dflt);
-  }
-
-  return { status: "ok", module: { id: worldName, name: worldName, displayName: displayName || worldName, type: "world", dataMode, subType, preset, turnCount: 0 } };
+  return moduleService.createModule(body);
 }
 
 /** 删除世界模组 */
 async function deleteModule(moduleId) {
-  const worldDir = moduleWorldDir(moduleId);
-  if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir)) return { status: "error", errorMsg: "模组 ID 无效" };
-  if (!existsSync(worldDir)) return { status: "error", errorMsg: "模组不存在" };
-  rmSync(worldDir, { recursive: true, force: true });
-  return { status: "ok" };
+  return moduleService.deleteModule(moduleId);
 }
 
 /** 构建引擎 model 对象（从新目录结构加载，含 chat 历史） */
 async function buildModuleModel(moduleId) {
-  const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, ""), "");
-  const worldDir = moduleWorldDir(moduleId);
-  const empty = { loaded: true, selected: { id: worldName, name: worldName, path: worldDir, branch: "main" }, moduleData: { characters: [], scenes: [], worldbook: { entries: [] }, relations: {}, timeline: {}, worldState: {}, organizations: [], races: [], runtime: {}, tracking: [], canon: {} }, entities: [], turnCount: 0 };
-  if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir) || !existsSync(worldDir)) return empty;
-
-  const world = readJsonSync(join(worldDir, "world.json"), {});
-  const state = readJsonSync(join(worldDir, "runtime", "state.json"), {}) || readJsonSync(join(worldDir, "runtime.json"), {}); // 兼容旧格式
-  const shared = join(worldDir, "shared");
-
-  return {
-    loaded: true,
-    selected: { id: worldName, name: worldName, path: worldDir, branch: state.activeBranch || "main" },
-    moduleData: {
-      characters: readJsonSync(join(shared, "characters.json"), []) || readJsonSync(join(shared, "characters_base.json"), []),
-      scenes: readJsonSync(join(shared, "scenes.json"), []),
-      worldbook: readJsonSync(join(shared, "worldbook.json"), { entries: [] }),
-      relations: readJsonSync(join(shared, "relations.json"), {}),
-      timeline: readJsonSync(join(shared, "timeline.json"), {}),
-      worldState: readJsonSync(join(shared, "world_state.json"), {}),
-      organizations: readJsonSync(join(shared, "organizations.json"), []),
-      locations: readJsonSync(join(shared, "locations.json"), []),
-      races: readJsonSync(join(shared, "races.json"), []),
-      rules: readJsonSync(join(shared, "rules.json"), []),
-      runtime: state || {},
-      tracking: [], canon: {}
-    },
-    entities: [],
-    turnCount: state.turnCount || world.turnCount || 0,
-    // 读取上轮 overlay 数据（runtime/overlay/ 下的增量文件）
-    _overlay: readOverlayData(worldDir)
-  };
+  return moduleService.buildModuleModel(moduleId);
 }
 
 function readOverlayData(worldDir) {
-  const overlayDir = join(worldDir, "runtime", "overlay");
-  if (!existsSync(overlayDir)) return null;
-  return {
-    runtime: readJsonSync(join(overlayDir, "runtime-overlay.json"), null),
-    canon: readJsonSync(join(overlayDir, "canon-overlay.json"), null),
-    characters: readJsonSync(join(overlayDir, "characters-overlay.json"), null),
-    worldbook: readJsonSync(join(overlayDir, "worldbook-overlay.json"), null),
-    sceneChain: readJsonSync(join(overlayDir, "scene-chain.json"), null),
-  };
+  return moduleService.readOverlayData(worldDir);
 }
 
 /** 完整持久化：保存引擎状态 + 对话记录 + 记忆快照 + overlay writeSet */
@@ -1050,9 +949,7 @@ function safeEntityId(value = "", fallback = "item") {
 }
 
 function moduleWorldDir(moduleKey = "") {
-  const worldName = safeEntityId(String(moduleKey || "").replace(/^world:/, ""), "");
-  if (!worldName || worldName.startsWith("__") || worldName.startsWith("char:")) return null;
-  return join(WORLDS_DIR(), worldName);
+  return moduleService.moduleWorldDir(moduleKey);
 }
 
 function moduleRuntimeDir(moduleKey = "") {

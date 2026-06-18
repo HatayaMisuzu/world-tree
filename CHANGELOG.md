@@ -2,6 +2,26 @@
 
 > 审查记录。AI 无需阅读此文件。
 
+## v0.2.2 — 安全硬化与测试补齐 (2026-06-18)
+
+### Fixed
+- **导入路径必须 reject**：`data-import-service.js` 不再静默清洗 `..` / `.` / 空段，而是直接 reject。绝对路径、Windows 盘符路径、非 `.json`/`.jsonl` 扩展名一律拒绝。多文件导入时只要一个 key 无效，整批不写。
+- **未知 overlay 文件不能被 policy:auto 升级**：`classifyWriteLevel()` 先检查文件是否属于 overlay 白名单，未知文件永远归为 `MANUAL_ONLY`，即使 operation 声称 `policy:auto`。敏感文件（characters/worldbook/scene-chain）不能被 auto 自动升级，仍需 confirm。
+- **Guardian overlay 检查更新**：旧的 `data/engine` overlay-only 检查已替换为 `runtime/overlay` 白名单检查。新增 `isApprovedOverlayTarget()` helper，只有白名单文件路径能通过。
+
+### Added
+- 集成测试：严格导入路径校验（`data-import-strict-path.test.js`）
+- 单元测试：overlay 分类逻辑（`overlay-store.test.js`）
+- 单元测试：Guardian overlay 白名单检查（`guardian-overlay.test.js`）
+- 集成测试：module lifecycle（`module-lifecycle.test.js`）
+- 集成测试：export/import roundtrip（`data-roundtrip.test.js`）
+- 测试用服务器 helper（`tests/integration/helpers/server-process.js`）
+
+### Changed
+- 集成测试可通过 `WORLD_TREE_DATA_DIR` 环境变量使用临时数据目录，不污染真实本地数据。
+- 版本检查可通过 `WORLD_TREE_DISABLE_UPDATE_CHECK=1` 禁用，避免测试时的网络依赖。
+- `module-service.js` 新增 `createModuleService()` 工厂函数，`listModules`/`createModule`/`deleteModule`/`buildModuleModel`/`readOverlayData`/`moduleWorldDir` 已通过工厂函数注入依赖。`server.js` 中的对应函数改为 wrapper 调用。
+
 ## v0.2.1 — 稳定性重构版 (2026-06-18)
 
 - **版本事实源统一**：前端不再硬编码控制台版本，改为从 `/api/health.version` 读取；HTML 初始状态显示 `unknown`，服务可用后自动更新。
