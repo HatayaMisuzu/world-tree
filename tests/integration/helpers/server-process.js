@@ -16,7 +16,7 @@ export function randomPort() {
   return 3100 + Math.floor(Math.random() * 20000);
 }
 
-export async function startWorldTreeServer({ port = randomPort(), dataDir } = {}) {
+export async function startWorldTreeServer({ port = randomPort(), dataDir, env = {} } = {}) {
   const root = resolve(".");
   const child = spawn(process.execPath, ["server.js"], {
     cwd: root,
@@ -25,7 +25,8 @@ export async function startWorldTreeServer({ port = randomPort(), dataDir } = {}
       PORT: String(port),
       WORLD_TREE_HOST: "127.0.0.1",
       WORLD_TREE_DATA_DIR: dataDir,
-      WORLD_TREE_DISABLE_UPDATE_CHECK: "1"
+      WORLD_TREE_DISABLE_UPDATE_CHECK: "1",
+      ...env
     },
     stdio: ["ignore", "pipe", "pipe"]
   });

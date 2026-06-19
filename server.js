@@ -5,11 +5,12 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync, createReadStream, rmSync } from "node:fs";
 import { readFile, writeFile, mkdir, appendFile, readdir, stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { join, dirname, extname, resolve, relative, isAbsolute } from "node:path";
+import { join, dirname, extname, resolve, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyOverlayOperation, applyOverlayWriteSet } from "./src/server/persistence-service.js";
-import { prepareImportFiles } from "./src/server/data-import-service.js";
+import { prepareImportFiles, validateImportFileKey } from "./src/server/data-import-service.js";
 import { sanitizeWorldName, createModuleService } from "./src/server/module-service.js";
+import { pathWithinRoot, resolveInsideRoot } from "./src/server/path-security.js";
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
@@ -985,18 +986,8 @@ function sanitizeFileKey(key = "") {
   return clean;
 }
 
-function pathWithinRoot(rootPath, targetPath) {
-  const root = resolve(rootPath);
-  const target = resolve(targetPath);
-  const rel = relative(root, target);
-  return rel === "" || (rel && !rel.startsWith("..") && !isAbsolute(rel));
-}
-
 function resolveInside(rootPath, unsafePath = "") {
-  const clean = String(unsafePath || "").replace(/\\/g, "/");
-  if (!clean || clean.includes("\0") || isAbsolute(clean)) return null;
-  const target = resolve(rootPath, clean);
-  return pathWithinRoot(rootPath, target) ? target : null;
+  return resolveInsideRoot(rootPath, unsafePath);
 }
 
 function safeEntityId(value = "", fallback = "item") {
@@ -1562,10 +1553,18 @@ async function handleWorldPackExport(body = {}, url = null) {
   }
   if (include.reviewQueue) optionalFiles["userData/alchemy-review.json"] = loadReviewQueue();
   const pack = {
+    format: "worldtree-pack",
+    schemaVersion: "0.3.0",
     spec: "worldtree-pack",
     version: 1,
     appVersion: PKG_VERSION,
     exportedAt: new Date().toISOString(),
+    contents: {
+      worldbook: include.worldbook && Boolean(sharedFiles["shared/worldbook.json"]),
+      characters: include.characters && Boolean(sharedFiles["shared/characters.json"]),
+      runtimeState: include.runtimeState && Boolean(optionalFiles["runtime/state.json"]),
+      reviewQueue: include.reviewQueue && Boolean(optionalFiles["userData/alchemy-review.json"])
+    },
     summary: {
       name: ctx.world.displayName || ctx.world.name,
       worldName: ctx.world.name,
@@ -1591,18 +1590,68 @@ async function handleWorldPackExport(body = {}, url = null) {
   return { status: "ok", filename: `${slugName(ctx.world.name || "world", "world")}.worldtree`, pack };
 }
 
+function validateWorldPack(pack) {
+  if (!pack || typeof pack !== "object") return { ok: false, errorMsg: "这不是有效的 .worldtree 世界包。" };
+  if ((pack.format || pack.spec) !== "worldtree-pack") return { ok: false, errorMsg: "世界包 format 不正确。" };
+  if (!pack.files || typeof pack.files !== "object" || Array.isArray(pack.files)) return { ok: false, errorMsg: "世界包缺少 files 对象。" };
+
+  const files = [];
+  for (const key of Object.keys(pack.files)) {
+    let clean = "";
+    try {
+      clean = validateImportFileKey(key);
+    } catch {
+      return { ok: false, errorMsg: `世界包包含不安全文件路径：${key}` };
+    }
+    const lower = clean.toLowerCase();
+    if (lower.includes("secret") || lower.includes("config")) {
+      return { ok: false, errorMsg: `世界包不能包含 secrets/config 文件：${key}` };
+    }
+    files.push(clean);
+  }
+
+  const world = pack.world || pack.files["world.json"] || {};
+  const schemaVersion = String(pack.schemaVersion || (pack.version ? `legacy-${pack.version}` : "unknown"));
+  const contents = {
+    worldbook: files.includes("shared/worldbook.json"),
+    characters: files.includes("shared/characters.json"),
+    runtimeState: files.includes("runtime/state.json"),
+    reviewQueue: files.some(f => f.includes("review") || f.includes("pending") || f.includes("manual"))
+  };
+
+  return {
+    ok: true,
+    files,
+    schemaVersion,
+    world: {
+      id: String(world.id || world.name || pack.summary?.worldName || ""),
+      displayName: String(world.displayName || pack.summary?.name || world.name || "未命名世界"),
+      description: String(world.description || pack.summary?.description || "")
+    },
+    contents
+  };
+}
+
 async function handleWorldPackImport(body = {}) {
   const pack = body.pack || body;
-  if (!pack || pack.spec !== "worldtree-pack" || !pack.files) return { status: "error", errorMsg: "这不是有效的 .worldtree 世界包。" };
-  const files = Object.keys(pack.files || {}).filter(sanitizeFileKey);
+  const validation = validateWorldPack(pack);
+  if (!validation.ok) return { status: "error", error: "WORLD_PACK_INVALID", errorMsg: validation.errorMsg };
+  const files = validation.files;
   const conflictName = safeEntityId(pack.world?.name || pack.summary?.worldName || pack.summary?.name || "", "");
   const conflictDir = conflictName ? moduleWorldDir(`world:${conflictName}`) : null;
   const summary = {
-    name: pack.summary?.name || pack.world?.displayName || pack.world?.name || "未命名世界",
+    name: validation.world.displayName,
+    worldId: validation.world.id,
+    description: validation.world.description,
+    packageVersion: validation.schemaVersion,
     fileCount: files.length,
     sharedFiles: files.filter(f => f.startsWith("shared/")),
     runtimeFiles: files.filter(f => f.startsWith("runtime/")),
     hasConflict: Boolean(conflictDir) && existsSync(conflictDir),
+    willRename: Boolean(conflictDir) && existsSync(conflictDir),
+    containsRuntime: validation.contents.runtimeState,
+    containsReviewQueue: validation.contents.reviewQueue,
+    contents: validation.contents,
     excludes: pack.summary?.excludes || [],
     exportedAt: pack.exportedAt || ""
   };
@@ -1615,8 +1664,8 @@ async function handleWorldPackImport(body = {}) {
   ensureDir(join(worldDir, "shared"));
   ensureDir(join(worldDir, "runtime"));
   for (const [key, value] of Object.entries(pack.files)) {
-    const clean = sanitizeFileKey(key);
-    if (!clean || clean.startsWith("runtime/") || clean.includes("secret") || clean.includes("config")) continue;
+    const clean = validateImportFileKey(key);
+    if (clean.startsWith("runtime/") || clean.startsWith("userData/")) continue;
     const target = clean === "world.json" ? join(worldDir, "world.json") : resolveInside(worldDir, clean);
     if (!target) continue;
     ensureDir(dirname(target));
@@ -1948,7 +1997,7 @@ function serveConsoleShell(res) {
 }
 
 function errorPayload(code, userMsg, detail = "") {
-  return { status: "error", code, userMsg, errorMsg: userMsg, detail: String(detail || "") };
+  return { status: "error", error: code, code, userMsg, errorMsg: userMsg, detail: String(detail || "") };
 }
 
 function llmHttpError(status, detail = "") {
@@ -2384,16 +2433,16 @@ async function handleAPI(req, res) {
 // ═══════════════════════════════════════════════════════════════
 
 const server = createServer((req, res) => {
+  if (req.url.startsWith("/api/")) {
+    handleAPI(req, res);
+    return;
+  }
   // 静态资源也走本地访问校验（防御纵深：即使误绑 0.0.0.0 也不暴露 UI）
   if (!isLocalRequest(req)) {
     res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end("Forbidden: World Tree 只允许本机访问。");
   }
-  if (req.url.startsWith("/api/")) {
-    handleAPI(req, res);
-  } else {
-    serveStatic(req, res);
-  }
+  serveStatic(req, res);
 });
 
 ensureDir(join(ROOT, "userData"));

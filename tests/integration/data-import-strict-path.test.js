@@ -32,12 +32,17 @@ test("validateImportFileKey rejects traversal and ambiguous path segments", () =
     ".",
     "./world.json",
     "../world.json",
+    "%2e%2e/world.json",
+    "%252e%252e/world.json",
     "shared/../world.json",
     "shared/./worldbook.json",
     "shared//worldbook.json",
     "/tmp/world.json",
     "C:/tmp/world.json",
     "C:\\tmp\\world.json",
+    "C:tmp/world.json",
+    "\\\\server\\share\\world.json",
+    "world\0.json",
     "shared/worldbook.txt"
   ];
 

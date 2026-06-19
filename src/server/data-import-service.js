@@ -1,7 +1,12 @@
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname } from "node:path";
+import {
+  decodeMaybeEncodedPath,
+  isUnsafePathSegment,
+  pathWithinRoot,
+  resolveInsideRoot
+} from "./path-security.js";
 
 const IMPORT_FILE_RE = /\.(json|jsonl)$/i;
-const WINDOWS_ABSOLUTE_RE = /^[a-zA-Z]:[\\/]/;
 
 /**
  * Validate and normalize an import bundle key.
@@ -12,7 +17,7 @@ const WINDOWS_ABSOLUTE_RE = /^[a-zA-Z]:[\\/]/;
  * - Return the canonical slash-separated relative path only after validation.
  */
 export function validateImportFileKey(key = "") {
-  const raw = String(key ?? "").trim().replace(/\\/g, "/");
+  const raw = decodeMaybeEncodedPath(key).trim().replace(/\\/g, "/");
 
   if (!raw) {
     const err = new Error("import file path is empty");
@@ -21,7 +26,7 @@ export function validateImportFileKey(key = "") {
     throw err;
   }
 
-  if (raw.startsWith("/") || isAbsolute(raw) || WINDOWS_ABSOLUTE_RE.test(raw)) {
+  if (!resolveInsideRoot(".", raw)) {
     const err = new Error(`absolute import file path is not allowed: ${key}`);
     err.code = "IMPORT_FILE_KEY_INVALID";
     err.file = key;
@@ -29,7 +34,7 @@ export function validateImportFileKey(key = "") {
   }
 
   const parts = raw.split("/");
-  if (parts.some((part) => part === "" || part === "." || part === "..")) {
+  if (parts.some(isUnsafePathSegment)) {
     const err = new Error(`unsafe import file path segment: ${key}`);
     err.code = "IMPORT_FILE_KEY_INVALID";
     err.file = key;
@@ -52,14 +57,6 @@ export function validateImportFileKey(key = "") {
  */
 export function sanitizeImportFileKey(key = "") {
   return validateImportFileKey(key);
-}
-
-export function pathWithinRoot(rootPath, targetPath) {
-  if (!rootPath || !targetPath) return false;
-  const root = resolve(rootPath);
-  const target = resolve(targetPath);
-  const rel = relative(root, target);
-  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
 
 export function validateImportContent(fileKey, content) {
@@ -120,9 +117,9 @@ export function prepareImportFiles(rootDir, files = {}) {
 
   for (const [key, content] of Object.entries(files)) {
     const clean = validateImportFileKey(key);
-    const targetPath = join(rootDir, clean);
+    const targetPath = resolveInsideRoot(rootDir, clean);
 
-    if (!pathWithinRoot(rootDir, targetPath)) {
+    if (!targetPath || !pathWithinRoot(rootDir, targetPath)) {
       const err = new Error(`import file path escapes target root: ${key}`);
       err.code = "IMPORT_FILE_KEY_INVALID";
       err.file = key;

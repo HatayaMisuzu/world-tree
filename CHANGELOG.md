@@ -14,6 +14,9 @@
 - README / README.en 明确当前升级目标统一收敛到 v0.3.0，但暂不修改公开 package version。
 
 ### Security
+- 新增统一路径安全模块，覆盖 URL 编码路径、null byte、绝对路径、Windows 盘符/UNC、超长路径和混用分隔符等边界。
+- 路由安全集成测试覆盖非本地 Origin、速率限制、请求体上限、非法 JSON、非对象 JSON、空 body 与导入路径穿越。
+- `.worldtree` 导入增加前置 schema/files 校验和更完整预览，恶意路径、secrets/config 文件会在写入前被拒绝，冲突世界继续自动重命名。
 
 ### Deferred
 - 插件系统暂不展开。
