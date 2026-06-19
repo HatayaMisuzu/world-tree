@@ -247,19 +247,88 @@ async function testLlmConnection(payload) {
   // 从本地 secrets.json 读取密钥（不信任前端传递的明文 key）
   const apiKey = await getActiveLlmValue();
   const baseUrl = String(config.llmBaseUrl || payload?.baseUrl || "").replace(/\/$/, "");
-  if (!baseUrl) return errorPayload("LLM_BASE_URL_MISSING", "还没有填写 AI 服务地址。请在设置中填写 OpenAI 兼容接口地址。", "llmBaseUrl is empty");
-  if (!apiKey) return errorPayload("LLM_API_KEY_MISSING", "还没有填写 API Key。请先在设置中保存你的 LLM 访问密钥。", "active LLM secret is empty");
-  if (!/^https?:\/\//.test(baseUrl)) return errorPayload("LLM_BASE_URL_INVALID", "AI 服务地址格式不正确。地址应以 http:// 或 https:// 开头。", `Invalid base URL: ${baseUrl}`);
+  const model = String(config.llmModel || payload?.model || "").trim();
+  const checks = [];
+  const suggestions = [];
+  const add = (id, label, status, detail = "") => checks.push({ id, label, status, detail });
+  const fail = (code, userMsg, detail = "") => ({ ...errorPayload(code, userMsg, detail), checks, suggestions, safeToSave: false });
+
+  if (!baseUrl) {
+    add("base_url", "Base URL", "fail", "missing");
+    suggestions.push("请填写 OpenAI-compatible Base URL，例如 https://api.deepseek.com/v1。");
+    return fail("LLM_BASE_URL_MISSING", "还没有填写 AI 服务地址。请在设置中填写 OpenAI 兼容接口地址。", "llmBaseUrl is empty");
+  }
+  if (!/^https?:\/\//.test(baseUrl)) {
+    add("base_url", "Base URL", "fail", baseUrl);
+    suggestions.push("Base URL 应以 http:// 或 https:// 开头。");
+    return fail("LLM_BASE_URL_INVALID", "AI 服务地址格式不正确。地址应以 http:// 或 https:// 开头。", `Invalid base URL: ${baseUrl}`);
+  }
+  add("base_url", "Base URL", "ok", baseUrl);
+  if (!baseUrl.endsWith("/v1")) suggestions.push("如果服务返回 404，请检查 Base URL 是否需要以 /v1 结尾。");
+
+  if (!apiKey) {
+    add("api_key", "API Key", "fail", "missing");
+    suggestions.push("请先保存 API Key。本地 Ollama 等无鉴权服务也可以保存一个占位 key。");
+    return fail("LLM_API_KEY_MISSING", "还没有填写 API Key。请先在设置中保存你的 LLM 访问密钥。", "active LLM secret is empty");
+  }
+  add("api_key", "API Key", "ok", "saved");
+  if (!model) {
+    add("model", "Model", "fail", "missing");
+    suggestions.push("请填写模型名，例如 deepseek-v4-flash 或本地服务暴露的模型。");
+    return fail("LLM_MODEL_MISSING", "还没有填写模型名。请在设置中选择或输入一个模型。", "llmModel is empty");
+  }
+  add("model", "Model", "ok", model);
+
   try {
+    const modelsStarted = Date.now();
     const response = await fetch(`${baseUrl}/models`, {
       method: "GET",
-      headers: { Authorization: `Bearer ${apiKey}` }
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(Number(config.llmTimeoutMs || 60000))
     });
     const text = await response.text();
-    if (!response.ok) return llmHttpError(response.status, text);
-    return { status: "ok", latencyMs: Date.now() - started };
+    if (!response.ok) {
+      add("models", "/models", "fail", `HTTP ${response.status}`);
+      if (response.status === 401 || response.status === 403) suggestions.push("API Key 无效或权限不足，请检查密钥是否复制完整。");
+      if (response.status === 404) suggestions.push("Base URL 可能不正确，检查是否需要 /v1。");
+      return { ...llmHttpError(response.status, text), checks, suggestions, safeToSave: false };
+    }
+    add("models", "/models", "ok", `${Date.now() - modelsStarted}ms`);
+
+    let modelMayExist = "unknown";
+    try {
+      const parsed = text ? JSON.parse(text) : {};
+      const ids = Array.isArray(parsed.data) ? parsed.data.map(item => item?.id || item?.name).filter(Boolean) : [];
+      if (ids.length) modelMayExist = ids.includes(model) ? "ok" : "warn";
+    } catch {
+      add("models_format", "Models JSON", "warn", "服务返回的 /models 不是标准 OpenAI-compatible JSON。");
+      suggestions.push("服务返回的 /models 不是标准格式，但仍会继续测试 chat/completions。");
+    }
+    if (modelMayExist === "warn") suggestions.push("当前模型名没有出现在 /models 列表中，可能需要检查模型名。");
+    add("model_exists", "Model exists", modelMayExist, modelMayExist === "ok" ? model : "not confirmed");
+
+    const chatStarted = Date.now();
+    const chat = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, messages: [{ role: "user", content: "ping" }], max_tokens: 1, temperature: 0 }),
+      signal: AbortSignal.timeout(Math.min(Number(config.llmTimeoutMs || 60000), 60000))
+    });
+    const chatText = await chat.text();
+    if (!chat.ok) {
+      add("chat_completions", "chat/completions", "fail", `HTTP ${chat.status}`);
+      if (chat.status === 404) suggestions.push("chat/completions 不可用，Base URL 可能错误，或模型名不存在。");
+      if (chat.status === 401 || chat.status === 403) suggestions.push("API Key 无效或权限不足。");
+      return { ...llmHttpError(chat.status, chatText), checks, suggestions, safeToSave: false };
+    }
+    add("chat_completions", "chat/completions", "ok", `${Date.now() - chatStarted}ms`);
+
+    return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, safeToSave: true };
   } catch (error) {
-    return errorPayload("LLM_NETWORK_ERROR", "无法连接到 AI 服务。请检查网络、API 地址，或确认本地模型服务已经启动。", error?.message || "fetch failed");
+    const timedOut = error?.name === "TimeoutError" || /timeout/i.test(String(error?.message || ""));
+    add(timedOut ? "timeout" : "network", timedOut ? "Timeout" : "Network", "fail", error?.message || "fetch failed");
+    suggestions.push(timedOut ? "服务响应超时，请检查网络、模型服务或 llmTimeoutMs 配置。" : "无法连接到模型服务；如果使用本地 Ollama，请确认服务已经启动。");
+    return { ...errorPayload(timedOut ? "LLM_TIMEOUT" : "LLM_NETWORK_ERROR", timedOut ? "LLM 响应超时，请检查网络、模型服务或 llmTimeoutMs 配置。" : "无法连接到 AI 服务。请检查网络、API 地址，或确认本地模型服务已经启动。", error?.message || "fetch failed"), checks, suggestions, safeToSave: false };
   }
 }
 
@@ -472,6 +541,12 @@ async function createModule(body) {
   return moduleService.createModule(body);
 }
 
+async function finalizeDraftModule(body = {}) {
+  const id = body.moduleKey || body.id || "";
+  if (!id) return { status: "error", errorMsg: "缺少模组标识。" };
+  return moduleService.finalizeDraft(id, body);
+}
+
 /** 删除世界模组 */
 async function deleteModule(moduleId) {
   const result = await moduleService.deleteModule(moduleId);
@@ -547,7 +622,7 @@ async function persistTurn(moduleId, input, result, engineState) {
   // execute overlay writeSet — only whitelisted runtime/overlay files are writable.
   if (result.writeSet?.length) {
     try {
-      await applyOverlayWriteSet(rtDir, result.writeSet);
+      await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId });
     } catch (e) {
       console.warn("[persistTurn] writeSet 执行失败:", e.message);
     }
@@ -728,7 +803,7 @@ function buildAlchemyLlmCall(config, apiKey) {
 }
 
 async function handleAlchemyImport(body) {
-  const { text } = body || {};
+  const { text, moduleKey = "" } = body || {};
   if (!text) return { status: "error", errorMsg: "导入内容为空" };
   try {
     const config = await loadConfig();
@@ -736,7 +811,7 @@ async function handleAlchemyImport(body) {
     const llmCall = buildAlchemyLlmCall(config, apiKey);
     const { importFile } = await import("./src/core/data/alchemy/alchemy-engine.js");
     const result = await importFile(text, { llmCall, options: { autoRelations: true } });
-    const reviewItems = await enqueueReviewItems(result?.items || [], { source: "alchemy-import", snippet: String(text).slice(0, 240) });
+    const reviewItems = await enqueueReviewItems(result?.items || [], { source: "alchemy-import", snippet: String(text).slice(0, 240), moduleKey });
     return {
       status: "ok",
       format: result?.format,
@@ -1147,10 +1222,36 @@ function publicConnections(raw = loadConnectionsRaw()) {
 async function testConnectionProfile(profile) {
   const started = Date.now();
   const baseUrl = String(profile.baseUrl || "").replace(/\/$/, "");
+  const model = String(profile.model || "").trim();
   const apiKey = await secretValueById(profile.apiKeySecretId || profile.id);
-  if (!baseUrl) return errorPayload("CONNECTION_BASE_URL_MISSING", "连接地址为空。", "baseUrl is empty");
-  if (!/^https?:\/\//.test(baseUrl)) return errorPayload("CONNECTION_BASE_URL_INVALID", "连接地址必须以 http:// 或 https:// 开头。", baseUrl);
-  if (!apiKey && !baseUrl.includes("127.0.0.1") && !baseUrl.includes("localhost")) return errorPayload("CONNECTION_API_KEY_MISSING", "这个连接还没有保存 API Key。", "secret missing");
+  const checks = [];
+  const suggestions = [];
+  const add = (id, label, status, detail = "") => checks.push({ id, label, status, detail });
+  const fail = (payload) => ({ ...payload, checks, suggestions, safeToSave: false });
+  if (!baseUrl) {
+    add("base_url", "Base URL", "fail", "missing");
+    suggestions.push("请填写 OpenAI-compatible Base URL。");
+    return fail(errorPayload("CONNECTION_BASE_URL_MISSING", "连接地址为空。", "baseUrl is empty"));
+  }
+  if (!/^https?:\/\//.test(baseUrl)) {
+    add("base_url", "Base URL", "fail", baseUrl);
+    suggestions.push("Base URL 应以 http:// 或 https:// 开头。");
+    return fail(errorPayload("CONNECTION_BASE_URL_INVALID", "连接地址必须以 http:// 或 https:// 开头。", baseUrl));
+  }
+  add("base_url", "Base URL", "ok", baseUrl);
+  if (!baseUrl.endsWith("/v1")) suggestions.push("如果服务返回 404，请确认 Base URL 是否需要以 /v1 结尾。");
+  if (!apiKey && !baseUrl.includes("127.0.0.1") && !baseUrl.includes("localhost")) {
+    add("api_key", "API Key", "fail", "missing");
+    suggestions.push("远程服务通常需要保存 API Key。");
+    return fail(errorPayload("CONNECTION_API_KEY_MISSING", "这个连接还没有保存 API Key。", "secret missing"));
+  }
+  add("api_key", "API Key", apiKey ? "ok" : "warn", apiKey ? "saved" : "local/no key");
+  if (!model) {
+    add("model", "Model", "fail", "missing");
+    suggestions.push("请填写模型名。");
+    return fail(errorPayload("CONNECTION_MODEL_MISSING", "这个连接还没有填写模型名。", "model missing"));
+  }
+  add("model", "Model", "ok", model);
   try {
     const response = await fetch(`${baseUrl}/models`, {
       method: "GET",
@@ -1158,10 +1259,41 @@ async function testConnectionProfile(profile) {
       signal: AbortSignal.timeout(5000)
     });
     const text = await response.text();
-    if (!response.ok) return llmHttpError(response.status, text);
-    return { status: "ok", latencyMs: Date.now() - started };
+    if (!response.ok) {
+      add("models", "/models", "fail", `HTTP ${response.status}`);
+      return { ...llmHttpError(response.status, text), checks, suggestions, safeToSave: false };
+    }
+    add("models", "/models", "ok");
+    try {
+      const parsed = text ? JSON.parse(text) : {};
+      const ids = Array.isArray(parsed.data) ? parsed.data.map(item => item?.id || item?.name).filter(Boolean) : [];
+      if (ids.length && !ids.includes(model)) {
+        add("model_exists", "Model exists", "warn", "not listed");
+        suggestions.push("模型名没有出现在 /models 列表中，可能需要修正。");
+      } else {
+        add("model_exists", "Model exists", ids.length ? "ok" : "unknown", ids.length ? model : "not confirmed");
+      }
+    } catch {
+      add("models_format", "Models JSON", "warn", "non-standard response");
+    }
+    const chat = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
+      body: JSON.stringify({ model, messages: [{ role: "user", content: "ping" }], max_tokens: 1, temperature: 0 }),
+      signal: AbortSignal.timeout(5000)
+    });
+    const chatText = await chat.text();
+    if (!chat.ok) {
+      add("chat_completions", "chat/completions", "fail", `HTTP ${chat.status}`);
+      return { ...llmHttpError(chat.status, chatText), checks, suggestions, safeToSave: false };
+    }
+    add("chat_completions", "chat/completions", "ok");
+    return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, safeToSave: true };
   } catch (error) {
-    return errorPayload("CONNECTION_NETWORK_ERROR", "无法连接到这个模型服务。请检查地址、网络或本地模型是否已启动。", error?.message || "fetch failed");
+    const timedOut = error?.name === "TimeoutError" || /timeout/i.test(String(error?.message || ""));
+    add(timedOut ? "timeout" : "network", timedOut ? "Timeout" : "Network", "fail", error?.message || "fetch failed");
+    suggestions.push(timedOut ? "服务响应超时，请检查模型服务是否繁忙。" : "无法连接到模型服务；本地服务请确认已经启动。");
+    return { ...errorPayload(timedOut ? "CONNECTION_TIMEOUT" : "CONNECTION_NETWORK_ERROR", timedOut ? "连接测试超时。请检查模型服务状态。" : "无法连接到这个模型服务。请检查地址、网络或本地模型是否已启动。", error?.message || "fetch failed"), checks, suggestions, safeToSave: false };
   }
 }
 
@@ -1365,7 +1497,35 @@ async function enqueueReviewItems(items = [], source = {}) {
   }));
   queue.items = [...additions, ...queue.items].slice(0, 500);
   await saveReviewQueue(queue);
+  if (source.moduleKey) {
+    const rtDir = moduleRuntimeDir(source.moduleKey);
+    if (rtDir && pathWithinRoot(dataRoot(), rtDir)) {
+      for (const item of additions) {
+        await appendJsonl(join(rtDir, "pending.jsonl"), reviewRecordFromAlchemy(item, source.moduleKey));
+      }
+    }
+  }
   return additions;
+}
+
+function reviewRecordFromAlchemy(item = {}, moduleKey = "") {
+  const data = item.data || item.structured || {};
+  return {
+    id: item.id || `review-${Date.now()}`,
+    status: item.status === "manual" ? "manual" : "pending",
+    createdAt: item.createdAt || new Date().toISOString(),
+    source: item.source || "alchemy",
+    moduleId: moduleKey,
+    targetType: item.typeId || item.type || "worldbook",
+    operation: "upsert",
+    confidence: Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : 0.5,
+    entity: item.entity || item.name || data.name || data.title || "未命名",
+    before: null,
+    after: data,
+    sourceSnippet: item.sourceSnippet || "",
+    reason: item.reason || "",
+    legacyReviewId: item.id || ""
+  };
 }
 
 async function applyReviewItemToWorld(item, moduleKey = "") {
@@ -1412,6 +1572,144 @@ async function handleAlchemyReview(body = {}, method = "GET") {
     queue.items[idx] = merged;
   }
   return saveReviewQueue(queue);
+}
+
+function reviewFactPath(moduleKey = "", file = "pending.jsonl") {
+  const rtDir = moduleRuntimeDir(moduleKey);
+  if (!rtDir || !pathWithinRoot(dataRoot(), rtDir)) return null;
+  const p = join(rtDir, file);
+  return pathWithinRoot(rtDir, p) ? p : null;
+}
+
+async function readReviewFactFile(moduleKey = "", file = "pending.jsonl") {
+  const p = reviewFactPath(moduleKey, file);
+  if (!p || !existsSync(p)) return [];
+  try {
+    const text = await readFile(p, "utf-8");
+    return text.split(/\r?\n/).filter(Boolean).map((line, index) => {
+      try {
+        const item = JSON.parse(line);
+        return { id: item.id || `line-${index + 1}`, ...item };
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+async function writeReviewFactFile(moduleKey = "", file = "pending.jsonl", items = []) {
+  const p = reviewFactPath(moduleKey, file);
+  if (!p) return false;
+  await mkdir(dirname(p), { recursive: true });
+  await writeFile(p, items.map(item => JSON.stringify(item)).join("\n") + (items.length ? "\n" : ""), "utf-8");
+  return true;
+}
+
+async function appendReviewLog(moduleKey = "", action = "", item = {}, extra = {}) {
+  const p = reviewFactPath(moduleKey, "review-log.jsonl");
+  if (!p) return;
+  await appendJsonl(p, { id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, ts: new Date().toISOString(), action, itemId: item.id || "", item, ...extra });
+}
+
+async function snapshotReviewTarget(moduleKey = "", item = {}) {
+  const rtDir = moduleRuntimeDir(moduleKey);
+  const worldDir = moduleWorldDir(moduleKey);
+  if (!rtDir || !worldDir || !pathWithinRoot(dataRoot(), rtDir)) return null;
+  const snapshotDir = join(rtDir, "snapshots");
+  const file = join(snapshotDir, `review-${slugName(item.id || "item", "item")}-${Date.now()}.json`);
+  const sharedDir = join(worldDir, "shared");
+  await writeJson(file, {
+    createdAt: new Date().toISOString(),
+    item,
+    worldbook: readJsonSync(join(sharedDir, "worldbook.json"), null),
+    characters: readJsonSync(join(sharedDir, "characters.json"), null),
+    overlay: item.file ? readJsonSync(join(rtDir, "overlay", item.file), null) : null
+  });
+  return file;
+}
+
+function normalizeReviewWorldbookEntry(item = {}) {
+  const after = item.after || item.data || item.payload || {};
+  const keys = Array.isArray(after.keys) ? after.keys : splitWorldbookKeys(after.keywords || after.keys || item.entity || after.name || after.title || "");
+  return normalizeWorldbookEntryForSave({
+    id: after.id || `review-${slugName(item.entity || after.name || after.title || item.id, "entry")}-${Date.now()}`,
+    title: after.title || after.name || item.entity || "审核条目",
+    keys,
+    content: after.content || after.description || objToText(after, Object.keys(after)),
+    enabled: after.enabled !== false,
+    priority: after.priority ?? 100,
+    source: item.source || "review"
+  }, { source: "review", titleFallback: item.entity || item.id });
+}
+
+async function adoptReviewItem(moduleKey = "", item = {}, editedAfter = null) {
+  const ctx = readWorldShared(moduleKey);
+  if (!ctx) return { applied: false, reason: "未选择目标世界" };
+  const candidate = editedAfter ? { ...item, after: editedAfter } : item;
+  const snapshotPath = await snapshotReviewTarget(moduleKey, candidate);
+  if (candidate.overlay?.file || candidate.file) {
+    const rtDir = moduleRuntimeDir(moduleKey);
+    await applyOverlayOperation(rtDir, { ...(candidate.overlay || candidate), policy: "auto" });
+    return { applied: true, target: `runtime/overlay/${candidate.overlay?.file || candidate.file}`, snapshotPath };
+  }
+  if (candidate.targetType === "character" || candidate.targetType === "characters") {
+    const p = join(ctx.sharedDir, "characters.json");
+    const current = readJsonSync(p, []);
+    const after = candidate.after || {};
+    const id = slugName(after.id || candidate.entity || after.name || candidate.id, "character");
+    const next = [{ id, name: after.name || candidate.entity || id, ...after, confirmedAt: new Date().toISOString() }, ...current.filter(c => c.id !== id && c.name !== (after.name || candidate.entity))];
+    await writeJson(p, next);
+    return { applied: true, target: "shared/characters.json", snapshotPath };
+  }
+  const p = join(ctx.sharedDir, "worldbook.json");
+  const wb = readJsonSync(p, { entries: [] });
+  const entry = normalizeReviewWorldbookEntry(candidate);
+  await writeJson(p, { ...wb, entries: [entry, ...(wb.entries || []).filter(e => e.id !== entry.id)] });
+  return { applied: true, target: "shared/worldbook.json", snapshotPath };
+}
+
+async function handleReviewFacts(body = {}, method = "GET", url = null) {
+  const moduleKey = method === "GET" ? (url?.searchParams.get("moduleKey") || "") : (body.moduleKey || "");
+  if (!moduleKey) return { status: "error", errorMsg: "缺少模组标识。请先选择一个世界。" };
+  if (!moduleRuntimeDir(moduleKey)) return { status: "error", errorMsg: "模组标识无效。" };
+  const pending = await readReviewFactFile(moduleKey, "pending.jsonl");
+  const manual = await readReviewFactFile(moduleKey, "manual.jsonl");
+  if (method === "GET") {
+    return { status: "ok", pending: pending.filter(i => i.status === "pending"), manual: manual.filter(i => i.status === "manual"), items: [...pending, ...manual].filter(i => ["pending", "manual"].includes(i.status)) };
+  }
+  const action = body.action || "list";
+  if (action === "list") return handleReviewFacts(body, "GET", new URL(`http://local/?moduleKey=${encodeURIComponent(moduleKey)}`));
+  const id = body.id || body.pendingId;
+  if (!id) return { status: "error", errorMsg: "缺少审核项 id。" };
+  const sourceFile = pending.find(i => i.id === id) ? "pending.jsonl" : manual.find(i => i.id === id) ? "manual.jsonl" : "";
+  if (!sourceFile) return { status: "error", errorMsg: "审核项不存在。" };
+  const list = sourceFile === "pending.jsonl" ? pending : manual;
+  const idx = list.findIndex(i => i.id === id);
+  const item = list[idx];
+  if (action === "reject") {
+    list[idx] = { ...item, status: "rejected", reviewedAt: new Date().toISOString() };
+    await writeReviewFactFile(moduleKey, sourceFile, list);
+    await appendReviewLog(moduleKey, "reject", list[idx]);
+    return { status: "ok", item: list[idx], pending: sourceFile === "pending.jsonl" ? list.filter(i => i.status === "pending") : pending.filter(i => i.status === "pending"), manual: sourceFile === "manual.jsonl" ? list.filter(i => i.status === "manual") : manual.filter(i => i.status === "manual") };
+  }
+  if (action === "adopt" || action === "edit-and-adopt") {
+    let editedAfter = null;
+    if (action === "edit-and-adopt") editedAfter = body.after || body.editedAfter || null;
+    const apply = await adoptReviewItem(moduleKey, item, editedAfter);
+    list[idx] = { ...item, after: editedAfter || item.after, status: apply.applied ? "adopted" : "approved", apply, reviewedAt: new Date().toISOString() };
+    await writeReviewFactFile(moduleKey, sourceFile, list);
+    await appendReviewLog(moduleKey, action, list[idx], { apply });
+    return { status: "ok", item: list[idx], apply, pending: sourceFile === "pending.jsonl" ? list.filter(i => i.status === "pending") : pending.filter(i => i.status === "pending"), manual: sourceFile === "manual.jsonl" ? list.filter(i => i.status === "manual") : manual.filter(i => i.status === "manual") };
+  }
+  return { status: "error", errorMsg: `不支持的审核操作：${action}` };
+}
+
+async function handleReviewLog(url = null) {
+  const moduleKey = url?.searchParams.get("moduleKey") || "";
+  if (!moduleKey) return { status: "error", errorMsg: "缺少模组标识。" };
+  return { status: "ok", log: await readReviewFactFile(moduleKey, "review-log.jsonl") };
 }
 
 async function handleWorldPackExport(body = {}, url = null) {
@@ -2017,6 +2315,7 @@ async function handleAPI(req, res) {
     // ── 模组管理 ──
     if (path === "/api/modules" && method === "GET") return jsonResponse(res, listModules());
     if (path === "/api/modules/create" && method === "POST") return jsonResponse(res, await createModule(await readBody(req)));
+    if (path === "/api/modules/finalize-draft" && method === "POST") return jsonResponse(res, await finalizeDraftModule(await readBody(req)));
     if (path === "/api/modules/delete" && method === "POST") return jsonResponse(res, await deleteModule((await readBody(req)).id));
     if (path === "/api/modules/load" && method === "POST") {
       const { id } = await readBody(req);
@@ -2042,6 +2341,12 @@ async function handleAPI(req, res) {
     if (path === "/api/alchemy/digest" && method === "POST") return jsonResponse(res, await handleAlchemyDigest(await readBody(req)));
     if (path === "/api/alchemy/review" && method === "GET") return jsonResponse(res, await handleAlchemyReview({}, "GET"));
     if (path === "/api/alchemy/review" && method === "POST") return jsonResponse(res, await handleAlchemyReview(await readBody(req), "POST"));
+    if (path === "/api/review/pending" && method === "GET") return jsonResponse(res, await handleReviewFacts({}, "GET", url));
+    if (path === "/api/review/pending" && method === "POST") return jsonResponse(res, await handleReviewFacts(await readBody(req), "POST", url));
+    if (path === "/api/review/adopt" && method === "POST") return jsonResponse(res, await handleReviewFacts({ ...(await readBody(req)), action: "adopt" }, "POST", url));
+    if (path === "/api/review/edit-and-adopt" && method === "POST") return jsonResponse(res, await handleReviewFacts({ ...(await readBody(req)), action: "edit-and-adopt" }, "POST", url));
+    if (path === "/api/review/reject" && method === "POST") return jsonResponse(res, await handleReviewFacts({ ...(await readBody(req)), action: "reject" }, "POST", url));
+    if (path === "/api/review/log" && method === "GET") return jsonResponse(res, await handleReviewLog(url));
 
     // ── 模组历史 ──
     if (path.startsWith("/api/modules/") && path.endsWith("/history") && method === "GET") {

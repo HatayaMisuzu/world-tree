@@ -3,11 +3,11 @@
 本地优先的 AI 叙事引擎与 Web 控制台。
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.3.0-blue.svg)
 
-**当前版本: v0.2.2**
+**当前版本: v0.3.0**
 
-**当前升级目标: v0.3.0**。本轮升级聚焦本地优先的 AI 文字交互工作台底座：首次启动、模型连接、创建或导入项目、第一轮可保存对话、审核变更和 `.worldtree` 导入导出。插件生态、社区市场和完整示例世界内容暂缓为独立后续工程。
+`v0.3.0` 聚焦本地优先的 AI 文字交互工作台底座：首次启动、模型连接诊断、创建或导入项目、第一轮可保存对话、审核变更和 `.worldtree` 导入导出。插件生态、社区市场和完整示例世界内容暂缓为独立后续工程。
 
 World Tree 用一个普通的 Node.js 本地服务，把世界书、角色卡、叙事状态、对话历史和 LLM 调用组织在一起。它面向长篇互动叙事、角色扮演、世界设定管理和创作实验；默认只在本机运行，不依赖 Electron，也不绑定任何特定云服务。
 
@@ -22,14 +22,14 @@ English documentation: [README.en.md](README.en.md)
 
 ## 当前版本重点
 
-`0.2.2` 是安全硬化与测试补齐版：Dashboard telemetry 状态读取、Guardian 去重评分、旧版 LLM 入口超时、overlay pending 消费、导入路径 reject 和运行时恢复都有测试覆盖，`preflight` 纳入单元、集成和接口联动审计。
+`0.3.0` 是本地优先工作台基线版：模型连接测试会返回逐项诊断和建议；快速开始会创建可保存的草稿世界；炼金台与 overlay 提议会进入世界自己的 `runtime/pending.jsonl` / `manual.jsonl` 审核事实源；采纳前会生成快照；`.worldtree` 导入导出、安全路径校验、Dashboard telemetry、Guardian 和 overlay pending 都纳入测试门禁。
 
 - 角色库：批量导入 SillyTavern v2/v3 JSON，并尝试解析带 `chara` 元数据的 PNG 角色卡；支持标签和说明编辑。
 - 世界书编辑器：新增、编辑、停用、删除、分组、批量导入导出条目，并测试触发命中和排序原因。
-- 连接档案：管理 DeepSeek、OpenAI-compatible、OpenRouter、Ollama、Claude-compatible 等连接模板，以及常用生成参数。
+- 连接档案：管理 DeepSeek、OpenAI-compatible、OpenRouter、Ollama、Claude-compatible 等连接模板，并提供 Base URL、API Key、模型和 chat/completions 的诊断结果。
 - 聊天基础操作：复制、编辑、删除、收藏，以及助手候选回复 swipe 持久化和轻量分支索引。
 - 叙事黑盒：查看世界书命中、角色状态、记忆快照、Direction Packet、Guardian 结果和可读时间线。
-- 炼金台审核队列：提取结果先进入审核，支持确认、忽略和字段级合并，确认后才写入正式世界数据。
+- 炼金台审核队列：提取结果先进入审核事实源，支持采纳、拒绝和编辑后采纳，确认后才写入正式世界数据。
 - `.worldtree` 世界包：导出/导入世界设定、角色、世界书和来源说明，默认排除 secrets 与私密 runtime，并支持导出范围选择。
 - 插件接口 v0：只开放本地 importer / reviewer 两类插件，不加载远程脚本；支持本地 JSON 入口 dry-run。
 
@@ -95,8 +95,8 @@ http://localhost:11434/v1
 - **角色卡模式**：以角色人格、说话风格和互动边界为核心进行 RP。
 - **预设模式**：用轻量配置快速测试叙事风格和玩法原型。
 - **内容炼金台**：把粘贴的设定、小说片段、角色资料或世界书材料解析成结构化数据。
-- **审核队列**：炼金台提取结果默认先入队，用户确认后才写入正式世界。
-- **连接档案**：在本机管理多个模型服务配置，密钥独立保存在 secrets。
+- **审核队列**：炼金台提取结果默认先入队，用户采纳后才写入正式世界。
+- **连接档案**：在本机管理多个模型服务配置，密钥独立保存在 secrets，并提供逐项连接诊断。
 - **世界包**：用 `.worldtree` 交换世界设定和 shared 数据，默认不包含私密运行记录。
 - **本地插件 v0**：识别本地插件 manifest，限制为导入器和审查器能力。
 - **双段式叙事管线**：先生成方向包，再由 LLM 写作，并通过守门人检查输出。
@@ -122,6 +122,11 @@ World Tree 的核心原则是“一个世界就是一个文件夹”。世界数
     ├── chat.jsonl
     ├── memory.jsonl
     ├── state.json
+    ├── source.txt
+    ├── pending.jsonl
+    ├── manual.jsonl
+    ├── review-log.jsonl
+    ├── snapshots/
     └── overlay/
 ```
 
@@ -135,9 +140,11 @@ World Tree 的核心原则是“一个世界就是一个文件夹”。世界数
 | `/api/worldbook` | 读取和保存当前世界书 |
 | `/api/worldbook/test` | 测试世界书触发 |
 | `/api/connections` | 管理连接档案 |
+| `/api/llm/test` | 测试当前模型连接并返回逐项诊断 |
 | `/api/chat/message` | 编辑、删除、收藏和候选回复管理 |
 | `/api/turn/debug` | 读取本轮叙事黑盒 |
 | `/api/alchemy/review` | 审核队列读写 |
+| `/api/review/pending` / `/api/review/adopt` / `/api/review/reject` | 读取、采纳或拒绝世界 runtime 审核事实源 |
 | `/api/world-pack/export` / `/api/world-pack/import` | `.worldtree` 世界包导入导出 |
 | `/api/plugins` | 本地插件列表、启用状态和 JSON dry-run |
 

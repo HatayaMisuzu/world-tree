@@ -85,6 +85,8 @@ export function createModuleService(deps) {
             dataMode: meta.dataMode || "worldbook",
             subType: meta.subType || "classic",
             preset: meta.preset || "epic",
+            draft: !!meta.draft,
+            sourceType: meta.sourceType || "",
             turnCount: rt.turnCount || 0,
             lastPlayed: rt.updatedAt || "",
             createdAt: meta.createdAt || "",
@@ -124,8 +126,12 @@ export function createModuleService(deps) {
 
   async function createModule(body = {}) {
     const { name, displayName, dataMode, subType, preset } = body || {};
+    const quickProject = body?.quickProject === true || body?.sourceType === "pasted_text";
+    const sourceText = String(body?.sourceText || "");
+    const sourceType = quickProject ? (body?.sourceType || "pasted_text") : "";
+    const draft = quickProject ? body?.draft !== false : false;
     // 安全截断：使用 Array.from 确保多字节字符（emoji/生僻字）不被截断
-    const rawName = String(name || displayName || "新世界");
+    const rawName = String(name || displayName || (quickProject ? `快速项目_${Date.now()}` : "新世界"));
     const cleaned = rawName.replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "");
     const safeChars = Array.from(cleaned);
     const worldName = safeChars.slice(0, 48).join("") || `world_${Date.now()}`;
@@ -137,14 +143,33 @@ export function createModuleService(deps) {
     mkdirSync(join(worldDir, "shared"), { recursive: true });
     mkdirSync(join(worldDir, "runtime"), { recursive: true });
 
-    const worldData = { name: worldName, displayName: displayName || worldName, dataMode: dataMode || "worldbook", subType: subType || "classic", preset: preset || "epic", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), turnCount: 0 };
+    const now = new Date().toISOString();
+    const worldData = {
+      name: worldName,
+      displayName: displayName || (quickProject ? "快速项目" : worldName),
+      dataMode: dataMode || "worldbook",
+      subType: subType || "classic",
+      preset: preset || "epic",
+      draft,
+      sourceType,
+      sourceTextChars: sourceText.length,
+      createdAt: now,
+      updatedAt: now,
+      turnCount: 0
+    };
     await writeJson(join(worldDir, "world.json"), worldData);
     // state.json 包含完整引擎状态
     await writeJson(join(worldDir, "runtime", "state.json"), {
       turnCount: 0, activeBranch: "main", lastScene: "", lastInput: "",
+      draft,
+      sourceType,
+      sourceTextChars: sourceText.length,
       engineState: { dataMode: dataMode || "worldbook", directorMode: "hybrid", preset: preset || "epic", contextBudget: "balanced", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      createdAt: now, updatedAt: now
     });
+    if (sourceText) {
+      await writeFile(join(worldDir, "runtime", "source.txt"), sourceText.slice(0, 200000), "utf-8");
+    }
     // 初始化空日志
     await writeFile(join(worldDir, "runtime", "chat.jsonl"), "", "utf-8");
     await writeFile(join(worldDir, "runtime", "memory.jsonl"), "", "utf-8");
@@ -154,7 +179,25 @@ export function createModuleService(deps) {
     }
 
     clearModuleCache(worldName);
-    return { status: "ok", module: { id: worldName, name: worldName, displayName: displayName || worldName, type: "world", dataMode, subType, preset, turnCount: 0 } };
+    return { status: "ok", module: { id: worldName, name: worldName, displayName: worldData.displayName, type: "world", dataMode: worldData.dataMode, subType: worldData.subType, preset: worldData.preset, draft, sourceType, turnCount: 0 } };
+  }
+
+  async function finalizeDraft(moduleId, patch = {}) {
+    const worldDir = moduleWorldDir(moduleId);
+    if (!worldDir || !pathWithinRoot(worldsDir(), worldDir)) return { status: "error", errorMsg: "模组 ID 无效" };
+    if (!existsSync(worldDir)) return { status: "error", errorMsg: "模组不存在" };
+    const now = new Date().toISOString();
+    const worldPath = join(worldDir, "world.json");
+    const statePath = join(worldDir, "runtime", "state.json");
+    const world = readJsonSync(worldPath, {});
+    const state = readJsonSync(statePath, {});
+    const displayName = String(patch.displayName || patch.name || world.displayName || world.name || "").trim();
+    const nextWorld = { ...world, draft: false, updatedAt: now };
+    if (displayName) nextWorld.displayName = displayName;
+    await writeJson(worldPath, nextWorld);
+    await writeJson(statePath, { ...state, draft: false, updatedAt: now });
+    clearModuleCache(moduleId);
+    return { status: "ok", module: { id: nextWorld.name || normalizeModuleKey(moduleId), name: nextWorld.name || normalizeModuleKey(moduleId), displayName: nextWorld.displayName, type: "world", dataMode: nextWorld.dataMode, subType: nextWorld.subType, preset: nextWorld.preset, draft: false, turnCount: nextWorld.turnCount || 0 } };
   }
 
   async function deleteModule(moduleId) {
@@ -257,6 +300,7 @@ export function createModuleService(deps) {
     moduleWorldDir,
     listModules,
     createModule,
+    finalizeDraft,
     deleteModule,
     readOverlayData,
     buildModuleModel,

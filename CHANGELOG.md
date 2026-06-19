@@ -2,19 +2,25 @@
 
 > 审查记录。AI 无需阅读此文件。
 
-## Unreleased — v0.3.0
+## v0.3.0 — 本地优先工作台基线 (2026-06-19)
 
 ### Fixed
 - `interface-audit` 的 shared 文件 IO 校准会同时扫描 `server.js` 与 `src/server/module-service.js`，避免服务拆分后误报 `createModule` 写入但 `buildModuleModel` 不读取。
 
 ### Added
 - 新增 `docs/v0.3.0-baseline-audit.md`，记录 v0.3.0 升级前的版本、测试、文件规模和已知风险基线。
+- 模型连接测试升级为逐项诊断，覆盖 Base URL、API Key、模型名、`/models` 与 `chat/completions`，并返回修复建议和 `safeToSave` 状态。
+- 快速开始会创建可持久化的草稿世界，原始粘贴素材保存到 `runtime/source.txt`，草稿可继续对话、审核、导出并可 finalize 为正式世界。
+- 新增审核事实源 API：`/api/review/pending`、`/api/review/adopt`、`/api/review/edit-and-adopt`、`/api/review/reject`、`/api/review/log`，以世界 runtime 下的 `pending.jsonl`、`manual.jsonl`、`review-log.jsonl` 为准。
+- 审核采纳前会写入 `runtime/snapshots/` 快照，降低误写 shared/worldbook、shared/characters 或 overlay 数据的恢复成本。
+- 新增连接诊断、快速项目、审核事实源集成测试。
 
 ### Changed
-- README / README.en 明确当前升级目标统一收敛到 v0.3.0，但暂不修改公开 package version。
+- README / README.en / AI-GUIDE 同步到 v0.3.0，并移除旧的 `__quick__` 临时快速模式描述。
 - `/api/health` 默认返回轻量本地状态，`detail=full` 才计算数据目录体积并可选执行远程 LLM `/models` 检查。
 - 新增 `src/server/fs-utils.js`，集中 JSON、JSONL、目录和尾读工具，降低 server 与 overlay persistence 的重复实现。
 - `buildModuleModel()` 缓存改为基于 world/shared/runtime/overlay 文件 mtime 指纹，连续 dashboard 读取可复用缓存，世界书或运行状态变更会立即失效。
+- 控制台 UI 保守增强：沿用现有面板、列表和徽标风格，但快速开始、审核队列和连接诊断都改为真实接口调用。
 
 ### Security
 - 新增统一路径安全模块，覆盖 URL 编码路径、null byte、绝对路径、Windows 盘符/UNC、超长路径和混用分隔符等边界。

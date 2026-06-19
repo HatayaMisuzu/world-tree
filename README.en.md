@@ -1,13 +1,13 @@
 # World Tree
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.3.0-blue.svg)
 
 World Tree is a local-first AI narrative engine with a browser-based web console. It runs as a plain Node.js HTTP server: no Electron, no build step, and no external runtime service beyond the LLM endpoint you configure.
 
-Current version: `v0.2.2`.
+Current version: `v0.3.0`.
 
-Current upgrade target: `v0.3.0`. This upgrade line focuses on the local-first AI text interaction workbench foundation: first-run onboarding, model connection, creating or importing a project, saving the first playable turn, reviewing AI-proposed changes, and `.worldtree` import/export. Plugin ecosystem work, community marketplace features, and full example-world content are deferred to separate follow-up work.
+`v0.3.0` focuses on the local-first AI text interaction workbench foundation: first-run onboarding, model connection diagnostics, creating or importing a project, saving the first playable turn, reviewing AI-proposed changes, and `.worldtree` import/export. Plugin ecosystem work, community marketplace features, and full example-world content are deferred to separate follow-up work.
 
 Chinese documentation: [README.md](README.md)
 
@@ -39,7 +39,8 @@ Default LLM settings:
 - Stores worlds, chat logs, runtime state, and overlays in local JSON/JSONL files.
 - Supports worldbook mode, character-card mode, and lightweight preset mode.
 - Includes a content alchemy pipeline for turning pasted material into structured worlds or character cards.
-- Adds a creator workbench for batch ST character import, character tags, worldbook editing/testing/import/export, connection profiles with generation parameters, chat message actions and candidate branches, narrative trace inspection, an alchemy review queue, selectable `.worldtree` import/export, and local importer/reviewer plugin manifests with JSON dry-run.
+- Adds a creator workbench for batch ST character import, character tags, worldbook editing/testing/import/export, connection profiles with diagnostics, chat message actions and candidate branches, narrative trace inspection, JSONL-backed review queues with adopt/reject flows, selectable `.worldtree` import/export, and local importer/reviewer plugin manifests with JSON dry-run.
+- Quick start now creates a persisted draft world from pasted material instead of a temporary in-memory chat.
 - Does not bundle story, case, or character-card material by default. `defaults/examples/manifest.json` is an empty entry point for future maintainer-provided material with recorded provenance.
 - Keeps API keys in local `userData/secrets.json`; see [SECURITY.md](SECURITY.md) for the threat model.
 
@@ -77,6 +78,8 @@ npm run preflight
 
 - World Tree is intended for localhost use only. See [SECURITY.md](SECURITY.md).
 - `/api/health` reports version, LLM configuration status, API-key presence, data-directory writability, and local data summary.
+- `/api/llm/test` and connection profile tests return structured checks, suggestions, and safe-to-save state.
+- `/api/review/*` endpoints read and update per-world `runtime/pending.jsonl`, `runtime/manual.jsonl`, and `runtime/review-log.jsonl`.
 - Error responses include `userMsg` for the UI and `detail` for console-level troubleshooting.
 
 ## License

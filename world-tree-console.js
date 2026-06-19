@@ -64,6 +64,7 @@ const API = {
   post(path, body) { return API.call("POST", path, body); },
   loadModules() { return API.get("/api/modules"); },
   createModule(data) { return API.post("/api/modules/create", data); },
+  finalizeDraft(data) { return API.post("/api/modules/finalize-draft", data); },
   deleteModule(id) { return API.post("/api/modules/delete", { id }); },
   loadExamples() { return API.get("/api/examples"); },
   installExample(id) { return API.post("/api/examples/install", { id }); },
@@ -76,6 +77,9 @@ const API = {
   chatMessage(data) { return API.post("/api/chat/message", data); },
   alchemyImport(data) { return API.post("/api/alchemy/import", data); },
   alchemyReview(data) { return data ? API.post("/api/alchemy/review", data) : API.get("/api/alchemy/review"); },
+  reviewPending(moduleKey) { return API.get(`/api/review/pending?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  reviewAction(action, data) { return API.post(`/api/review/${action}`, data); },
+  reviewLog(moduleKey) { return API.get(`/api/review/log?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   loadCharacters() { return API.get("/api/characters"); },
   importCharacter(data) { return API.post("/api/characters/import", data); },
   updateCharacter(data) { return API.post("/api/characters/update", data); },
@@ -109,6 +113,7 @@ const AS = {
   hasApiKey: false,
   llmConnected: false,
   llmTestResult: "",
+  llmDiagnostics: null,
   modules: [],
   examples: [],
   characters: [],
@@ -118,6 +123,8 @@ const AS = {
   worldbookEntries: [],
   worldbookTest: null,
   reviewItems: [],
+  manualReviewItems: [],
+  reviewLog: [],
   connections: null,
   plugins: null,
   pluginRunResult: null,
@@ -159,9 +166,9 @@ const C = {
       <div class="item-head">
         <div>
           <div class="item-title">${U.esc(m.displayName || m.name || m.id)}</div>
-          <div class="sub">${C.dataModeLabel(m)} · ${U.esc(m.subType || m.type || "default")}</div>
+          <div class="sub">${C.dataModeLabel(m)} · ${U.esc(m.subType || m.type || "default")}${m.draft ? " · 草稿" : ""}</div>
         </div>
-        ${C.badge(selected ? "当前" : (m.turnCount || 0) + " 回合", selected ? "ok" : "pending")}
+        ${C.badge(selected ? "当前" : m.draft ? "草稿" : (m.turnCount || 0) + " 回合", selected ? "ok" : m.draft ? "warn" : "pending")}
       </div>
       <p class="muted tiny">${U.esc(U.compact(m.description || "本地创作模块", 100))}</p>
       <div class="actions">
@@ -205,7 +212,7 @@ const C = {
         <div class="panel-head">
           <div>
             <h2>${U.esc(title)}</h2>
-            <p class="sub">${AS.isQuickStart ? "快速对话不保存正式记录" : m ? `${C.dataModeLabel(m)} · ${m.turnCount || 0} 回合` : "请先在工作台或世界管理中加载一个世界"}</p>
+            <p class="sub">${AS.isQuickStart ? "快速项目草稿 · 已保存到本地 runtime" : m ? `${C.dataModeLabel(m)} · ${m.turnCount || 0} 回合${m.draft ? " · 草稿" : ""}` : "请先在工作台或世界管理中加载一个世界"}</p>
           </div>
           <div class="actions">
             <button class="small" data-action="open-command-panel">命令</button>
@@ -306,7 +313,7 @@ const Views = {
           <button class="ghost" data-action="workbench-overview">返回总览</button>
           <button data-action="drawer-worldbook">世界书</button>
           <button data-action="drawer-saves">存档</button>
-          ${AS.isQuickStart ? C.badge("快速对话 · 不保存正式记录", "warn") : ""}
+          ${AS.isQuickStart ? C.badge("快速项目草稿", "warn") : ""}
         </div>
         ${C.chatSurface()}
       </div>${renderDrawer()}`;
@@ -339,10 +346,10 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>快速开始</h2><p class="sub">拖拽或粘贴素材，直接进入快速对话（不保存正式记录）。</p></div></div>
+        <div class="panel-head"><div><h2>快速开始</h2><p class="sub">拖拽或粘贴素材，创建一个本地草稿世界后开始对话。</p></div></div>
         <div id="quickStartDrop" class="drop-zone"><strong>拖拽文件 / 文件夹到此处，或点击选择</strong><span>支持 .md .txt .json</span></div>
         <textarea id="quickStartText" placeholder="或在这里粘贴设定、片段、角色描述..."></textarea>
-        <div class="actions"><button class="primary" data-action="quick-start-chat">直接进入快速对话</button><span class="tiny muted">快速对话不保存正式记录。</span></div>
+        <div class="actions"><button class="primary" data-action="quick-start-chat">创建草稿并开始对话</button><span class="tiny muted">草稿可继续、审核、导出，也可稍后转为正式世界。</span></div>
       </section>
 
       <section class="cols-2">
@@ -533,11 +540,30 @@ function renderAlchemy() {
 
 function renderReview() {
   const items = AS.reviewItems || [];
+  const manual = AS.manualReviewItems || [];
+  const logs = AS.reviewLog || [];
+  const reviewCard = (item, tone = "pending") => {
+    const after = item.after || item.data || item.structured || {};
+    const label = item.entity || after.name || after.title || item.name || "待审核实体";
+    return `<div class="item" data-review-id="${U.esc(item.id)}">
+      <div class="item-head"><strong>${U.esc(label)}</strong><div>${C.badge(item.targetType || item.typeName || item.typeId || item.type || "实体", "info")} ${C.badge(Math.round((item.confidence || 0) * 100) + "%", tone)}</div></div>
+      <p class="tiny muted">${U.esc(U.compact(item.sourceSnippet || item.source || item.reason || "", 180))}</p>
+      <details><summary>结构数据</summary><pre>${U.esc(U.json(after))}</pre></details>
+      <div class="actions">
+        <button class="small primary" data-action="${item.status === "manual" ? "adopt-manual-review" : "confirm-review"}">采纳写入</button>
+        <button class="small" data-action="merge-review">编辑后采纳</button>
+        <button class="small danger" data-action="ignore-review">拒绝</button>
+      </div>
+    </div>`;
+  };
   return `<section class="panel">
     <div class="panel-head"><div><h2>审核队列</h2><p class="sub">未确认内容不得写入正式世界数据。</p></div><button class="small" data-action="load-review">刷新</button></div>
     <textarea id="reviewSourceText" placeholder="粘贴素材，先提取进入审核队列。"></textarea>
     <div class="actions"><button class="primary" data-action="enqueue-review">提取入队</button><span class="tiny muted">当前目标：${AS.selectedModule ? U.esc(AS.selectedModule.displayName || AS.selectedModule.name) : "未选择"}</span></div>
-    <div class="list" style="margin-top:12px">${items.length ? items.map(item => `<div class="item" data-review-id="${U.esc(item.id)}"><div class="item-head"><strong>${U.esc(item.entity || item.name || "待审核实体")}</strong><div>${C.badge(item.typeName || item.typeId || item.type || "实体", "info")} ${C.badge(Math.round((item.confidence || 0) * 100) + "%", "warn")}</div></div><p class="tiny muted">${U.esc(U.compact(item.sourceSnippet || item.source || "", 180))}</p><details><summary>结构数据</summary><pre>${U.esc(U.json(item.data || item.structured || {}))}</pre></details><div class="actions"><button class="small primary" data-action="confirm-review">确认写入</button><button class="small" data-action="merge-review">合并/修正</button><button class="small danger" data-action="ignore-review">忽略</button></div></div>`).join("") : C.empty("队列为空", "炼金台提取结果会先停在这里。")}</div>
+    <div class="auto-grid compact" style="margin-top:12px">${C.stat("待审核", items.length)}${C.stat("手动确认", manual.length)}${C.stat("审核日志", logs.length)}</div>
+    <div class="list" style="margin-top:12px">${items.length ? items.map(item => reviewCard(item, "warn")).join("") : C.empty("队列为空", "炼金台提取结果会先停在这里。")}</div>
+    ${manual.length ? `<h3 style="margin:14px 0 8px">手动确认</h3><div class="list">${manual.map(item => reviewCard(item, "pending")).join("")}</div>` : ""}
+    ${logs.length ? `<details style="margin-top:14px"><summary>审核日志</summary><pre>${U.esc(U.json(logs.slice(-20)))}</pre></details>` : ""}
   </section>`;
 }
 
@@ -600,10 +626,12 @@ function renderHealth() {
 
 function renderConnections() {
   const data = AS.connections || { items: [], templates: [] };
+  const diag = AS.llmDiagnostics;
   return `<section class="layout-2">
     <div class="panel">
       <div class="panel-head"><h2>连接档案</h2><button class="small" data-action="load-connections">刷新</button></div>
       <div class="list">${(data.items || []).map(c => `<div class="item" data-connection-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.label || c.name)}</strong>${C.badge(c.active ? "默认" : "档案", c.active ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(c.provider || "openai-compatible")} · ${U.esc(c.model || "")}</span><div class="chip-row"><span class="chip">temp ${c.temperature ?? "-"}</span><span class="chip">max ${c.maxTokens ?? "-"}</span><span class="chip">top_p ${c.topP ?? "-"}</span>${c.hasApiKey ? `<span class="chip ok">key ${U.esc(c.maskedKey || "saved")}</span>` : `<span class="chip warn">no key</span>`}</div><div class="actions"><button class="small" data-action="set-default-connection">设为默认</button><button class="small" data-action="test-connection">测试</button><button class="small" data-action="duplicate-connection">复制</button><button class="small danger" data-action="delete-connection">删除</button></div></div>`).join("") || C.empty("暂无连接档案")}</div>
+      ${diag ? `<div class="panel tight" style="margin-top:12px"><div class="panel-head"><h3>最近诊断</h3>${C.badge(diag.safeToSave ? "可保存" : "需修正", diag.safeToSave ? "ok" : "bad")}</div><div class="list">${(diag.checks || []).map(c => `<div class="item"><div class="item-head"><strong>${U.esc(c.label || c.id)}</strong>${C.badge(c.status || "unknown", c.status === "ok" ? "ok" : c.status === "fail" ? "bad" : "warn")}</div><span class="tiny muted">${U.esc(c.detail || "")}</span></div>`).join("")}</div>${diag.suggestions?.length ? C.notice(U.esc(diag.suggestions.join("；")), diag.safeToSave ? "warn" : "bad") : ""}</div>` : ""}
     </div>
     <aside class="panel">
       <h3>新增 / 更新连接</h3>
@@ -684,7 +712,7 @@ async function loadViewData() {
   try {
     if (AS.view === "library" && AS.libraryTab === "characters") AS.characters = await API.loadCharacters();
     if ((AS.view === "library" && AS.libraryTab === "worldbook") || AS.view === "workbench") await loadWorldbookIfPossible();
-    if (AS.view === "library" && AS.libraryTab === "review") AS.reviewItems = (await API.alchemyReview()).items || [];
+    if (AS.view === "library" && AS.libraryTab === "review") await loadReviewFacts();
     if (AS.view === "settings" && AS.settingsTab === "connections") AS.connections = await API.connections();
     if (AS.view === "settings" && AS.settingsTab === "plugins") AS.plugins = await API.plugins();
     if (AS.view === "observe") await refreshObserve();
@@ -698,6 +726,20 @@ async function loadWorldbookIfPossible() {
   if (!m || m.id === "__quick__" || m.id.startsWith("char:")) return;
   const wb = await API.loadWorldbook(m.id);
   if (wb.status === "ok") AS.worldbookEntries = wb.entries || [];
+}
+
+async function loadReviewFacts() {
+  if (!AS.selectedModule || AS.selectedModule.id === "__quick__" || AS.selectedModule.id.startsWith("char:")) {
+    const legacy = await API.alchemyReview();
+    AS.reviewItems = legacy.items || [];
+    AS.manualReviewItems = [];
+    AS.reviewLog = [];
+    return;
+  }
+  const facts = await API.reviewPending(AS.selectedModule.id);
+  AS.reviewItems = facts.pending || facts.items || [];
+  AS.manualReviewItems = facts.manual || [];
+  try { AS.reviewLog = (await API.reviewLog(AS.selectedModule.id)).log || []; } catch { AS.reviewLog = []; }
 }
 
 async function refreshObserve() {
@@ -886,8 +928,8 @@ async function handleAction(e, btn) {
     if (action === "test-worldbook") return testWorldbook();
     if (action === "alchemy-import") return alchemyImport();
     if (action === "enqueue-review") return enqueueReview();
-    if (action === "load-review") { AS.reviewItems = (await API.alchemyReview()).items || []; return render(); }
-    if (["confirm-review", "ignore-review", "merge-review"].includes(action)) return reviewAction(action, btn.closest("[data-review-id]")?.dataset.reviewId);
+    if (action === "load-review") { await loadReviewFacts(); return render(); }
+    if (["confirm-review", "ignore-review", "merge-review", "adopt-manual-review"].includes(action)) return reviewAction(action, btn.closest("[data-review-id]")?.dataset.reviewId);
     if (action === "export-worldpack") return exportWorldpack();
     if (action === "download-worldpack") return downloadWorldpack();
     if (action === "import-worldpack") return importWorldpack();
@@ -916,15 +958,30 @@ async function loadAndChat() {
   render();
 }
 
-function quickStartChat() {
+async function quickStartChat() {
   const text = U.qs("#quickStartText")?.value.trim();
   if (!text) return createToast("请先粘贴内容或拖拽文件", "warn");
   AS.quickStartContent = text;
   AS.isQuickStart = true;
-  AS.selectedModule = { id: "__quick__", name: "快速对话", displayName: "快速对话", dataMode: "worldbook", turnCount: 0 };
+  const title = text.split(/\r?\n/).map(x => x.trim()).find(Boolean)?.slice(0, 18) || "快速项目";
+  const res = await API.createModule({
+    name: `快速项目_${Date.now()}`,
+    displayName: title,
+    dataMode: "worldbook",
+    subType: "quick",
+    preset: "minimal",
+    quickProject: true,
+    draft: true,
+    sourceType: "pasted_text",
+    sourceText: text
+  });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "创建草稿失败");
+  await refreshModules();
+  AS.selectedModule = AS.modules.find(m => m.id === res.module.id) || res.module;
   AS.messages = [];
   AS.workbenchMode = "chat";
   AS.view = "workbench";
+  createToast("已创建快速项目草稿");
   render();
 }
 
@@ -1200,9 +1257,9 @@ async function testWorldbook() {
 async function alchemyImport() {
   const text = U.qs("#alchemyText")?.value.trim();
   if (!text) return createToast("请先粘贴素材", "warn");
-  const res = await API.alchemyImport({ text });
+  const res = await API.alchemyImport({ text, moduleKey: AS.selectedModule?.id || "" });
   if (res.status !== "ok") throw new Error(res.errorMsg || "提取失败");
-  AS.reviewItems = (await API.alchemyReview()).items || [];
+  await loadReviewFacts();
   createToast(`已加入审核队列 ${res.reviewItems?.length || 0} 项`);
   AS.libraryTab = "review";
   render();
@@ -1211,30 +1268,36 @@ async function alchemyImport() {
 async function enqueueReview() {
   const text = U.qs("#reviewSourceText")?.value.trim();
   if (!text) return createToast("请先粘贴素材", "warn");
-  const res = await API.alchemyImport({ text });
+  const res = await API.alchemyImport({ text, moduleKey: AS.selectedModule?.id || "" });
   if (res.status !== "ok") throw new Error(res.errorMsg || "提取失败");
-  AS.reviewItems = (await API.alchemyReview()).items || [];
+  await loadReviewFacts();
   render();
 }
 
 async function reviewAction(action, id) {
   if (!id) return;
   const payload = { id, moduleKey: AS.selectedModule?.id };
-  if (action === "confirm-review") payload.action = "confirm";
-  if (action === "ignore-review") payload.action = "ignore";
+  if (!payload.moduleKey || payload.moduleKey === "__quick__") {
+    if (action === "confirm-review") payload.action = "confirm";
+    if (action === "ignore-review") payload.action = "ignore";
+    if (action === "merge-review") payload.action = "merge";
+    const res = await API.alchemyReview(payload);
+    AS.reviewItems = res.items || [];
+    return render();
+  }
+  let endpoint = action === "ignore-review" ? "reject" : "adopt";
   if (action === "merge-review") {
-    payload.action = "merge";
+    endpoint = "edit-and-adopt";
     const item = AS.reviewItems.find(x => x.id === id) || {};
-    const entity = prompt("实体名修正", item.entity || "");
-    if (entity) payload.entity = entity;
-    const patch = prompt("字段修正 JSON（可留空）", "{}");
-    if (patch && patch.trim() && patch.trim() !== "{}") {
-      try { payload.data = JSON.parse(patch); }
+    const patch = prompt("编辑后的 after JSON", U.json(item.after || item.data || {}));
+    if (patch && patch.trim()) {
+      try { payload.after = JSON.parse(patch); }
       catch { return createToast("字段 JSON 格式不正确", "bad"); }
     }
   }
-  const res = await API.alchemyReview(payload);
-  AS.reviewItems = res.items || [];
+  const res = await API.reviewAction(endpoint, payload);
+  if (res.status !== "ok") throw new Error(res.errorMsg || "审核操作失败");
+  await loadReviewFacts();
   render();
 }
 
@@ -1311,6 +1374,7 @@ async function saveConnection() {
     provider: U.qs("#connTemplate")?.value
   };
   AS.connections = await API.connections({ action: "upsert", profile, setDefault: true });
+  AS.llmDiagnostics = null;
   createToast("连接档案已保存");
   render();
 }
@@ -1318,7 +1382,11 @@ async function saveConnection() {
 async function connectionAction(action, id) {
   const map = { "set-default-connection": "setDefault", "test-connection": "test", "duplicate-connection": "duplicate", "delete-connection": "delete" };
   const res = await API.connections({ action: map[action], id });
-  if (action === "test-connection") createToast(res.status === "ok" ? `连接成功 ${res.latencyMs}ms` : (res.errorMsg || "连接失败"), res.status === "ok" ? "" : "bad");
+  if (action === "test-connection") {
+    AS.llmDiagnostics = res;
+    createToast(res.status === "ok" || res.status === "partial" ? `诊断完成 ${res.latencyMs || 0}ms` : (res.errorMsg || "连接失败"), res.status === "ok" || res.status === "partial" ? "" : "bad");
+    render();
+  }
   else { AS.connections = res; render(); }
 }
 

@@ -152,19 +152,19 @@ if (combinedCode.includes("AS.engineState||") || combinedCode.includes("engineSt
   pass("发送聊天时使用 AS.engineState");
 
 // ═══════════════════════════════════════════════════════════════
-//  5. 快速开始模式隔离
+//  5. 快速项目草稿
 // ═══════════════════════════════════════════════════════════════
 
-console.log("\n⚡ 快速模式隔离");
+console.log("\n⚡ 快速项目草稿");
 
-if (serverCode.includes('startsWith("__")') && serverCode.includes("persistTurn"))
-  pass("__quick__ 模块跳过持久化");
+if (serverCode.includes("quickProject") && serverCode.includes("source.txt"))
+  pass("快速开始创建真实草稿世界并保存 source.txt");
 
-if (combinedCode.includes("AS.isQuickStart") && combinedCode.includes("persist()"))
-  pass("快速模式跳过 localStorage 写入");
+if (serverCode.includes("finalizeDraft") && serverCode.includes("/api/modules/finalize-draft"))
+  pass("草稿世界提供 finalize API");
 
-if (combinedCode.includes("AS.isQuickStart") && combinedCode.includes("快速模式"))
-  pass("快速模式有 UI 标识");
+if (combinedCode.includes("quickProject: true") && combinedCode.includes("快速项目草稿"))
+  pass("UI 使用快速项目草稿标识并调用创建接口");
 
 // ═══════════════════════════════════════════════════════════════
 //  6. 密钥安全

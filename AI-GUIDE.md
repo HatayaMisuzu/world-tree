@@ -1,7 +1,7 @@
 # World Tree — AI 开发指南
 
 > 本文档供 AI agent / LLM 阅读，快速理解项目架构、文件路径和修改规则。
-> 最后更新: v0.2.2 (2026-06-18) — 安全硬化与测试补齐版：版本事实源、overlay 白名单写入、旧版导入校验、Guardian 约束测试和集成门禁。
+> 最后更新: v0.3.0 (2026-06-19) — 本地优先工作台基线：模型连接诊断、快速项目草稿、审核事实源、世界包安全导入和集成门禁。
 
 ## 项目定位
 
@@ -122,6 +122,11 @@ data/engine/worlds/{name}/
 │   ├── state.json          ← {turnCount, engineState, lastScene}
 │   ├── chat.jsonl          ← 每轮追加一行{role, content, round, ts}
 │   ├── memory.jsonl        ← 每轮追加一行{scene, summary, emotion, ...}
+│   ├── source.txt          ← 快速项目草稿的原始粘贴素材（可选）
+│   ├── pending.jsonl       ← 待用户采纳的审核事实源
+│   ├── manual.jsonl        ← 必须手动确认的审核事实源
+│   ├── review-log.jsonl    ← 采纳/拒绝/编辑后采纳日志
+│   ├── snapshots/          ← 审核采纳前快照
 │   └── overlay/            ← 引擎writeSet执行目标
 │       ├── runtime-overlay.json / canon-overlay.json
 │       ├── characters-overlay.json / worldbook-overlay.json
@@ -135,11 +140,16 @@ data/engine/worlds/{name}/
 | 端点 | 方法 | 说明 | 调用的引擎模块 |
 |:----|:----:|:-----|:--------------|
 | `/api/llm/chat` | POST | 双段式叙事对话 | `llm.js sendDualStageTurn()` |
+| `/api/llm/test` | POST | 当前模型连接诊断：Base URL / Key / model / `/models` / `chat/completions` | `server.js` |
 | `/api/alchemy/digest` | POST | 解析文本→创建模组/角色卡 | `alchemy importFile()` / `skill-generator.js` |
 | `/api/alchemy/import` | POST | 解析文本→返回 items，并加入审核队列 | `alchemy importFile()` |
 | `/api/alchemy/review` | GET/POST | 审核队列读写，确认后写入正式世界数据 | `server.js` |
+| `/api/review/pending` | GET/POST | 读取世界 runtime 审核事实源，或兼容 list 操作 | `runtime/pending.jsonl` + `manual.jsonl` |
+| `/api/review/adopt` / `/api/review/edit-and-adopt` / `/api/review/reject` | POST | 采纳、编辑后采纳或拒绝审核项，采纳前写快照 | `runtime/review-log.jsonl` |
+| `/api/review/log` | GET | 读取审核日志 | `runtime/review-log.jsonl` |
 | `/api/modules` | GET | 列出所有模组 | 扫描 `data/engine/worlds/` |
-| `/api/modules/create` | POST | 创建新模组 | 写 `world.json` + `shared/` + `runtime/` |
+| `/api/modules/create` | POST | 创建新模组；`quickProject:true` 时创建草稿世界并保存 `runtime/source.txt` | 写 `world.json` + `shared/` + `runtime/` |
+| `/api/modules/finalize-draft` | POST | 将草稿世界转为正式世界 | `world.json` + `runtime/state.json` |
 | `/api/modules/{id}/history` | GET | 加载对话历史 | 读 `runtime/chat.jsonl` |
 | `/api/characters` | GET | 列出角色卡 | 扫描 `data/engine/characters/` |
 | `/api/characters/import` | POST | 导入 ST v2/v3 JSON 或 PNG metadata 角色卡 | `st-card.js` |
@@ -166,7 +176,7 @@ data/engine/worlds/{name}/
 5. **API 契约**: 每个 API 返回字段必须被 HTML 使用
 6. **engineState 链路**: 存储(state.json) → 加载(history API) → 发送(chat API) 完整闭环
 7. **JSONL 一致性**: 写入的字段与读取时使用的字段对齐
-8. **快速模式隔离**: `__quick__` 模块不执行持久化
+8. **快速项目草稿**: 快速开始必须创建真实世界目录，`world.json.draft=true`，原始素材写入 `runtime/source.txt`
 9. **密钥安全**: `saveLlmSecret` 拒绝掩码格式 key（≥4个连续`*`号），HTML 不预填密码框；`/api/secrets/llm-value` 仅返回脱敏值
 10. **本地访问**: `isLocalRequest()` 检查 Origin，非 localhost 请求返回 403
 11. **速率限制**: 静态文件 300/min + API 120/min，超限返回 429
@@ -186,7 +196,7 @@ data/engine/worlds/{name}/
 | API 契约 | 每个返回字段被 HTML 使用 |
 | JSONL 一致性 | chat/memory.jsonl 字段在读写端对齐 |
 | engineState 链路 | 存储→加载→发送 完整闭环 |
-| 快速模式隔离 | `__quick__` 不持久化、有 UI 标识 |
+| 快速项目草稿 | `quickProject:true` 创建真实草稿世界并可 finalize |
 | 密钥安全 | 掩码拒绝、不预填 |
 
 ---
