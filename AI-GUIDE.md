@@ -172,7 +172,7 @@ data/engine/worlds/{name}/
 | `/api/turn/debug` | GET | 读取本轮叙事黑盒 | `userData/turn-debug/` |
 | `/api/world-pack/export` | GET/POST | 导出 `.worldtree` 世界包 | `world.json` + `shared/` |
 | `/api/world-pack/import` | POST | 预览/确认导入 `.worldtree` 世界包 | `data/engine/worlds/` |
-| `/api/plugins` | GET/POST | 本地 importer/reviewer 插件 manifest 与启用状态 | `userData/plugins/` |
+| `/api/plugins` | GET/POST | Deferred/internal：插件系统不属于 v0.3.0 公开产品主线，默认 UI 不暴露，仅保留内部预留能力 | `userData/plugins/` |
 | `/api/secrets/llm-value` | GET | 获取密钥（脱敏，仅返回掩码） | 读 `secrets.json`（不返回明文） |
 
 ---
