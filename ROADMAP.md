@@ -1,16 +1,8 @@
 # World Tree Roadmap
 
-## Current Baseline: v0.2.2
+## Current Baseline: v0.3.0
 
-v0.2.2 focuses on security hardening and test coverage rather than new features:
-
-- Import paths are now rejected (not silently sanitized) for traversal, absolute, and ambiguous segments.
-- Unknown overlay files are always manual-only, even when `policy:auto` is requested.
-- Sensitive overlay files (characters/worldbook/scene-chain) cannot be auto-upgraded.
-- Guardian overlay checks target the `runtime/overlay` whitelist instead of the old `data/engine` wording.
-- Integration tests run against `WORLD_TREE_DATA_DIR` to avoid touching real local data.
-- Module lifecycle and export/import roundtrip are covered by integration tests.
-- `module-service.js` now provides a `createModuleService()` factory; `server.js` delegates to it.
+v0.3.0 is the local-first workbench baseline: model connection diagnostics, draft worlds, review queues, and `.worldtree` import/export.
 
 ## Next Priorities
 

@@ -11,6 +11,22 @@ Current version: `v0.3.0`.
 
 Chinese documentation: [README.md](README.md)
 
+## Who It's For
+
+- AI setting enthusiasts who want to organize characters, worlds, factions, locations, rules, relationships, and story material.
+- Text adventure players who want to type actions and let an AI-driven world respond.
+- Lightweight users who only want to paste material, connect a model, and start playing.
+- Interactive fiction / RP / tabletop creators who maintain long-running stories and world state.
+- Local-first AI users who want worlds, characters, chats, and review logs stored on their own machine.
+- Future AI-driven text game players and builders, including AI text RPGs, mystery games, romance sims, world exploration, and tabletop-like experiences.
+- Developers and researchers exploring worldbooks, state machines, and LLM narrative pipelines.
+
+You do not need a complete worldbook to start. In v0.3.0, you can paste material first, create a draft world, and later organize characters, worldbook entries, review records, and export packages.
+
+This version does not bundle a complete example world. Example worlds are a separate follow-up project and will be added only after the worldbook content and content provenance are confirmed.
+
+> The plugin system is deferred and is not part of the v0.3.0 product scope. Some internal scaffolding may remain in the repository, but the default UI should not expose plugin entry points, and users should not rely on plugin functionality in this version.
+
 ## Quickstart
 
 Requirements: Node.js 18 or newer.
@@ -39,7 +55,7 @@ Default LLM settings:
 - Stores worlds, chat logs, runtime state, and overlays in local JSON/JSONL files.
 - Supports worldbook mode, character-card mode, and lightweight preset mode.
 - Includes a content alchemy pipeline for turning pasted material into structured worlds or character cards.
-- Adds a creator workbench for batch ST character import, character tags, worldbook editing/testing/import/export, connection profiles with diagnostics, chat message actions and candidate branches, narrative trace inspection, JSONL-backed review queues with adopt/reject flows, selectable `.worldtree` import/export, and local importer/reviewer plugin manifests with JSON dry-run.
+- Adds a creator workbench for batch ST character import, character tags, worldbook editing/testing/import/export, connection profiles with diagnostics, chat message actions and candidate branches, narrative trace inspection, JSONL-backed review queues with adopt/reject flows, and selectable `.worldtree` import/export.
 - Quick start now creates a persisted draft world from pasted material instead of a temporary in-memory chat.
 - Does not bundle story, case, or character-card material by default. `defaults/examples/manifest.json` is an empty entry point for future maintainer-provided material with recorded provenance.
 - Keeps API keys in local `userData/secrets.json`; see [SECURITY.md](SECURITY.md) for the threat model.

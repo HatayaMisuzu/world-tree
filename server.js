@@ -2424,7 +2424,7 @@ async function handleAPI(req, res) {
     if (path === "/api/world-pack/export" && method === "POST") return jsonResponse(res, await handleWorldPackExport(await readBody(req), url));
     if (path === "/api/world-pack/import" && method === "POST") return jsonResponse(res, await handleWorldPackImport(await readBody(req)));
 
-    // ── 本地插件 ──
+    // ── 本地插件 (Deferred/internal API. Plugin system is not part of v0.3.0 public product scope.) ──
     if (path === "/api/plugins" && method === "GET") return jsonResponse(res, await handlePlugins({}, "GET"));
     if (path === "/api/plugins" && method === "POST") return jsonResponse(res, await handlePlugins(await readBody(req), "POST"));
 

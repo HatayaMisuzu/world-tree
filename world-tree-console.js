@@ -1,5 +1,8 @@
 "use strict";
 
+// Deferred/internal: plugin system is not part of v0.3.0 public product scope.
+const ENABLE_DEFERRED_PLUGINS = false;
+
 const CFG = {
   version: "unknown",
   nav: [
@@ -346,10 +349,10 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>快速开始</h2><p class="sub">拖拽或粘贴素材，创建一个本地草稿世界后开始对话。</p></div></div>
+        <div class="panel-head"><div><h2>快速开始：粘贴设定，先玩起来</h2><p class="sub">适合轻度用户、AI 设定爱好者和文字冒险玩家。你可以直接粘贴角色、世界观、开场剧情或规则片段，World Tree 会创建一个可继续、可审核、可导出的草稿世界。</p></div></div>
         <div id="quickStartDrop" class="drop-zone"><strong>拖拽文件 / 文件夹到此处，或点击选择</strong><span>支持 .md .txt .json</span></div>
         <textarea id="quickStartText" placeholder="或在这里粘贴设定、片段、角色描述..."></textarea>
-        <div class="actions"><button class="primary" data-action="quick-start-chat">创建草稿并开始对话</button><span class="tiny muted">草稿可继续、审核、导出，也可稍后转为正式世界。</span></div>
+        <div class="actions"><button class="primary" data-action="quick-start-chat">创建草稿世界并开始</button><span class="tiny muted">不需要先写完整世界书。后续可以把草稿整理成正式世界。</span></div>
       </section>
 
       <section class="cols-2">
@@ -461,20 +464,17 @@ const Views = {
   },
 
   settings() {
-    const tabs = [
-      { id: "connections", label: "模型连接" },
-      { id: "plugins", label: "插件" },
-      { id: "data", label: "数据与备份" },
-      { id: "appearance", label: "外观" },
-      { id: "advanced", label: "高级" },
-    ];
-    const body = {
-      connections: renderConnections,
-      plugins: renderPlugins,
-      data: renderDataSettings,
-      appearance: renderAppearance,
-      advanced: renderAdvanced,
-    }[AS.settingsTab]();
+    // Fallback: if deferred plugins are hidden but user had stale tab state
+    if (!ENABLE_DEFERRED_PLUGINS && AS.settingsTab === "plugins") AS.settingsTab = "connections";
+    const tabs = [];
+    tabs.push({ id: "connections", label: "模型连接" });
+    if (ENABLE_DEFERRED_PLUGINS) tabs.push({ id: "plugins", label: "插件" });
+    tabs.push({ id: "data", label: "数据与备份" });
+    tabs.push({ id: "appearance", label: "外观" });
+    tabs.push({ id: "advanced", label: "高级" });
+    const body = (ENABLE_DEFERRED_PLUGINS
+      ? { connections: renderConnections, plugins: renderPlugins, data: renderDataSettings, appearance: renderAppearance, advanced: renderAdvanced }
+      : { connections: renderConnections, data: renderDataSettings, appearance: renderAppearance, advanced: renderAdvanced })[AS.settingsTab]();
     return `<div class="grid">
       <div><h2>设置</h2><p class="sub">低频、敏感与技术性操作集中在这里。</p></div>
       ${C.tabs(tabs, AS.settingsTab, "data-settings-tab")}
@@ -714,7 +714,7 @@ async function loadViewData() {
     if ((AS.view === "library" && AS.libraryTab === "worldbook") || AS.view === "workbench") await loadWorldbookIfPossible();
     if (AS.view === "library" && AS.libraryTab === "review") await loadReviewFacts();
     if (AS.view === "settings" && AS.settingsTab === "connections") AS.connections = await API.connections();
-    if (AS.view === "settings" && AS.settingsTab === "plugins") AS.plugins = await API.plugins();
+    if (AS.view === "settings" && AS.settingsTab === "plugins" && ENABLE_DEFERRED_PLUGINS) AS.plugins = await API.plugins();
     if (AS.view === "observe") await refreshObserve();
   } catch (err) {
     console.warn("加载视图数据失败", err);
