@@ -3,9 +3,11 @@
 本地优先的 AI 叙事引擎与 Web 控制台。
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.2.1-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.2.2-blue.svg)
 
 **当前版本: v0.2.2**
+
+**当前升级目标: v0.3.0**。本轮升级聚焦本地优先的 AI 文字交互工作台底座：首次启动、模型连接、创建或导入项目、第一轮可保存对话、审核变更和 `.worldtree` 导入导出。插件生态、社区市场和完整示例世界内容暂缓为独立后续工程。
 
 World Tree 用一个普通的 Node.js 本地服务，把世界书、角色卡、叙事状态、对话历史和 LLM 调用组织在一起。它面向长篇互动叙事、角色扮演、世界设定管理和创作实验；默认只在本机运行，不依赖 Electron，也不绑定任何特定云服务。
 
@@ -20,7 +22,7 @@ English documentation: [README.en.md](README.en.md)
 
 ## 当前版本重点
 
-`0.2.1` 是稳定性重构版：前端版本显示改为读取 `/api/health`，overlay 写入统一到 `{world}/runtime/overlay/` 的白名单文件，旧版导入会在落盘前完整校验 JSON/JSONL，Guardian 补强了中英文约束检查和回应检查，`preflight` 纳入集成测试。
+`0.2.2` 是安全硬化与测试补齐版：Dashboard telemetry 状态读取、Guardian 去重评分、旧版 LLM 入口超时、overlay pending 消费、导入路径 reject 和运行时恢复都有测试覆盖，`preflight` 纳入单元、集成和接口联动审计。
 
 - 角色库：批量导入 SillyTavern v2/v3 JSON，并尝试解析带 `chara` 元数据的 PNG 角色卡；支持标签和说明编辑。
 - 世界书编辑器：新增、编辑、停用、删除、分组、批量导入导出条目，并测试触发命中和排序原因。

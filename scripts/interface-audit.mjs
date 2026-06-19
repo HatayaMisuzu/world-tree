@@ -25,16 +25,19 @@ console.log("\n📁 文件 IO 校准");
 
 const serverCode = readFileSync(join(ROOT, "server.js"), "utf-8");
 
-// 从 server.js 里找到 buildModuleModel 读的 shared/ 文件
-const readMatches = [...serverCode.matchAll(/join\(shared,\s*"([^"]+)"/g)];
+const moduleServiceCode = readFileSync(join(ROOT, "src/server/module-service.js"), "utf-8");
+const ioSourceCode = `${serverCode}\n${moduleServiceCode}`;
+
+// 从当前服务端入口和 module-service 里找到 buildModuleModel 读的 shared/ 文件
+const readMatches = [...ioSourceCode.matchAll(/join\(shared,\s*"([^"]+)"/g)];
 const readFiles = new Set(readMatches.map(m => m[1]));
 
-// 从 server.js 里找到 createModule 写的所有 shared/ 文件
+// 从当前服务端入口和 module-service 里找到 createModule 写的所有 shared/ 文件
 // 方式1: 显式字符串 join(worldDir, "shared", "xxx.json")
-const explicitWrites = new Set([...serverCode.matchAll(/join\(worldDir,\s*"shared",\s*"([^"]+)"/g)].map(m => m[1]));
+const explicitWrites = new Set([...ioSourceCode.matchAll(/join\(worldDir,\s*"shared",\s*"([^"]+)"/g)].map(m => m[1]));
 // 方式2: for 循环里用变量写的（从数组声明里提取）
-const forLoopMatch = serverCode.match(/for\s*\(const\s*\[file,\s*[^)]+\]\s*of\s*\[(.*?)\]\]\s*\)/s);
-if (forLoopMatch) {
+const forLoopMatches = [...ioSourceCode.matchAll(/for\s*\(const\s*\[file,\s*[^)]+\]\s*of\s*\[(.*?)\]\]\s*\)/gs)];
+for (const forLoopMatch of forLoopMatches) {
   const arrText = forLoopMatch[1];
   const loopFiles = [...arrText.matchAll(/"([a-z_]+\.json)"/g)].map(m => m[1]);
   for (const f of loopFiles) explicitWrites.add(f);

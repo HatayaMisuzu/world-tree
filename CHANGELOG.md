@@ -2,6 +2,24 @@
 
 > 审查记录。AI 无需阅读此文件。
 
+## Unreleased — v0.3.0
+
+### Fixed
+- `interface-audit` 的 shared 文件 IO 校准会同时扫描 `server.js` 与 `src/server/module-service.js`，避免服务拆分后误报 `createModule` 写入但 `buildModuleModel` 不读取。
+
+### Added
+- 新增 `docs/v0.3.0-baseline-audit.md`，记录 v0.3.0 升级前的版本、测试、文件规模和已知风险基线。
+
+### Changed
+- README / README.en 明确当前升级目标统一收敛到 v0.3.0，但暂不修改公开 package version。
+
+### Security
+
+### Deferred
+- 插件系统暂不展开。
+- 社区与生态暂不展开。
+- 完整示例世界内容另行制作，不阻塞 v0.3.0。
+
 ## v0.2.2 — 安全硬化与测试补齐 (2026-06-18)
 
 ### Fixed

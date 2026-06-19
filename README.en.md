@@ -7,6 +7,8 @@ World Tree is a local-first AI narrative engine with a browser-based web console
 
 Current version: `v0.2.2`.
 
+Current upgrade target: `v0.3.0`. This upgrade line focuses on the local-first AI text interaction workbench foundation: first-run onboarding, model connection, creating or importing a project, saving the first playable turn, reviewing AI-proposed changes, and `.worldtree` import/export. Plugin ecosystem work, community marketplace features, and full example-world content are deferred to separate follow-up work.
+
 Chinese documentation: [README.md](README.md)
 
 ## Quickstart
