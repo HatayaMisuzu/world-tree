@@ -12,6 +12,9 @@
 
 ### Changed
 - README / README.en 明确当前升级目标统一收敛到 v0.3.0，但暂不修改公开 package version。
+- `/api/health` 默认返回轻量本地状态，`detail=full` 才计算数据目录体积并可选执行远程 LLM `/models` 检查。
+- 新增 `src/server/fs-utils.js`，集中 JSON、JSONL、目录和尾读工具，降低 server 与 overlay persistence 的重复实现。
+- `buildModuleModel()` 缓存改为基于 world/shared/runtime/overlay 文件 mtime 指纹，连续 dashboard 读取可复用缓存，世界书或运行状态变更会立即失效。
 
 ### Security
 - 新增统一路径安全模块，覆盖 URL 编码路径、null byte、绝对路径、Windows 盘符/UNC、超长路径和混用分隔符等边界。

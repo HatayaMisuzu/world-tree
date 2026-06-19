@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -37,7 +37,6 @@ export function createModuleService(deps) {
     pathWithinRoot,
     safeEntityId
   } = deps;
-  const MODEL_CACHE_TTL_MS = Number(deps.modelCacheTtlMs || 1000);
   const modelCache = new Map();
 
   function clone(value) {
@@ -179,14 +178,48 @@ export function createModuleService(deps) {
     };
   }
 
+  function fileFingerprint(filePath) {
+    try {
+      const st = statSync(filePath);
+      return `${filePath}:${st.mtimeMs}:${st.size}`;
+    } catch {
+      return `${filePath}:missing`;
+    }
+  }
+
+  function getModuleFingerprint(worldDir) {
+    const paths = [
+      join(worldDir, "world.json"),
+      join(worldDir, "runtime", "state.json"),
+      join(worldDir, "runtime.json")
+    ];
+
+    const sharedDir = join(worldDir, "shared");
+    if (existsSync(sharedDir)) {
+      for (const entry of readdirSync(sharedDir, { withFileTypes: true })) {
+        if (entry.isFile() && entry.name.endsWith(".json")) paths.push(join(sharedDir, entry.name));
+      }
+    }
+
+    const overlayDir = join(worldDir, "runtime", "overlay");
+    if (existsSync(overlayDir)) {
+      for (const entry of readdirSync(overlayDir, { withFileTypes: true })) {
+        if (entry.isFile() && /\.(json|jsonl)$/i.test(entry.name)) paths.push(join(overlayDir, entry.name));
+      }
+    }
+
+    return paths.sort().map(fileFingerprint).join("|");
+  }
+
   async function buildModuleModel(moduleId) {
     const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, ""), "");
     const worldDir = moduleWorldDir(moduleId);
     const empty = { loaded: true, selected: { id: worldName, name: worldName, path: worldDir, branch: "main" }, moduleData: { characters: [], scenes: [], worldbook: { entries: [] }, relations: {}, timeline: {}, worldState: {}, organizations: [], races: [], runtime: {}, tracking: [], canon: {} }, entities: [], turnCount: 0 };
     if (!worldDir || !pathWithinRoot(worldsDir(), worldDir) || !existsSync(worldDir)) return empty;
     const cacheKey = normalizeModuleKey(moduleId);
+    const fingerprint = getModuleFingerprint(worldDir);
     const cached = modelCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) return clone(cached.model);
+    if (cached?.fingerprint === fingerprint) return clone(cached.model);
 
     const world = readJsonSync(join(worldDir, "world.json"), {});
     const state = readJsonSync(join(worldDir, "runtime", "state.json"), {}) || readJsonSync(join(worldDir, "runtime.json"), {}); // 兼容旧格式
@@ -214,7 +247,7 @@ export function createModuleService(deps) {
       // 读取上轮 overlay 数据（runtime/overlay/ 下的增量文件）
       _overlay: readOverlayData(worldDir)
     };
-    modelCache.set(cacheKey, { expiresAt: Date.now() + MODEL_CACHE_TTL_MS, model: clone(model) });
+    modelCache.set(cacheKey, { fingerprint, model: clone(model) });
     return model;
   }
 

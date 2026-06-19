@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync, createReadStream, rmSync } from "node:fs";
-import { readFile, writeFile, mkdir, appendFile, readdir, stat } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join, dirname, extname, resolve, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,7 @@ import { applyOverlayOperation, applyOverlayWriteSet } from "./src/server/persis
 import { prepareImportFiles, validateImportFileKey } from "./src/server/data-import-service.js";
 import { sanitizeWorldName, createModuleService } from "./src/server/module-service.js";
 import { pathWithinRoot, resolveInsideRoot } from "./src/server/path-security.js";
+import { appendJsonl, calcDirectorySizeLimited, ensureDir, readJson, readJsonSync, readJsonlTail, writeJson } from "./src/server/fs-utils.js";
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
@@ -141,93 +142,6 @@ function checkRateLimit(remoteAddr, limit) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  JSONL 工具函数
-// ═══════════════════════════════════════════════════════════════
-
-/** 追加一行 JSON 到 JSONL 文件（异步写入，非阻塞） */
-async function appendJsonl(filePath, record) {
-  await mkdir(dirname(filePath), { recursive: true });
-  await appendFile(filePath, JSON.stringify(record) + "\n", "utf-8");
-}
-
-/** 读取 JSONL 文件末尾 N 行（流式反向读取，避免大文件 OOM） */
-async function readJsonlTail(filePath, N = 50) {
-  if (!existsSync(filePath)) return [];
-  try {
-    // 对于小文件（< 10MB）直接读取；大文件用流式反向读
-    const stat = statSync(filePath);
-    if (stat.size < 10 * 1024 * 1024) {
-      const text = await readFile(filePath, "utf-8");
-      const lines = text.trim().split("\n").filter(Boolean);
-      const tail = lines.slice(-N);
-      return tail.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean);
-    }
-    // 大文件：从末尾反向读取 chunk 直到拿到足够的行
-    const CHUNK = 64 * 1024; // 64KB chunks
-    const chunks = [];
-    let offset = stat.size;
-    let lines = [];
-    const fd = await (await import("node:fs/promises")).open(filePath, "r");
-    try {
-      while (offset > 0 && lines.length < N + 5) {
-        const readSize = Math.min(CHUNK, offset);
-        offset -= readSize;
-        const buf = Buffer.alloc(readSize);
-        await fd.read(buf, 0, readSize, offset);
-        chunks.unshift(buf);
-        lines = Buffer.concat(chunks).toString("utf-8").split("\n").filter(Boolean);
-      }
-    } finally {
-      await fd.close();
-    }
-    if (offset > 0 && lines.length) lines.shift();
-    const tail = lines.slice(-N);
-    return tail.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean);
-  } catch (err) {
-    console.warn("[readJsonlTail] 读取失败:", filePath, err.message);
-    return [];
-  }
-}
-
-async function calcDirectorySizeLimited(rootDir, { maxEntries = 5000, maxMs = 250 } = {}) {
-  const deadline = Date.now() + maxMs;
-  let entries = 0;
-  let truncated = false;
-
-  async function walk(dir) {
-    if (Date.now() > deadline || entries >= maxEntries) {
-      truncated = true;
-      return 0;
-    }
-    let size = 0;
-    let list = [];
-    try {
-      list = await readdir(dir, { withFileTypes: true });
-    } catch {
-      return 0;
-    }
-    for (const entry of list) {
-      if (Date.now() > deadline || entries >= maxEntries) {
-        truncated = true;
-        break;
-      }
-      entries += 1;
-      const p = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        size += await walk(p);
-      } else {
-        try { size += (await stat(p)).size; } catch {}
-      }
-    }
-    return size;
-  }
-
-  if (!existsSync(rootDir)) return { sizeBytes: 0, entries: 0, truncated: false };
-  const sizeBytes = await walk(rootDir);
-  return { sizeBytes, entries, truncated };
-}
-
-// ═══════════════════════════════════════════════════════════════
 //  路径与默认配置
 // ═══════════════════════════════════════════════════════════════
 
@@ -259,31 +173,6 @@ const DEFAULT_CONFIG = {
 // ═══════════════════════════════════════════════════════════════
 //  配置管理
 // ═══════════════════════════════════════════════════════════════
-
-function ensureDir(dir) {
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-}
-
-function readJson(filePath, fallback) {
-  try {
-    return JSON.parse(readFileSync(filePath, "utf8"));
-  } catch {
-    return fallback;
-  }
-}
-
-async function writeJson(filePath, data) {
-  await mkdir(dirname(filePath), { recursive: true });
-  await writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
-}
-
-function readJsonSync(filePath, fallback) {
-  try {
-    return JSON.parse(readFileSync(filePath, "utf8"));
-  } catch {
-    return fallback;
-  }
-}
 
 async function loadConfig() {
   return { ...DEFAULT_CONFIG, ...readJson(configPath(), {}) };
@@ -2289,16 +2178,18 @@ async function handleAPI(req, res) {
 
     // ── 健康检查 ──
     if (path === "/api/health" && method === "GET") {
+      const fullDetail = url.searchParams.get("detail") === "full";
+      const checkLlmRemote = fullDetail && url.searchParams.get("checkLlm") !== "false";
       const config = await loadConfig();
       const apiKey = await getActiveLlmValue();
       const llmConfigured = Boolean(config.llmBaseUrl && config.llmModel && apiKey);
-      let llmStatus = llmConfigured ? "unknown" : "not_configured";
+      let llmStatus = llmConfigured ? "configured" : "not_configured";
       let llmDetail = "";
-      if (llmConfigured) {
+      if (llmConfigured && checkLlmRemote) {
         try {
           const resp = await fetch(`${config.llmBaseUrl.replace(/\/$/, "")}/models`, {
             method: "GET", headers: { Authorization: `Bearer ${apiKey}` },
-            signal: AbortSignal.timeout(1200)
+            signal: AbortSignal.timeout(800)
           });
           llmStatus = resp.ok ? "connected" : "error";
           if (!resp.ok) llmDetail = `HTTP ${resp.status}`;
@@ -2319,14 +2210,15 @@ async function handleAPI(req, res) {
         writableDetail = err?.message || "write probe failed";
       }
 
-      // 计算数据目录大小
-      let dataSizeBytes = 0;
-      let dataSizeTruncated = false;
-      try {
-        const sizeInfo = await calcDirectorySizeLimited(dataRoot());
-        dataSizeBytes = sizeInfo.sizeBytes;
-        dataSizeTruncated = sizeInfo.truncated;
-      } catch {}
+      let dataSize = null;
+      if (fullDetail) {
+        try {
+          const sizeInfo = await calcDirectorySizeLimited(dataRoot());
+          dataSize = { sizeBytes: sizeInfo.sizeBytes, sizeTruncated: sizeInfo.truncated, entries: sizeInfo.entries };
+        } catch {
+          dataSize = { sizeBytes: 0, sizeTruncated: true, entries: 0 };
+        }
+      }
 
       const worlds = listModules().filter(m => m.type === "world");
       const totalTurns = worlds.reduce((s, w) => s + (w.turnCount || 0), 0);
@@ -2345,7 +2237,7 @@ async function handleAPI(req, res) {
           baseUrl: config.llmBaseUrl,
           detail: llmDetail
         },
-        data: { root: dataRoot(), writable, writableDetail, sizeBytes: dataSizeBytes, sizeTruncated: dataSizeTruncated, worldsCount: worlds.length, totalTurns },
+        data: { root: dataRoot(), writable, writableDetail, worldsCount: worlds.length, totalTurns, ...(dataSize || {}) },
         debugMode: DEBUG_MODE
       });
     }

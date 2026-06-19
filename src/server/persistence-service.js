@@ -1,7 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
-import { appendFile, mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { OVERLAY_FILES, WRITE_POLICY, splitWriteSet } from "../core/engine/overlay-store.js";
+import { appendJsonl, readJsonSync, writeJson } from "./fs-utils.js";
 
 export const ALLOWED_OVERLAY_FILES = new Set(Object.values(OVERLAY_FILES));
 
@@ -11,29 +10,6 @@ function payloadOf(op = {}) {
 
 function modeOf(op = {}) {
   return op.op || op.mode || "merge-json";
-}
-
-async function ensureDir(dir) {
-  await mkdir(dir, { recursive: true });
-}
-
-function readJsonSync(filePath, fallback) {
-  try {
-    if (!existsSync(filePath)) return fallback;
-    return JSON.parse(readFileSync(filePath, "utf-8"));
-  } catch {
-    return fallback;
-  }
-}
-
-async function writeJson(filePath, data) {
-  await ensureDir(dirname(filePath));
-  await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
-}
-
-async function appendJsonl(filePath, data) {
-  await ensureDir(dirname(filePath));
-  await appendFile(filePath, `${JSON.stringify(data)}\n`, "utf-8");
 }
 
 export function resolveOverlayPath(runtimeDir, op = {}) {
