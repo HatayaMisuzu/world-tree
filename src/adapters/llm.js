@@ -1,6 +1,6 @@
 import { startupPacket } from "../core/commands.js";
 import { moduleTitle } from "../core/normalizers.js";
-import { completeTurn, DIRECTOR_MODES, moduleContext, renderKnowledgeCards } from "../core/world-engine.js";
+import { completeTurn, DIRECTOR_MODES, moduleContext, renderKnowledgeCards, scrubPromptForPrivacy } from "../core/world-engine.js";
 import { characterCardMode } from "../core/data/character-card.js";
 import { cardModeNarrativeHint } from "../core/data/character-card.js";
 import { styleInstruction } from "../core/data/templates.js";
@@ -127,6 +127,10 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
     ...(role === "writer" ? (historyMessages || []).filter((m) => m.role === "user" || m.role === "assistant" || m.role === "system").slice(-20) : []),
     { role: "user", content: packet }
   ];
+
+  // 隐私防线：擦洗 prompt 中的本机绝对路径后再发送 LLM
+  const safePacket = scrubPromptForPrivacy(packet);
+  messages[messages.length - 1].content = safePacket;
 
   // 🆕 v0.9.5 角色专属模型 → 默认模型 → 报错
   const modelCandidates = buildModelCandidates(role, config);
@@ -539,12 +543,16 @@ export async function sendGameTurn({ model, config, apiKey, personaText, engineP
 
   const system = buildSystemPrompt({ model, config, personaText, enginePacket, dataMode, injectedWorldbook, cards });
 
+  // 隐私防线
+  const safeSystem = scrubPromptForPrivacy(system);
+  const safeInput = scrubPromptForPrivacy(input);
+
   const body = {
     model: config.llmModel,
     messages: [
-      { role: "system", content: system },
+      { role: "system", content: safeSystem },
       ...messages.filter((item) => item.role === "user" || item.role === "assistant").slice(-20),
-      { role: "user", content: input }
+      { role: "user", content: safeInput }
     ],
     temperature: 0.85
   };
