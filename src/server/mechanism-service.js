@@ -28,7 +28,7 @@ export function scrubMechanismValue(value, depth = 0) {
 }
 
 const TYPE_DEFAULTS = Object.freeze({
-  affinity: { kind: "number", min: 0, max: 100, defaultValue: 0, preferredType: "relationship_panel" },
+  affinity: { kind: "number", min: 0, max: 100, defaultValue: 0, preferredType: "stat_bar" },
   exploration: { kind: "progress", min: 0, max: 100, defaultValue: 0, preferredType: "stat_bar" },
   inventory: { kind: "inventory", defaultItems: [], preferredType: "inventory_grid" },
   quest: { kind: "progress", min: 0, max: 100, defaultValue: 0, preferredType: "status_list" },
@@ -38,6 +38,18 @@ const TYPE_DEFAULTS = Object.freeze({
   counter: { kind: "number", min: 0, defaultValue: 0, preferredType: "status_list" },
   custom: { kind: "custom", preferredType: "status_list" }
 });
+
+const DEFAULT_SCOPE_BY_TYPE = Object.freeze({
+  affinity: "save", exploration: "save", inventory: "save", quest: "save",
+  reputation: "save", meter: "save", flag: "save", counter: "save", custom: "world"
+});
+
+export class MechanismValidationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "MechanismValidationError";
+  }
+}
 
 const TEMPLATE_DEFS = [
   ["affinity.basic.v1", "基础好感度机制", "affinity", "角色关系", "记录角色之间的好感、信任、亲密或敌意变化。", ["好感度", "信任", "亲密", "敌意", "关系值"], ["角色关系与信任变化"]],
@@ -55,7 +67,7 @@ export const MECHANISM_TEMPLATES = Object.freeze(TEMPLATE_DEFS.map(([templateId,
   return Object.freeze({
     templateId, name, type, category, description, keywords, examples,
     defaultDraft: {
-      name: name.replace(/机制$/, ""), type, description, scope: "world",
+      name: name.replace(/机制$/, ""), type, description, scope: DEFAULT_SCOPE_BY_TYPE[type] || "world",
       stateSchema: { ...defaults, preferredType: undefined },
       visualHint: { preferredType: defaults.preferredType, showToPlayer: true }
     },
@@ -86,7 +98,7 @@ function draftFor(type, name, description, source = "input", sourceRef = {}) {
   delete stateSchema.preferredType;
   return scrubMechanismValue({
     id: randomUUID(), source, sourceRef, name: normalizeName(name, "未命名机制"), type,
-    description: scrubText(description, 500), scope: "world", stateSchema,
+    description: scrubText(description, 500), scope: DEFAULT_SCOPE_BY_TYPE[type] || "world", stateSchema,
     visualHint: { preferredType: defaults.preferredType, showToPlayer: true },
     selected: true, warnings: []
   });
@@ -156,7 +168,7 @@ export function normalizeMechanismDraft(input = {}) {
   return scrubMechanismValue({
     ...normalized,
     id: /^[\w.-]{1,120}$/u.test(String(input.id || "")) ? String(input.id) : normalized.id,
-    scope: ["world", "save", "session"].includes(input.scope) ? input.scope : "world",
+    scope: ["world", "save", "session"].includes(input.scope) ? input.scope : (DEFAULT_SCOPE_BY_TYPE[type] || "world"),
     stateSchema: { ...normalized.stateSchema, ...(scrubMechanismValue(input.stateSchema || {})) },
     visualHint: { ...normalized.visualHint, ...(scrubMechanismValue(input.visualHint || {})), showToPlayer: input.visualHint?.showToPlayer !== false },
     selected: input.selected !== false,
@@ -164,14 +176,73 @@ export function normalizeMechanismDraft(input = {}) {
   });
 }
 
-export function commitMechanismDrafts(existing = {}, drafts = []) {
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableValue(value[key])]));
+}
+
+function stableHash(value) {
+  return createHash("sha256").update(JSON.stringify(stableValue(value))).digest("hex");
+}
+
+function mechanismDefinition(item = {}) {
+  return scrubMechanismValue({
+    source: item.source,
+    sourceRef: item.sourceRef?.templateId ? { templateId: item.sourceRef.templateId } : {},
+    name: item.name,
+    type: item.type,
+    description: item.description,
+    scope: item.scope,
+    stateSchema: item.stateSchema,
+    visualHint: item.visualHint
+  });
+}
+
+function validateStateSchema(draft) {
+  const schema = draft.stateSchema || {};
+  const numeric = ["number", "progress", "meter"].includes(schema.kind);
+  if (!numeric) return;
+  const min = schema.min === undefined ? undefined : Number(schema.min);
+  const max = schema.max === undefined ? undefined : Number(schema.max);
+  const value = schema.defaultValue === undefined ? undefined : Number(schema.defaultValue);
+  if ([min, max, value].some(item => item !== undefined && !Number.isFinite(item))) throw new MechanismValidationError(`${draft.name} 的数值范围必须是有效数字。`);
+  if (min !== undefined && max !== undefined && min > max) throw new MechanismValidationError(`${draft.name} 的最小值不能大于最大值。`);
+  if (value !== undefined && min !== undefined && value < min) throw new MechanismValidationError(`${draft.name} 的默认值不能小于最小值。`);
+  if (value !== undefined && max !== undefined && value > max) throw new MechanismValidationError(`${draft.name} 的默认值不能大于最大值。`);
+}
+
+export function commitMechanismDrafts(existing = {}, drafts = [], { moduleKey = "", worldbookHash = "", now = new Date().toISOString() } = {}) {
   const selected = drafts.filter(draft => draft?.selected !== false).map(normalizeMechanismDraft);
   const current = Array.isArray(existing.mechanisms) ? existing.mechanisms : [];
   const byKey = new Map(current.map(item => [`${item.type}:${item.name}`.toLowerCase(), scrubMechanismValue(item)]));
-  for (const item of selected) byKey.set(`${item.type}:${item.name}`.toLowerCase(), { ...item, committedAt: new Date().toISOString(), confirmed: true });
+  let committedNew = 0;
+  let updatedExisting = 0;
+  let unchanged = 0;
+  for (const item of selected) {
+    validateStateSchema(item);
+    const key = `${item.type}:${item.name}`.toLowerCase();
+    const previous = byKey.get(key);
+    const definition = mechanismDefinition(item);
+    if (previous && stableHash(mechanismDefinition(previous)) === stableHash(definition)) {
+      unchanged += 1;
+      continue;
+    }
+    byKey.set(key, { ...definition, id: previous?.id || item.id, committedAt: now, confirmed: true });
+    if (previous) updatedExisting += 1;
+    else committedNew += 1;
+  }
+  const mechanisms = [...byKey.values()].sort((a, b) => `${a.type}:${a.name}`.localeCompare(`${b.type}:${b.name}`));
+  const definitionHash = stableHash(mechanisms.map(mechanismDefinition));
+  const changed = committedNew > 0 || updatedExisting > 0 || existing.worldbookHash !== worldbookHash;
   return {
-    cache: { version: "mechanism-cache.v1", mechanisms: [...byKey.values()], updatedAt: new Date().toISOString(), hash: createHash("sha256").update(JSON.stringify([...byKey.values()])).digest("hex") },
-    committed: selected.length,
+    cache: {
+      version: "mechanism-cache.v1", moduleKey, worldbookHash,
+      compiledAt: changed ? now : (existing.compiledAt || now), updatedAt: now,
+      stale: false, definitionHash, mechanisms
+    },
+    committed: committedNew + updatedExisting,
+    committedNew, updatedExisting, unchanged,
     skipped: drafts.length - selected.length
   };
 }

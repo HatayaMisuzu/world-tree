@@ -1,6 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sendGameTurn } from "../../src/adapters/llm.js";
+import { checkKeyHostnameReuse, resetKeyHostnameReuseForTests, sendGameTurn } from "../../src/adapters/llm.js";
+
+test("API key host reuse uses a SHA-256 fingerprint and the actual target host", () => {
+  resetKeyHostnameReuseForTests();
+  const apiKey = "prefix-super-secret-tail";
+  assert.equal(checkKeyHostnameReuse(apiKey, "https://first.example/v1/chat/completions"), null);
+  const warning = checkKeyHostnameReuse(apiKey, "https://second.example/v1/chat/completions");
+  assert.equal(warning.risk, "high");
+  assert.match(warning.reason, /first\.example/);
+  assert.match(warning.reason, /second\.example/);
+  assert.equal(warning.reason.includes("secret-tail"), false);
+  resetKeyHostnameReuseForTests();
+  assert.equal(checkKeyHostnameReuse("different-prefix-same-tail", "https://third.example/v1"), null);
+});
 
 test("sendGameTurn passes an AbortSignal to legacy fetch calls", async () => {
   const originalFetch = globalThis.fetch;

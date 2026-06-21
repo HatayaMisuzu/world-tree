@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -75,5 +75,15 @@ test("writeJson uses unique tmp name and does not leave .tmp residue", async () 
     const { readdirSync } = await import("node:fs");
     const tmpFiles = readdirSync(root).filter(f => f.endsWith(".tmp"));
     assert.equal(tmpFiles.length, 0, `残留 tmp 文件: ${tmpFiles.join(", ")}`);
+  });
+});
+
+test("writeJson cleans its tmp file when rename fails", async () => {
+  await withTempRoot(async (root) => {
+    const directoryTarget = join(root, "cannot-replace-directory");
+    await mkdir(directoryTarget);
+    await assert.rejects(() => writeJson(directoryTarget, { ok: false }));
+    const residue = (await readdir(root)).filter(name => name.endsWith(".tmp"));
+    assert.deepEqual(residue, []);
   });
 });

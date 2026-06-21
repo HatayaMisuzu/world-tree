@@ -150,6 +150,9 @@ World Tree 的核心原则是“一个世界就是一个文件夹”。世界数
 | `/api/chat/message` | 编辑、删除、收藏和候选回复管理 |
 | `/api/turn/debug` | 读取本轮叙事黑盒 |
 | `/api/alchemy/review` | 审核队列读写 |
+| `/api/mechanisms/draft/from-alchemy` / `/api/mechanisms/library` | 从炼金输入生成默认机制草稿；机制库仅供用户手动补充 |
+| `/api/mechanisms/world` / `/api/mechanisms/world/commit-drafts` | 读取、检测 stale 并提交与 `worldbookHash` 绑定的世界机制缓存 |
+| `/api/status/turn/latest` / `/api/status/turns` / `/api/status/turn/:turnId` | 读取最新、索引或指定历史回合的持久化 `TurnStateFrame` |
 | `/api/review/pending` / `/api/review/adopt` / `/api/review/reject` | 读取、采纳或拒绝世界 runtime 审核事实源 |
 | `/api/world-pack/export` / `/api/world-pack/import` | `.worldtree` 世界包导入导出 |
 

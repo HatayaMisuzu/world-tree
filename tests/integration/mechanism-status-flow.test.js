@@ -45,10 +45,34 @@ test("alchemy mechanisms are input-first, library-assisted, and committed outsid
       body: JSON.stringify({ moduleKey: "mechanism_world", drafts })
     });
     assert.equal(committed.body.committed, drafts.length - 1);
+    assert.equal(committed.body.committedNew, drafts.length - 1);
+    assert.equal(committed.body.cache.moduleKey, "mechanism_world");
+    assert.ok(committed.body.cache.worldbookHash);
+    assert.ok(committed.body.cache.definitionHash);
+    const repeated = await api(server, "/api/mechanisms/world/commit-drafts", {
+      method: "POST",
+      body: JSON.stringify({ moduleKey: "mechanism_world", drafts })
+    });
+    assert.equal(repeated.body.committed, 0);
+    assert.equal(repeated.body.unchanged, drafts.length - 1);
+    assert.equal(repeated.body.cache.definitionHash, committed.body.cache.definitionHash);
+    assert.equal(repeated.body.cache.compiledAt, committed.body.cache.compiledAt);
+    const fresh = await api(server, "/api/mechanisms/world?moduleKey=mechanism_world");
+    assert.equal(fresh.body.stale, false);
+
     const runtime = join(dataDir, "engine", "worlds", "mechanism_world", "runtime");
     assert.equal(existsSync(join(runtime, "mechanisms", "cache.json")), true);
     assert.equal(existsSync(join(dataDir, "userData", "alchemy-review.json")), false);
     assert.equal(existsSync(join(runtime, "pending.jsonl")), false);
+
+    const saveStatePath = join(runtime, "state.json");
+    const saveStateBefore = readFileSync(saveStatePath, "utf8");
+    await writeFile(join(dataDir, "engine", "worlds", "mechanism_world", "shared", "worldbook.json"), JSON.stringify({ entries: [{ id: "changed", content: "changed" }] }), "utf8");
+    const stale = await api(server, "/api/mechanisms/world?moduleKey=mechanism_world");
+    assert.equal(stale.body.stale, true);
+    assert.equal(stale.body.cache.stale, true);
+    assert.notEqual(stale.body.currentWorldbookHash, stale.body.cache.worldbookHash);
+    assert.equal(readFileSync(saveStatePath, "utf8"), saveStateBefore);
   });
 });
 
@@ -57,6 +81,9 @@ test("status frame APIs read latest, history and a selected turn after refresh",
     await createWorld(server);
     const statusDir = join(dataDir, "engine", "worlds", "mechanism_world", "runtime", "status");
     await mkdir(join(statusDir, "turn-frames"), { recursive: true });
+    const mechanismDir = join(dataDir, "engine", "worlds", "mechanism_world", "runtime", "mechanisms");
+    await mkdir(mechanismDir, { recursive: true });
+    await writeFile(join(mechanismDir, "cache.json"), JSON.stringify({ version: "mechanism-cache.v1", moduleKey: "mechanism_world", mechanisms: [] }), "utf8");
     const frame = {
       id: "frame-2", turnId: "turn-2", round: 2, userMessageId: "turn-2-user", assistantMessageId: "turn-2-assistant",
       moduleKey: "mechanism_world", saveId: "main", createdAt: new Date().toISOString(),
@@ -76,6 +103,13 @@ test("status frame APIs read latest, history and a selected turn after refresh",
 
     const worldPack = await api(server, "/api/world-pack/export?moduleKey=mechanism_world");
     assert.equal(Object.keys(worldPack.body.pack.files).some(key => key.includes("runtime/status")), false);
+    assert.equal(Object.keys(worldPack.body.pack.files).some(key => key.includes("runtime/mechanisms")), false);
+    const optionalWorldPack = await api(server, "/api/world-pack/export", {
+      method: "POST",
+      body: JSON.stringify({ moduleKey: "mechanism_world", includeMechanisms: true, includeTurnStateFrames: true })
+    });
+    assert.equal(Object.keys(optionalWorldPack.body.pack.files).some(key => key === "runtime/mechanisms/cache.json"), true);
+    assert.equal(Object.keys(optionalWorldPack.body.pack.files).some(key => key === "runtime/status/turn-frames/turn-2.json"), true);
     const legacy = await api(server, "/api/data/export?moduleKey=mechanism_world");
     assert.equal(Object.keys(legacy.body.files || {}).some(key => /runtime\/(status|mechanisms|debug|proposal|session)/.test(key)), false);
     assert.equal(JSON.stringify(legacy.body).includes("apiKey"), false);

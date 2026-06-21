@@ -85,6 +85,7 @@ const API = {
   alchemyReview(data) { return data ? API.post("/api/alchemy/review", data) : API.get("/api/alchemy/review"); },
   mechanismDraft(data) { return API.post("/api/mechanisms/draft/from-alchemy", data); },
   mechanismLibrary({ query = "", moduleKey = "", previewId = "" } = {}) { return API.get(`/api/mechanisms/library?query=${encodeURIComponent(query)}&moduleKey=${encodeURIComponent(moduleKey)}&previewId=${encodeURIComponent(previewId)}`); },
+  mechanismWorld(moduleKey) { return API.get(`/api/mechanisms/world?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   mechanismCommit(data) { return API.post("/api/mechanisms/world/commit-drafts", data); },
   reviewPending(moduleKey) { return API.get(`/api/review/pending?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   reviewAction(action, data) { return API.post(`/api/review/${action}`, data); },
@@ -169,6 +170,7 @@ const AS = {
   alchemyMechanismLibrary: [],
   alchemyMechanismRecommendations: [],
   alchemyMechanismCache: null,
+  alchemyEditingMechanismId: "",
   alchemyMechanismTemplateId: "",
   alchemyMechanismQuery: "",
   developerObservabilityOpen: false,
@@ -759,14 +761,28 @@ function renderAlchemyPreview() {
 
 function renderAlchemyMechanismDrafts() {
   const drafts = AS.alchemyMechanismDrafts || [];
+  const options = (values, selected) => values.map(value => `<option value="${U.esc(value)}" ${value === selected ? "selected" : ""}>${U.esc(value)}</option>`).join("");
   return `<div class="alchemy-section mechanism-drafts">
     <div class="panel-head"><div><h3>从输入中识别到的机制</h3><p class="sub">以下机制来自你的输入内容，已默认加入本次结果。你可以编辑或移除。</p></div>${C.badge(drafts.length, drafts.length ? "ok" : "pending")}</div>
-    <div class="list">${drafts.map(draft => `<article class="item mechanism-draft-card" data-mechanism-draft-id="${U.esc(draft.id)}">
+    <div class="list">${drafts.map(draft => {
+      const editing = AS.alchemyEditingMechanismId === draft.id;
+      const schema = draft.stateSchema || {};
+      return `<article class="item mechanism-draft-card" data-mechanism-draft-id="${U.esc(draft.id)}">
       <div class="item-head"><div><strong>${U.esc(draft.name || "未命名机制")}</strong><div class="tiny muted">来源：${U.esc(draft.source === "input" ? "输入内容" : draft.source === "library" ? "机制库" : "手动添加")} · 类型：${U.esc(draft.type || "custom")}</div></div>${C.badge(draft.selected === false ? "已移除" : "默认加入", draft.selected === false ? "pending" : "ok")}</div>
-      <p class="tiny muted">${U.esc(U.compact(draft.description || "", 240))}</p>
-      <div class="tiny">推荐展示：${U.esc(draft.visualHint?.preferredType || "status_list")}</div>
-      <div class="actions"><button class="small" data-action="edit-mechanism-draft">编辑</button><button class="small danger" data-action="remove-mechanism-draft">移除</button></div>
-    </article>`).join("") || C.empty("未识别到明确机制", "输入中出现好感度、背包、探索度、任务或状态数值后会自动加入。")}</div>
+      ${editing ? `<div class="mechanism-edit-grid">
+        <label><span class="field-label">名称</span><input data-mechanism-field="name" value="${U.esc(draft.name || "")}" maxlength="120"></label>
+        <label><span class="field-label">类型</span><select data-mechanism-field="type">${options(["affinity","exploration","inventory","quest","reputation","meter","flag","counter","custom"], draft.type || "custom")}</select></label>
+        <label class="mechanism-edit-wide"><span class="field-label">说明</span><textarea data-mechanism-field="description" maxlength="500">${U.esc(draft.description || "")}</textarea></label>
+        <label><span class="field-label">作用域</span><select data-mechanism-field="scope">${options(["save","world","session"], draft.scope || "save")}</select></label>
+        <label><span class="field-label">状态类型</span><select data-mechanism-field="kind">${options(["number","progress","inventory","flags","custom"], schema.kind || "custom")}</select></label>
+        <label><span class="field-label">最小值</span><input data-mechanism-field="min" type="number" value="${U.esc(schema.min ?? "")}"></label>
+        <label><span class="field-label">最大值</span><input data-mechanism-field="max" type="number" value="${U.esc(schema.max ?? "")}"></label>
+        <label><span class="field-label">默认值</span><input data-mechanism-field="defaultValue" type="number" value="${U.esc(schema.defaultValue ?? "")}"></label>
+        <label><span class="field-label">状态栏组件</span><select data-mechanism-field="preferredType">${options(["stat_bar","inventory_grid","status_list"], draft.visualHint?.preferredType || "status_list")}</select></label>
+        <label class="mechanism-check"><input data-mechanism-field="showToPlayer" type="checkbox" ${draft.visualHint?.showToPlayer === false ? "" : "checked"}> 玩家可见</label>
+      </div>` : `<p class="tiny muted">${U.esc(U.compact(draft.description || "", 240))}</p><div class="tiny">作用域：${U.esc(draft.scope || "save")} · 推荐展示：${U.esc(draft.visualHint?.preferredType || "status_list")}</div>`}
+      <div class="actions"><button class="small" data-action="edit-mechanism-draft">${editing ? "保存" : "编辑"}</button><button class="small danger" data-action="remove-mechanism-draft">移除</button></div>
+    </article>`; }).join("") || C.empty("未识别到明确机制", "输入中出现好感度、背包、探索度、任务或状态数值后会自动加入。")}</div>
     <div class="actions"><button class="primary" data-action="commit-mechanism-drafts" ${drafts.some(draft => draft.selected !== false) ? "" : "disabled"}>提交机制到世界缓存</button><span class="tiny muted">机制不会进入普通 worldbook 审核队列。</span></div>
   </div>`;
 }
@@ -1631,6 +1647,7 @@ function setAlchemyPreview(result) {
   AS.alchemyPreviewId = result.previewId || result.preview?.id || "";
   AS.alchemySelectedItemIds = (AS.alchemyPreview?.items || []).filter(item => item.selected !== false).map(item => item.id);
   AS.alchemyEditingItemId = "";
+  AS.alchemyEditingMechanismId = "";
   AS.alchemyError = "";
 }
 
@@ -1667,7 +1684,7 @@ function addMechanismTemplate(templateId) {
     name: defaults.name || template.name,
     type: defaults.type || template.type || "custom",
     description: defaults.description || template.description || "",
-    scope: defaults.scope || "world",
+    scope: defaults.scope || ((defaults.type || template.type) === "custom" ? "world" : "save"),
     stateSchema: defaults.stateSchema || { kind: "custom" },
     visualHint: defaults.visualHint || template.visualHint || { preferredType: "status_list", showToPlayer: true },
     selected: true,
@@ -1680,17 +1697,32 @@ function addMechanismTemplate(templateId) {
 function editMechanismDraft(id) {
   const draft = AS.alchemyMechanismDrafts.find(item => item.id === id);
   if (!draft) return;
-  const name = prompt("机制名称", draft.name || "");
-  if (name == null) return;
-  const description = prompt("机制说明", draft.description || "");
-  if (description == null) return;
-  draft.name = name.trim().slice(0, 120) || draft.name;
-  draft.description = description.trim().slice(0, 500);
+  if (AS.alchemyEditingMechanismId !== id) {
+    AS.alchemyEditingMechanismId = id;
+    return render();
+  }
+  const card = document.querySelector(`[data-mechanism-draft-id="${globalThis.CSS?.escape?.(id) || id}"]`);
+  const field = name => card?.querySelector(`[data-mechanism-field="${name}"]`);
+  const numberOrUndefined = name => field(name)?.value === "" ? undefined : Number(field(name)?.value);
+  const min = numberOrUndefined("min");
+  const max = numberOrUndefined("max");
+  const defaultValue = numberOrUndefined("defaultValue");
+  if (min !== undefined && max !== undefined && min > max) return createToast("最小值不能大于最大值", "bad");
+  if (defaultValue !== undefined && min !== undefined && defaultValue < min) return createToast("默认值不能小于最小值", "bad");
+  if (defaultValue !== undefined && max !== undefined && defaultValue > max) return createToast("默认值不能大于最大值", "bad");
+  draft.name = String(field("name")?.value || "").trim().slice(0, 120) || draft.name;
+  draft.type = field("type")?.value || "custom";
+  draft.description = String(field("description")?.value || "").trim().slice(0, 500);
+  draft.scope = field("scope")?.value || "save";
+  draft.stateSchema = { kind: field("kind")?.value || "custom", ...(min !== undefined ? { min } : {}), ...(max !== undefined ? { max } : {}), ...(defaultValue !== undefined ? { defaultValue } : {}) };
+  draft.visualHint = { preferredType: field("preferredType")?.value || "status_list", showToPlayer: Boolean(field("showToPlayer")?.checked) };
+  AS.alchemyEditingMechanismId = "";
   render();
 }
 
 function removeMechanismDraft(id) {
   AS.alchemyMechanismDrafts = AS.alchemyMechanismDrafts.filter(item => item.id !== id);
+  if (AS.alchemyEditingMechanismId === id) AS.alchemyEditingMechanismId = "";
   render();
 }
 

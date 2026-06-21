@@ -229,6 +229,7 @@ console.log("\n🧭 机制与状态帧联动");
 for (const endpoint of [
   "/api/mechanisms/draft/from-alchemy",
   "/api/mechanisms/library",
+  "/api/mechanisms/world",
   "/api/mechanisms/world/commit-drafts",
   "/api/status/turn/latest",
   "/api/status/turns"

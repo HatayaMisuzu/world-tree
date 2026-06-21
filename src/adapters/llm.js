@@ -9,6 +9,7 @@ import { formatDirectionPacket } from "../core/engine/direction-packet.js";
 import { generateDirectionPacket } from "../core/engine/director.js";
 import { validateNarrativeAgainstDirection, validateWithAutoCorrect } from "../core/engine/guardian.js";
 import { extractVisibleNarrative } from "../core/engine/output-parser.js";
+import { createHash } from "node:crypto";
 
 function endpoint(config) {
   const base = (config.llmBaseUrl || "").replace(/\/$/, "");
@@ -47,11 +48,11 @@ export function canUseDirectLlm(config, secretAvailable = false) {
 
 const keyHostMap = new Map(); // apiKey_hash → Set<hostname>
 
-function checkKeyHostnameReuse(apiKey, baseUrl) {
+export function checkKeyHostnameReuse(apiKey, baseUrl) {
   if (!apiKey || !baseUrl) return null;
   const host = (() => { try { return new URL(baseUrl).hostname; } catch { return null; } })();
   if (!host) return null;
-  const keyFingerprint = apiKey.slice(-8); // 仅用尾部 8 位做指纹，避免存完整 key
+  const keyFingerprint = createHash("sha256").update(apiKey).digest("hex").slice(0, 12);
   let hosts = keyHostMap.get(keyFingerprint);
   if (!hosts) {
     hosts = new Set();
@@ -62,6 +63,10 @@ function checkKeyHostnameReuse(apiKey, baseUrl) {
     return { risk: "high", reason: `同一 API Key 尾号 ${keyFingerprint} 被用于多个不同 hostname: ${[...hosts].join(", ")}` };
   }
   return null;
+}
+
+export function resetKeyHostnameReuseForTests() {
+  keyHostMap.clear();
 }
 
 const DIRECTOR_SYSTEM_PROMPT = `你是 World Tree Desktop 的 Director DM（叙事导演）。
@@ -151,12 +156,6 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   const safePacket = scrubPromptForPrivacy(packet);
   messages[messages.length - 1].content = safePacket;
 
-  // API Key 跨 hostname 检测
-  const keyWarning = checkKeyHostnameReuse(apiKey, config.llmBaseUrl);
-  if (keyWarning) {
-    console.warn(`[LLM] ${keyWarning.reason}`);
-  }
-
   // 🆕 v0.9.5 角色专属模型 → 默认模型 → 报错
   const modelCandidates = buildModelCandidates(role, config);
   const urlCandidates  = buildUrlCandidates(role, config);
@@ -166,6 +165,8 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
 
   // 笛卡尔积遍历：endpoint × model，按优先级排序
   for (const targetUrl of urlCandidates) {
+    const keyWarning = checkKeyHostnameReuse(apiKey, targetUrl);
+    if (keyWarning) console.warn(`[LLM] ${keyWarning.reason}`);
     for (const modelName of modelCandidates) {
       if (!modelName || !targetUrl) continue;
 

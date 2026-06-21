@@ -4,6 +4,7 @@
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync, createReadStream, rmSync } from "node:fs";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { join, dirname, extname, resolve, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,10 +22,12 @@ import {
   commitMechanismDrafts,
   extractMechanismDrafts,
   listMechanismLibrary,
+  MechanismValidationError,
   scrubMechanismValue
 } from "./src/server/mechanism-service.js";
 import {
   createTurnStateFrame,
+  buildConfirmedAfterState,
   emptyConfirmedState,
   scrubStateValue
 } from "./src/server/turn-state-frame-service.js";
@@ -60,6 +63,7 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════════
 
 const DEBUG_MODE = process.argv.includes("--debug");
+const ENABLE_DEFERRED_PLUGINS = process.env.WORLD_TREE_ENABLE_DEFERRED_PLUGINS === "1";
 const DEBUG_LOG = [];
 const DEBUG_MAX = 200;
 
@@ -660,11 +664,20 @@ async function persistTurn(moduleId, input, result, engineState) {
   // 不采纳未确认 proposal、debug、session 或密钥字段。
   const previousFrame = await loadLatestTurnStateFrame(moduleId, saveId);
   const mechanismCache = readJsonSync(mechanismCachePath(moduleId) || "", { mechanisms: [] });
+  const beforeState = previousFrame?.afterState || emptyConfirmedState();
+  const afterState = buildConfirmedAfterState({
+    previousState: beforeState,
+    engineState: engineState || {},
+    parsedSections: result.parsedSections || {},
+    overlayPatch: result.overlayPatch || {},
+    mechanismCache,
+    appliedMechanismChanges: result.appliedMechanismChanges || result.mechanismChanges || []
+  });
   const frame = createTurnStateFrame({
     turnId, round: turnCount, userMessageId: userId, assistantMessageId: assistantId,
     moduleKey: moduleId, saveId,
-    beforeState: previousFrame?.afterState || emptyConfirmedState(),
-    engineState: engineState || {}, mechanismCache, createdAt: now
+    beforeState, afterState, engineState: engineState || {}, mechanismCache,
+    worldbookHash: currentWorldbookHash(moduleId), createdAt: now
   });
   await saveTurnStateFrame(moduleId, frame);
   moduleService.clearModuleCache?.(moduleId);
@@ -977,9 +990,25 @@ async function handleMechanismCommitDrafts(body = {}) {
   if (!file || !existsSync(dirname(dirname(file)))) throw new HttpError(400, "MECHANISM_MODULE_INVALID", "目标世界不存在，请重新选择。");
   if (!Array.isArray(body.drafts)) throw new HttpError(400, "MECHANISM_DRAFTS_INVALID", "机制草稿格式无效。");
   const existing = readJsonSync(file, { version: "mechanism-cache.v1", mechanisms: [] });
-  const result = commitMechanismDrafts(existing, body.drafts);
+  let result;
+  try {
+    result = commitMechanismDrafts(existing, body.drafts, { moduleKey, worldbookHash: currentWorldbookHash(moduleKey) });
+  } catch (err) {
+    if (err instanceof MechanismValidationError) throw new HttpError(400, "MECHANISM_SCHEMA_INVALID", err.message);
+    throw err;
+  }
   await writeJson(file, result.cache);
-  return { status: "ok", committed: result.committed, skipped: result.skipped, cache: scrubMechanismValue(result.cache) };
+  return { status: "ok", committed: result.committed, committedNew: result.committedNew, updatedExisting: result.updatedExisting, unchanged: result.unchanged, skipped: result.skipped, cache: scrubMechanismValue(result.cache) };
+}
+
+async function handleMechanismWorld(url = null) {
+  const moduleKey = String(url?.searchParams.get("moduleKey") || "");
+  const file = mechanismCachePath(moduleKey);
+  if (!file || !existsSync(dirname(dirname(file)))) throw new HttpError(400, "MECHANISM_MODULE_INVALID", "目标世界不存在，请重新选择。");
+  const cache = readJsonSync(file, { version: "mechanism-cache.v1", moduleKey, mechanisms: [] });
+  const worldbookHash = currentWorldbookHash(moduleKey);
+  const stale = Boolean(cache.worldbookHash && cache.worldbookHash !== worldbookHash);
+  return { status: "ok", stale, currentWorldbookHash: worldbookHash, cache: scrubMechanismValue({ ...cache, stale }) };
 }
 
 /** 炼金台 → 模组创建：解析内容 → 生成世界书条目 或 角色卡引擎数据 */
@@ -1143,6 +1172,30 @@ function mechanismCachePath(moduleKey = "") {
   const rtDir = moduleRuntimeDir(moduleKey);
   if (!rtDir || !pathWithinRoot(dataRoot(), rtDir)) return null;
   return join(rtDir, "mechanisms", "cache.json");
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return value.map(stableJson);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableJson(value[key])]));
+}
+
+function currentWorldbookHash(moduleKey = "") {
+  const key = String(moduleKey || "");
+  const file = key.startsWith("char:")
+    ? join(CHARACTERS_DIR(), safeEntityId(key.replace(/^char:/, ""), ""), "worldbook.json")
+    : join(moduleWorldDir(key) || "", "shared", "worldbook.json");
+  const worldbook = file && existsSync(file) ? readJsonSync(file, { entries: [] }) : { entries: [] };
+  return createHash("sha256").update(JSON.stringify(stableJson(worldbook))).digest("hex");
+}
+
+function toPublicModuleModel(model) {
+  const safe = scrubStateValue(model || {});
+  if (safe?.selected) {
+    safe.selected.hasLocalPath = Boolean(model?.selected?.path);
+    delete safe.selected.path;
+  }
+  return safe;
 }
 
 function statusRoot(moduleKey = "") {
@@ -2252,14 +2305,14 @@ async function handleOverlayPending(body = {}, method = "GET", url = null) {
 async function saveTurnDebug(moduleKey, debug) {
   const dir = TURN_DEBUG_DIR(moduleKey || "global");
   ensureDir(dir);
-  await writeJson(join(dir, "latest.json"), { ...debug, updatedAt: new Date().toISOString() });
+  await writeJson(join(dir, "latest.json"), scrubStateValue({ ...debug, updatedAt: new Date().toISOString() }));
 }
 
 async function handleTurnDebug(url = null) {
   const moduleKey = url?.searchParams?.get("moduleKey") || "global";
   const file = join(TURN_DEBUG_DIR(moduleKey), "latest.json");
   const data = readJsonSync(file, null);
-  return { status: "ok", debug: data || { summary: "暂无叙事黑盒数据。发送一轮对话后会生成。", worldbookHits: [], characterState: {}, memorySnapshot: {}, directionPacket: {}, guardian: {} } };
+  return { status: "ok", debug: scrubStateValue(data || { summary: "暂无叙事黑盒数据。发送一轮对话后会生成。", worldbookHits: [], characterState: {}, memorySnapshot: {}, directionPacket: {}, guardian: {} }) };
 }
 
 function statusRequestContext(url = null) {
@@ -2609,7 +2662,7 @@ async function handleAPI(req, res) {
       if (!id) return jsonError(res, 400, "MODULE_ID_MISSING", "缺少模组 ID。请重新选择模组后再试。");
       if (!moduleWorldDir(id)) return jsonError(res, 400, "MODULE_ID_INVALID", "模组 ID 无效。");
       const model = await buildModuleModel(id);
-      return jsonResponse(res, { status: "ok", model });
+      return jsonResponse(res, { status: "ok", model: toPublicModuleModel(model) });
     }
 
     // ── 内置示例 ──
@@ -2633,6 +2686,7 @@ async function handleAPI(req, res) {
     if (path === "/api/alchemy/review" && method === "POST") return jsonResponse(res, await handleAlchemyReview(await readBody(req), "POST"));
     if (path === "/api/mechanisms/draft/from-alchemy" && method === "POST") return jsonResponse(res, await handleMechanismDraftFromAlchemy(await readBody(req)));
     if (path === "/api/mechanisms/library" && method === "GET") return jsonResponse(res, await handleMechanismLibrary(url));
+    if (path === "/api/mechanisms/world" && method === "GET") return jsonResponse(res, await handleMechanismWorld(url));
     if (path === "/api/mechanisms/world/commit-drafts" && method === "POST") return jsonResponse(res, await handleMechanismCommitDrafts(await readBody(req)));
     if (path === "/api/review/pending" && method === "GET") return jsonResponse(res, await handleReviewFacts({}, "GET", url));
     if (path === "/api/review/pending" && method === "POST") return jsonResponse(res, await handleReviewFacts(await readBody(req), "POST", url));
@@ -2688,14 +2742,15 @@ async function handleAPI(req, res) {
       try {
         const archiveDir = join(dataRoot(), "characters-archive");
         ensureDir(archiveDir);
-        const destDir = join(archiveDir, `${id}_${Date.now()}`);
+        const backupId = `${id}_${Date.now()}`;
+        const destDir = join(archiveDir, backupId);
         mkdirSync(destDir, { recursive: true });
         const srcCard = join(srcDir, "card.json");
         if (existsSync(srcCard)) {
           const content = readFileSync(srcCard, "utf-8");
           writeFileSync(join(destDir, "card.json"), content, "utf-8");
         }
-        return jsonResponse(res, { status: "ok", path: destDir });
+        return jsonResponse(res, { status: "ok", backupId, location: "characters-archive" });
       } catch (err) {
         return jsonError(res, 500, "CHARACTER_BACKUP_FAILED", "备份角色卡失败。请检查数据目录是否可写。", err.message);
       }
@@ -2726,8 +2781,10 @@ async function handleAPI(req, res) {
     if (path === "/api/world-pack/import" && method === "POST") return jsonResponse(res, await handleWorldPackImport(await readBody(req)));
 
     // ── 本地插件 (Deferred/internal API. Plugin system is not part of v0.3.0 public product scope.) ──
-    if (path === "/api/plugins" && method === "GET") return jsonResponse(res, await handlePlugins({}, "GET"));
-    if (path === "/api/plugins" && method === "POST") return jsonResponse(res, await handlePlugins(await readBody(req), "POST"));
+    if (path === "/api/plugins" && (method === "GET" || method === "POST")) {
+      if (!ENABLE_DEFERRED_PLUGINS && !DEBUG_MODE) return jsonError(res, 403, "PLUGINS_DISABLED", "插件接口当前未启用。");
+      return jsonResponse(res, await handlePlugins(method === "POST" ? await readBody(req) : {}, method));
+    }
 
     // ── Overlay pending 队列 ──
     if (path === "/api/overlay/pending" && method === "GET") return jsonResponse(res, await handleOverlayPending({}, "GET", url));

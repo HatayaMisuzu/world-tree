@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import {
   api,
@@ -12,7 +14,7 @@ async function withServer(fn, options = {}) {
   const dataDir = await createTempDataDir("world-tree-security-");
   const server = await startWorldTreeServer({ dataDir, ...(options || {}) });
   try {
-    await fn(server);
+    await fn(server, dataDir);
   } finally {
     await server.stop();
     await removeTempDir(dataDir);
@@ -146,7 +148,7 @@ test("security: /api/data/export excludes chat/memory/state by default", async (
     const sensitiveKeys = Object.keys(files).filter(k =>
       k.includes("chat.jsonl") || k.includes("memory.jsonl") ||
       k.includes("runtime/state.json") || k.includes("overlay/") ||
-      k.includes("pending.jsonl")
+      k.includes("pending.jsonl") || /(?:debug|proposal|session|status|mechanisms|secrets)/i.test(k)
     );
     assert.equal(sensitiveKeys.length, 0,
       `敏感文件不应出现在默认导出中: ${sensitiveKeys.join(", ")}`);
@@ -157,6 +159,49 @@ test("security: /api/data/export excludes chat/memory/state by default", async (
     await server.stop();
     await removeTempDir(dataDir);
   }
+});
+
+test("security: module load and character backup do not expose absolute paths", async () => {
+  await withServer(async (server, dataDir) => {
+    await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "private_path_world", dataMode: "worldbook" })
+    });
+    const loaded = await api(server, "/api/modules/load", {
+      method: "POST",
+      body: JSON.stringify({ id: "private_path_world" })
+    });
+    const loadedText = JSON.stringify(loaded.body);
+    assert.equal(loadedText.includes(dataDir), false);
+    assert.equal("path" in loaded.body.model.selected, false);
+    assert.equal(loaded.body.model.selected.hasLocalPath, true);
+
+    const characterDir = join(dataDir, "engine", "characters", "hero");
+    await mkdir(characterDir, { recursive: true });
+    await writeFile(join(characterDir, "card.json"), JSON.stringify({ name: "Hero" }), "utf8");
+    const backup = await api(server, "/api/characters/backup", {
+      method: "POST",
+      body: JSON.stringify({ id: "hero" })
+    });
+    assert.equal(backup.status, 200);
+    assert.equal(typeof backup.body.backupId, "string");
+    assert.equal(backup.body.location, "characters-archive");
+    assert.equal(JSON.stringify(backup.body).includes(dataDir), false);
+    assert.equal("path" in backup.body, false);
+  });
+});
+
+test("security: deferred plugin API is gated unless explicitly enabled", async () => {
+  await withServer(async (server) => {
+    const disabled = await rawRequest(server, "/api/plugins");
+    assert.equal(disabled.status, 403);
+    assertReadableError(disabled, "PLUGINS_DISABLED");
+  });
+  await withServer(async (server) => {
+    const enabled = await rawRequest(server, "/api/plugins");
+    assert.equal(enabled.status, 200);
+    assert.equal(enabled.body.status, "ok");
+  }, { env: { WORLD_TREE_ENABLE_DEFERRED_PLUGINS: "1" } });
 });
 
 test("security: /api/status default omits dataRoot and memory", async () => {

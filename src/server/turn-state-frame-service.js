@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 
 const SECRET_KEY_RE = /api.?key|secret|token|authorization|cookie|password/i;
-const RUNTIME_ONLY_KEY_RE = /debug|proposal|session/i;
+const RUNTIME_ONLY_KEY_RE = /debug|proposal|session|^(?:_?raw|metadata)$/i;
 const EXECUTABLE_KEY_RE = /^(?:raw)?(?:html|css|js|javascript|script|style)$/i;
 const ALLOWED_CARD_TYPES = new Set(["stat_bar", "inventory_grid", "status_list"]);
 
@@ -99,7 +99,26 @@ function visualFromState(afterState = {}, changes = []) {
   const cards = [];
   for (const [category, values] of Object.entries(afterState)) {
     if (!values || typeof values !== "object" || Array.isArray(values)) continue;
-    const items = scalarEntries(values).slice(0, 12).map(([path, value]) => {
+    if (category === "inventory") {
+      const source = Array.isArray(values.items) ? values.items : Object.entries(values).map(([name, value]) => (
+        value && typeof value === "object" ? { name, ...value } : { name, count: value }
+      ));
+      if (source.length) cards.push({ type: "inventory_grid", id: "state-inventory", title: "背包", items: source.map((item, index) => ({
+        id: item.id || `inventory-${index}`, name: item.name || item.label || `物品 ${index + 1}`,
+        count: Number.isFinite(Number(item.count ?? item.quantity)) ? Number(item.count ?? item.quantity) : 1,
+        tag: item.tag || item.category || ""
+      })) });
+      continue;
+    }
+    const scalar = scalarEntries(values).slice(0, 24);
+    for (const [path, value] of scalar.filter(([, value]) => typeof value === "number").slice(0, 12)) {
+      const change = changes.find(item => item.target === `${category}.${path}`);
+      cards.push({ type: "stat_bar", id: `state-${category}-${path}`, title: labelFor(path), value,
+        min: Number.isFinite(Number(change?.min)) ? Number(change.min) : Math.min(0, value),
+        max: Number.isFinite(Number(change?.max)) ? Number(change.max) : Math.max(100, value),
+        ...(change?.delta !== undefined ? { delta: change.delta } : {}), label: category });
+    }
+    const items = scalar.filter(([, value]) => typeof value !== "number").slice(0, 12).map(([path, value]) => {
       const change = changes.find(item => item.target === `${category}.${path}`);
       return { label: labelFor(path), value: String(value ?? ""), ...(change?.delta !== undefined ? { delta: change.delta > 0 ? `+${change.delta}` : String(change.delta), status: change.delta > 0 ? "up" : "down" } : change ? { status: change.type === "new" ? "new" : "changed" } : {}) };
     });
@@ -112,15 +131,96 @@ export function emptyConfirmedState() {
   return { characters: {}, world: {}, inventory: {}, quests: {}, mechanisms: {} };
 }
 
-export function buildConfirmedState({ engineState = {}, mechanismCache = {} } = {}) {
-  const state = scrubStateValue(engineState || {});
-  return {
-    characters: scrubStateValue(state.characterState || state.characters || {}),
-    world: scrubStateValue(state.worldState || state.world || {}),
-    inventory: scrubStateValue(state.inventory || {}),
-    quests: scrubStateValue(state.quests || {}),
-    mechanisms: scrubStateValue({ ...(state.mechanisms || {}), ...(mechanismCache.confirmedState || {}) })
+function isRecord(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function deepMerge(target = {}, source = {}) {
+  const output = isRecord(target) ? { ...target } : {};
+  if (!isRecord(source)) return output;
+  for (const [key, value] of Object.entries(source)) {
+    if (isRecord(value) && isRecord(output[key])) output[key] = deepMerge(output[key], value);
+    else output[key] = value;
+  }
+  return output;
+}
+
+function mergeCategories(state, source = {}) {
+  const safe = scrubStateValue(source || {});
+  if (!isRecord(safe)) return state;
+  const aliases = {
+    characterState: "characters", characters: "characters",
+    worldState: "world", world: "world", runtime: "world",
+    inventory: "inventory", quests: "quests", mechanisms: "mechanisms"
   };
+  let categorized = false;
+  for (const [sourceKey, targetKey] of Object.entries(aliases)) {
+    if (!isRecord(safe[sourceKey])) continue;
+    state[targetKey] = deepMerge(state[targetKey], safe[sourceKey]);
+    categorized = true;
+  }
+  if (!categorized) state.world = deepMerge(state.world, safe);
+  return state;
+}
+
+function mergeParsedSections(state, parsedSections = {}) {
+  if (!isRecord(parsedSections)) return state;
+  const sectionMap = { "角色": "characters", "角色状态": "characters", "世界": "world", "背包": "inventory", "物品": "inventory", "任务": "quests", "机制": "mechanisms" };
+  for (const [name, value] of Object.entries(parsedSections)) {
+    if (!isRecord(value)) continue;
+    if (name === "状态建议") {
+      if (value.confirmed !== true && value.applied !== true) continue;
+      const confirmedValue = { ...value };
+      delete confirmedValue.confirmed;
+      delete confirmedValue.applied;
+      delete confirmedValue.reason;
+      delete confirmedValue.confirmedState;
+      mergeCategories(state, value.confirmedState || confirmedValue);
+    } else if (name === "状态") mergeCategories(state, value);
+    else if (sectionMap[name]) state[sectionMap[name]] = deepMerge(state[sectionMap[name]], value);
+    else if (isRecord(value.confirmedState)) mergeCategories(state, value.confirmedState);
+  }
+  return state;
+}
+
+function applyMechanismChanges(state, changes = []) {
+  for (const change of Array.isArray(changes) ? changes : []) {
+    if (!change || change.applied !== true || typeof change.target !== "string") continue;
+    const parts = change.target.split(".").filter(Boolean);
+    if (!parts.length) continue;
+    const category = ["characters", "world", "inventory", "quests", "mechanisms"].includes(parts[0]) ? parts.shift() : "mechanisms";
+    let cursor = state[category];
+    while (parts.length > 1) {
+      const key = parts.shift();
+      cursor[key] = isRecord(cursor[key]) ? cursor[key] : {};
+      cursor = cursor[key];
+    }
+    if (parts.length) cursor[parts[0]] = scrubStateValue(change.after ?? change.value);
+  }
+  return state;
+}
+
+export function buildConfirmedAfterState({ previousState = {}, engineState = {}, parsedSections = {}, overlayPatch = {}, mechanismCache = {}, appliedMechanismChanges = [] } = {}) {
+  const state = deepMerge(emptyConfirmedState(), scrubStateValue(previousState || {}));
+  mergeCategories(state, engineState);
+  mergeParsedSections(state, parsedSections);
+  const overlay = scrubStateValue(overlayPatch || {});
+  if (isRecord(overlay)) {
+    mergeCategories(state, overlay.runtime || {});
+    if (isRecord(overlay.characters)) state.characters = deepMerge(state.characters, overlay.characters);
+    if (isRecord(overlay.world)) state.world = deepMerge(state.world, overlay.world);
+    if (isRecord(overlay.worldState)) state.world = deepMerge(state.world, overlay.worldState);
+    if (isRecord(overlay.inventory)) state.inventory = deepMerge(state.inventory, overlay.inventory);
+    if (isRecord(overlay.quests)) state.quests = deepMerge(state.quests, overlay.quests);
+    if (isRecord(overlay.mechanisms)) state.mechanisms = deepMerge(state.mechanisms, overlay.mechanisms);
+  }
+  state.mechanisms = deepMerge(state.mechanisms, mechanismCache.confirmedState || {});
+  applyMechanismChanges(state, appliedMechanismChanges);
+  return scrubStateValue(state) || emptyConfirmedState();
+}
+
+export function buildConfirmedState({ engineState = {}, mechanismCache = {} } = {}) {
+  return buildConfirmedAfterState({ engineState, mechanismCache });
 }
 
 export function createTurnStateFrame({ turnId, round, userMessageId, assistantMessageId, moduleKey, saveId = "main", beforeState = null, afterState = null, engineState = {}, mechanismCache = {}, worldbookHash = "", createdAt = new Date().toISOString() } = {}) {
