@@ -649,6 +649,12 @@ async function handleLlmChat(body) {
   const { input, moduleKey, dataMode, engineState, messages } = body || {};
   if (!input) return { status: "error", errorMsg: "请输入内容后再发送" };
 
+  // 业务级输入长度限制（防止超长文本打入 LLM）
+  const CHAT_INPUT_MAX_CHARS = 20000;
+  if (String(input).length > CHAT_INPUT_MAX_CHARS) {
+    return { status: "error", code: "INPUT_TOO_LONG", errorMsg: `输入文本过长（${String(input).length} 字符）。请精简到 ${CHAT_INPUT_MAX_CHARS} 字符以内再发送。` };
+  }
+
   const config = await loadConfig();
   const apiKey = await getActiveLlmValue();
   if (!apiKey) return { status: "error", errorMsg: "未配置 API Key → 请在首页「LLM 配置」中设置密钥" };
@@ -805,6 +811,11 @@ function buildAlchemyLlmCall(config, apiKey) {
 async function handleAlchemyImport(body) {
   const { text, moduleKey = "" } = body || {};
   if (!text) return { status: "error", errorMsg: "导入内容为空" };
+  // 业务级输入长度限制
+  const ALCHEMY_DIRECT_LLM_MAX_CHARS = 120000;
+  if (String(text).length > ALCHEMY_DIRECT_LLM_MAX_CHARS) {
+    return { status: "error", code: "TEXT_TOO_LONG", errorMsg: `导入文本过长（${String(text).length} 字符）。请分块导入，每块不超过 ${ALCHEMY_DIRECT_LLM_MAX_CHARS} 字符。` };
+  }
   try {
     const config = await loadConfig();
     const apiKey = await getActiveLlmValue();
@@ -827,6 +838,11 @@ async function handleAlchemyImport(body) {
 async function handleAlchemyDigest(body) {
   const { text, worldName, dataMode = "worldbook", subType = "classic", preset = "epic" } = body || {};
   if (!text) return { status: "error", errorMsg: "内容为空" };
+  // 业务级输入长度限制
+  const ALCHEMY_DIRECT_LLM_MAX_CHARS = 120000;
+  if (String(text).length > ALCHEMY_DIRECT_LLM_MAX_CHARS) {
+    return { status: "error", code: "TEXT_TOO_LONG", errorMsg: `导入文本过长（${String(text).length} 字符）。请分块导入，每块不超过 ${ALCHEMY_DIRECT_LLM_MAX_CHARS} 字符。` };
+  }
   try {
     const config = await loadConfig();
     const apiKey = await getActiveLlmValue();
@@ -2393,7 +2409,7 @@ async function handleAPI(req, res) {
       if (!pathWithinRoot(CHARACTERS_DIR(), srcDir)) return jsonError(res, 400, "CHARACTER_ID_INVALID", "角色卡 ID 无效。");
       if (!existsSync(srcDir)) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "角色卡不存在，无法备份。");
       try {
-        const archiveDir = join(ROOT, "data", "characters-archive");
+        const archiveDir = join(dataRoot(), "characters-archive");
         ensureDir(archiveDir);
         const destDir = join(archiveDir, `${id}_${Date.now()}`);
         mkdirSync(destDir, { recursive: true });
@@ -2529,21 +2545,35 @@ async function handleAPI(req, res) {
       const totalTurns = worlds.reduce((s, w) => s + (w.turnCount || 0), 0);
 
       const hasUpdate = latestVersion && latestVersion !== PKG_VERSION;
+
+      // 默认只返回必要状态；detail=full 才返回详细信息
+      if (fullDetail) {
+        return jsonResponse(res, {
+          status: "ok",
+          version: PKG_VERSION,
+          latestVersion: hasUpdate ? latestVersion : null,
+          uptime: Math.round(process.uptime()),
+          llm: {
+            status: llmStatus,
+            configured: llmConfigured,
+            hasApiKey: Boolean(apiKey),
+            model: config.llmModel,
+            baseUrl: config.llmBaseUrl,
+            detail: llmDetail
+          },
+          data: { root: dataRoot(), writable, writableDetail, worldsCount: worlds.length, totalTurns, ...(dataSize || {}) },
+          debugMode: DEBUG_MODE
+        });
+      }
+
       return jsonResponse(res, {
         status: "ok",
         version: PKG_VERSION,
-        latestVersion: hasUpdate ? latestVersion : null,
         uptime: Math.round(process.uptime()),
-        llm: {
-          status: llmStatus,
-          configured: llmConfigured,
-          hasApiKey: Boolean(apiKey),
-          model: config.llmModel,
-          baseUrl: config.llmBaseUrl,
-          detail: llmDetail
-        },
-        data: { root: dataRoot(), writable, writableDetail, worldsCount: worlds.length, totalTurns, ...(dataSize || {}) },
-        debugMode: DEBUG_MODE
+        llmConfigured,
+        dataWritable: writable,
+        latestVersion: hasUpdate ? latestVersion : null,
+        debug: DEBUG_MODE ? { debugMode: true } : undefined
       });
     }
 
@@ -2556,14 +2586,36 @@ async function handleAPI(req, res) {
       if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir)) return jsonError(res, 400, "MODULE_KEY_INVALID", "模组标识无效。");
       if (!existsSync(worldDir)) return jsonError(res, 404, "MODULE_NOT_FOUND", "模组不存在，可能已经被删除或移动。");
       try {
-        // 收集所有数据文件
+        // 收集所有数据文件（默认排除 runtime/ 敏感数据）
+        const DEFAULT_EXPORT_EXCLUDES = [
+          /^runtime\/chat\.jsonl$/i,
+          /^runtime\/memory\.jsonl$/i,
+          /^runtime\/state\.json$/i,
+          /^runtime\/overlay(?:\/|$)/i,
+          /^runtime\/backups(?:\/|$)/i,
+          /^runtime\/pending\.jsonl$/i,
+          /^runtime\/manual\.jsonl$/i,
+          /^runtime\/review-log\.jsonl$/i,
+          /^runtime\/snapshots(?:\/|$)/i,
+          /^runtime\/source\.txt$/i,
+          /^shared\/secrets\.json$/i,
+        ];
+        const includeRuntime = url.searchParams.get("includeRuntime") === "true";
+        const shouldExcludeFromSafeExport = (relativePath) => {
+          const normalized = relativePath.replace(/\\/g, "/");
+          return DEFAULT_EXPORT_EXCLUDES.some((rule) => rule.test(normalized));
+        };
         const bundle = { exportedAt: new Date().toISOString(), worldName, files: {} };
         const collectDir = (dir, prefix = "") => {
           for (const entry of readdirSync(dir, { withFileTypes: true })) {
             const full = join(dir, entry.name);
             const key = prefix + entry.name;
-            if (entry.isDirectory()) { collectDir(full, key + "/"); }
+            if (entry.isDirectory()) {
+              if (!includeRuntime && shouldExcludeFromSafeExport(key + "/")) continue;
+              collectDir(full, key + "/");
+            }
             else if (entry.name.endsWith(".json") || entry.name.endsWith(".jsonl")) {
+              if (!includeRuntime && shouldExcludeFromSafeExport(key)) continue;
               try { bundle.files[key] = readFileSync(full, "utf-8"); } catch {}
             }
           }
