@@ -29,12 +29,19 @@ function compactJson(value, limit = 1600) {
   return text.length > limit ? `${text.slice(0, limit)}\n...` : text;
 }
 
+/** 移除 LLM prompt 中的本机绝对路径，防止隐私泄露 */
+export function scrubPromptForPrivacy(text) {
+  return String(text || "")
+    .replace(/[A-Z]:\\[^\n\r]+/gi, "<local-path>")
+    .replace(/\/(?:Users|home)\/[^\n\r]+/g, "<local-path>");
+}
+
 export function moduleContext(model) {
   const data = model.moduleData;
   if (!model.selected || !data) return "未加载世界树模组。以空白模组/创作前模式运行。";
   return [
     `模组: ${moduleTitle(model.selected)}`,
-    `路径: ${model.selected.path}`,
+    `路径: <local-path>`,
     `分支: ${model.selected.branch || "main"}`,
     `角色: ${data.characters.slice(0, 12).map((item) => item.name).join(", ") || "无"}`,
     `场景: ${data.scenes.slice(0, 6).map((item) => item.title).join(" / ") || "无"}`,
