@@ -30,9 +30,15 @@ export function readJsonSync(filePath, fallback) {
 
 export async function writeJson(filePath, data) {
   ensureDir(dirname(filePath));
-  const tmpPath = `${filePath}.tmp`;
-  await writeFile(tmpPath, JSON.stringify(data, null, 2), "utf8");
-  renameSync(tmpPath, filePath);
+  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    await writeFile(tmpPath, JSON.stringify(data, null, 2), "utf8");
+    renameSync(tmpPath, filePath);
+  } catch (err) {
+    // 如果 rename 失败，尝试清理残留 tmp
+    try { if (existsSync(tmpPath)) rmSync(tmpPath, { force: true }); } catch {}
+    throw err;
+  }
 }
 
 // writeJsonAtomic 为别名，保留向后兼容

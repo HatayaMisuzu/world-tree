@@ -63,3 +63,17 @@ test("calcDirectorySizeLimited reports truncation when entry budget is low", asy
     assert.equal(dirStat.isDirectory(), true);
   });
 });
+
+test("writeJson uses unique tmp name and does not leave .tmp residue", async () => {
+  await withTempRoot(async (root) => {
+    const file = join(root, "data.json");
+    for (let i = 0; i < 5; i++) {
+      await writeJson(file, { ok: true, i });
+    }
+    const result = readJsonSync(file, null);
+    assert.deepEqual(result, { ok: true, i: 4 });
+    const { readdirSync } = await import("node:fs");
+    const tmpFiles = readdirSync(root).filter(f => f.endsWith(".tmp"));
+    assert.equal(tmpFiles.length, 0, `残留 tmp 文件: ${tmpFiles.join(", ")}`);
+  });
+});

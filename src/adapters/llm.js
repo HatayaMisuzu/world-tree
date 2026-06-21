@@ -42,8 +42,27 @@ export function canUseDirectLlm(config, secretAvailable = false) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  三角色 System Prompt
+//  API Key 安全：检测同一 key 跨不同 hostname 使用
 // ═══════════════════════════════════════════════════════════════
+
+const keyHostMap = new Map(); // apiKey_hash → Set<hostname>
+
+function checkKeyHostnameReuse(apiKey, baseUrl) {
+  if (!apiKey || !baseUrl) return null;
+  const host = (() => { try { return new URL(baseUrl).hostname; } catch { return null; } })();
+  if (!host) return null;
+  const keyFingerprint = apiKey.slice(-8); // 仅用尾部 8 位做指纹，避免存完整 key
+  let hosts = keyHostMap.get(keyFingerprint);
+  if (!hosts) {
+    hosts = new Set();
+    keyHostMap.set(keyFingerprint, hosts);
+  }
+  hosts.add(host);
+  if (hosts.size > 1) {
+    return { risk: "high", reason: `同一 API Key 尾号 ${keyFingerprint} 被用于多个不同 hostname: ${[...hosts].join(", ")}` };
+  }
+  return null;
+}
 
 const DIRECTOR_SYSTEM_PROMPT = `你是 World Tree Desktop 的 Director DM（叙事导演）。
 
@@ -131,6 +150,12 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   // 隐私防线：擦洗 prompt 中的本机绝对路径后再发送 LLM
   const safePacket = scrubPromptForPrivacy(packet);
   messages[messages.length - 1].content = safePacket;
+
+  // API Key 跨 hostname 检测
+  const keyWarning = checkKeyHostnameReuse(apiKey, config.llmBaseUrl);
+  if (keyWarning) {
+    console.warn(`[LLM] ${keyWarning.reason}`);
+  }
 
   // 🆕 v0.9.5 角色专属模型 → 默认模型 → 报错
   const modelCandidates = buildModelCandidates(role, config);
@@ -373,6 +398,13 @@ export async function sendDualStageTurn(opts = {}) {
   // 模式适配：在方向包层面应用模式约束
   if (finalDirectionPacket?.packet) {
     const dp = finalDirectionPacket.packet;
+    // 防御性补齐：防止 LLM JSON 缺字段导致崩溃
+    dp.directorDecision = dp.directorDecision || {};
+    dp.contentPlan = dp.contentPlan || {};
+    dp.contentPlan.mustInclude = dp.contentPlan.mustInclude || [];
+    dp.contentPlan.mustNotInclude = dp.contentPlan.mustNotInclude || [];
+    dp.writingConstraints = dp.writingConstraints || {};
+    dp.storyState = dp.storyState || {};
     if (dataMode === "character_card") {
       // 角色卡模式：强制无外部事件、无新角色、无重大危机
       dp.directorDecision.eventIntensity = "none";

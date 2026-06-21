@@ -193,13 +193,14 @@ export function validateDirectionPacket(packet) {
  * @returns {Object} 补全后的方向包
  */
 export function normalizeDirectionPacket(packet) {
-  const subType = packet?.gameMode || "classic";
-  const defaults = createDirectionPacket(packet?.turnId || "", packet?.mode || "worldbook", subType);
+  const safe = packet || {};
+  const subType = safe.gameMode || "classic";
+  const defaults = createDirectionPacket(safe.turnId || "", safe.mode || "worldbook", subType);
 
   // 深层合并
   const normalized = {
-    turnId: packet.turnId || defaults.turnId,
-    mode: VALID_MODES.includes(packet?.mode) ? packet.mode : defaults.mode,
+    turnId: safe.turnId || defaults.turnId,
+    mode: VALID_MODES.includes(safe.mode) ? safe.mode : defaults.mode,
     gameMode: subType,
     playerAnalysis: {
       ...defaults.playerAnalysis,

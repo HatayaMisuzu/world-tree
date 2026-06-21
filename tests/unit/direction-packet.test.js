@@ -32,6 +32,35 @@ describe("direction-packet", () => {
     });
   });
 
+  describe("malformed packet defense", () => {
+    it("survives completely empty packet", () => {
+      const p = normalizeDirectionPacket({});
+      assert.equal(p.directorDecision.pacing, "hold");
+      assert.equal(p.contentPlan.mustInclude.length, 0);
+      assert.equal(p.contentPlan.mustNotInclude.length, 0);
+    });
+
+    it("survives missing directorDecision", () => {
+      const p = normalizeDirectionPacket({ turnId: "t1", mode: "worldbook" });
+      assert.equal(p.directorDecision.pacing, "hold");
+      assert.equal(p.directorDecision.pressure, "medium");
+    });
+
+    it("survives missing contentPlan sub-arrays", () => {
+      const p = normalizeDirectionPacket({
+        turnId: "t1", mode: "worldbook",
+        contentPlan: {}
+      });
+      assert.equal(p.contentPlan.mustInclude.length, 0);
+      assert.equal(p.contentPlan.mustNotInclude.length, 0);
+    });
+
+    it("survives null/undefined packet", () => {
+      const p = normalizeDirectionPacket(null);
+      assert.equal(p.directorDecision.pacing, "hold");
+    });
+  });
+
   describe("validateDirectionPacket", () => {
     it("accepts valid packet", () => {
       const p = createDirectionPacket("t1", "worldbook");

@@ -2488,13 +2488,17 @@ async function handleAPI(req, res) {
 
     // ── 运行状态 ──
     if (path === "/api/status" && method === "GET") {
-      return jsonResponse(res, {
+      const fullDetail = url.searchParams.get("detail") === "full" || DEBUG_MODE;
+      const base = {
         version: PKG_VERSION,
-        uptime: process.uptime(),
-        memory: process.memoryUsage().rss,
-        dataRoot: dataRoot(),
+        uptime: Math.round(process.uptime()),
         profiles: listModules().length
-      });
+      };
+      if (fullDetail) {
+        base.dataRoot = dataRoot();
+        base.memory = process.memoryUsage().rss;
+      }
+      return jsonResponse(res, base);
     }
 
     // ── 健康检查 ──

@@ -128,3 +128,52 @@ test("security: data import rejects traversal and encoded traversal keys", async
     }
   });
 });
+
+test("security: /api/data/export excludes chat/memory/state by default", async () => {
+  const dataDir = await createTempDataDir("wt-export-sec-");
+  const server = await startWorldTreeServer({ dataDir });
+  try {
+    const create = await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "export_sec", dataMode: "worldbook" })
+    });
+    assert.equal(create.status, 200);
+
+    const exported = await api(server, "/api/data/export?moduleKey=export_sec");
+    assert.equal(exported.status, 200);
+    const files = exported.body.files || {};
+
+    const sensitiveKeys = Object.keys(files).filter(k =>
+      k.includes("chat.jsonl") || k.includes("memory.jsonl") ||
+      k.includes("runtime/state.json") || k.includes("overlay/") ||
+      k.includes("pending.jsonl")
+    );
+    assert.equal(sensitiveKeys.length, 0,
+      `敏感文件不应出现在默认导出中: ${sensitiveKeys.join(", ")}`);
+
+    const sharedKeys = Object.keys(files).filter(k => k.includes("shared/"));
+    assert.ok(sharedKeys.length > 0, "shared 文件应出现在导出中");
+  } finally {
+    await server.stop();
+    await removeTempDir(dataDir);
+  }
+});
+
+test("security: /api/status default omits dataRoot and memory", async () => {
+  const dataDir = await createTempDataDir("wt-status-");
+  const server = await startWorldTreeServer({ dataDir });
+  try {
+    const basic = await api(server, "/api/status");
+    assert.equal(basic.status, 200);
+    assert.equal(typeof basic.body.version, "string");
+    assert.equal("dataRoot" in basic.body, false, "默认不应包含 dataRoot");
+    assert.equal("memory" in basic.body, false, "默认不应包含 memory");
+
+    const full = await api(server, "/api/status?detail=full");
+    assert.equal(typeof full.body.dataRoot, "string", "detail=full 应包含 dataRoot");
+    assert.equal(typeof full.body.memory, "number", "detail=full 应包含 memory");
+  } finally {
+    await server.stop();
+    await removeTempDir(dataDir);
+  }
+});
