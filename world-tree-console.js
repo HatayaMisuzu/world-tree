@@ -83,6 +83,9 @@ const API = {
   alchemyRefine(data) { return API.post("/api/alchemy/refine", data); },
   alchemyCommit(data) { return API.post("/api/alchemy/commit", data); },
   alchemyReview(data) { return data ? API.post("/api/alchemy/review", data) : API.get("/api/alchemy/review"); },
+  mechanismDraft(data) { return API.post("/api/mechanisms/draft/from-alchemy", data); },
+  mechanismLibrary({ query = "", moduleKey = "", previewId = "" } = {}) { return API.get(`/api/mechanisms/library?query=${encodeURIComponent(query)}&moduleKey=${encodeURIComponent(moduleKey)}&previewId=${encodeURIComponent(previewId)}`); },
+  mechanismCommit(data) { return API.post("/api/mechanisms/world/commit-drafts", data); },
   reviewPending(moduleKey) { return API.get(`/api/review/pending?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   reviewAction(action, data) { return API.post(`/api/review/${action}`, data); },
   reviewLog(moduleKey) { return API.get(`/api/review/log?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
@@ -95,6 +98,9 @@ const API = {
   testWorldbook(data) { return API.post("/api/worldbook/test", data); },
   connections(data) { return data ? API.post("/api/connections", data) : API.get("/api/connections"); },
   turnDebug(moduleKey) { return API.get(`/api/turn/debug?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  statusLatest(moduleKey, saveId = "main") { return API.get(`/api/status/turn/latest?moduleKey=${encodeURIComponent(moduleKey || "")}&saveId=${encodeURIComponent(saveId)}`); },
+  statusTurn(moduleKey, turnId, saveId = "main") { return API.get(`/api/status/turn/${encodeURIComponent(turnId)}?moduleKey=${encodeURIComponent(moduleKey || "")}&saveId=${encodeURIComponent(saveId)}`); },
+  statusTurns(moduleKey, saveId = "main", limit = 50) { return API.get(`/api/status/turns?moduleKey=${encodeURIComponent(moduleKey || "")}&saveId=${encodeURIComponent(saveId)}&limit=${encodeURIComponent(limit)}`); },
   worldPackExport(data) {
     return typeof data === "object"
       ? API.post("/api/world-pack/export", data)
@@ -159,7 +165,23 @@ const AS = {
   alchemySelectedItemIds: [],
   alchemyEditingItemId: "",
   alchemyError: "",
-  worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false },
+  alchemyMechanismDrafts: [],
+  alchemyMechanismLibrary: [],
+  alchemyMechanismRecommendations: [],
+  alchemyMechanismCache: null,
+  alchemyMechanismTemplateId: "",
+  alchemyMechanismQuery: "",
+  developerObservabilityOpen: false,
+  developerObservabilityTab: "context",
+  statusPanelVisible: true,
+  statusPanelCollapsed: false,
+  statusPanelDensity: "simple",
+  selectedTurnId: null,
+  selectedMessageId: null,
+  selectedTurnFrame: null,
+  latestTurnFrame: null,
+  turnStateIndex: [],
+  worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
 };
 
 const C = {
@@ -202,10 +224,12 @@ const C = {
     const tone = role === "user" ? "user" : role === "error" ? "error" : role === "system" ? "system" : "assistant";
     const candidates = Array.isArray(m.candidates) ? m.candidates : [];
     const selectedIndex = Math.max(0, candidates.findIndex(c => c.selected));
-    return `<div class="chat-message ${tone}" data-message-id="${U.esc(m.id || "")}">
+    const turnId = m.turnId || (m.round ? `turn-${m.round}` : "");
+    return `<div class="chat-message ${tone} ${m.id && AS.selectedMessageId === m.id ? "selected-message" : ""}" data-message-id="${U.esc(m.id || "")}" data-turn-id="${U.esc(turnId)}">
       <div class="chat-meta">
         <strong>${role === "user" ? "你" : role === "assistant" ? "叙事引擎" : role}</strong>
         ${m.favorite ? C.badge("收藏", "warn") : ""}
+        ${m.round ? `<span>第 ${U.esc(m.round)} 轮</span>` : ""}
         ${m.ts ? `<span>${U.date(m.ts)}</span>` : ""}
       </div>
       <div class="chat-text">${U.esc(m.content || "")}</div>
@@ -234,6 +258,7 @@ const C = {
             <p class="sub">${AS.isQuickStart ? "快速项目草稿 · 已保存到本地 runtime" : m ? `${C.dataModeLabel(m)} · ${m.turnCount || 0} 回合${m.draft ? " · 草稿" : ""}` : "请先在工作台或世界管理中加载一个世界"}</p>
           </div>
           <div class="actions">
+            <button class="small" data-action="toggle-developer-observability">开发者观测</button>
             <button class="small" data-action="open-command-panel">命令</button>
             <button class="small danger" data-action="clear-chat">清空</button>
           </div>
@@ -244,37 +269,9 @@ const C = {
           <button class="primary" data-action="chat-send" ${AS.busy ? "disabled" : ""}>发送</button>
         </div>
       </section>
-      ${C.contextPanel()}
+      ${renderStatusPanel()}
+      ${renderDeveloperObservabilityDrawer()}
     </div>`;
-  },
-  contextPanel() {
-    const hits = AS.turnDebug?.worldbookHits || AS.dashboardData.narrative?.worldbookHits || [];
-    const characterState = AS.turnDebug?.characterState || {};
-    const memory = AS.turnDebug?.memorySnapshot || AS.dashboardData.narrative?.memory?.recentEntries || [];
-    const guardian = AS.turnDebug?.guardian || {};
-    const assistants = AS.messages.filter(m => m.role === "assistant");
-    const candidateCount = assistants.reduce((sum, m) => sum + Math.max(0, (m.candidates || []).length - 1), 0);
-    const favorites = AS.messages.filter(m => m.favorite);
-    return `<aside class="context-stack">
-      <div class="panel tight">
-        <div class="panel-head"><h3>叙事上下文</h3><button class="small" data-action="load-context">刷新</button></div>
-        <div class="list">
-          <div class="item"><div class="item-head"><strong>世界书命中</strong>${C.badge(Array.isArray(hits) ? hits.length : 0, "info")}</div>${Array.isArray(hits) && hits.length ? hits.slice(0, 3).map(h => `<span class="tiny muted">${U.esc(h.title || h.keys?.[0] || "命中条目")}</span>`).join("") : `<span class="tiny muted">发送一轮对话后生成。</span>`}</div>
-          <div class="item"><strong>当前角色状态</strong><span class="tiny muted">${U.esc(U.compact(U.json(characterState), 120))}</span></div>
-          <div class="item"><strong>记忆快照</strong><span class="tiny muted">${Array.isArray(memory) && memory.length ? U.esc(U.compact(U.json(memory.slice(0, 3)), 120)) : "暂无快照"}</span></div>
-          <details><summary>技术细节（Direction Packet / Guardian）</summary><pre>${U.esc(U.json({ directionPacket: AS.turnDebug?.directionPacket || {}, guardian }))}</pre></details>
-        </div>
-      </div>
-      <div class="panel tight">
-        <h3>候选与分支</h3>
-        <div class="auto-grid compact">
-          ${C.stat("助手回复", assistants.length)}
-          ${C.stat("候选版本", candidateCount)}
-          ${C.stat("收藏", favorites.length)}
-        </div>
-        <div class="list">${assistants.filter(m => (m.candidates || []).length > 1 || m.favorite).slice(-4).map(m => `<div class="item"><strong>${m.favorite ? "收藏" : "候选"}</strong><span class="tiny muted">${U.esc(U.compact(m.content || "", 90))}</span></div>`).join("") || `<span class="tiny muted">重生成候选或收藏消息后，这里会形成轻量分支索引。</span>`}</div>
-      </div>
-    </aside>`;
   },
   worldbookRows(limit) {
     const rows = (AS.worldbookEntries || []).slice(0, limit || 100);
@@ -293,6 +290,141 @@ const C = {
     </div>`).join("");
   },
 };
+
+function currentTurnStateFrame() {
+  return AS.selectedTurnId ? AS.selectedTurnFrame : AS.latestTurnFrame;
+}
+
+function renderChangeMark(value, status = "") {
+  if (value === undefined || value === null || value === "") return "";
+  const text = typeof value === "number" && value > 0 ? `+${value}` : String(value);
+  const tone = status === "down" || (typeof value === "number" && value < 0) ? "down" : status === "new" ? "new" : "up";
+  return `<span class="state-change ${tone}">${U.esc(text)}</span>`;
+}
+
+function renderStatBar(card) {
+  const min = Number(card.min || 0);
+  const max = Number(card.max || 100);
+  const value = Number(card.value || 0);
+  const pct = max > min ? Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100)) : 0;
+  return `<article class="status-card stat-bar-card">
+    <div class="item-head"><strong>${U.esc(card.title || "状态")}</strong><span>${U.esc(value)} / ${U.esc(max)} ${renderChangeMark(card.delta)}</span></div>
+    <div class="meter-track"><div class="meter-fill" style="width:${pct.toFixed(2)}%"></div></div>
+    ${card.label || card.hint ? `<span class="tiny muted">${U.esc(card.label || card.hint)}</span>` : ""}
+  </article>`;
+}
+
+function renderInventoryGrid(card) {
+  const items = Array.isArray(card.items) ? card.items : [];
+  return `<article class="status-card"><strong>${U.esc(card.title || "背包")}</strong>
+    <div class="inventory-grid">${items.map(item => `<div class="inventory-item"><span>${U.esc(item.name || "物品")}</span><strong>×${U.esc(item.count ?? 0)}</strong>${renderChangeMark(item.delta, item.delta > 0 ? "new" : "down")}</div>`).join("") || `<span class="tiny muted">暂无物品</span>`}</div>
+  </article>`;
+}
+
+function renderStatusList(card) {
+  const items = Array.isArray(card.items) ? card.items : [];
+  return `<article class="status-card"><strong>${U.esc(card.title || "状态")}</strong>
+    <div class="status-list">${items.map(item => `<div><span>${U.esc(item.label || "状态")}</span><strong>${U.esc(item.value ?? "")}</strong>${renderChangeMark(item.delta || (item.status === "new" ? "NEW" : item.status === "changed" ? "CHANGED" : ""), item.status)}</div>`).join("") || `<span class="tiny muted">暂无状态</span>`}</div>
+  </article>`;
+}
+
+function renderVisualPacket(packet) {
+  const cards = Array.isArray(packet?.cards) ? packet.cards : [];
+  return cards.map(card => {
+    if (card.type === "stat_bar") return renderStatBar(card);
+    if (card.type === "inventory_grid") return renderInventoryGrid(card);
+    if (card.type === "status_list") return renderStatusList(card);
+    return "";
+  }).join("");
+}
+
+function renderStatusFrameSimple(frame) {
+  const visual = renderVisualPacket(frame?.visual);
+  if (visual) return `<div class="status-cards">${visual}</div>`;
+  return C.empty("本轮暂无状态变化", "状态帧已保存；后续确认的角色、世界、背包、任务和机制状态会显示在这里。");
+}
+
+function renderStatusFrameDetailed(frame) {
+  const changes = Array.isArray(frame?.changes) ? frame.changes : [];
+  if (!changes.length) return renderStatusFrameSimple(frame);
+  return `<div class="status-cards">${changes.map(change => `<article class="status-card detail-change">
+    <div class="item-head"><strong>${U.esc(change.label || change.target || "状态")}</strong>${renderChangeMark(change.delta ?? (change.type === "new" ? "NEW" : "CHANGED"), change.type === "decrease" ? "down" : change.type)}</div>
+    <div><span class="muted">${U.esc(change.before ?? "-")}</span> → <strong>${U.esc(change.after ?? "-")}</strong></div>
+    ${change.reason ? `<p class="tiny muted">原因：${U.esc(change.reason)}</p>` : ""}
+    ${change.evidence ? `<p class="tiny muted">证据：${U.esc(change.evidence)}</p>` : ""}
+    ${change.confidence !== undefined ? `<span class="tiny muted">置信度：${U.esc(change.confidence)}</span>` : ""}
+  </article>`).join("")}</div>`;
+}
+
+function renderStatusPanel() {
+  if (!AS.statusPanelVisible) return `<aside class="status-panel status-panel--hidden"><button class="small" data-action="show-status-panel">显示状态</button></aside>`;
+  const frame = currentTurnStateFrame();
+  const historical = Boolean(AS.selectedTurnId);
+  const title = historical ? `状态快照 · 第 ${frame?.round || "?"} 轮` : "状态 · 最新";
+  return `<aside class="panel status-panel ${AS.statusPanelCollapsed ? "status-panel--collapsed" : ""}">
+    <div class="panel-head">
+      <div><h3>${U.esc(title)}</h3>${frame?.createdAt ? `<span class="tiny muted">${U.date(frame.createdAt)}</span>` : ""}</div>
+      <div class="actions">
+        ${historical ? `<button class="small" data-action="status-latest">返回最新</button>` : ""}
+        <button class="small" data-action="status-density">${AS.statusPanelDensity === "simple" ? "详细" : "简洁"}</button>
+        <button class="small" data-action="toggle-status-collapse">${AS.statusPanelCollapsed ? "展开" : "收敛"}</button>
+        <button class="small ghost" data-action="hide-status-panel">隐藏</button>
+      </div>
+    </div>
+    ${AS.statusPanelCollapsed ? `<span class="tiny muted">${frame?.changes?.length || 0} 项最新变化</span>` : frame ? (AS.statusPanelDensity === "detailed" ? renderStatusFrameDetailed(frame) : renderStatusFrameSimple(frame)) : C.empty("暂无状态帧", "完成一轮对话后，这里会显示已确认状态。")}
+  </aside>`;
+}
+
+function renderNarrativeContextDebug() {
+  const hits = AS.turnDebug?.worldbookHits || AS.dashboardData.narrative?.worldbookHits || [];
+  const characterState = AS.turnDebug?.characterState || {};
+  const memory = AS.turnDebug?.memorySnapshot || AS.dashboardData.narrative?.memory?.recentEntries || [];
+  return `<div class="list">
+    <div class="item"><div class="item-head"><strong>世界书命中</strong>${C.badge(Array.isArray(hits) ? hits.length : 0, "info")}</div>${Array.isArray(hits) && hits.length ? hits.slice(0, 8).map(hit => `<span class="tiny muted">${U.esc(hit.title || hit.keys?.[0] || "命中条目")}</span>`).join("") : `<span class="tiny muted">发送一轮对话后生成。</span>`}</div>
+    <div class="item"><strong>当前角色状态</strong><pre>${U.esc(U.json(characterState))}</pre></div>
+    <div class="item"><strong>记忆快照</strong><pre>${U.esc(U.json(memory))}</pre></div>
+    <details><summary>Direction Packet</summary><pre>${U.esc(U.json(AS.turnDebug?.directionPacket || {}))}</pre></details>
+    <details><summary>Guardian</summary><pre>${U.esc(U.json(AS.turnDebug?.guardian || {}))}</pre></details>
+  </div>`;
+}
+
+function renderBranchDebug() {
+  const assistants = AS.messages.filter(message => message.role === "assistant");
+  const candidateCount = assistants.reduce((sum, message) => sum + Math.max(0, (message.candidates || []).length - 1), 0);
+  const favorites = AS.messages.filter(message => message.favorite);
+  return `<div class="grid"><div class="auto-grid compact">${C.stat("助手回复", assistants.length)}${C.stat("候选版本", candidateCount)}${C.stat("收藏", favorites.length)}</div>
+    <div class="list">${assistants.filter(message => (message.candidates || []).length > 1 || message.favorite).slice(-10).map(message => `<div class="item"><strong>${message.favorite ? "收藏" : "候选"}</strong><span class="tiny muted">${U.esc(U.compact(message.content || "", 160))}</span></div>`).join("") || `<span class="tiny muted">候选与收藏只形成分支索引，不会篡改已确认状态帧。</span>`}</div></div>`;
+}
+
+function renderMechanismDebug() {
+  const frame = currentTurnStateFrame();
+  return `<div class="list">
+    <div class="item"><strong>机制更新 proposal</strong><span class="tiny muted">未确认 proposal 不进入状态栏，仅在专用机制流程确认后写入缓存。</span></div>
+    <div class="item"><strong>已应用变化</strong><pre>${U.esc(U.json((frame?.changes || []).filter(change => change.category === "mechanism" && change.applied)))}</pre></div>
+    <div class="item"><strong>当前 TurnStateFrame</strong><span class="tiny muted">${U.esc(frame?.turnId || "暂无")}</span></div>
+    <div class="item"><strong>状态 hash</strong><span class="tiny muted mono">${U.esc(frame?.afterStateHash || "暂无")}</span></div>
+  </div>`;
+}
+
+function renderVisualDebug() {
+  const packet = currentTurnStateFrame()?.visual || { version: "visual-dsl.v1", mode: "simple", cards: [] };
+  return `<div class="list"><div class="item"><strong>当前 visual packet</strong><pre>${U.esc(U.json(packet))}</pre></div><div class="item"><strong>渲染警告</strong><span class="tiny muted">未知卡片类型与 raw HTML / JS / CSS 会被安全拒绝。</span></div></div>`;
+}
+
+function renderDeveloperObservabilityDrawer() {
+  if (!AS.developerObservabilityOpen) return "";
+  const tabs = [
+    ["context", "叙事上下文"], ["branches", "候选与分支"], ["mechanisms", "机制调试"], ["visual", "Visual DSL"]
+  ];
+  const body = ({ context: renderNarrativeContextDebug, branches: renderBranchDebug, mechanisms: renderMechanismDebug, visual: renderVisualDebug }[AS.developerObservabilityTab] || renderNarrativeContextDebug)();
+  return `<div class="developer-observability-drawer developer-observability-drawer--open" data-action="close-developer-observability">
+    <aside class="developer-observability-sheet" onclick="event.stopPropagation()">
+      <div class="overlay-head"><div><h3>开发者观测</h3><span class="tiny muted">当前对话现场调试数据</span></div><button data-action="close-developer-observability">关闭</button></div>
+      <div class="tabs developer-observability-tabs">${tabs.map(([id, label]) => `<button class="${AS.developerObservabilityTab === id ? "active" : ""}" data-action="developer-observability-tab" data-observability-tab="${U.esc(id)}">${U.esc(label)}</button>`).join("")}</div>
+      <div class="developer-observability-content">${body}</div>
+    </aside>
+  </div>`;
+}
 
 const CH = {
   key(m) { return `wt-chat-${m?.id || "global"}`; },
@@ -314,9 +446,10 @@ const CH = {
     try {
       const res = await API.get(`/api/modules/${encodeURIComponent(m.id)}/history?limit=80`);
       AS.messages = Array.isArray(res.messages)
-        ? res.messages.map((r, i) => ({ id: r.id || `h_${i}`, role: r.role, content: r.content, ts: r.ts, favorite: !!r.favorite, candidates: r.candidates || [], sections: r.sections || null }))
+        ? res.messages.map((r, i) => ({ id: r.id || `h_${i}`, role: r.role, content: r.content, ts: r.ts, favorite: !!r.favorite, candidates: r.candidates || [], sections: r.sections || null, round: r.round || null, turnId: r.turnId || (r.round ? `turn-${r.round}` : "") }))
         : [];
       AS.lastScene = res.lastScene || "";
+      AS.engineState = res.engineState || AS.engineState;
       if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
     } catch {
       CH.loadLocal(m);
@@ -443,7 +576,9 @@ const Views = {
               ["includeCharacters", "角色"],
               ["includeSharedData", "其他 shared 数据"],
               ["includeRuntimeState", "运行状态"],
-              ["includeReviewQueue", "审核队列"]
+              ["includeReviewQueue", "审核队列（未确认）"],
+              ["includeMechanisms", "已确认机制缓存"],
+              ["includeTurnStateFrames", "TurnStateFrame 历史"]
             ].map(([key, label]) => `<label><input type="checkbox" data-pack-option="${key}" ${AS.worldPackOptions[key] ? "checked" : ""}> ${label}</label>`).join("")}
           </div>
           <div class="actions"><button class="primary" data-action="export-worldpack">导出当前世界</button><button data-action="import-worldpack">导入世界包</button></div>
@@ -451,7 +586,7 @@ const Views = {
         </div>
         <aside class="panel">
           <h3>默认排除</h3>
-          <div class="list"><div class="item">API Key / secrets</div><div class="item">runtime/chat.jsonl</div><div class="item">runtime/memory.jsonl</div><div class="item">runtime/state.json</div><div class="item">未确认素材</div></div>
+          <div class="list"><div class="item">API Key / secrets</div><div class="item">debug / proposal / session</div><div class="item">runtime/chat.jsonl</div><div class="item">runtime/memory.jsonl</div><div class="item">runtime/state.json</div><div class="item">未确认素材与机制草稿</div></div>
         </aside>
       </section>
     </div>`;
@@ -554,8 +689,8 @@ function renderAlchemy() {
     ["faction", "组织 / 阵营"], ["rule", "规则 / 魔法体系"], ["plot", "剧情线"], ["opening", "开场场景"], ["world_draft", "草稿世界"]
   ];
   const busy = AS.alchemyPreviewBusy || AS.alchemyCommitBusy;
-  return `<section class="grid alchemy-workbench">
-    <div class="panel">
+  return `<section class="alchemy-workbench">
+    <div class="alchemy-main grid"><div class="panel">
       <div class="panel-head"><div><h2>炼金台</h2><p class="sub">把灵感、片段和角色资料整理为可审核的世界数据。预览不会写入审核队列或正式世界。</p></div></div>
       <div class="stack">
         <div><label class="field-label">模式</label><div class="tabs alchemy-modes">${modes.map(([id, label]) => `<button class="${AS.alchemyMode === id ? "active" : ""}" data-action="alchemy-set-mode" data-alchemy-mode="${id}" ${busy ? "disabled" : ""}>${U.esc(label)}</button>`).join("")}</div></div>
@@ -573,7 +708,8 @@ function renderAlchemy() {
         </div>
       </div>
     </div>
-    ${renderAlchemyPreview()}
+    ${renderAlchemyPreview()}</div>
+    ${renderMechanismLibraryPanel()}
   </section>`;
 }
 
@@ -610,6 +746,7 @@ function renderAlchemyPreview() {
     ${listBlock("冲突", preview.conflicts, conflict => `<div class="item"><strong>${U.esc(conflict.title)}</strong><p>${U.esc(conflict.description)}</p><span class="tiny muted">${U.esc(conflict.suggestion || "")}</span></div>`)}
     ${listBlock("缺失信息", preview.missingFields, field => `<div class="item"><strong>${U.esc(field.question)}</strong><span class="tiny muted">${U.esc(field.reason)} · ${U.esc(field.priority)}</span></div>`)}
     ${listBlock("下一步建议", preview.suggestions, suggestion => `<div class="item"><strong>${U.esc(suggestion.text)}</strong><span class="tiny muted">${U.esc(suggestion.actionHint || "")}</span></div>`)}
+    ${renderAlchemyMechanismDrafts()}
     <div class="alchemy-section"><h3>候选条目</h3><div class="list">${itemCards || C.empty("没有候选条目", "请补充素材或调整模式后重试。")}</div></div>
     <div class="alchemy-section"><label><span class="field-label">继续处理</span><textarea id="alchemyRefineText" maxlength="12000" placeholder="例如：把世界树统一成超古代终端，不要传统神明化。">${U.esc(AS.alchemyRefineText)}</textarea></label></div>
     <div class="actions">
@@ -618,6 +755,37 @@ function renderAlchemyPreview() {
       <button class="ghost" data-action="alchemy-clear" ${AS.alchemyPreviewBusy || AS.alchemyCommitBusy ? "disabled" : ""}>清空预览</button>
     </div>
   </div>`;
+}
+
+function renderAlchemyMechanismDrafts() {
+  const drafts = AS.alchemyMechanismDrafts || [];
+  return `<div class="alchemy-section mechanism-drafts">
+    <div class="panel-head"><div><h3>从输入中识别到的机制</h3><p class="sub">以下机制来自你的输入内容，已默认加入本次结果。你可以编辑或移除。</p></div>${C.badge(drafts.length, drafts.length ? "ok" : "pending")}</div>
+    <div class="list">${drafts.map(draft => `<article class="item mechanism-draft-card" data-mechanism-draft-id="${U.esc(draft.id)}">
+      <div class="item-head"><div><strong>${U.esc(draft.name || "未命名机制")}</strong><div class="tiny muted">来源：${U.esc(draft.source === "input" ? "输入内容" : draft.source === "library" ? "机制库" : "手动添加")} · 类型：${U.esc(draft.type || "custom")}</div></div>${C.badge(draft.selected === false ? "已移除" : "默认加入", draft.selected === false ? "pending" : "ok")}</div>
+      <p class="tiny muted">${U.esc(U.compact(draft.description || "", 240))}</p>
+      <div class="tiny">推荐展示：${U.esc(draft.visualHint?.preferredType || "status_list")}</div>
+      <div class="actions"><button class="small" data-action="edit-mechanism-draft">编辑</button><button class="small danger" data-action="remove-mechanism-draft">移除</button></div>
+    </article>`).join("") || C.empty("未识别到明确机制", "输入中出现好感度、背包、探索度、任务或状态数值后会自动加入。")}</div>
+    <div class="actions"><button class="primary" data-action="commit-mechanism-drafts" ${drafts.some(draft => draft.selected !== false) ? "" : "disabled"}>提交机制到世界缓存</button><span class="tiny muted">机制不会进入普通 worldbook 审核队列。</span></div>
+  </div>`;
+}
+
+function renderMechanismLibraryPanel() {
+  const recommendations = AS.alchemyMechanismRecommendations || [];
+  const templates = AS.alchemyMechanismLibrary || [];
+  const selected = templates.find(template => template.templateId === AS.alchemyMechanismTemplateId);
+  const card = template => `<article class="mechanism-template ${selected?.templateId === template.templateId ? "selected" : ""}" data-template-id="${U.esc(template.templateId)}">
+    <button class="mechanism-template-open" data-action="select-mechanism-template"><strong>${U.esc(template.name)}</strong><span>${U.esc(template.category || template.type)}</span></button>
+    <button class="small" data-action="add-mechanism-template">添加</button>
+  </article>`;
+  return `<aside class="panel mechanism-library-panel">
+    <div class="panel-head"><div><h2>机制库</h2><p class="sub">通用模板仅作补充，点击后才加入本次机制。</p></div></div>
+    <div class="mechanism-search"><input id="mechanismLibraryQuery" value="${U.esc(AS.alchemyMechanismQuery)}" placeholder="搜索机制..."><button class="small" data-action="search-mechanism-library">搜索</button></div>
+    ${recommendations.length ? `<div class="alchemy-section"><h3>推荐匹配</h3><div class="mechanism-template-list">${recommendations.map(card).join("")}</div></div>` : ""}
+    <div class="alchemy-section"><h3>全部机制</h3><div class="mechanism-template-list">${templates.map(card).join("") || C.empty("机制库加载中", "进入炼金台后会读取内置模板。")}</div></div>
+    ${selected ? `<div class="mechanism-template-detail"><h3>${U.esc(selected.name)}</h3><p>${U.esc(selected.description || "")}</p><div class="tiny muted">适合：${U.esc((selected.keywords || []).join("、"))}</div><div class="tiny muted">推荐展示：${U.esc(selected.visualHint?.preferredType || "status_list")}</div><button class="primary" data-action="add-mechanism-template" data-template-id="${U.esc(selected.templateId)}">添加到本次机制</button></div>` : ""}
+  </aside>`;
 }
 
 function renderReview() {
@@ -793,6 +961,7 @@ function render() {
 async function loadViewData() {
   try {
     if (AS.view === "library" && AS.libraryTab === "characters") AS.characters = await API.loadCharacters();
+    if (AS.view === "library" && AS.libraryTab === "alchemy" && !AS.alchemyMechanismLibrary.length) await loadMechanismLibrary();
     if ((AS.view === "library" && AS.libraryTab === "worldbook") || AS.view === "workbench") await loadWorldbookIfPossible();
     if (AS.view === "library" && AS.libraryTab === "review") await loadReviewFacts();
     if (AS.view === "settings" && AS.settingsTab === "connections") AS.connections = await API.connections();
@@ -837,6 +1006,42 @@ async function refreshObserve() {
   await Promise.all(jobs);
 }
 
+async function loadLatestStatusFrame() {
+  if (!AS.selectedModule || AS.selectedModule.id === "__quick__") {
+    AS.latestTurnFrame = null;
+    AS.turnStateIndex = [];
+    return;
+  }
+  const moduleKey = AS.selectedModule.id;
+  const [latest, index] = await Promise.all([
+    API.statusLatest(moduleKey).catch(() => ({ frame: null })),
+    API.statusTurns(moduleKey).catch(() => ({ turns: [] }))
+  ]);
+  AS.latestTurnFrame = latest.frame || null;
+  AS.turnStateIndex = index.turns || [];
+  if (!AS.selectedTurnId) AS.selectedTurnFrame = null;
+}
+
+async function selectTurnState(turnId, messageId = "") {
+  if (!turnId || !AS.selectedModule || AS.selectedModule.id === "__quick__") return;
+  const result = await API.statusTurn(AS.selectedModule.id, turnId);
+  if (!result.frame) return createToast("这一轮尚无可读取的状态帧", "warn");
+  AS.selectedTurnId = turnId;
+  AS.selectedMessageId = messageId;
+  AS.selectedTurnFrame = result.frame;
+  AS.statusPanelVisible = true;
+  AS.statusPanelCollapsed = false;
+  render();
+}
+
+function returnToLatestStatus() {
+  AS.selectedTurnId = null;
+  AS.selectedMessageId = null;
+  AS.selectedTurnFrame = null;
+  AS.statusPanelVisible = true;
+  render();
+}
+
 async function selectModule(id, targetView = "chat") {
   const mod = AS.modules.find(m => m.id === id);
   if (!mod) return;
@@ -845,6 +1050,11 @@ async function selectModule(id, targetView = "chat") {
   AS.quickStartContent = "";
   AS.dashboardData = {};
   AS.turnDebug = null;
+  AS.selectedTurnId = null;
+  AS.selectedMessageId = null;
+  AS.selectedTurnFrame = null;
+  AS.latestTurnFrame = null;
+  AS.developerObservabilityOpen = false;
   if (mod.dataMode === "character_card") {
     try {
       const res = await API.loadCharacter(mod._characterId || mod.id.replace("char:", ""));
@@ -852,6 +1062,7 @@ async function selectModule(id, targetView = "chat") {
     } catch {}
   }
   await CH.loadServer(mod);
+  await loadLatestStatusFrame();
   await loadWorldbookIfPossible();
   AS.view = targetView;
 }
@@ -932,6 +1143,8 @@ function bindEvents() {
   if (alchemyText) alchemyText.oninput = () => { AS.alchemyText = alchemyText.value; };
   const refineText = U.qs("#alchemyRefineText");
   if (refineText) refineText.oninput = () => { AS.alchemyRefineText = refineText.value; };
+  const mechanismQuery = U.qs("#mechanismLibraryQuery");
+  if (mechanismQuery) mechanismQuery.oninput = () => { AS.alchemyMechanismQuery = mechanismQuery.value; };
   U.qsa("[data-alchemy-select]").forEach(input => {
     input.onchange = () => {
       const id = input.dataset.alchemySelect;
@@ -951,6 +1164,10 @@ function bindEvents() {
 
   U.qsa("[data-action]").forEach(btn => {
     btn.onclick = e => handleAction(e, btn);
+  });
+  U.qsa(".chat-message[data-turn-id]").forEach(message => {
+    if (!message.dataset.turnId) return;
+    message.onclick = () => selectTurnState(message.dataset.turnId, message.dataset.messageId || "");
   });
 }
 
@@ -1007,6 +1224,14 @@ async function handleAction(e, btn) {
     if (action === "chat-send") return sendChat();
     if (action === "clear-chat") return confirmClearChat();
     if (action === "open-command-panel") return openCommandPanel();
+    if (action === "toggle-developer-observability") { AS.developerObservabilityOpen = !AS.developerObservabilityOpen; if (AS.developerObservabilityOpen) await refreshObserve(); return render(); }
+    if (action === "close-developer-observability") { AS.developerObservabilityOpen = false; return render(); }
+    if (action === "developer-observability-tab") { AS.developerObservabilityTab = btn.dataset.observabilityTab || "context"; return render(); }
+    if (action === "toggle-status-collapse") { AS.statusPanelCollapsed = !AS.statusPanelCollapsed; return render(); }
+    if (action === "hide-status-panel") { AS.statusPanelVisible = false; return render(); }
+    if (action === "show-status-panel") { AS.statusPanelVisible = true; return render(); }
+    if (action === "status-density") { AS.statusPanelDensity = AS.statusPanelDensity === "simple" ? "detailed" : "simple"; return render(); }
+    if (action === "status-latest") return returnToLatestStatus();
     if (action === "load-context") { await refreshObserve(); return render(); }
     if (action === "refresh-observe") { await refreshObserve(); return render(); }
     if (action === "load-telemetry") { if (AS.selectedModule) AS.dashboardData.telemetry = await API.telemetry(AS.selectedModule.id); return render(); }
@@ -1042,6 +1267,12 @@ async function handleAction(e, btn) {
     if (action === "alchemy-refine") return refineAlchemyPreview();
     if (action === "alchemy-commit") return commitAlchemyPreview();
     if (action === "alchemy-clear") return clearAlchemyPreview();
+    if (action === "search-mechanism-library") return loadMechanismLibrary(AS.alchemyMechanismQuery);
+    if (action === "select-mechanism-template") { AS.alchemyMechanismTemplateId = btn.closest("[data-template-id]")?.dataset.templateId || ""; return render(); }
+    if (action === "add-mechanism-template") return addMechanismTemplate(btn.dataset.templateId || btn.closest("[data-template-id]")?.dataset.templateId);
+    if (action === "edit-mechanism-draft") return editMechanismDraft(btn.closest("[data-mechanism-draft-id]")?.dataset.mechanismDraftId);
+    if (action === "remove-mechanism-draft") return removeMechanismDraft(btn.closest("[data-mechanism-draft-id]")?.dataset.mechanismDraftId);
+    if (action === "commit-mechanism-drafts") return commitMechanismDraftsToWorld();
     if (action === "enqueue-review") return enqueueReview();
     if (action === "load-review") { await loadReviewFacts(); return render(); }
     if (["confirm-review", "ignore-review", "merge-review", "adopt-manual-review"].includes(action)) return reviewAction(action, btn.closest("[data-review-id]")?.dataset.reviewId);
@@ -1107,7 +1338,7 @@ async function sendChat() {
   if (!AS.selectedModule) return createToast("请先加载一个世界", "warn");
   input.value = "";
   AS.busy = true;
-  CH.add("user", text);
+  const userMessage = CH.add("user", text);
   render();
   try {
     let messages = AS.messages.map(m => ({ role: m.role, content: m.content })).slice(-40);
@@ -1121,11 +1352,16 @@ async function sendChat() {
     });
     if (res.status === "ok") {
       const narrative = res.narrative || "（无回应）";
-      CH.add("assistant", narrative, { id: res.persistedIds?.assistantId, candidates: res.persistedIds?.assistantId ? [{ id: `${res.persistedIds.assistantId}-c0`, content: narrative, selected: true, createdAt: new Date().toISOString() }] : [] });
+      const turnId = res.persistedIds?.turnId || (res.turnCount ? `turn-${res.turnCount}` : "");
+      if (res.persistedIds?.userId) userMessage.id = res.persistedIds.userId;
+      userMessage.turnId = turnId;
+      userMessage.round = res.turnCount || null;
+      CH.add("assistant", narrative, { id: res.persistedIds?.assistantId, turnId, round: res.turnCount || null, candidates: res.persistedIds?.assistantId ? [{ id: `${res.persistedIds.assistantId}-c0`, content: narrative, selected: true, createdAt: new Date().toISOString() }] : [] });
+      CH.persist();
       AS.lastStatusSections = res.parsedSections || {};
       AS.engineState = res.engineState || AS.engineState;
       if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
-      if (AS.selectedModule?.id !== "__quick__") await refreshObserve();
+      if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve()]);
     } else {
       CH.add("error", res.errorMsg || "LLM 返回错误");
     }
@@ -1398,6 +1634,74 @@ function setAlchemyPreview(result) {
   AS.alchemyError = "";
 }
 
+async function loadMechanismLibrary(query = AS.alchemyMechanismQuery) {
+  AS.alchemyMechanismQuery = String(query || "");
+  const result = await API.mechanismLibrary({ query: AS.alchemyMechanismQuery, moduleKey: activeAlchemyModuleKey(), previewId: AS.alchemyPreviewId });
+  AS.alchemyMechanismLibrary = result.templates || [];
+  if (!AS.alchemyMechanismQuery && result.recommendations?.length) AS.alchemyMechanismRecommendations = result.recommendations;
+  render();
+}
+
+async function loadAlchemyMechanismsFromInput() {
+  const result = await API.mechanismDraft({
+    previewId: AS.alchemyPreviewId,
+    text: AS.alchemyText,
+    moduleKey: activeAlchemyModuleKey(),
+    userGoal: AS.alchemyUserGoal
+  });
+  const libraryDrafts = AS.alchemyMechanismDrafts.filter(draft => draft.source === "library" || draft.source === "manual");
+  AS.alchemyMechanismDrafts = [...(result.drafts || []), ...libraryDrafts];
+  AS.alchemyMechanismRecommendations = result.libraryRecommendations || [];
+  await loadMechanismLibrary();
+}
+
+function addMechanismTemplate(templateId) {
+  const template = AS.alchemyMechanismLibrary.find(item => item.templateId === templateId) || AS.alchemyMechanismRecommendations.find(item => item.templateId === templateId);
+  if (!template) return createToast("没有找到这个机制模板", "warn");
+  if (AS.alchemyMechanismDrafts.some(draft => draft.sourceRef?.templateId === template.templateId)) return createToast("这个模板已加入本次机制", "warn");
+  const defaults = template.defaultDraft || {};
+  AS.alchemyMechanismDrafts.push({
+    id: globalThis.crypto?.randomUUID?.() || `mechanism-${Date.now()}`,
+    source: "library",
+    sourceRef: { templateId: template.templateId },
+    name: defaults.name || template.name,
+    type: defaults.type || template.type || "custom",
+    description: defaults.description || template.description || "",
+    scope: defaults.scope || "world",
+    stateSchema: defaults.stateSchema || { kind: "custom" },
+    visualHint: defaults.visualHint || template.visualHint || { preferredType: "status_list", showToPlayer: true },
+    selected: true,
+    warnings: []
+  });
+  createToast(`已添加：${template.name}`);
+  render();
+}
+
+function editMechanismDraft(id) {
+  const draft = AS.alchemyMechanismDrafts.find(item => item.id === id);
+  if (!draft) return;
+  const name = prompt("机制名称", draft.name || "");
+  if (name == null) return;
+  const description = prompt("机制说明", draft.description || "");
+  if (description == null) return;
+  draft.name = name.trim().slice(0, 120) || draft.name;
+  draft.description = description.trim().slice(0, 500);
+  render();
+}
+
+function removeMechanismDraft(id) {
+  AS.alchemyMechanismDrafts = AS.alchemyMechanismDrafts.filter(item => item.id !== id);
+  render();
+}
+
+async function commitMechanismDraftsToWorld() {
+  const moduleKey = activeAlchemyModuleKey();
+  if (!moduleKey || moduleKey === "__quick__") return createToast("请先选择要写入机制缓存的世界", "warn");
+  const result = await API.mechanismCommit({ moduleKey, drafts: AS.alchemyMechanismDrafts });
+  AS.alchemyMechanismCache = result.cache || null;
+  createToast(`已提交 ${result.committed || 0} 项机制；跳过 ${result.skipped || 0} 项`);
+}
+
 async function createAlchemyPreview() {
   AS.alchemyText = U.qs("#alchemyText")?.value || AS.alchemyText;
   AS.alchemyUserGoal = U.qs("#alchemyUserGoal")?.value || "";
@@ -1418,6 +1722,7 @@ async function createAlchemyPreview() {
       options: { autoRelations: true, detectConflicts: true, suggestMissingFields: true, preserveSource: false }
     });
     setAlchemyPreview(result);
+    await loadAlchemyMechanismsFromInput();
     createToast(`已生成 ${result.preview?.items?.length || 0} 个候选条目`);
   } catch (err) {
     AS.alchemyError = err.message || "预览处理失败";
@@ -1459,6 +1764,7 @@ async function refineAlchemyPreview() {
       mode: AS.alchemyMode === "import" ? "polish" : AS.alchemyMode
     });
     setAlchemyPreview(result);
+    await loadAlchemyMechanismsFromInput();
     AS.alchemyRefineText = "";
     createToast("已按要求生成新的预览版本");
   } catch (err) {
@@ -1501,6 +1807,9 @@ function clearAlchemyPreview() {
   AS.alchemySelectedItemIds = [];
   AS.alchemyEditingItemId = "";
   AS.alchemyRefineText = "";
+  AS.alchemyMechanismDrafts = [];
+  AS.alchemyMechanismRecommendations = [];
+  AS.alchemyMechanismTemplateId = "";
   AS.alchemyError = "";
   render();
 }
@@ -1710,7 +2019,7 @@ async function init() {
     API.testLlm({ config: AS.config }).then(res => { AS.llmConnected = res.status === "ok"; render(); }).catch(() => {});
   }
   if (AS.selectedModule) {
-    await CH.loadServer(AS.selectedModule);
+    await Promise.all([CH.loadServer(AS.selectedModule), loadLatestStatusFrame()]);
     await loadWorldbookIfPossible().catch(() => {});
   }
   render();

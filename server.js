@@ -17,6 +17,17 @@ import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
 import { guessTypeFromKeywords } from "./src/core/data/alchemy/types.js";
 import { AlchemyPreviewError, createAlchemyPreviewService } from "./src/server/alchemy-preview-service.js";
+import {
+  commitMechanismDrafts,
+  extractMechanismDrafts,
+  listMechanismLibrary,
+  scrubMechanismValue
+} from "./src/server/mechanism-service.js";
+import {
+  createTurnStateFrame,
+  emptyConfirmedState,
+  scrubStateValue
+} from "./src/server/turn-state-frame-service.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -589,10 +600,13 @@ async function persistTurn(moduleId, input, result, engineState) {
   ensureDir(rtDir);
 
   const metaFile = isCharacter ? join(rtDir, "state.json") : join(baseDir, "world.json");
+  const previousRuntimeState = readJsonSync(join(rtDir, "state.json"), {});
   const turnCount = (readJsonSync(metaFile, {}).turnCount || 0) + 1;
   const now = new Date().toISOString();
+  const turnId = `turn-${turnCount}`;
   const userId = `turn-${turnCount}-user`;
   const assistantId = `turn-${turnCount}-assistant`;
+  const saveId = safeEntityId(previousRuntimeState.activeBranch || "main", "main");
   const engineSnapshot = result.overlayPatch?._engineState || null;
 
   // 🔄 自动备份 chat.jsonl（保留最近 5 个备份）
@@ -615,8 +629,8 @@ async function persistTurn(moduleId, input, result, engineState) {
   await writeJson(join(rtDir, "state.json"), { turnCount, activeBranch: "main", lastScene: result.parsedSections?.["状态"]?.scene || "", lastInput: input, engineState: engineState || {}, engineSnapshot, updatedAt: now });
 
   // chat.jsonl — 追加用户+助手消息（截断阈值放宽：上下文窗口充足无需过度紧缩）
-  await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, role: "user", content: input.slice(0, 8000), round: turnCount, ts: now, favorite: false });
-  await appendJsonl(join(rtDir, "chat.jsonl"), { id: assistantId, role: "assistant", content: (result.narrative || "").slice(0, 10000), round: turnCount, ts: new Date().toISOString(), sections: result.parsedSections || {}, favorite: false, candidates: [{ id: `${assistantId}-c0`, content: (result.narrative || "").slice(0, 10000), selected: true, createdAt: now }] });
+  await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, turnId, role: "user", content: input.slice(0, 8000), round: turnCount, ts: now, favorite: false });
+  await appendJsonl(join(rtDir, "chat.jsonl"), { id: assistantId, turnId, role: "assistant", content: (result.narrative || "").slice(0, 10000), round: turnCount, ts: new Date().toISOString(), sections: result.parsedSections || {}, favorite: false, candidates: [{ id: `${assistantId}-c0`, content: (result.narrative || "").slice(0, 10000), selected: true, createdAt: now }] });
 
   // memory.jsonl — 追加记忆快照
   if (result.overlayPatch?.memorySnapshot) {
@@ -641,8 +655,20 @@ async function persistTurn(moduleId, input, result, engineState) {
     wj.turnCount = turnCount; wj.updatedAt = now;
     await writeJson(join(baseDir, "world.json"), wj);
   }
+
+  // TurnStateFrame — 每轮确认完成后生成并持久化。只读取已确认运行状态与机制缓存，
+  // 不采纳未确认 proposal、debug、session 或密钥字段。
+  const previousFrame = await loadLatestTurnStateFrame(moduleId, saveId);
+  const mechanismCache = readJsonSync(mechanismCachePath(moduleId) || "", { mechanisms: [] });
+  const frame = createTurnStateFrame({
+    turnId, round: turnCount, userMessageId: userId, assistantMessageId: assistantId,
+    moduleKey: moduleId, saveId,
+    beforeState: previousFrame?.afterState || emptyConfirmedState(),
+    engineState: engineState || {}, mechanismCache, createdAt: now
+  });
+  await saveTurnStateFrame(moduleId, frame);
   moduleService.clearModuleCache?.(moduleId);
-  return { userId, assistantId, turnCount };
+  return { userId, assistantId, turnId, turnCount };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -910,6 +936,52 @@ async function handleAlchemyPreviewAction(action, body) {
   }
 }
 
+function alchemyMechanismSource(body = {}) {
+  if (typeof body.text === "string" && body.text.trim()) return { text: body.text, moduleKey: String(body.moduleKey || "") };
+  if (!body.previewId) return { text: "", moduleKey: String(body.moduleKey || "") };
+  try {
+    const preview = alchemyPreviewService.load(String(body.previewId), String(body.moduleKey || ""));
+    return { text: preview.input?.excerpt || "", moduleKey: preview.moduleKey || String(body.moduleKey || "") };
+  } catch (err) {
+    if (err instanceof AlchemyPreviewError) throw new HttpError(err.status, err.code, err.userMsg);
+    throw err;
+  }
+}
+
+async function handleMechanismDraftFromAlchemy(body = {}) {
+  const source = alchemyMechanismSource(body);
+  if (!source.text.trim()) throw new HttpError(400, "MECHANISM_TEXT_REQUIRED", "请输入炼金素材，或先生成有效预览。");
+  const drafts = extractMechanismDrafts(source.text, { previewId: body.previewId || "" });
+  const library = listMechanismLibrary({ text: `${source.text} ${body.userGoal || ""}`, drafts });
+  return {
+    status: "ok",
+    drafts,
+    libraryRecommendations: library.recommendations,
+    summary: { inputMechanisms: drafts.length, libraryMatches: library.recommendations.length, warnings: drafts.length ? [] : ["未从输入中识别到明确机制，可从机制库手动补充。"] }
+  };
+}
+
+async function handleMechanismLibrary(url = null) {
+  const query = url?.searchParams.get("query") || "";
+  const previewId = url?.searchParams.get("previewId") || "";
+  const moduleKey = url?.searchParams.get("moduleKey") || "";
+  let text = "";
+  if (previewId) text = alchemyMechanismSource({ previewId, moduleKey }).text;
+  const result = listMechanismLibrary({ query, text });
+  return { status: "ok", ...result };
+}
+
+async function handleMechanismCommitDrafts(body = {}) {
+  const moduleKey = String(body.moduleKey || "");
+  const file = mechanismCachePath(moduleKey);
+  if (!file || !existsSync(dirname(dirname(file)))) throw new HttpError(400, "MECHANISM_MODULE_INVALID", "目标世界不存在，请重新选择。");
+  if (!Array.isArray(body.drafts)) throw new HttpError(400, "MECHANISM_DRAFTS_INVALID", "机制草稿格式无效。");
+  const existing = readJsonSync(file, { version: "mechanism-cache.v1", mechanisms: [] });
+  const result = commitMechanismDrafts(existing, body.drafts);
+  await writeJson(file, result.cache);
+  return { status: "ok", committed: result.committed, skipped: result.skipped, cache: scrubMechanismValue(result.cache) };
+}
+
 /** 炼金台 → 模组创建：解析内容 → 生成世界书条目 或 角色卡引擎数据 */
 async function handleAlchemyDigest(body) {
   const { text, worldName, dataMode = "worldbook", subType = "classic", preset = "epic" } = body || {};
@@ -1065,6 +1137,82 @@ function moduleRuntimeDir(moduleKey = "") {
   }
   const worldDir = moduleWorldDir(key);
   return worldDir ? join(worldDir, "runtime") : null;
+}
+
+function mechanismCachePath(moduleKey = "") {
+  const rtDir = moduleRuntimeDir(moduleKey);
+  if (!rtDir || !pathWithinRoot(dataRoot(), rtDir)) return null;
+  return join(rtDir, "mechanisms", "cache.json");
+}
+
+function statusRoot(moduleKey = "") {
+  const rtDir = moduleRuntimeDir(moduleKey);
+  if (!rtDir || !pathWithinRoot(dataRoot(), rtDir)) return null;
+  return join(rtDir, "status");
+}
+
+function validateTurnId(turnId = "") {
+  const value = String(turnId || "");
+  return /^turn-[\w.-]{1,80}$/u.test(value) ? value : "";
+}
+
+function statusIndexPath(moduleKey = "") {
+  const root = statusRoot(moduleKey);
+  return root ? join(root, "index.json") : null;
+}
+
+function statusFramePath(moduleKey = "", turnId = "") {
+  const root = statusRoot(moduleKey);
+  const safeTurnId = validateTurnId(turnId);
+  return root && safeTurnId ? join(root, "turn-frames", `${safeTurnId}.json`) : null;
+}
+
+async function saveTurnStateFrame(moduleKey, frame) {
+  const file = statusFramePath(moduleKey, frame?.turnId);
+  const indexPath = statusIndexPath(moduleKey);
+  if (!file || !indexPath) return null;
+  const safeFrame = scrubStateValue(frame);
+  await writeJson(file, safeFrame);
+  const current = readJsonSync(indexPath, { version: "turn-state-index.v1", turns: [] });
+  const item = {
+    turnId: safeFrame.turnId,
+    round: safeFrame.round,
+    userMessageId: safeFrame.userMessageId,
+    assistantMessageId: safeFrame.assistantMessageId,
+    saveId: safeFrame.saveId,
+    createdAt: safeFrame.createdAt,
+    summary: safeFrame.changes?.length ? `${safeFrame.changes.length} 项已确认状态变化` : "本轮暂无状态变化",
+    changeCount: safeFrame.changes?.length || 0
+  };
+  const turns = [item, ...(Array.isArray(current.turns) ? current.turns : []).filter(entry => entry.turnId !== item.turnId)].slice(0, 500);
+  await writeJson(indexPath, { version: "turn-state-index.v1", moduleKey, updatedAt: new Date().toISOString(), turns });
+  return safeFrame;
+}
+
+async function loadTurnStateFrame(moduleKey, turnId, saveId = "main") {
+  const file = statusFramePath(moduleKey, turnId);
+  if (!file || !existsSync(file)) return null;
+  const frame = readJsonSync(file, null);
+  if (!frame || frame.moduleKey !== moduleKey || frame.saveId !== saveId) return null;
+  return scrubStateValue(frame);
+}
+
+async function loadLatestTurnStateFrame(moduleKey, saveId = "main") {
+  const indexPath = statusIndexPath(moduleKey);
+  if (!indexPath) return null;
+  const index = readJsonSync(indexPath, { turns: [] });
+  const latest = (Array.isArray(index.turns) ? index.turns : []).find(item => item.saveId === saveId);
+  return latest ? loadTurnStateFrame(moduleKey, latest.turnId, saveId) : null;
+}
+
+async function listTurnStateFrames(moduleKey, saveId = "main", limit = 50) {
+  const indexPath = statusIndexPath(moduleKey);
+  if (!indexPath) return [];
+  const index = readJsonSync(indexPath, { turns: [] });
+  return (Array.isArray(index.turns) ? index.turns : [])
+    .filter(item => item.saveId === saveId)
+    .slice(0, Math.max(1, Math.min(200, Number(limit) || 50)))
+    .map(item => scrubStateValue(item));
 }
 
 function moduleMetaPath(moduleKey = "") {
@@ -1814,11 +1962,14 @@ async function handleWorldPackExport(body = {}, url = null) {
     characters: body.includeCharacters !== false,
     sharedData: body.includeSharedData !== false,
     runtimeState: body.includeRuntimeState === true,
-    reviewQueue: body.includeReviewQueue === true
+    reviewQueue: body.includeReviewQueue === true,
+    mechanisms: body.includeMechanisms === true,
+    turnStateFrames: body.includeTurnStateFrames === true
   };
   const sharedFiles = {};
   for (const entry of readdirSync(ctx.sharedDir, { withFileTypes: true })) {
     if (entry.isFile() && entry.name.endsWith(".json")) {
+      if (/secret|debug|proposal|session/i.test(entry.name)) continue;
       if (!include.worldbook && entry.name === "worldbook.json") continue;
       if (!include.characters && entry.name === "characters.json") continue;
       if (!include.sharedData && !["worldbook.json", "characters.json"].includes(entry.name)) continue;
@@ -1831,6 +1982,19 @@ async function handleWorldPackExport(body = {}, url = null) {
     if (existsSync(statePath)) optionalFiles["runtime/state.json"] = readJsonSync(statePath, {});
   }
   if (include.reviewQueue) optionalFiles["userData/alchemy-review.json"] = loadReviewQueue();
+  if (include.mechanisms) {
+    const cachePath = mechanismCachePath(moduleKey);
+    if (cachePath && existsSync(cachePath)) optionalFiles["runtime/mechanisms/cache.json"] = scrubMechanismValue(readJsonSync(cachePath, {}));
+  }
+  if (include.turnStateFrames) {
+    const indexPath = statusIndexPath(moduleKey);
+    const statusIndex = indexPath ? readJsonSync(indexPath, { turns: [] }) : { turns: [] };
+    optionalFiles["runtime/status/index.json"] = scrubStateValue(statusIndex);
+    for (const turn of (statusIndex.turns || []).slice(0, 500)) {
+      const framePath = statusFramePath(moduleKey, turn.turnId);
+      if (framePath && existsSync(framePath)) optionalFiles[`runtime/status/turn-frames/${turn.turnId}.json`] = scrubStateValue(readJsonSync(framePath, {}));
+    }
+  }
   const pack = {
     format: "worldtree-pack",
     schemaVersion: "0.3.0",
@@ -1842,7 +2006,9 @@ async function handleWorldPackExport(body = {}, url = null) {
       worldbook: include.worldbook && Boolean(sharedFiles["shared/worldbook.json"]),
       characters: include.characters && Boolean(sharedFiles["shared/characters.json"]),
       runtimeState: include.runtimeState && Boolean(optionalFiles["runtime/state.json"]),
-      reviewQueue: include.reviewQueue && Boolean(optionalFiles["userData/alchemy-review.json"])
+      reviewQueue: include.reviewQueue && Boolean(optionalFiles["userData/alchemy-review.json"]),
+      mechanisms: include.mechanisms && Boolean(optionalFiles["runtime/mechanisms/cache.json"]),
+      turnStateFrames: include.turnStateFrames && Boolean(optionalFiles["runtime/status/index.json"])
     },
     summary: {
       name: ctx.world.displayName || ctx.world.name,
@@ -1853,8 +2019,13 @@ async function handleWorldPackExport(body = {}, url = null) {
         "userData/secrets.json",
         "runtime/chat.jsonl",
         "runtime/memory.jsonl",
+        "runtime/debug/",
+        "runtime/proposals/",
+        "runtime/session/",
         ...(include.runtimeState ? [] : ["runtime/state.json"]),
-        ...(include.reviewQueue ? [] : ["unconfirmed alchemy review items"])
+        ...(include.reviewQueue ? [] : ["unconfirmed alchemy review items"]),
+        ...(include.mechanisms ? [] : ["runtime/mechanisms/"]),
+        ...(include.turnStateFrames ? [] : ["runtime/status/"])
       ]
     },
     include,
@@ -2089,6 +2260,30 @@ async function handleTurnDebug(url = null) {
   const file = join(TURN_DEBUG_DIR(moduleKey), "latest.json");
   const data = readJsonSync(file, null);
   return { status: "ok", debug: data || { summary: "暂无叙事黑盒数据。发送一轮对话后会生成。", worldbookHits: [], characterState: {}, memorySnapshot: {}, directionPacket: {}, guardian: {} } };
+}
+
+function statusRequestContext(url = null) {
+  const moduleKey = url?.searchParams.get("moduleKey") || "";
+  const saveId = safeEntityId(url?.searchParams.get("saveId") || "main", "main");
+  if (!moduleKey || !moduleRuntimeDir(moduleKey)) throw new HttpError(400, "STATUS_MODULE_INVALID", "请先选择有效的世界或角色。");
+  return { moduleKey, saveId };
+}
+
+async function handleLatestTurnState(url = null) {
+  const { moduleKey, saveId } = statusRequestContext(url);
+  return { status: "ok", frame: await loadLatestTurnStateFrame(moduleKey, saveId) };
+}
+
+async function handleTurnStateById(url, turnId) {
+  const { moduleKey, saveId } = statusRequestContext(url);
+  const safeTurnId = validateTurnId(turnId);
+  if (!safeTurnId) throw new HttpError(400, "STATUS_TURN_INVALID", "回合标识无效。");
+  return { status: "ok", frame: await loadTurnStateFrame(moduleKey, safeTurnId, saveId) };
+}
+
+async function handleTurnStateIndex(url = null) {
+  const { moduleKey, saveId } = statusRequestContext(url);
+  return { status: "ok", turns: await listTurnStateFrames(moduleKey, saveId, url?.searchParams.get("limit") || 50) };
 }
 
 /** 加载模组对话历史 */
@@ -2436,6 +2631,9 @@ async function handleAPI(req, res) {
     if (path === "/api/alchemy/digest" && method === "POST") return jsonResponse(res, await handleAlchemyDigest(await readBody(req)));
     if (path === "/api/alchemy/review" && method === "GET") return jsonResponse(res, await handleAlchemyReview({}, "GET"));
     if (path === "/api/alchemy/review" && method === "POST") return jsonResponse(res, await handleAlchemyReview(await readBody(req), "POST"));
+    if (path === "/api/mechanisms/draft/from-alchemy" && method === "POST") return jsonResponse(res, await handleMechanismDraftFromAlchemy(await readBody(req)));
+    if (path === "/api/mechanisms/library" && method === "GET") return jsonResponse(res, await handleMechanismLibrary(url));
+    if (path === "/api/mechanisms/world/commit-drafts" && method === "POST") return jsonResponse(res, await handleMechanismCommitDrafts(await readBody(req)));
     if (path === "/api/review/pending" && method === "GET") return jsonResponse(res, await handleReviewFacts({}, "GET", url));
     if (path === "/api/review/pending" && method === "POST") return jsonResponse(res, await handleReviewFacts(await readBody(req), "POST", url));
     if (path === "/api/review/adopt" && method === "POST") return jsonResponse(res, await handleReviewFacts({ ...(await readBody(req)), action: "adopt" }, "POST", url));
@@ -2513,6 +2711,14 @@ async function handleAPI(req, res) {
 
     // ── 叙事黑盒 ──
     if (path === "/api/turn/debug" && method === "GET") return jsonResponse(res, await handleTurnDebug(url));
+
+    // ── 已确认回合状态帧 ──
+    if (path === "/api/status/turn/latest" && method === "GET") return jsonResponse(res, await handleLatestTurnState(url));
+    if (path === "/api/status/turns" && method === "GET") return jsonResponse(res, await handleTurnStateIndex(url));
+    if (path.startsWith("/api/status/turn/") && method === "GET") {
+      const turnId = decodeURIComponent(path.slice("/api/status/turn/".length));
+      return jsonResponse(res, await handleTurnStateById(url, turnId));
+    }
 
     // ── 世界包 ──
     if (path === "/api/world-pack/export" && method === "GET") return jsonResponse(res, await handleWorldPackExport({}, url));
@@ -2681,6 +2887,9 @@ async function handleAPI(req, res) {
           /^runtime\/review-log\.jsonl$/i,
           /^runtime\/snapshots(?:\/|$)/i,
           /^runtime\/alchemy-previews(?:\/|$)/i,
+          /^runtime\/status(?:\/|$)/i,
+          /^runtime\/mechanisms(?:\/|$)/i,
+          /^runtime\/(?:debug|proposal|proposals|session|sessions)(?:\/|$)/i,
           /^runtime\/source\.txt$/i,
           /^shared\/secrets\.json$/i,
         ];

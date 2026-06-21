@@ -25,6 +25,8 @@ console.log("\n📁 文件 IO 校准");
 
 const serverCode = readFileSync(join(ROOT, "server.js"), "utf-8");
 const alchemyPreviewCode = readFileSync(join(ROOT, "src/server/alchemy-preview-service.js"), "utf-8");
+const mechanismCode = readFileSync(join(ROOT, "src/server/mechanism-service.js"), "utf-8");
+const turnStateCode = readFileSync(join(ROOT, "src/server/turn-state-frame-service.js"), "utf-8");
 
 const moduleServiceCode = readFileSync(join(ROOT, "src/server/module-service.js"), "utf-8");
 const ioSourceCode = `${serverCode}\n${moduleServiceCode}`;
@@ -86,6 +88,12 @@ const apiContracts = [
   { endpoint: "/api/alchemy/preview", sentFields: ["text","moduleKey","mode","target","userGoal","options"], recvFields: ["status","previewId","preview"] },
   { endpoint: "/api/alchemy/refine", sentFields: ["previewId","instruction","selectedItemIds","mode"], recvFields: ["status","previewId","previousPreviewId","preview"] },
   { endpoint: "/api/alchemy/commit", sentFields: ["previewId","action","selectedItemIds","editedItems"], recvFields: ["status","reviewItems","stats"] },
+  { endpoint: "/api/mechanisms/draft/from-alchemy", sentFields: ["previewId","text","moduleKey","userGoal"], recvFields: ["status","drafts","libraryRecommendations","summary"] },
+  { endpoint: "/api/mechanisms/library", recvFields: ["status","templates","recommendations"] },
+  { endpoint: "/api/mechanisms/world/commit-drafts", sentFields: ["moduleKey","drafts"], recvFields: ["status","committed","skipped","cache"] },
+  { endpoint: "/api/status/turn/latest", recvFields: ["status","frame"] },
+  { endpoint: "/api/status/turn/{turnId}", recvFields: ["status","frame"] },
+  { endpoint: "/api/status/turns", recvFields: ["status","turns"] },
   { endpoint: "/api/characters/import", recvFields: ["status","character","module"] },
   { endpoint: "/api/worldbook", recvFields: ["status","entries"] },
   { endpoint: "/api/worldbook/test", recvFields: ["status","hits"] },
@@ -211,6 +219,39 @@ if (alchemyPreviewCode.includes("PREVIEW_ID_RE") && alchemyPreviewCode.includes(
 else fail("previewId 缺少 UUID 路径约束");
 if (serverCode.includes("scrubPromptForPrivacy(system)") && serverCode.includes("scrubPromptForPrivacy(user)")) pass("炼金 LLM 调用经过 prompt privacy scrub");
 else fail("炼金 LLM 调用缺少 prompt privacy scrub");
+
+// ═══════════════════════════════════════════════════════════════
+//  8. 机制、状态帧与开发者观测边界
+// ═══════════════════════════════════════════════════════════════
+
+console.log("\n🧭 机制与状态帧联动");
+
+for (const endpoint of [
+  "/api/mechanisms/draft/from-alchemy",
+  "/api/mechanisms/library",
+  "/api/mechanisms/world/commit-drafts",
+  "/api/status/turn/latest",
+  "/api/status/turns"
+]) {
+  if (serverCode.includes(endpoint) && combinedCode.includes(endpoint)) pass(`${endpoint}: 前后端路由存在`);
+  else fail(`${endpoint}: 前后端路由缺失`);
+}
+if (serverCode.includes('path.startsWith("/api/status/turn/")') && combinedCode.includes("/api/status/turn/${encodeURIComponent(turnId)}")) pass("/api/status/turn/:turnId: 前后端动态路由存在");
+else fail("/api/status/turn/:turnId: 前后端动态路由缺失");
+if (mechanismCode.includes('source, sourceRef') && mechanismCode.includes('selected: true')) pass("输入与机制库草稿默认 selected=true");
+else fail("机制草稿默认选中规则缺失");
+if (!mechanismCode.includes("enqueueReviewItems") && !mechanismCode.includes("applyReviewItemToWorld")) pass("机制草稿提交不复用普通 worldbook review apply");
+else fail("机制草稿错误复用普通审核队列");
+if (serverCode.includes("createTurnStateFrame") && serverCode.includes("await saveTurnStateFrame(moduleId, frame)")) pass("persistTurn 生成并持久化 TurnStateFrame");
+else fail("persistTurn 未持久化 TurnStateFrame");
+if (turnStateCode.includes('new Set(["stat_bar", "inventory_grid", "status_list"])') && turnStateCode.includes("SECRET_KEY_RE")) pass("VisualPacket 白名单与状态密钥清理存在");
+else fail("VisualPacket 白名单或状态清理缺失");
+if (combinedCode.includes("developerObservabilityOpen: false") && !combinedCode.includes("C.contextPanel()")) pass("开发者观测默认关闭且 contextPanel 不再默认挂载");
+else fail("contextPanel 或开发者观测默认状态不符合要求");
+if (combinedCode.includes('data-turn-id=') && combinedCode.includes("selectTurnState")) pass("历史消息 turnId 回溯链路存在");
+else fail("历史消息 turnId 回溯链路缺失");
+if (serverCode.includes("runtime\\/status") && serverCode.includes("runtime\\/mechanisms") && serverCode.includes("debug|proposal|proposals|session|sessions")) pass("默认数据导出排除状态调试、机制缓存、proposal 与 session");
+else fail("默认数据导出排除规则不完整");
 
 // ═══════════════════════════════════════════════════════════════
 //  结论
