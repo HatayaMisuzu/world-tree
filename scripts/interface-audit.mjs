@@ -24,6 +24,7 @@ function pass(msg) { passes++; if (process.env.VERBOSE) console.log(`  ✅ ${msg
 console.log("\n📁 文件 IO 校准");
 
 const serverCode = readFileSync(join(ROOT, "server.js"), "utf-8");
+const alchemyPreviewCode = readFileSync(join(ROOT, "src/server/alchemy-preview-service.js"), "utf-8");
 
 const moduleServiceCode = readFileSync(join(ROOT, "src/server/module-service.js"), "utf-8");
 const ioSourceCode = `${serverCode}\n${moduleServiceCode}`;
@@ -82,6 +83,9 @@ const apiContracts = [
   { endpoint: "/api/examples/install", sentFields: ["id"], recvFields: ["status","module"] },
   { endpoint: "/api/alchemy/digest", recvFields: ["status","module","entries","characters","locations","errorMsg"] },
   { endpoint: "/api/alchemy/review", recvFields: ["status","items"] },
+  { endpoint: "/api/alchemy/preview", sentFields: ["text","moduleKey","mode","target","userGoal","options"], recvFields: ["status","previewId","preview"] },
+  { endpoint: "/api/alchemy/refine", sentFields: ["previewId","instruction","selectedItemIds","mode"], recvFields: ["status","previewId","previousPreviewId","preview"] },
+  { endpoint: "/api/alchemy/commit", sentFields: ["previewId","action","selectedItemIds","editedItems"], recvFields: ["status","reviewItems","stats"] },
   { endpoint: "/api/characters/import", recvFields: ["status","character","module"] },
   { endpoint: "/api/worldbook", recvFields: ["status","entries"] },
   { endpoint: "/api/worldbook/test", recvFields: ["status","hits"] },
@@ -177,6 +181,36 @@ if ((serverCode.includes('\\*{4,}') || serverCode.includes('/^\\*{6,}/')) && ser
 
 if (combinedCode.includes('hasApiKey') && !combinedCode.includes('value="${U.esc(AS.apiKey'))
   pass("HTML 不预填密码框内容");
+
+// ═══════════════════════════════════════════════════════════════
+//  7. 炼金预览边界
+// ═══════════════════════════════════════════════════════════════
+
+console.log("\n⚗️ 炼金预览边界");
+
+for (const endpoint of ["/api/alchemy/preview", "/api/alchemy/refine", "/api/alchemy/commit"]) {
+  if (serverCode.includes(endpoint) && combinedCode.includes(endpoint)) pass(`${endpoint}: 前后端路由存在`);
+  else fail(`${endpoint}: 前后端路由缺失`);
+}
+
+for (const label of ["预览处理结果", "协作创作", "加入审核队列"]) {
+  if (combinedCode.includes(label)) pass(`炼金台 UI 包含“${label}”`);
+  else fail(`炼金台 UI 缺少“${label}”`);
+}
+
+const createBlock = alchemyPreviewCode.slice(alchemyPreviewCode.indexOf("async function create("), alchemyPreviewCode.indexOf("async function refine("));
+const refineBlock = alchemyPreviewCode.slice(alchemyPreviewCode.indexOf("async function refine("), alchemyPreviewCode.indexOf("async function commit("));
+const commitBlock = alchemyPreviewCode.slice(alchemyPreviewCode.indexOf("async function commit("));
+if (!createBlock.includes("enqueueReviewItems") && !refineBlock.includes("enqueueReviewItems")) pass("preview/refine 不调用审核队列写入");
+else fail("preview/refine 不得调用 enqueueReviewItems");
+if (commitBlock.includes("enqueueReviewItems")) pass("commit 显式调用审核队列写入");
+else fail("commit 未接入 enqueueReviewItems");
+if (serverCode.includes("runtime\\/alchemy-previews") && serverCode.includes("DEFAULT_EXPORT_EXCLUDES")) pass("旧数据导出默认排除 alchemy-previews");
+else fail("旧数据导出未明确排除 alchemy-previews");
+if (alchemyPreviewCode.includes("PREVIEW_ID_RE") && alchemyPreviewCode.includes("randomUUID")) pass("previewId 使用后端 UUID 白名单");
+else fail("previewId 缺少 UUID 路径约束");
+if (serverCode.includes("scrubPromptForPrivacy(system)") && serverCode.includes("scrubPromptForPrivacy(user)")) pass("炼金 LLM 调用经过 prompt privacy scrub");
+else fail("炼金 LLM 调用缺少 prompt privacy scrub");
 
 // ═══════════════════════════════════════════════════════════════
 //  结论

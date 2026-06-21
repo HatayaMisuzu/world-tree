@@ -15,6 +15,8 @@ import { appendJsonl, calcDirectorySizeLimited, ensureDir, readJson, readJsonSyn
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
+import { guessTypeFromKeywords } from "./src/core/data/alchemy/types.js";
+import { AlchemyPreviewError, createAlchemyPreviewService } from "./src/server/alchemy-preview-service.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -342,7 +344,9 @@ const PROFILES_DIR = () => join(ROOT, "defaults", "world-profiles");
 const EXAMPLES_DIR = () => join(ROOT, "defaults", "examples");
 const EXAMPLE_MANIFEST = () => join(EXAMPLES_DIR(), "manifest.json");
 const CONNECTIONS_PATH = () => join(ROOT, "userData", "connections.json");
-const REVIEW_QUEUE_PATH = () => join(ROOT, "userData", "alchemy-review.json");
+const REVIEW_QUEUE_PATH = () => DATA_ROOT_OVERRIDE
+  ? join(DATA_ROOT_OVERRIDE, "userData", "alchemy-review.json")
+  : join(ROOT, "userData", "alchemy-review.json");
 const PLUGINS_DIR = () => join(ROOT, "userData", "plugins");
 const TURN_DEBUG_DIR = (moduleId = "global") => join(ROOT, "userData", "turn-debug", slugName(moduleId, "global"));
 
@@ -781,18 +785,21 @@ async function handleLlmChat(body) {
 
 /** 构建炼金台 LLM 调用适配器（协议：返回 content 字符串，匹配 classifier/extractor 的 String() 解析） */
 function buildAlchemyLlmCall(config, apiKey) {
-  if (!apiKey || !config.llmBaseUrl || !config.llmModel) return null;
+  if (process.env.WORLD_TREE_DISABLE_LLM === "1" || !apiKey || !config.llmBaseUrl || !config.llmModel) return null;
   const baseUrl = String(config.llmBaseUrl).replace(/\/$/, "");
   const timeoutMs = Number(config.llmTimeoutMs || 60000);
   return async (system, user) => {
+    const { scrubPromptForPrivacy } = await import("./src/core/world-engine.js");
+    const safeSystem = scrubPromptForPrivacy(system);
+    const safeUser = scrubPromptForPrivacy(user);
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: config.llmModel,
         messages: [
-          { role: "system", content: system },
-          { role: "user", content: user }
+          { role: "system", content: safeSystem },
+          { role: "user", content: safeUser }
         ],
         temperature: 0.3,
         max_tokens: 2048
@@ -832,6 +839,75 @@ async function handleAlchemyImport(body) {
       phases: result?.phases || []
     };
   } catch (err) { return { status: "error", errorMsg: err?.message || "炼金台导入失败" }; }
+}
+
+function alchemyPreviewRoot(moduleKey = "") {
+  if (!moduleKey) return join(dataRoot(), "runtime", "alchemy-previews");
+  const runtimeDir = moduleRuntimeDir(moduleKey);
+  const ownerDir = runtimeDir ? dirname(runtimeDir) : "";
+  if (!runtimeDir || !ownerDir || !pathWithinRoot(dataRoot(), runtimeDir) || !existsSync(ownerDir)) {
+    throw new AlchemyPreviewError(400, "ALCHEMY_MODULE_INVALID", "目标世界不存在，请重新选择。");
+  }
+  return join(runtimeDir, "alchemy-previews");
+}
+
+function listAlchemyPreviewModuleKeys() {
+  return listModules()
+    .filter(module => module.type === "world" || module.type === "character_card")
+    .map(module => module.id || module.name)
+    .filter(Boolean);
+}
+
+const alchemyPreviewService = createAlchemyPreviewService({
+  previewRoot: alchemyPreviewRoot,
+  listModuleKeys: listAlchemyPreviewModuleKeys,
+  readJson: readJsonSync,
+  writeJson,
+  exists: existsSync,
+  guessTypes: guessTypeFromKeywords,
+  async runAlchemy(text, context) {
+    const config = await loadConfig();
+    const apiKey = await getActiveLlmValue();
+    const llmCall = buildAlchemyLlmCall(config, apiKey);
+    const { importFile } = await import("./src/core/data/alchemy/alchemy-engine.js");
+    const modeGuide = {
+      import: "高保真提取已有素材，不补写未出现的事实。",
+      co_create: "把灵感扩展为可审核的候选设定，并保留不确定性。",
+      polish: "保留原意并整理结构，不擅自改变核心设定。",
+      structure: "只做低创作性的结构拆分和分类。"
+    }[context.mode];
+    const targetGuide = context.target === "mixed" ? "自动识别类型" : `优先整理为 ${context.target}`;
+    let processingText = text;
+    let collaborationPhase = null;
+    if (llmCall && (context.mode === "co_create" || context.mode === "polish")) {
+      const system = context.mode === "co_create"
+        ? "你是世界构建协作者。根据用户灵感生成克制、可审核的候选设定草稿；明确区分用户已给出的事实与推测，不把推测写成既定事实。只输出便于后续提取的中文结构化文本，不输出 HTML。"
+        : "你是设定资料编辑。保留原意，把混乱素材整理成清晰、可审核的结构化文本；不要擅自添加核心事实，不输出 HTML。";
+      const generated = await llmCall(system, `模式要求：${modeGuide}\n目标：${targetGuide}${context.userGoal ? `\n用户目标：${context.userGoal}` : ""}\n\n用户素材：\n${text}`);
+      if (String(generated || "").trim()) {
+        processingText = String(generated).trim().slice(0, 120000);
+        collaborationPhase = { phase: "collaborate", method: "llm", tokenCost: "medium", outputLength: processingText.length };
+      }
+    }
+    if (llmCall && !collaborationPhase) {
+      processingText = `处理要求：${modeGuide}\n目标：${targetGuide}${context.userGoal ? `\n用户目标：${context.userGoal}` : ""}\n\n素材：\n${text}`;
+    }
+    const result = await importFile(processingText, { llmCall, options: { autoRelations: context.options.autoRelations } });
+    return { ...result, phases: [...(collaborationPhase ? [collaborationPhase] : []), ...(result?.phases || [])], _llmUsed: Boolean(llmCall) };
+  },
+  enqueueReviewItems
+});
+
+async function handleAlchemyPreviewAction(action, body) {
+  try {
+    return await alchemyPreviewService[action](body || {});
+  } catch (err) {
+    if (err instanceof AlchemyPreviewError) {
+      throw new HttpError(err.status, err.code, err.userMsg);
+    }
+    debugLog("alchemy", `${action} failed`, err?.message || "unknown error");
+    throw new HttpError(502, "ALCHEMY_PREVIEW_FAILED", "炼金预览处理失败，请检查连接设置后重试。");
+  }
 }
 
 /** 炼金台 → 模组创建：解析内容 → 生成世界书条目 或 角色卡引擎数据 */
@@ -2354,6 +2430,9 @@ async function handleAPI(req, res) {
 
     // ── 炼金台 ──
     if (path === "/api/alchemy/import" && method === "POST") return jsonResponse(res, await handleAlchemyImport(await readBody(req)));
+    if (path === "/api/alchemy/preview" && method === "POST") return jsonResponse(res, await handleAlchemyPreviewAction("create", await readBody(req)));
+    if (path === "/api/alchemy/refine" && method === "POST") return jsonResponse(res, await handleAlchemyPreviewAction("refine", await readBody(req)));
+    if (path === "/api/alchemy/commit" && method === "POST") return jsonResponse(res, await handleAlchemyPreviewAction("commit", await readBody(req)));
     if (path === "/api/alchemy/digest" && method === "POST") return jsonResponse(res, await handleAlchemyDigest(await readBody(req)));
     if (path === "/api/alchemy/review" && method === "GET") return jsonResponse(res, await handleAlchemyReview({}, "GET"));
     if (path === "/api/alchemy/review" && method === "POST") return jsonResponse(res, await handleAlchemyReview(await readBody(req), "POST"));
@@ -2601,6 +2680,7 @@ async function handleAPI(req, res) {
           /^runtime\/manual\.jsonl$/i,
           /^runtime\/review-log\.jsonl$/i,
           /^runtime\/snapshots(?:\/|$)/i,
+          /^runtime\/alchemy-previews(?:\/|$)/i,
           /^runtime\/source\.txt$/i,
           /^shared\/secrets\.json$/i,
         ];

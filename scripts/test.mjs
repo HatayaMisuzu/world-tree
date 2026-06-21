@@ -82,16 +82,19 @@ const CORE_FILES = [
   "src/core/data/alchemy/alchemy-engine.js",
   "src/core/data/alchemy/classifier.js",
   "src/core/data/alchemy/extractor.js",
+  "src/server/alchemy-preview-service.js",
   "src/server/module-service.js",
   "src/server/persistence-service.js",
   "src/server/data-import-service.js",
   "tests/unit/worldbook.test.js",
   "tests/unit/alchemy.test.js",
+  "tests/unit/alchemy-preview-service.test.js",
   "tests/unit/llm.test.js",
   "tests/integration/data-import.test.js",
   "tests/integration/overlay-persistence.test.js",
   "tests/integration/dashboard-telemetry.test.js",
   "tests/integration/overlay-pending-api.test.js",
+  "tests/integration/alchemy-workbench.test.js",
 ];
 
 for (const file of CORE_FILES) {

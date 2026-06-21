@@ -118,6 +118,23 @@ pre{margin:0;max-height:360px;overflow:auto;white-space:pre-wrap;overflow-wrap:a
 .drop-zone strong{font-size:15px}
 .drop-zone span{font-size:12px;color:var(--muted)}
 
+.field-label{display:block;margin:0 0 5px;color:var(--muted);font-size:12px;font-weight:700}
+.alchemy-workbench{align-content:start}
+.alchemy-fields{align-items:end}
+.alchemy-preview{display:grid;gap:14px}
+.alchemy-meta{padding-top:2px}
+.alchemy-section{display:grid;gap:8px;border-top:1px solid var(--line-soft);padding-top:14px}
+.alchemy-item{border-radius:8px;background:var(--surface)}
+.alchemy-item.selected{border-color:#b8d1c2}
+.alchemy-item.ignored{opacity:.58;background:var(--surface-2)}
+.alchemy-item-select{display:flex;align-items:flex-start;gap:8px;min-width:0}
+.alchemy-item-select input{width:auto;min-height:auto;margin-top:4px}
+.alchemy-item-select span{min-width:0;overflow-wrap:anywhere}
+.alchemy-content{white-space:pre-wrap;overflow-wrap:anywhere}
+.alchemy-edit-fields textarea{min-height:140px}
+.alchemy-preview details summary{cursor:pointer;color:var(--primary);font-size:12px}
+.alchemy-preview details pre{margin-top:8px;max-height:220px}
+
 .chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;min-height:calc(100vh - 128px)}
 .chat-card{display:grid;grid-template-rows:auto minmax(360px,1fr) auto;gap:10px;min-height:620px}
 .chat-messages{display:grid;align-content:start;gap:12px;min-height:360px;overflow:auto;border:1px solid var(--line-soft);border-radius:14px;background:#fbf7ee;padding:16px}

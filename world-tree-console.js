@@ -79,6 +79,9 @@ const API = {
   chatSend(data) { return API.post("/api/llm/chat", data); },
   chatMessage(data) { return API.post("/api/chat/message", data); },
   alchemyImport(data) { return API.post("/api/alchemy/import", data); },
+  alchemyPreview(data) { return API.post("/api/alchemy/preview", data); },
+  alchemyRefine(data) { return API.post("/api/alchemy/refine", data); },
+  alchemyCommit(data) { return API.post("/api/alchemy/commit", data); },
   alchemyReview(data) { return data ? API.post("/api/alchemy/review", data) : API.get("/api/alchemy/review"); },
   reviewPending(moduleKey) { return API.get(`/api/review/pending?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   reviewAction(action, data) { return API.post(`/api/review/${action}`, data); },
@@ -144,6 +147,18 @@ const AS = {
   worldPack: null,
   importPreview: null,
   pendingPack: null,
+  alchemyMode: "import",
+  alchemyTarget: "mixed",
+  alchemyUserGoal: "",
+  alchemyText: "",
+  alchemyPreview: null,
+  alchemyPreviewId: "",
+  alchemyPreviewBusy: false,
+  alchemyRefineText: "",
+  alchemyCommitBusy: false,
+  alchemySelectedItemIds: [],
+  alchemyEditingItemId: "",
+  alchemyError: "",
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false },
 };
 
@@ -531,12 +546,78 @@ function renderWorldData() {
 }
 
 function renderAlchemy() {
-  return `<section class="panel">
-    <div class="panel-head"><div><h2>炼金台</h2><p class="sub">把素材提取为待审核条目，不直接写入正式世界。</p></div></div>
-    <div id="alchemyDrop" class="drop-zone"><strong>拖拽文件或点击选择</strong><span>支持 .md .txt .json .png</span></div>
-    <textarea id="alchemyText" placeholder="或在这里粘贴素材文本..."></textarea>
-    <div class="actions"><button class="primary" data-action="alchemy-import">提取到审核队列</button><span id="alchemyResult" class="tiny muted"></span></div>
+  const modes = [
+    ["import", "素材导入"], ["co_create", "协作创作"], ["polish", "整理润色"], ["structure", "结构预览"]
+  ];
+  const targets = [
+    ["mixed", "自动识别"], ["worldbook", "世界书条目"], ["character", "角色设定"], ["location", "地点"],
+    ["faction", "组织 / 阵营"], ["rule", "规则 / 魔法体系"], ["plot", "剧情线"], ["opening", "开场场景"], ["world_draft", "草稿世界"]
+  ];
+  const busy = AS.alchemyPreviewBusy || AS.alchemyCommitBusy;
+  return `<section class="grid alchemy-workbench">
+    <div class="panel">
+      <div class="panel-head"><div><h2>炼金台</h2><p class="sub">把灵感、片段和角色资料整理为可审核的世界数据。预览不会写入审核队列或正式世界。</p></div></div>
+      <div class="stack">
+        <div><label class="field-label">模式</label><div class="tabs alchemy-modes">${modes.map(([id, label]) => `<button class="${AS.alchemyMode === id ? "active" : ""}" data-action="alchemy-set-mode" data-alchemy-mode="${id}" ${busy ? "disabled" : ""}>${U.esc(label)}</button>`).join("")}</div></div>
+        <div class="cols-2 alchemy-fields">
+          <label><span class="field-label">目标类型</span><select id="alchemyTarget" ${busy ? "disabled" : ""}>${targets.map(([id, label]) => `<option value="${id}" ${AS.alchemyTarget === id ? "selected" : ""}>${U.esc(label)}</option>`).join("")}</select></label>
+          <label><span class="field-label">用户目标 / 创作方向</span><input id="alchemyUserGoal" maxlength="4000" value="${U.esc(AS.alchemyUserGoal)}" placeholder="可选，例如：突出终端系统，不要神明化" ${busy ? "disabled" : ""}></label>
+        </div>
+        <div id="alchemyDrop" class="drop-zone"><strong>拖拽文件或点击选择</strong><span>支持 .md .txt .json .png</span></div>
+        <label><span class="field-label">素材 / 灵感文本</span><textarea id="alchemyText" maxlength="120000" placeholder="粘贴设定资料，或写下一句尚未成形的灵感..." ${busy ? "disabled" : ""}>${U.esc(AS.alchemyText)}</textarea></label>
+        ${AS.alchemyError ? C.notice(AS.alchemyError, "bad") : ""}
+        <div class="actions">
+          <button class="primary" data-action="alchemy-preview" ${busy ? "disabled" : ""}>${AS.alchemyPreviewBusy ? "处理中..." : "预览处理结果"}</button>
+          <button data-action="alchemy-import" ${busy ? "disabled" : ""}>直接提取到审核队列</button>
+          <span id="alchemyResult" class="tiny muted">旧流程会跳过预览并直接入队。</span>
+        </div>
+      </div>
+    </div>
+    ${renderAlchemyPreview()}
   </section>`;
+}
+
+function renderAlchemyPreview() {
+  const preview = AS.alchemyPreview;
+  if (!preview) return C.empty("暂无处理预览", "输入素材后点击“预览处理结果”。");
+  const counts = preview.summary?.counts || {};
+  const countLabels = [["character", "角色"], ["location", "地点"], ["faction", "组织"], ["rule", "规则"], ["plot", "剧情"], ["worldbook", "世界书"], ["other", "其他"]];
+  const listBlock = (title, values, renderValue) => values?.length ? `<div class="alchemy-section"><h3>${U.esc(title)}</h3><div class="list">${values.map(renderValue).join("")}</div></div>` : "";
+  const itemCards = (preview.items || []).map(item => {
+    const editing = AS.alchemyEditingItemId === item.id;
+    const selected = item.selected !== false && AS.alchemySelectedItemIds.includes(item.id);
+    const refs = (item.sourceRefs || []).map(ref => `${ref.label || "来源"}${ref.excerpt ? `：${U.compact(ref.excerpt, 180)}` : ""}`).join("；");
+    return `<article class="item alchemy-item ${selected ? "selected" : "ignored"}" data-alchemy-item-id="${U.esc(item.id)}">
+      <div class="item-head">
+        <label class="alchemy-item-select"><input type="checkbox" data-alchemy-select="${U.esc(item.id)}" ${selected ? "checked" : ""}><span>${C.badge(item.type || "other", "info")} <strong>${U.esc(item.title || "未命名条目")}</strong></span></label>
+        ${C.badge(`${Math.round(Number(item.confidence || 0) * 100)}%`, Number(item.confidence || 0) >= .7 ? "ok" : "pending")}
+      </div>
+      ${editing ? `<div class="stack alchemy-edit-fields">
+        <label><span class="field-label">标题</span><input data-alchemy-edit-title="${U.esc(item.id)}" value="${U.esc(item.title)}" maxlength="240"></label>
+        <label><span class="field-label">内容</span><textarea data-alchemy-edit-content="${U.esc(item.id)}" maxlength="12000">${U.esc(item.content)}</textarea></label>
+      </div>` : `<p>${U.esc(U.compact(item.summary || item.content, 420))}</p><details><summary>内容与字段</summary><p class="alchemy-content">${U.esc(U.compact(item.content, 2400))}</p><pre>${U.esc(U.json(item.fields || {}))}</pre></details>`}
+      ${refs ? `<p class="tiny muted">${U.esc(refs)}</p>` : ""}
+      ${item.suggestions?.length ? `<p class="tiny"><strong>建议：</strong>${U.esc(item.suggestions.join("；"))}</p>` : ""}
+      ${item.warnings?.length ? C.notice(item.warnings.join("；"), "warn") : ""}
+      <div class="actions"><button class="small" data-action="alchemy-edit-item">${editing ? "完成编辑" : "编辑"}</button><button class="small" data-action="alchemy-ignore-item">忽略</button></div>
+    </article>`;
+  }).join("");
+  return `<div class="panel alchemy-preview">
+    <div class="panel-head"><div><h2>处理预览</h2><p class="sub">${U.esc(preview.summary?.description || "请检查候选条目后再提交。")}</p></div>${preview.previousPreviewId ? C.badge("已继续处理", "info") : C.badge("未提交", "pending")}</div>
+    <div class="auto-grid compact">${countLabels.map(([key, label]) => C.stat(label, counts[key] || 0)).join("")}</div>
+    <div class="alchemy-meta chip-row">${C.badge(preview.mode || AS.alchemyMode, "info")}${C.badge(preview.target || AS.alchemyTarget, "pending")}${C.badge(preview.stats?.llmUsed ? "LLM" : "本地规则", preview.stats?.llmUsed ? "ok" : "warn")}${C.badge(`${preview.stats?.inputLength || 0} 字符`, "pending")}</div>
+    ${preview.warnings?.length ? C.notice(preview.warnings.join("；"), "warn") : ""}
+    ${listBlock("冲突", preview.conflicts, conflict => `<div class="item"><strong>${U.esc(conflict.title)}</strong><p>${U.esc(conflict.description)}</p><span class="tiny muted">${U.esc(conflict.suggestion || "")}</span></div>`)}
+    ${listBlock("缺失信息", preview.missingFields, field => `<div class="item"><strong>${U.esc(field.question)}</strong><span class="tiny muted">${U.esc(field.reason)} · ${U.esc(field.priority)}</span></div>`)}
+    ${listBlock("下一步建议", preview.suggestions, suggestion => `<div class="item"><strong>${U.esc(suggestion.text)}</strong><span class="tiny muted">${U.esc(suggestion.actionHint || "")}</span></div>`)}
+    <div class="alchemy-section"><h3>候选条目</h3><div class="list">${itemCards || C.empty("没有候选条目", "请补充素材或调整模式后重试。")}</div></div>
+    <div class="alchemy-section"><label><span class="field-label">继续处理</span><textarea id="alchemyRefineText" maxlength="12000" placeholder="例如：把世界树统一成超古代终端，不要传统神明化。">${U.esc(AS.alchemyRefineText)}</textarea></label></div>
+    <div class="actions">
+      <button data-action="alchemy-refine" ${AS.alchemyPreviewBusy || AS.alchemyCommitBusy ? "disabled" : ""}>${AS.alchemyPreviewBusy ? "处理中..." : "按要求继续处理"}</button>
+      <button class="primary" data-action="alchemy-commit" ${AS.alchemyPreviewBusy || AS.alchemyCommitBusy ? "disabled" : ""}>${AS.alchemyCommitBusy ? "提交中..." : "加入审核队列"}</button>
+      <button class="ghost" data-action="alchemy-clear" ${AS.alchemyPreviewBusy || AS.alchemyCommitBusy ? "disabled" : ""}>清空预览</button>
+    </div>
+  </div>`;
 }
 
 function renderReview() {
@@ -730,17 +811,18 @@ async function loadWorldbookIfPossible() {
 }
 
 async function loadReviewFacts() {
-  if (!AS.selectedModule || AS.selectedModule.id === "__quick__" || AS.selectedModule.id.startsWith("char:")) {
+  const moduleKey = activeAlchemyModuleKey();
+  if (!moduleKey || moduleKey.startsWith("char:")) {
     const legacy = await API.alchemyReview();
     AS.reviewItems = legacy.items || [];
     AS.manualReviewItems = [];
     AS.reviewLog = [];
     return;
   }
-  const facts = await API.reviewPending(AS.selectedModule.id);
+  const facts = await API.reviewPending(moduleKey);
   AS.reviewItems = facts.pending || facts.items || [];
   AS.manualReviewItems = facts.manual || [];
-  try { AS.reviewLog = (await API.reviewLog(AS.selectedModule.id)).log || []; } catch { AS.reviewLog = []; }
+  try { AS.reviewLog = (await API.reviewLog(moduleKey)).log || []; } catch { AS.reviewLog = []; }
 }
 
 async function refreshObserve() {
@@ -842,6 +924,31 @@ function bindEvents() {
   bindDrop("#quickStartDrop", "#quickStartText", ".md,.txt,.json", true);
   bindDrop("#alchemyDrop", "#alchemyText", ".md,.txt,.json,.png", false);
 
+  const alchemyTarget = U.qs("#alchemyTarget");
+  if (alchemyTarget) alchemyTarget.onchange = () => { AS.alchemyTarget = alchemyTarget.value; };
+  const alchemyGoal = U.qs("#alchemyUserGoal");
+  if (alchemyGoal) alchemyGoal.oninput = () => { AS.alchemyUserGoal = alchemyGoal.value; };
+  const alchemyText = U.qs("#alchemyText");
+  if (alchemyText) alchemyText.oninput = () => { AS.alchemyText = alchemyText.value; };
+  const refineText = U.qs("#alchemyRefineText");
+  if (refineText) refineText.oninput = () => { AS.alchemyRefineText = refineText.value; };
+  U.qsa("[data-alchemy-select]").forEach(input => {
+    input.onchange = () => {
+      const id = input.dataset.alchemySelect;
+      const item = AS.alchemyPreview?.items?.find(entry => entry.id === id);
+      if (item) item.selected = input.checked;
+      AS.alchemySelectedItemIds = (AS.alchemyPreview?.items || []).filter(entry => entry.selected !== false).map(entry => entry.id);
+      input.closest(".alchemy-item")?.classList.toggle("ignored", !input.checked);
+      input.closest(".alchemy-item")?.classList.toggle("selected", input.checked);
+    };
+  });
+  U.qsa("[data-alchemy-edit-title]").forEach(input => {
+    input.oninput = () => updateAlchemyItem(input.dataset.alchemyEditTitle, { title: input.value });
+  });
+  U.qsa("[data-alchemy-edit-content]").forEach(input => {
+    input.oninput = () => updateAlchemyItem(input.dataset.alchemyEditContent, { content: input.value, summary: U.compact(input.value, 600) });
+  });
+
   U.qsa("[data-action]").forEach(btn => {
     btn.onclick = e => handleAction(e, btn);
   });
@@ -857,7 +964,7 @@ function bindDrop(dropSel, textSel, accept, directory) {
     e.preventDefault();
     drop.classList.remove("dragover");
     const texts = await readDroppedTexts(e.dataTransfer);
-    if (texts.length) ta.value = texts.join("\n\n---\n\n");
+    if (texts.length) { ta.value = texts.join("\n\n---\n\n"); ta.dispatchEvent(new Event("input", { bubbles: true })); }
     else createToast("没有读取到支持的文本文件", "warn");
   };
   drop.onclick = () => {
@@ -870,7 +977,7 @@ function bindDrop(dropSel, textSel, accept, directory) {
       for (const f of Array.from(input.files || [])) {
         if (/\.(md|txt|json)$/i.test(f.name)) texts.push(`【${f.webkitRelativePath || f.name}】\n${await f.text()}`);
       }
-      if (texts.length) ta.value = texts.join("\n\n---\n\n");
+      if (texts.length) { ta.value = texts.join("\n\n---\n\n"); ta.dispatchEvent(new Event("input", { bubbles: true })); }
     };
     input.click();
   };
@@ -927,7 +1034,14 @@ async function handleAction(e, btn) {
     if (action === "toggle-worldbook-entry") return toggleWorldbookEntry(btn.closest("[data-entry-id]")?.dataset.entryId);
     if (action === "delete-worldbook-entry") return deleteWorldbookEntry(btn.closest("[data-entry-id]")?.dataset.entryId);
     if (action === "test-worldbook") return testWorldbook();
+    if (action === "alchemy-set-mode") { AS.alchemyMode = btn.dataset.alchemyMode || "import"; return render(); }
+    if (action === "alchemy-preview") return createAlchemyPreview();
     if (action === "alchemy-import") return alchemyImport();
+    if (action === "alchemy-edit-item") return toggleAlchemyItemEdit(btn.closest("[data-alchemy-item-id]")?.dataset.alchemyItemId);
+    if (action === "alchemy-ignore-item") return ignoreAlchemyItem(btn.closest("[data-alchemy-item-id]")?.dataset.alchemyItemId);
+    if (action === "alchemy-refine") return refineAlchemyPreview();
+    if (action === "alchemy-commit") return commitAlchemyPreview();
+    if (action === "alchemy-clear") return clearAlchemyPreview();
     if (action === "enqueue-review") return enqueueReview();
     if (action === "load-review") { await loadReviewFacts(); return render(); }
     if (["confirm-review", "ignore-review", "merge-review", "adopt-manual-review"].includes(action)) return reviewAction(action, btn.closest("[data-review-id]")?.dataset.reviewId);
@@ -1258,7 +1372,7 @@ async function testWorldbook() {
 async function alchemyImport() {
   const text = U.qs("#alchemyText")?.value.trim();
   if (!text) return createToast("请先粘贴素材", "warn");
-  const res = await API.alchemyImport({ text, moduleKey: AS.selectedModule?.id || "" });
+  const res = await API.alchemyImport({ text, moduleKey: activeAlchemyModuleKey() });
   if (res.status !== "ok") throw new Error(res.errorMsg || "提取失败");
   await loadReviewFacts();
   createToast(`已加入审核队列 ${res.reviewItems?.length || 0} 项`);
@@ -1266,10 +1380,135 @@ async function alchemyImport() {
   render();
 }
 
+function updateAlchemyItem(id, patch) {
+  const item = AS.alchemyPreview?.items?.find(entry => entry.id === id);
+  if (item) Object.assign(item, patch);
+}
+
+function activeAlchemyModuleKey() {
+  const module = AS.selectedModule;
+  return module && module.type !== "profile" && !String(module.id || "").startsWith("profile:") ? module.id : "";
+}
+
+function setAlchemyPreview(result) {
+  AS.alchemyPreview = result.preview || null;
+  AS.alchemyPreviewId = result.previewId || result.preview?.id || "";
+  AS.alchemySelectedItemIds = (AS.alchemyPreview?.items || []).filter(item => item.selected !== false).map(item => item.id);
+  AS.alchemyEditingItemId = "";
+  AS.alchemyError = "";
+}
+
+async function createAlchemyPreview() {
+  AS.alchemyText = U.qs("#alchemyText")?.value || AS.alchemyText;
+  AS.alchemyUserGoal = U.qs("#alchemyUserGoal")?.value || "";
+  AS.alchemyTarget = U.qs("#alchemyTarget")?.value || AS.alchemyTarget;
+  const text = AS.alchemyText.trim();
+  if (!text) return createToast("请先输入素材或灵感", "warn");
+  if (text.length > 120000) return createToast("文本过长，请分段处理。", "warn");
+  AS.alchemyPreviewBusy = true;
+  AS.alchemyError = "";
+  render();
+  try {
+    const result = await API.alchemyPreview({
+      text,
+      moduleKey: activeAlchemyModuleKey(),
+      mode: AS.alchemyMode,
+      target: AS.alchemyTarget,
+      userGoal: AS.alchemyUserGoal,
+      options: { autoRelations: true, detectConflicts: true, suggestMissingFields: true, preserveSource: false }
+    });
+    setAlchemyPreview(result);
+    createToast(`已生成 ${result.preview?.items?.length || 0} 个候选条目`);
+  } catch (err) {
+    AS.alchemyError = err.message || "预览处理失败";
+    createToast(AS.alchemyError, "bad");
+  } finally {
+    AS.alchemyPreviewBusy = false;
+    render();
+  }
+}
+
+function toggleAlchemyItemEdit(id) {
+  if (!id) return;
+  AS.alchemyEditingItemId = AS.alchemyEditingItemId === id ? "" : id;
+  render();
+}
+
+function ignoreAlchemyItem(id) {
+  const item = AS.alchemyPreview?.items?.find(entry => entry.id === id);
+  if (!item) return;
+  item.selected = false;
+  AS.alchemySelectedItemIds = AS.alchemySelectedItemIds.filter(itemId => itemId !== id);
+  render();
+}
+
+async function refineAlchemyPreview() {
+  if (!AS.alchemyPreviewId) return createToast("请先生成预览", "warn");
+  AS.alchemyRefineText = U.qs("#alchemyRefineText")?.value || AS.alchemyRefineText;
+  const instruction = AS.alchemyRefineText.trim();
+  if (!instruction) return createToast("请输入继续处理的要求", "warn");
+  if (!AS.alchemySelectedItemIds.length) return createToast("没有选中的条目可继续处理。", "warn");
+  AS.alchemyPreviewBusy = true;
+  AS.alchemyError = "";
+  render();
+  try {
+    const result = await API.alchemyRefine({
+      previewId: AS.alchemyPreviewId,
+      instruction,
+      selectedItemIds: AS.alchemySelectedItemIds,
+      mode: AS.alchemyMode === "import" ? "polish" : AS.alchemyMode
+    });
+    setAlchemyPreview(result);
+    AS.alchemyRefineText = "";
+    createToast("已按要求生成新的预览版本");
+  } catch (err) {
+    AS.alchemyError = err.message || "继续处理失败";
+    createToast(AS.alchemyError, "bad");
+  } finally {
+    AS.alchemyPreviewBusy = false;
+    render();
+  }
+}
+
+async function commitAlchemyPreview() {
+  if (!AS.alchemyPreviewId) return createToast("请先生成预览", "warn");
+  if (!AS.alchemySelectedItemIds.length) return createToast("没有选中的条目可加入审核队列。", "warn");
+  AS.alchemyCommitBusy = true;
+  AS.alchemyError = "";
+  render();
+  try {
+    const result = await API.alchemyCommit({
+      previewId: AS.alchemyPreviewId,
+      action: "enqueue_review",
+      selectedItemIds: AS.alchemySelectedItemIds,
+      editedItems: AS.alchemyPreview?.items || []
+    });
+    await loadReviewFacts();
+    createToast(`已加入审核队列 ${result.stats?.enqueued || 0} 条`);
+    AS.libraryTab = "review";
+  } catch (err) {
+    AS.alchemyError = err.message || "加入审核队列失败";
+    createToast(AS.alchemyError, "bad");
+  } finally {
+    AS.alchemyCommitBusy = false;
+    render();
+  }
+}
+
+function clearAlchemyPreview() {
+  AS.alchemyPreview = null;
+  AS.alchemyPreviewId = "";
+  AS.alchemySelectedItemIds = [];
+  AS.alchemyEditingItemId = "";
+  AS.alchemyRefineText = "";
+  AS.alchemyError = "";
+  render();
+}
+
 async function enqueueReview() {
   const text = U.qs("#reviewSourceText")?.value.trim();
   if (!text) return createToast("请先粘贴素材", "warn");
-  const res = await API.alchemyImport({ text, moduleKey: AS.selectedModule?.id || "" });
+  const res = await API.alchemyImport({ text, moduleKey: activeAlchemyModuleKey() });
   if (res.status !== "ok") throw new Error(res.errorMsg || "提取失败");
   await loadReviewFacts();
   render();
