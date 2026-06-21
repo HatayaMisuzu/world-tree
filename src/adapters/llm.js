@@ -472,7 +472,7 @@ export async function sendDualStageTurn(opts = {}) {
     guardianResult,
     _dualStage: {
       usedDirectorLLM: !effectiveSkipDirector,
-      usedGuardianLLM: !skipGuardian && guardianResult?.source === "llm",
+      usedGuardianLLM: !skipGuardian && String(guardianResult?.source || "").startsWith("llm"),
       directionSummary: finalDirectionPacket?.summary || ""
     }
   };
