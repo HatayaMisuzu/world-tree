@@ -30,7 +30,22 @@ export function readJsonSync(filePath, fallback) {
 
 export async function writeJson(filePath, data) {
   ensureDir(dirname(filePath));
-  await writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
+  const tmpPath = `${filePath}.tmp`;
+  await writeFile(tmpPath, JSON.stringify(data, null, 2), "utf8");
+  renameSync(tmpPath, filePath);
+}
+
+// writeJsonAtomic 为别名，保留向后兼容
+export { writeJson as writeJsonAtomic };
+
+/**
+ * 兼容读取：优先主路径 → 回退旧路径 → fallback。
+ * 解决 readJsonSync(primary,{}) || readJsonSync(legacy,{}) 中 {} truthy 阻断 fallback 的问题。
+ */
+export function readJsonWithLegacy(primaryPath, legacyPath, fallback = {}) {
+  if (existsSync(primaryPath)) return readJsonSync(primaryPath, fallback);
+  if (existsSync(legacyPath)) return readJsonSync(legacyPath, fallback);
+  return fallback;
 }
 
 export async function appendJsonl(filePath, record) {
@@ -113,33 +128,6 @@ export async function calcDirectorySizeLimited(rootDir, { maxEntries = 5000, max
   if (!existsSync(rootDir)) return { sizeBytes: 0, entries: 0, truncated: false };
   const sizeBytes = await walk(rootDir);
   return { sizeBytes, entries, truncated };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  原子写 — 防止进程崩溃造成半截 JSON
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * 原子写入 JSON：先写 .tmp，flush 后再 rename 覆盖目标文件。
- * 可防止进程崩溃或断电导致目标文件变成半截 JSON。
- */
-export async function writeJsonAtomic(filePath, data) {
-  ensureDir(dirname(filePath));
-  const tmpPath = `${filePath}.tmp`;
-  const json = JSON.stringify(data, null, 2);
-  await writeFile(tmpPath, json, "utf8");
-  // 同步 rename 确保原子性
-  renameSync(tmpPath, filePath);
-}
-
-/**
- * 同步版本（用于同步上下文中调用）
- */
-export function writeJsonAtomicSync(filePath, data) {
-  ensureDir(dirname(filePath));
-  const tmpPath = `${filePath}.tmp`;
-  writeFileSync(tmpPath, JSON.stringify(data, null, 2), "utf8");
-  renameSync(tmpPath, filePath);
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { readJsonWithLegacy } from "./fs-utils.js";
 
 export function normalizeModuleKey(value = "") {
   return String(value || "").replace(/^world:/, "").replace(/^char:/, "").trim();
@@ -76,7 +77,7 @@ export function createModuleService(deps) {
       for (const entry of readdirSync(wDir, { withFileTypes: true })) {
         if (entry.isDirectory()) {
           const meta = readJsonSync(join(wDir, entry.name, "world.json"), {});
-          const rt = (existsSync(join(wDir, entry.name, "runtime", "state.json")) ? readJsonSync(join(wDir, entry.name, "runtime", "state.json"), {}) : existsSync(join(wDir, entry.name, "runtime.json")) ? readJsonSync(join(wDir, entry.name, "runtime.json"), {}) : {});
+          const rt = readJsonWithLegacy(join(wDir, entry.name, "runtime", "state.json"), join(wDir, entry.name, "runtime.json"), {});
           modules.push({
             id: entry.name,
             name: meta.displayName || entry.name,
@@ -265,7 +266,7 @@ export function createModuleService(deps) {
     if (cached?.fingerprint === fingerprint) return clone(cached.model);
 
     const world = readJsonSync(join(worldDir, "world.json"), {});
-    const state = (existsSync(join(worldDir, "runtime", "state.json")) ? readJsonSync(join(worldDir, "runtime", "state.json"), {}) : existsSync(join(worldDir, "runtime.json")) ? readJsonSync(join(worldDir, "runtime.json"), {}) : {}); // 兼容旧格式
+    const state = readJsonWithLegacy(join(worldDir, "runtime", "state.json"), join(worldDir, "runtime.json"), {}); // 兼容旧格式
     const shared = join(worldDir, "shared");
 
     const model = {
