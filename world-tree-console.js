@@ -155,7 +155,8 @@ const C = {
   empty(title, desc = "") {
     return `<div class="empty"><strong>${U.esc(title)}</strong>${desc ? `<p class="sub">${U.esc(desc)}</p>` : ""}</div>`;
   },
-  notice(text, tone = "") { return `<div class="notice ${tone}">${text}</div>`; },
+  notice(text, tone = "") { return `<div class="notice ${tone}">${U.esc(text)}</div>`; },
+  noticeHtml(html, tone = "") { return `<div class="notice ${tone}">${html}</div>`; },
   tabs(items, active, attr) {
     return `<div class="tabs">${items.map(t => `<button class="${active === t.id ? "active" : ""}" ${attr}="${U.esc(t.id)}">${U.esc(t.label)}${t.count !== undefined ? ` ${C.badge(t.count, "pending")}` : ""}</button>`).join("")}</div>`;
   },
@@ -655,7 +656,7 @@ function renderPlugins() {
   const plugins = AS.plugins?.plugins || [];
   return `<section class="panel">
     <div class="panel-head"><div><h2>本地插件</h2><p class="sub">仅支持 importer / reviewer，不提供远程插件市场。</p></div><button class="small" data-action="load-plugins">刷新</button></div>
-    <div class="list">${plugins.length ? plugins.map(p => `<div class="item" data-plugin-id="${U.esc(p.id)}"><div class="item-head"><strong>${U.esc(p.name)}</strong>${C.badge(p.enabled ? "启用" : "禁用", p.enabled ? "ok" : "pending")}</div><div class="actions">${(p.capabilities || []).map(x => C.badge(x, "info")).join("")}</div>${p.errors?.length ? C.notice(U.esc(p.errors.join("；")), "bad") : ""}<details><summary>权限与 Manifest</summary><pre>${U.esc(U.json({ permissions: p.permissions || [], entry: p.entry, manifest: p.manifest || {} }))}</pre></details><div class="actions"><button class="small" data-action="${p.enabled ? "disable-plugin" : "enable-plugin"}">${p.enabled ? "禁用" : "启用"}</button><button class="small" data-action="run-plugin">Dry-run</button></div></div>`).join("") : C.empty("暂无本地插件", "把插件目录放到 userData/plugins/{plugin}/plugin.json。")}</div>
+    <div class="list">${plugins.length ? plugins.map(p => `<div class="item" data-plugin-id="${U.esc(p.id)}"><div class="item-head"><strong>${U.esc(p.name)}</strong>${C.badge(p.enabled ? "启用" : "禁用", p.enabled ? "ok" : "pending")}</div><div class="actions">${(p.capabilities || []).map(x => C.badge(x, "info")).join("")}</div>${p.errors?.length ? C.noticeHtml(U.esc(p.errors.join("；")), "bad") : ""}<details><summary>权限与 Manifest</summary><pre>${U.esc(U.json({ permissions: p.permissions || [], entry: p.entry, manifest: p.manifest || {} }))}</pre></details><div class="actions"><button class="small" data-action="${p.enabled ? "disable-plugin" : "enable-plugin"}">${p.enabled ? "禁用" : "启用"}</button><button class="small" data-action="run-plugin">Dry-run</button></div></div>`).join("") : C.empty("暂无本地插件", "把插件目录放到 userData/plugins/{plugin}/plugin.json。")}</div>
     ${AS.pluginRunResult ? `<div class="panel tight" style="margin-top:12px"><h3>插件运行结果</h3><pre>${U.esc(U.json(AS.pluginRunResult))}</pre></div>` : ""}
   </section>`;
 }
@@ -704,7 +705,7 @@ function render() {
     bindEvents();
   } catch (err) {
     console.error(err);
-    U.qs("#main").innerHTML = `<div class="panel">${C.notice(`页面渲染失败：${U.esc(err.message)}`, "bad")}<button onclick="location.reload()">刷新页面</button></div>`;
+    U.qs("#main").innerHTML = `<div class="panel">${C.noticeHtml(`页面渲染失败：${U.esc(err.message)}`, "bad")}<button onclick="location.reload()">刷新页面</button></div>`;
   }
 }
 
