@@ -44,8 +44,8 @@ test("module lifecycle: create, list, load through health data root, delete", as
     assert.ok(Array.isArray(list.body));
     assert.ok(list.body.some((item) => item.id === "integration_world"));
 
-    // Health check — data.root should reflect override
-    const health = await api(server, "/api/health");
+    // Health check — data.root should reflect override (detail=full)
+    const health = await api(server, "/api/health?detail=full");
     assert.equal(health.status, 200);
     assert.equal(health.body.data.root, dataDir);
 

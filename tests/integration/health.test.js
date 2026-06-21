@@ -20,12 +20,17 @@ test("health defaults to lightweight local status and full detail computes size"
     const basic = await api(server, "/api/health");
     assert.equal(basic.status, 200);
     assert.equal(basic.body.status, "ok");
-    assert.equal(basic.body.data.root, dataDir);
-    assert.equal("sizeBytes" in basic.body.data, false);
-    assert.equal(["configured", "not_configured"].includes(basic.body.llm.status), true);
+    assert.equal(basic.body.version, "0.3.0");
+    assert.equal(typeof basic.body.uptime, "number");
+    assert.equal(typeof basic.body.llmConfigured, "boolean");
+    assert.equal(typeof basic.body.dataWritable, "boolean");
+    // 默认不包含 data、llm 详细信息
+    assert.equal("data" in basic.body, false);
+    assert.equal("llm" in basic.body, false);
 
     const full = await api(server, "/api/health?detail=full&checkLlm=false");
     assert.equal(full.status, 200);
+    assert.equal(full.body.data.root, dataDir);
     assert.equal(typeof full.body.data.sizeBytes, "number");
     assert.equal(typeof full.body.data.sizeTruncated, "boolean");
     assert.equal(typeof full.body.data.entries, "number");
