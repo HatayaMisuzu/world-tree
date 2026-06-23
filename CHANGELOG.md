@@ -4,6 +4,32 @@
 
 ## v0.3.0 — 本地优先工作台基线 (2026-06-19)
 
+### Architecture — Mode × Module 调用骨架 (2026-06-23)
+
+- 新增标准 capability module 契约、manifest、legacy M1-M19 映射、registry、依赖 graph 与旁路 loader。
+- 声明 8 个未来 mode 及其默认 module uses；hidden/planned 只用于架构查询，不创建 UI 入口。
+- 新增现有模块审计与 Mode × Module 架构文档，并将两组公共 API 测试接入 `npm run test:unit`。
+- 兼容边界保持不变：`DATA_MODES` 仍为 `worldbook / character_card / preset`，旧 `activeModules` 仍使用 M 编号，hidden world profiles 未激活。
+
+### Review — 2026-06-23
+
+- 模板：Hermes 项目审查模板 v2.0
+- 对象：Mode/Module 调用骨架；模式：full；风险等级：L2；标签：`[CODE] [SCRIPT] [DOCS] [LOCAL]`
+- Fast Gate：14/14 适用项 PASS；2 项 N/A（无镜像副本、无新增写入/迁移输出）；阻断 0；严重 0；建议 0。
+- 需求/架构审查：PASS。新层为旁路登记与 graph，不替换旧 M 运行时，不开放 hidden 模式，不改 UI、prompt、导入导出或具体玩法。
+- 漂移扫描：PASS。`DATA_MODES=worldbook,character_card,preset`；`murder-mystery/rpg/sim/tabletop` profile 均保持 `hidden`；manifest 中所有非空 `sourceFiles` 均存在。
+- 安全/卫生：PASS。新增范围的危险占位符与密钥模式扫描均为 0；未新增依赖、网络调用、文件写入或本机绝对路径。
+- 验证命令：
+  - 6 个新增公共 JS 文件逐个 `node --check` → PASS
+  - `node --test tests/unit/module-registry.test.js tests/unit/mode-module-map.test.js` → 9/9 PASS
+  - `npm run test:unit` → 117 tests PASS
+  - `npm run preflight` → 主测试 105/105、单元 117、集成 34、接口联动 132/132，0 警告 / 0 错误
+  - `npm pack --dry-run --json` → PASS，141 个发布条目且新增 `src/core/modes`、`src/core/modules` 已包含
+  - `git diff --check` → PASS
+- 最终结论：PASS（high confidence），允许交付。
+- 遗留风险：`legacy-inline`、`prototype-hidden`、`declared-only` 是有意保留的真实能力状态；本轮不承诺它们可执行。后续应按单一 mode 纵向切片补 wrapper 与集成测试后再升级状态。
+- 回滚：撤销本次新增目录/测试/文档及 `package.json`、`modules.js`、`CHANGELOG.md` 对应变更；现有运行时数据与导入导出格式未迁移。
+
 ### Fixed
 - `interface-audit` 的 shared 文件 IO 校准会同时扫描 `server.js` 与 `src/server/module-service.js`，避免服务拆分后误报 `createModule` 写入但 `buildModuleModel` 不读取。
 

@@ -13,6 +13,8 @@ try {
 
 export const ENGINE_VERSION = _engineVersion;
 
+// Standard capability modules live in ../modules/. The M1-M19 registry below
+// remains the compatibility source for activeModules, presets, and prompts.
 export const MODULES = [
   { id: "M1", name: "世界书隔离容器", dependsOn: [], type: "core" },
   { id: "M2", name: "触发式条目系统", dependsOn: ["M1"], type: "core" },
