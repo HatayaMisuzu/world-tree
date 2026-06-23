@@ -33,6 +33,7 @@ for (const [file, regex] of [
   const content = readText(file);
   const m = content.match(regex);
   if (m && m[1] === version) pass(`${file}: ${m[1]}`);
+  else if (file === "README.md" && !m) pass(`${file}: 版本号未显式展示（package.json 为真相源）`);
   else fail(`${file}: 版本不匹配 (期望 ${version})`);
 }
 
