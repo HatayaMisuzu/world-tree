@@ -20,6 +20,8 @@
 - [Long Play Kernel P2](P2_LONG_PLAY_KERNEL.md) — Profile Overlay、分支隔离、只读遥测与素材候选流
 - [Prompt Orchestration Layer](PROMPT_ORCHESTRATION_LAYER.md) — 提示词编排与边界治理层
 - [Asset / Function / Mechanism Inventory](WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md) — 资产/功能/机制防遗失清单 (preservation ledger)
+- [Asset Status Matrix](ASSET_STATUS_MATRIX.md) — 资产成熟化状态矩阵
+- [Asset Maturation Report](ASSET_MATURATION_REPORT.md) — 成熟化阶段总报告
 
 ## 模式文档
 - [Character Capsule V1](WORLD_TREE_CHARACTER_CAPSULE_FULL_V1.md)

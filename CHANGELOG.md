@@ -21,6 +21,13 @@
   - M10 Macro System（1 文件 + integration test）
   - M11 Observability Terminal（1 文件 + integration test）
 - 新增 `npm run test:legacy-mechanisms`（22 tests）
+
+### Asset Maturation (Stages 0-3)
+- **Stage 0**: ASSET_STATUS_MATRIX, asset-status-registry, validate-asset-inventory script, test:assets (7 tests), asset:check
+- **Stage 1**: unified authority policy (7 actions), candidate schema (10 kinds), candidate normalizer, review-adoption wrapper, test:authority (10 tests)
+- **Stage 2**: legacy-modernization-registry, P3 merge-map (7 mappings), test:legacy-modernization (6 tests)
+- **Stage 3**: workflow-context-envelope, P3 context builder, prompt-context-bridge, macro-safe-context, observability-bridge, test:workflow-readiness (5 tests)
+- preflight now covers all maturation tests (18 stages total)
 - 三层安全防线：Global Executor Identity → Mode-Specific Blocks → Final Guard（每次生成前最后检查）。
 - 8 模式 profile：quick-setting / world-rpg / character / tabletop / mystery-puzzle / murder-mystery / strategy-sim / creation-forge，每个配专属禁止事项与边界。
 - 9 任务 contract：writer / director / guardian / proposal-extractor / scene-summary / worldbook-candidate / processing-extractor / emotional-inertia / telemetry-explanation，内部 JSON 任务有明确 schema。
