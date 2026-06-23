@@ -134,19 +134,23 @@ export function createModuleService(deps) {
 
   async function createModule(body = {}) {
     const { name, displayName, dataMode, subType, preset } = body || {};
+    const isCharacter = body?.mode === "character";
     const quickSetting = body?.mode === QUICK_SETTING_MODE_ID;
     const quickInput = quickSetting
       ? normalizeQuickSettingInput({ ...body, title: displayName || name })
       : null;
+    const characterInput = isCharacter
+      ? createModeProjectDraft("character", { title: displayName || name, sourceText: String(body?.sourceText || body?.cardText || ""), sourceType: "character_card" }).title
+      : null;
     const quickProject = quickSetting || body?.quickProject === true || body?.sourceType === "pasted_text";
-    const sourceText = quickSetting ? quickInput.sourceText : String(body?.sourceText || "");
-    const sourceType = quickProject ? (quickSetting ? quickInput.sourceType : (body?.sourceType || "pasted_text")) : "";
-    const draft = quickProject ? body?.draft !== false : false;
-    const effectiveDataMode = quickSetting ? "preset" : (dataMode || "worldbook");
-    const effectiveSubType = quickSetting ? "classic" : (subType || "classic");
-    const effectivePreset = quickSetting ? "preset" : (preset || "epic");
+    const sourceText = isCharacter ? String(body?.sourceText || body?.cardText || body?.content || "") : (quickSetting ? quickInput.sourceText : String(body?.sourceText || ""));
+    const sourceType = isCharacter ? "character_card" : (quickProject ? (quickSetting ? quickInput.sourceType : (body?.sourceType || "pasted_text")) : "");
+    const draft = (quickProject || isCharacter) ? body?.draft !== false : false;
+    const effectiveDataMode = isCharacter ? "character_card" : (quickSetting ? "preset" : (dataMode || "worldbook"));
+    const effectiveSubType = isCharacter ? "classic" : (quickSetting ? "classic" : (subType || "classic"));
+    const effectivePreset = isCharacter ? "character_card" : (quickSetting ? "preset" : (preset || "epic"));
     // 安全截断：使用 Array.from 确保多字节字符（emoji/生僻字）不被截断
-    const rawName = String(name || displayName || (quickProject ? `快速项目_${Date.now()}` : "新世界"));
+    const rawName = String(name || displayName || (isCharacter ? `人物卡_${Date.now()}` : (quickProject ? `快速项目_${Date.now()}` : "新世界")));
     const cleaned = rawName.replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "");
     const safeChars = Array.from(cleaned);
     const worldName = safeChars.slice(0, 48).join("") || `world_${Date.now()}`;
@@ -159,6 +163,13 @@ export function createModuleService(deps) {
     mkdirSync(join(worldDir, "runtime"), { recursive: true });
 
     const now = new Date().toISOString();
+    const characterDraft = isCharacter
+      ? createModeProjectDraft("character", {
+          title: displayName || name || "未命名人物卡",
+          sourceText,
+          sourceType: "character_card"
+        }, { createdAt: now })
+      : null;
     const quickSettingDraft = quickSetting
       ? createModeProjectDraft(QUICK_SETTING_MODE_ID, {
           title: quickInput.title,
@@ -172,7 +183,12 @@ export function createModuleService(deps) {
       dataMode: effectiveDataMode,
       subType: effectiveSubType,
       preset: effectivePreset,
-      ...(quickSettingDraft ? {
+      ...(characterDraft ? {
+        mode: characterDraft.mode,
+        modeMetadata: characterDraft.worldJsonDraft.modeMetadata,
+        moduleGraph: characterDraft.worldJsonDraft.moduleGraph,
+        wrapperGraph: characterDraft.runtimeStateDraft.wrapperGraph
+      } : quickSettingDraft ? {
         mode: quickSettingDraft.mode,
         modeMetadata: quickSettingDraft.worldJsonDraft.modeMetadata,
         moduleGraph: quickSettingDraft.worldJsonDraft.moduleGraph,
@@ -192,7 +208,13 @@ export function createModuleService(deps) {
       draft,
       sourceType,
       sourceTextChars: sourceText.length,
-      ...(quickSettingDraft ? {
+      ...(characterDraft ? {
+        mode: characterDraft.mode,
+        modeMetadata: characterDraft.runtimeStateDraft.modeMetadata,
+        moduleGraph: characterDraft.runtimeStateDraft.moduleGraph,
+        wrapperGraph: characterDraft.runtimeStateDraft.wrapperGraph,
+        modeStateEnvelope: characterDraft.runtimeStateDraft.modeStateEnvelope
+      } : quickSettingDraft ? {
         mode: quickSettingDraft.mode,
         modeMetadata: quickSettingDraft.runtimeStateDraft.modeMetadata,
         moduleGraph: quickSettingDraft.runtimeStateDraft.moduleGraph,
@@ -215,9 +237,22 @@ export function createModuleService(deps) {
     // 初始化空日志
     await writeFile(join(worldDir, "runtime", "chat.jsonl"), "", "utf-8");
     await writeFile(join(worldDir, "runtime", "memory.jsonl"), "", "utf-8");
-    // 初始化 shared — 引擎所有模块可能读的文件
+    // 初始化 shared — 引擎所有模块可能读的文件（character mode 的 characters.json 已由 factory 设置）
     for (const [file, dflt] of [["worldbook.json",{entries:[]}],["characters.json",[]],["scenes.json",[]],["relations.json",{}],["timeline.json",{}],["world_state.json",{}],["organizations.json",[]],["locations.json",[]],["races.json",[]],["rules.json",[]]]) {
+      if (isCharacter && file === "characters.json") continue;
       await writeJson(join(worldDir, "shared", file), dflt);
+    }
+    // character mode: primary character record
+    if (isCharacter) {
+      const charName = displayName || name || "未命名角色";
+      await writeJson(join(worldDir, "shared", "characters.json"), [{
+        id: "primary",
+        name: charName,
+        sourceType: "character_card",
+        rawTextRef: "runtime/source.txt",
+        createdAt: now,
+        updatedAt: now
+      }]);
     }
 
     clearModuleCache(worldName);

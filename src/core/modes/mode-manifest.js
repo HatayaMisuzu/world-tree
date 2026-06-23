@@ -29,9 +29,10 @@ export const MODE_MANIFEST = Object.freeze({
     sourceType: "pasted_text", defaultVisibility: true,
     notes: "首个可用纵向切片；复用 preset dataMode，不代表其他 mode 已开放。"
   }),
-  character: mode("character", "人物卡", "以人物持续互动为核心。", MODE_STATUS.PLANNED, {
+  character: mode("character", "人物卡", "以人物持续互动为核心。", MODE_STATUS.ACTIVE, {
     playerRole: "对话参与者", aiRole: "角色扮演者", basedOn: ["character_card"], dataModeHint: "character_card", worldSubTypeHint: "classic",
-    sourceType: "character_card"
+    sourceType: "character_card", defaultVisibility: true,
+    notes: "character vertical slice；首个功能入口。复用 character_card dataMode。"
   }),
   "murder-mystery": mode("murder-mystery", "剧本杀", "案件、证词与推理阶段协议。", MODE_STATUS.HIDDEN, {
     playerRole: "案件参与者", aiRole: "主持人与信息分发者", basedOn: ["murder-mystery"], dataModeHint: "worldbook", worldSubTypeHint: "murder-mystery"

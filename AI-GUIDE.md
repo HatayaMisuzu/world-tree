@@ -1,7 +1,7 @@
 # World Tree — AI 开发指南
 
 > 本文档供 AI agent / LLM 阅读，快速理解项目架构、文件路径和修改规则。
-> 最后更新: v0.3.0 (2026-06-23) — Core Architecture Complete + Pre-Feature Readiness: character vertical slice READY ✅
+> 最后更新: v0.3.0 (2026-06-23) — Character Vertical Slice: character entry active ✅ | Core Architecture Complete
 
 ## 项目定位
 

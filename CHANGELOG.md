@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added character vertical slice: character mode activated as visible entry, project creation through Mode Project Factory with character_card dataMode, minimal character-card frontend form, primary character record in shared/characters.json, .worldtree roundtrip support, and first-turn chat persistence through existing character_card pipeline. Added `tests/unit/character-mode.test.js` (13 tests) and `tests/integration/character-project.test.js` (2 tests). See `docs/WORLD_TREE_CHARACTER_VERTICAL_SLICE.md`.
+
 - Pre-Feature Architecture Completion: wired `module-service.js` to Mode Project Factory for quick-setting creation. Added P2-A wrappers for M13 (narrative.five_layer_engine), M12 (narrative.story_template), M15 (rule.world_rule), M6 (entity.relationship_network). Fixed manifest status drift for 5 unwrapped modules (M4/M10/M16/M17/M18 → legacy-inline). Added `docs/WORLD_TREE_LEGACY_MODULE_RECLASSIFICATION_P1.md` and `docs/WORLD_TREE_PRE_FEATURE_READINESS_REPORT.md`. Character vertical slice READY.
 
 - Added Mode Project Factory P1 (`src/core/modes/mode-project-factory.js`) to create JSON-safe mode project drafts and project file maps, aggregating Mode Runtime Core, Module Runtime Orchestrator, and Mode State Schema. Planned/hidden modes can generate structural drafts but are gated from real project creation. Added `tests/unit/mode-project-factory.test.js` (16 tests). See `docs/WORLD_TREE_MODE_PROJECT_FACTORY_P1.md`.

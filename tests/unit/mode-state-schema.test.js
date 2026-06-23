@@ -48,9 +48,9 @@ test("4. createModeStateEnvelope('character') generates structural envelope", ()
 
 // ─── Test 5: character visibleToUser = false ───
 
-test("5. character runtimeFlags.visibleToUser = false", () => {
+test("5. character runtimeFlags.visibleToUser = true (character is active)", () => {
   const env = createModeStateEnvelope("character");
-  assert.equal(env.runtimeFlags.visibleToUser, false);
+  assert.equal(env.runtimeFlags.visibleToUser, true);
 });
 
 // ─── Test 6: world-rpg envelope ───

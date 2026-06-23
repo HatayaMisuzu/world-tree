@@ -190,6 +190,19 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     "shared/world_state.json": {}
   };
 
+  // character mode: primary character record
+  if (mode === "character") {
+    const charName = projectDraft.title || "未命名角色";
+    files["shared/characters.json"] = [{
+      id: "primary",
+      name: charName,
+      sourceType: "character_card",
+      rawTextRef: "runtime/source.txt",
+      createdAt: now,
+      updatedAt: now
+    }];
+  }
+
   return files;
 }
 

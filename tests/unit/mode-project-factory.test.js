@@ -120,12 +120,10 @@ test("10. character draft dataMode = character_card", () => {
 
 // ─── Test 11: planned mode 默认不可真实创建 ───
 
-test("11. createProjectFromMode('character', ..., { persist: true }) defaults to rejected", () => {
+test("11. createProjectFromMode('character', ..., { persist: true }) now allowed (character is active)", () => {
   const result = createProjectFromMode("character", { title: "test" }, { persist: true });
-  assert.equal(result.ok, false);
-  assert.ok(result.error.includes("not enabled"));
-  assert.ok(result.draft); // draft 仍然生成
-  assert.equal(result.files, null);
+  assert.equal(result.ok, true);
+  assert.ok(result.files); // now returns files
 });
 
 // ─── Test 12: hidden mode 默认不可真实创建 ───

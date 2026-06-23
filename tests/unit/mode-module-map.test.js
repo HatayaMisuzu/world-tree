@@ -5,11 +5,13 @@ import { loadModulesForMode } from "../../src/core/modules/module-loader.js";
 import { MODE_MANIFEST, getMode, isModeVisible } from "../../src/core/modes/mode-manifest.js";
 import { getModulesForMode, validateModeModuleMap } from "../../src/core/modes/mode-module-map.js";
 
-test("all eight modes are declared and only quick-setting is visible", () => {
+test("all eight modes are declared and only active/visible modes are visible", () => {
   assert.equal(Object.keys(MODE_MANIFEST).length, 8);
   for (const modeId of Object.keys(MODE_MANIFEST)) {
     assert.ok(getMode(modeId));
-    assert.equal(isModeVisible(modeId), modeId === "quick-setting");
+    // quick-setting and character are active/visible; others are not
+    const expected = modeId === "quick-setting" || modeId === "character";
+    assert.equal(isModeVisible(modeId), expected);
   }
 });
 

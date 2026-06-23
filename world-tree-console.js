@@ -507,6 +507,13 @@ const Views = {
         <div class="actions"><button class="primary" data-action="quick-start-chat">创建预设/设定草稿并开始</button><span class="tiny muted">不需要先写完整世界书。后续可以把草稿整理成正式世界。</span></div>
       </section>
 
+      <section class="panel">
+        <div class="panel-head"><div><h2>人物卡 / Character：粘贴人物卡，开始角色扮演</h2><p class="sub">粘贴任意格式的人物卡文本（JSON / 纯文本 / 角色描述），World Tree 会创建一个 character 模式项目并使用人物卡引擎进行对话。</p></div></div>
+        <input id="charCardTitle" placeholder="角色名 / 项目标题（可选）" class="full-width" style="margin-bottom:8px">
+        <textarea id="charCardText" placeholder="在这里粘贴人物卡内容..."></textarea>
+        <div class="actions"><button class="primary" data-action="character-start-chat">创建人物卡并开始对话</button><span class="tiny muted">支持 SillyTavern v2/v3 JSON、纯文本角色描述。后续可在角色库中管理。</span></div>
+      </section>
+
       <section class="cols-2">
         <div class="panel">
           <div class="panel-head"><div><h2>世界书总览</h2><p class="sub">展示与快速进入，完整编辑在资料库。</p></div><button class="small" data-action="load-worldbook">加载</button></div>
@@ -1238,6 +1245,7 @@ async function handleAction(e, btn) {
     if (action === "workbench-overview") { AS.workbenchMode = "overview"; AS.activeDrawer = ""; return render(); }
     if (action === "load-and-chat") return loadAndChat();
     if (action === "quick-start-chat") return quickStartChat();
+    if (action === "character-start-chat") return characterStartChat();
     if (action === "chat-send") return sendChat();
     if (action === "clear-chat") return confirmClearChat();
     if (action === "open-command-panel") return openCommandPanel();
@@ -1346,6 +1354,33 @@ async function quickStartChat() {
   AS.workbenchMode = "chat";
   AS.view = "workbench";
   createToast("已创建快速项目草稿");
+  render();
+}
+
+async function characterStartChat() {
+  const text = U.qs("#charCardText")?.value.trim();
+  if (!text) return createToast("请先粘贴人物卡内容", "warn");
+  const nameInput = U.qs("#charCardTitle")?.value.trim();
+  const title = nameInput || text.split("\n").map(x => x.trim()).find(Boolean)?.slice(0, 18) || "未命名人物卡";
+  const res = await API.createModule({
+    name: `人物卡_${Date.now()}`,
+    displayName: title,
+    mode: "character",
+    dataMode: "character_card",
+    subType: "classic",
+    preset: "character_card",
+    draft: true,
+    sourceType: "character_card",
+    sourceText: text,
+    cardText: text
+  });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "创建人物卡项目失败");
+  await refreshModules();
+  AS.selectedModule = AS.modules.find(m => m.id === res.module.id) || res.module;
+  AS.messages = [];
+  AS.workbenchMode = "chat";
+  AS.view = "workbench";
+  createToast("已创建人物卡项目");
   render();
 }
 
