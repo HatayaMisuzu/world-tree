@@ -3,6 +3,19 @@
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
 
+## Unreleased / Kernel P0-P2
+
+### Added
+- Living World Kernel P0：Proximity Scope、Tracking、Scene Summary Chain、proposal-gated Dynamic World State、bounded Ripple、Worldbook Trigger、Living World Packet。
+- Experience Stability Kernel P1：bounded Context Engine、plan-only Director、Impact Gate 与 Stop-loss Window、Worldbook Growth Tree、runtime-first Emotional Inertia。
+- Long Play Kernel P2：registered-only World Profile Overlay、branch-local Timeline Save Tree、read-only Telemetry、one-beat Auto-light、candidate-only Processing Engine。
+- 三阶段聚焦测试与跨层集成测试；P2 包含执行文件要求的 40 项聚焦覆盖。
+
+### Safety / Boundaries
+- 未新增 UI、插件或 branch merge；未替换 `mode-module-map.js` 或重写 proposal/save 架构。
+- canonical shared 写入继续经 proposal/approval；critical 变更要求二次确认，major/critical 支持反向 proposal stop-loss。
+- Telemetry 只读 canon；Auto-light 不审批 proposal；Processing/Growth Tree 不直接写 canonical worldbook。
+
 ## 0.3.0 / V1 Closure
 
 **最新提交**: 0ed95c9

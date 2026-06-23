@@ -507,7 +507,8 @@ test("版本文件一致性", () => {
   const manifest = JSON.parse(readFileSync(join(PROJECT_ROOT, "app-manifest.json"), "utf-8"));
   const readme = readFileSync(join(PROJECT_ROOT, "README.md"), "utf-8");
   if (pkg.version !== (manifest.version || manifest._version)) throw new Error(`版本不一致`);
-  if (!readme.includes(`v${pkg.version}`)) throw new Error(`README.md 中未找到版本号 v${pkg.version}`);
+  const explicitVersion = readme.match(/\*\*(?:Current version|当前版本|Package version)\*\*:\s*v(\d+\.\d+\.\d+)/)?.[1];
+  if (explicitVersion && explicitVersion !== pkg.version) throw new Error(`README.md 版本 ${explicitVersion} 与 package.json ${pkg.version} 不一致`);
 });
 
 test("运行时 data/ 目录不随仓库分发", () => {

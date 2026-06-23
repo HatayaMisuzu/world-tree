@@ -15,6 +15,9 @@
 - [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) — 脚本与检查
 - [AI_AGENT_OPERATING_GUIDE.md](AI_AGENT_OPERATING_GUIDE.md) — Agent 详细操作规范
 - [DOCUMENTATION_STATUS.md](DOCUMENTATION_STATUS.md) — 文档状态
+- [Living World Kernel P0](LIVING_WORLD_KERNEL_P0.md) — 活世界底盘、有限 Ripple 与运行时上下文包
+- [Experience Stability Kernel P1](EXPERIENCE_STABILITY_KERNEL_P1.md) — 上下文预算、导演计划、影响闸门与候选成长
+- [Long Play Kernel P2](P2_LONG_PLAY_KERNEL.md) — Profile Overlay、分支隔离、只读遥测与素材候选流
 
 ## 模式文档
 - [Character Capsule V1](WORLD_TREE_CHARACTER_CAPSULE_FULL_V1.md)
