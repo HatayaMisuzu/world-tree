@@ -1,13 +1,15 @@
-// workflow-runner.js — W0 public orchestration entrypoint
+// workflow-runner.js — W1-W4 full service wiring
 import { routeWorkflowIntent } from "./workflow-intent-router.js";
 import { createWorkflowContextEnvelope } from "./workflow-context-envelope.js";
 import { decideWorkflowAuthority } from "./workflow-authority-gate.js";
 import { routeWorkflowOutput } from "./workflow-output-router.js";
 import { buildWorkflowTrace } from "./workflow-observability.js";
 import { CREATION_WORKFLOWS, ALCHEMY_WORKFLOWS, PLAY_WORKFLOWS, CHARACTER_WORKFLOWS, MYSTERY_WORKFLOWS, STRATEGY_WORKFLOWS, DEBUG_WORKFLOWS, DIRECTION_WORKFLOWS } from "./workflow-types.js";
-
-const STUB = { async run(e, a) { return { ok: true, visibleText: `[W0 stub: ${e.workflowType}]`, candidates: [], proposals: [], runtimeUpdates: [], canonWrites: [], warnings: [], debugSummary: null }; } };
-export const creationWorkflowService = STUB, alchemyWorkflowService = STUB, playTurnWorkflowService = STUB, characterWorkflowService = STUB, mysteryWorkflowService = STUB, strategyWorkflowService = STUB, directionWorkflowService = STUB, observabilityWorkflowService = STUB;
+import { creationWorkflowService } from "./services/creation-workflow-service.js";
+import { alchemyWorkflowService } from "./services/alchemy-workflow-service.js";
+import { playTurnWorkflowService } from "./services/play-turn-workflow-service.js";
+import { characterWorkflowService, mysteryWorkflowService, strategyWorkflowService } from "./services/character-workflow-service.js";
+import { directionWorkflowService, observabilityWorkflowService } from "./services/direction-workflow-service.js";
 
 function selectService(wt) {
   if (CREATION_WORKFLOWS.has(wt)) return creationWorkflowService;

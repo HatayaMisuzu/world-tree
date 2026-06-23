@@ -11,6 +11,7 @@ export function inferWorkflowType(input = {}) {
   if (endpoint.includes("/import") || action === "import") return WORKFLOW_TYPES.ALCHEMY_IMPORT;
   if (endpoint.includes("/digest") || action === "digest") return WORKFLOW_TYPES.ALCHEMY_DIGEST;
   if (endpoint.includes("/deliver") || action === "deliver") return WORKFLOW_TYPES.ALCHEMY_DELIVER;
+  if (modeId === "creation-forge") return WORKFLOW_TYPES.CREATION_START;
   const input_ = String(input.userInput || input.input || "");
   if (/继续|下一[幕步]|接着|推进/.test(input_)) return WORKFLOW_TYPES.PLAY_CONTINUE;
   if (/自动|auto/i.test(input_)) return WORKFLOW_TYPES.PLAY_AUTO_LIGHT;
