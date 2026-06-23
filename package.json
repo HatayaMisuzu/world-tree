@@ -34,7 +34,8 @@
     "test:integration": "node --test tests/integration/*.test.js",
     "audit": "node scripts/audit.mjs",
     "interface-audit": "node scripts/interface-audit.mjs",
-    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/test.mjs && npm run test:unit && npm run test:integration && node scripts/interface-audit.mjs"
+    "docs:check": "node scripts/check-docs.mjs",
+        "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run test:unit && npm run test:integration && npm run interface-audit"
   },
   "keywords": [
     "world-tree",

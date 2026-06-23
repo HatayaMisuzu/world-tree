@@ -1,0 +1,28 @@
+# World Tree 文档索引
+
+## 当前真相源（请优先阅读）
+- [README.md](../README.md) — 项目主入口
+- [AI-GUIDE.md](../AI-GUIDE.md) — AI Agent 工作手册
+- [CHANGELOG.md](../CHANGELOG.md) — 变更记录
+- [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) — 项目全景
+- [FEATURES.md](FEATURES.md) — 功能清单
+- [ARCHITECTURE_V1.md](ARCHITECTURE_V1.md) — V1 架构
+- [API_REFERENCE.md](API_REFERENCE.md) — API 文档
+- [SAVE_SYSTEM_AND_WORLD_PACK.md](SAVE_SYSTEM_AND_WORLD_PACK.md) — 存档与导入导出
+- [PROPOSAL_AND_REVIEW_SYSTEM.md](PROPOSAL_AND_REVIEW_SYSTEM.md) — 提案与审核
+- [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) — 路由与模式胶囊
+- [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) — 提示词与数据包
+- [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) — 脚本与检查
+- [AI_AGENT_OPERATING_GUIDE.md](AI_AGENT_OPERATING_GUIDE.md) — Agent 详细操作规范
+- [DOCUMENTATION_STATUS.md](DOCUMENTATION_STATUS.md) — 文档状态
+
+## 模式文档
+- [Character Capsule V1](WORLD_TREE_CHARACTER_CAPSULE_FULL_V1.md)
+- [Worldbook Foundation V1](WORLD_TREE_WORLDBOOK_FOUNDATION_V1.md) (TODO)
+- [Grand World Mode V1](WORLD_TREE_GRAND_WORLD_MODE_V1.md) (TODO)
+- Tabletop / Mystery-Puzzle / Strategy-Sim / Murder-Mystery V1 (TODO)
+- [Creation Forge V1](CREATION_FORGE_V1.md) (TODO)
+
+## 历史与归档
+- [archive/](archive/) — 历史设计/执行记录，不代表当前能力
+- 当前能力以 README.md、PROJECT_OVERVIEW.md、FEATURES.md、API_REFERENCE.md、ARCHITECTURE_V1.md 为准
