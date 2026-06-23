@@ -7,6 +7,10 @@ import sceneSession from "./scene-session.wrapper.js";
 import auditNarrativeQuality from "./audit-narrative-quality.wrapper.js";
 import characterCardRuntime from "./character-card-runtime.wrapper.js";
 import creationAlchemy from "./creation-alchemy.wrapper.js";
+import narrativeFiveLayerEngine from "./narrative-five-layer-engine.wrapper.js";
+import narrativeStoryTemplate from "./narrative-story-template.wrapper.js";
+import ruleWorldRule from "./rule-world-rule.wrapper.js";
+import entityRelationshipNetwork from "./entity-relationship-network.wrapper.js";
 
 const wrappers = [
   coreWorldContainer,
@@ -17,7 +21,11 @@ const wrappers = [
   sceneSession,
   auditNarrativeQuality,
   characterCardRuntime,
-  creationAlchemy
+  creationAlchemy,
+  narrativeFiveLayerEngine,
+  narrativeStoryTemplate,
+  ruleWorldRule,
+  entityRelationshipNetwork
 ];
 
 export const MODULE_WRAPPERS = Object.freeze(Object.fromEntries(

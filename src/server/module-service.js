@@ -7,6 +7,7 @@ import {
   createQuickSettingInitialState,
   normalizeQuickSettingInput
 } from "../core/modes/quick-setting.js";
+import { createModeProjectDraft } from "../core/modes/mode-project-factory.js";
 
 export function normalizeModuleKey(value = "") {
   return String(value || "").replace(/^world:/, "").replace(/^char:/, "").trim();
@@ -158,8 +159,12 @@ export function createModuleService(deps) {
     mkdirSync(join(worldDir, "runtime"), { recursive: true });
 
     const now = new Date().toISOString();
-    const quickSettingState = quickSetting
-      ? createQuickSettingInitialState({ sourceType, createdAt: now })
+    const quickSettingDraft = quickSetting
+      ? createModeProjectDraft(QUICK_SETTING_MODE_ID, {
+          title: quickInput.title,
+          sourceText,
+          sourceType
+        }, { createdAt: now })
       : null;
     const worldData = {
       name: worldName,
@@ -167,10 +172,11 @@ export function createModuleService(deps) {
       dataMode: effectiveDataMode,
       subType: effectiveSubType,
       preset: effectivePreset,
-      ...(quickSettingState ? {
-        mode: quickSettingState.mode,
-        modeMetadata: quickSettingState.modeMetadata,
-        moduleGraph: quickSettingState.moduleGraph
+      ...(quickSettingDraft ? {
+        mode: quickSettingDraft.mode,
+        modeMetadata: quickSettingDraft.worldJsonDraft.modeMetadata,
+        moduleGraph: quickSettingDraft.worldJsonDraft.moduleGraph,
+        wrapperGraph: quickSettingDraft.runtimeStateDraft.wrapperGraph
       } : {}),
       draft,
       sourceType,
@@ -180,16 +186,18 @@ export function createModuleService(deps) {
       turnCount: 0
     };
     await writeJson(join(worldDir, "world.json"), worldData);
-    // state.json 包含完整引擎状态
+    // state.json 包含完整引擎状态（含 modeStateEnvelope 兼容叠加）
     await writeJson(join(worldDir, "runtime", "state.json"), {
       turnCount: 0, activeBranch: "main", lastScene: "", lastInput: "",
       draft,
       sourceType,
       sourceTextChars: sourceText.length,
-      ...(quickSettingState ? {
-        mode: quickSettingState.mode,
-        modeMetadata: quickSettingState.modeMetadata,
-        moduleGraph: quickSettingState.moduleGraph
+      ...(quickSettingDraft ? {
+        mode: quickSettingDraft.mode,
+        modeMetadata: quickSettingDraft.runtimeStateDraft.modeMetadata,
+        moduleGraph: quickSettingDraft.runtimeStateDraft.moduleGraph,
+        wrapperGraph: quickSettingDraft.runtimeStateDraft.wrapperGraph,
+        modeStateEnvelope: quickSettingDraft.runtimeStateDraft.modeStateEnvelope
       } : {}),
       engineState: {
         dataMode: effectiveDataMode,

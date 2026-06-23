@@ -15,9 +15,13 @@ const P1_MODULES = Object.freeze({
   "core.world_container": "M1",
   "lore.worldbook_trigger": "M2",
   "core.dynamic_state": "M3",
+  "entity.relationship_network": "M6",
   "character.preset": "M8",
   "character.cognition": "M9",
   "scene.session": "M11",
+  "narrative.story_template": "M12",
+  "narrative.five_layer_engine": "M13",
+  "rule.world_rule": "M15",
   "audit.narrative_quality": "M15c",
   "character.card_runtime": "M19",
   "creation.alchemy": "M-创作"
@@ -25,7 +29,7 @@ const P1_MODULES = Object.freeze({
 
 test("P1 wrapper registry exposes all nine standardized legacy modules", () => {
   const wrappers = listModuleWrappers();
-  assert.equal(wrappers.length, 9);
+  assert.equal(wrappers.length, 13);
   assert.deepEqual(new Set(wrappers.map((wrapper) => wrapper.id)), new Set(Object.keys(P1_MODULES)));
   assert.equal(getModuleWrapper("lore.worldbook_trigger")?.legacyId, "M2");
   assert.equal(loadModuleWrapper("lore.worldbook_trigger")?.id, "lore.worldbook_trigger");
@@ -104,10 +108,11 @@ test("real legacy functions are reused through focused wrapper summaries", () =>
 test("mode loader returns available wrappers without treating gaps as fatal", () => {
   const quick = loadWrappersForMode("quick-setting");
   const quickIds = quick.wrappers.map((wrapper) => wrapper.id);
-  for (const id of ["core.world_container", "lore.worldbook_trigger", "core.dynamic_state", "scene.session", "audit.narrative_quality"]) {
+  for (const id of ["core.world_container", "lore.worldbook_trigger", "core.dynamic_state", "scene.session", "audit.narrative_quality", "narrative.story_template", "narrative.five_layer_engine"]) {
     assert.ok(quickIds.includes(id), `quick-setting missing ${id}`);
   }
-  assert.ok(quick.missingWrappers.includes("narrative.story_template"));
+  // quick-setting now has wrappers for all 7 declared modules; no missing wrappers expected
+  assert.equal(quick.missingWrappers.length, 0);
 
   const character = loadWrappersForMode("character");
   const characterIds = character.wrappers.map((wrapper) => wrapper.id);
@@ -118,7 +123,7 @@ test("mode loader returns available wrappers without treating gaps as fatal", ()
 });
 
 test("module graph reports real wrapper availability, callable state, and hooks", () => {
-  const graph = getModuleGraph(["lore.worldbook_trigger", "narrative.story_template"]);
+  const graph = getModuleGraph(["lore.worldbook_trigger", "rpg.quest"]);
   const wrapped = graph.modules.find((module) => module.id === "lore.worldbook_trigger");
   assert.equal(wrapped.hasWrapper, true);
   assert.equal(wrapped.callable, true);
@@ -126,7 +131,7 @@ test("module graph reports real wrapper availability, callable state, and hooks"
   assert.ok(wrapped.hooks.includes("buildPromptBlock"));
   assert.ok(wrapped.hooks.includes("getDebugInfo"));
 
-  const unwrapped = graph.modules.find((module) => module.id === "narrative.story_template");
+  const unwrapped = graph.modules.find((module) => module.id === "rpg.quest");
   assert.equal(unwrapped.hasWrapper, false);
   assert.equal(unwrapped.callable, false);
   assert.deepEqual(unwrapped.hooks, []);
