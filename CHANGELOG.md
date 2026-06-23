@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added Mode Project Factory P1 (`src/core/modes/mode-project-factory.js`) to create JSON-safe mode project drafts and project file maps, aggregating Mode Runtime Core, Module Runtime Orchestrator, and Mode State Schema. Planned/hidden modes can generate structural drafts but are gated from real project creation. Added `tests/unit/mode-project-factory.test.js` (16 tests). See `docs/WORLD_TREE_MODE_PROJECT_FACTORY_P1.md`.
+
 - Added Mode State Schema P1 (`src/core/modes/mode-state-schema.js`) defining `modeState`, `moduleState`, `runtimeFlags`, and `reviewPolicy` envelopes for unified future mode project creation. Includes `createModeStateEnvelope`, `normalizeModeStateEnvelope`, `validateModeStateEnvelope`, `createModeStateSummary`. Added `tests/unit/mode-state-schema.test.js` (17 tests). See `docs/WORLD_TREE_MODE_STATE_SCHEMA_P1.md`.
 
 - Added Module Runtime Orchestrator P1 (`src/core/modules/module-runtime-orchestrator.js`) to aggregate wrapper `buildContext`, `buildPromptBlock`, and `getDebugInfo` outputs into JSON-safe `moduleRuntimePacket` for any mode. Added `tests/unit/module-runtime-orchestrator.test.js` (16 tests). See `docs/WORLD_TREE_MODULE_RUNTIME_ORCHESTRATOR_P1.md`.
