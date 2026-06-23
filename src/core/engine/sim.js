@@ -1,3 +1,14 @@
+/**
+ * Legacy compatibility bridge — V1 active-compatibility.
+ *
+ * Kept for V1 backward compatibility. DM instructions are imported
+ * and re-exported by world-engine.js. New mode capsule implementation
+ * lives under src/core/strategy-sim/.
+ *
+ * Do NOT delete this file without checking legacy API/tests.
+ *
+ * See: docs/LEGACY_REDUNDANCY_AUDIT.md
+ */
 // ===== 模拟经营模式模块 v1.0 =====
 // @hidden v2.3.0 — 模式未完成（status=hidden），不对用户暴露。引擎代码保留。
 // 资源管理 / 时间推进 / 决策后果 / NPC 忠诚度

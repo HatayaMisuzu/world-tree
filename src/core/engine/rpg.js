@@ -1,3 +1,14 @@
+/**
+ * Legacy compatibility bridge — V1 active-compatibility.
+ *
+ * Kept for V1 backward compatibility. DM instructions are imported
+ * and re-exported by world-engine.js. New mode capsule implementation
+ * lives under src/core/grand-world/.
+ *
+ * Do NOT delete this file without checking legacy API/tests.
+ *
+ * See: docs/LEGACY_REDUNDANCY_AUDIT.md
+ */
 // ===== RPG 模式模块 v1.0 =====
 // @hidden v2.3.0 — 模式未完成（status=hidden），不对用户暴露。引擎代码保留。
 // 日式 RPG 模式：章节剧情 / 角色成长 / 任务系统 / 情感羁绊
