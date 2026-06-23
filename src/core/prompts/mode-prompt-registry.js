@@ -13,5 +13,33 @@ const GLOBAL_RULES = ["你是World Tree模式执行器", "不得把草稿当正�
 
 export function listModePromptProfiles() { return Object.values(PROFILES).map(p => ({ profileId: p.profileId, modeId: p.modeId })); }
 export function getModePromptProfile(profileId) { return PROFILES[profileId] ? { ...PROFILES[profileId], globalRules: GLOBAL_RULES } : null; }
-export function buildModePrompt(inputPacket = {}, options = {}) { const profile = getModePromptProfile(options.profileId || "grand_world_v1"); if (!profile) return ""; return [...profile.globalRules, ...(profile.rules||[]), `用户输入: ${inputPacket.userInput?.text || ""}`].join("\n"); }
+export function hasModePromptProfile(profileId) { return Boolean(PROFILES[profileId]); }
+
+export function buildModePrompt(inputPacket = {}, options = {}) {
+  const profile = getModePromptProfile(options.profileId || "grand_world_v1");
+  if (!profile) return "";
+  return [...profile.globalRules, ...(profile.rules || []), `用户输入: ${inputPacket.userInput?.text || ""}`].join("\n");
+}
+
+/**
+ * 安全版本的 prompt builder：profile 缺失时返回 ok:false 而非空字符串。
+ * mode-runner 应使用此函数而非 buildModePrompt。
+ */
+export function buildModePromptResult(inputPacket = {}, options = {}) {
+  const profileId = options.profileId || "";
+  const profile = getModePromptProfile(profileId);
+  if (!profile) {
+    return {
+      ok: false,
+      prompt: "",
+      errors: [{ code: "PROMPT_PROFILE_MISSING", profileId }]
+    };
+  }
+  return {
+    ok: true,
+    prompt: [...profile.globalRules, ...(profile.rules || []), `用户输入: ${inputPacket.userInput?.text || ""}`].join("\n"),
+    profileId
+  };
+}
+
 export function validateModePromptProfile(profile = {}) { return { ok: Boolean(profile.profileId && profile.modeId), errors: profile.profileId ? [] : ["missing profileId"] }; }

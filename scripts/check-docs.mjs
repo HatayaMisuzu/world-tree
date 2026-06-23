@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// docs:check — 文档完整性检查
+// docs:check — 文档完整性检查 + V1 闭环真实性检查
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -49,6 +49,77 @@ try {
 try {
   const aiguide = readFileSync(resolve(BASE, "AI-GUIDE.md"), "utf-8");
   check("AI-GUIDE updated", "AI-GUIDE.md", () => aiguide.includes("full-closure") || aiguide.includes("V1 完整闭环"), "AI-GUIDE should reflect V1 milestone");
+} catch {}
+
+// ═══ V1 closure truth checks ═══
+
+// system-closure.test.js 是否被 test:unit 引用
+try {
+  const pkgJson = JSON.parse(readFileSync(resolve(BASE, "package.json"), "utf-8"));
+  const testUnitCmd = pkgJson.scripts?.["test:unit"] || "";
+  check("test:unit includes system-closure", "package.json",
+    () => testUnitCmd.includes("system-closure.test.js"),
+    "system-closure.test.js must be in test:unit");
+} catch (err) {
+  failures++;
+  console.error(`FAIL: test:unit includes system-closure — ${err.message}`);
+}
+
+// mode-runner 不包含 modeMeaning + "_v1" 猜测
+try {
+  const modeRunner = readFileSync(resolve(BASE, "src/core/system/mode-runner.js"), "utf-8");
+  check("mode-runner no modeMeaning guess", "src/core/system/mode-runner.js",
+    () => !modeRunner.includes('modeMeaning + "_v1"'),
+    "mode-runner must not guess prompt profile from modeMeaning + \"_v1\"");
+} catch {}
+
+// mode-runner catch 不返回 "完成" 作为错误 fallback
+try {
+  const modeRunner = readFileSync(resolve(BASE, "src/core/system/mode-runner.js"), "utf-8");
+  // 检查：catch 块中是否有返回 ok:true 且 text 包含"完成"的情况（排除正常成功返回）
+  const hasOkFalseInCatch = modeRunner.includes('return { ok: false');
+  check("mode-runner catch returns ok:false", "src/core/system/mode-runner.js",
+    () => hasOkFalseInCatch,
+    "mode-runner catch blocks must return ok:false, not success text");
+} catch {}
+
+// proposal-bus 不再是 status return stub
+try {
+  const proposalBus = readFileSync(resolve(BASE, "src/core/system/proposal-bus.js"), "utf-8");
+  const hasRealIO = proposalBus.includes("readProposalLog") || proposalBus.includes("writeProposalLog") ||
+                    proposalBus.includes("appendJsonl") || proposalBus.includes("writeJson");
+  check("proposal-bus has real I/O", "src/core/system/proposal-bus.js",
+    () => hasRealIO,
+    "proposal-bus must have real file I/O, not just status returns");
+} catch {}
+
+// save-system 不再是 ok true stub
+try {
+  const saveSystem = readFileSync(resolve(BASE, "src/core/system/world-tree-save-system.js"), "utf-8");
+  const hasRealWrite = saveSystem.includes("appendJsonl") || saveSystem.includes("writeJson(") ||
+                       saveSystem.includes("ensureDir");
+  check("save-system has real write", "src/core/system/world-tree-save-system.js",
+    () => hasRealWrite,
+    "save-system must have real file writes, not just ok:true stubs");
+} catch {}
+
+// route-index validateAllWorldTreeRoutes 有真实校验
+try {
+  const routeIndex = readFileSync(resolve(BASE, "src/core/system/world-tree-route-index.js"), "utf-8");
+  const hasRealValidation = routeIndex.includes("PROMPT_PROFILE_MISSING") ||
+                            routeIndex.includes("hasModePromptProfile") ||
+                            routeIndex.includes("MISSING_FIELD");
+  check("route-index has real validation", "src/core/system/world-tree-route-index.js",
+    () => hasRealValidation,
+    "validateAllWorldTreeRoutes must have real checks, not unconditional ok:true");
+} catch {}
+
+// mode-isolation 有深层过滤
+try {
+  const isolationPolicy = readFileSync(resolve(BASE, "src/core/system/mode-isolation-policy.js"), "utf-8");
+  check("isolation has deepFilter", "src/core/system/mode-isolation-policy.js",
+    () => isolationPolicy.includes("deepFilterHiddenFields"),
+    "mode-isolation-policy must have deep field filtering");
 } catch {}
 
 console.log(`\n${checks.length} checks, ${failures} failures`);

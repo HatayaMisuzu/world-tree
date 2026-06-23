@@ -281,9 +281,6 @@ export function createModuleService(deps) {
       const cacheDir = join(worldDir, "runtime", "cache", "worldbook");
       if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
     }
-    if (body?.mode === "mystery-puzzle") {
-      await writeJson(join(worldDir, "shared", "mystery.json"), { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now });
-    }
     if (body?.mode === "tabletop") {
       await writeJson(join(worldDir, "shared", "tabletop.json"), { schemaVersion: 1, mode: "tabletop", status: "minimal", gmMode: true, ruleset: "freeform", currentSceneId: "opening", diceSystem: { enabled: false, reason: "Dice system deferred beyond P1." }, party: [], createdAt: now, updatedAt: now });
       await writeFile(join(worldDir, "runtime", "tabletop-proposals.jsonl"), "", "utf-8");
