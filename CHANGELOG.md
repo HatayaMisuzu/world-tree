@@ -6,8 +6,21 @@
 ## Unreleased / Prompt Orchestration Layer
 
 ### Added
-- **Prompt Orchestration Layer v1**：22 个 Prompt Block（全局 4 + 8 模式 + 9 任务）、Token Budget、Activation Log、Output Schemas、Visibility Policy、Prompt Inspector。
-- **Asset Inventory**：`docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md` — 资产/功能/机制防遗失清单，覆盖 ARCH(8) + SYS(8) + ENTRY(43) + P0(8) + P1(8) + P2(8) + PROMPT(12) + LEGACY(36) + EXT(14)，含防回归检查清单和 Agent 执行注意。
+- **Prompt Orchestration Layer v1**（略，详见上次提交）
+- **Asset Inventory**（略，详见上次提交）
+- **Legacy Mechanism Expansion P3 — M1-M11**：
+  - M1 Creation Wizard v2（6 文件 + 8 test）
+  - M2 Alchemy Digest Candidate Flow（1 文件 + integration test）
+  - M3 Material Learning Warehouse（1 文件 + integration test）
+  - M4 Character Kernel v2（1 文件 + integration test）
+  - M5 Character Cognition Matrix（1 文件 + integration test）
+  - M6 Organization / Faction Graph（1 文件 + integration test）
+  - M7 World Rules Engine（1 文件 + integration test）
+  - M8 Narrative Consistency Radar（1 文件 + integration test）
+  - M9 Random Event Pool + Scene Direction（1 文件 + integration test）
+  - M10 Macro System（1 文件 + integration test）
+  - M11 Observability Terminal（1 文件 + integration test）
+- 新增 `npm run test:legacy-mechanisms`（22 tests）
 - 三层安全防线：Global Executor Identity → Mode-Specific Blocks → Final Guard（每次生成前最后检查）。
 - 8 模式 profile：quick-setting / world-rpg / character / tabletop / mystery-puzzle / murder-mystery / strategy-sim / creation-forge，每个配专属禁止事项与边界。
 - 9 任务 contract：writer / director / guardian / proposal-extractor / scene-summary / worldbook-candidate / processing-extractor / emotional-inertia / telemetry-explanation，内部 JSON 任务有明确 schema。
