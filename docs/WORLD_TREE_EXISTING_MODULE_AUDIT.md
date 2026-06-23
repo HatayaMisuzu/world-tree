@@ -4,13 +4,13 @@
 
 当前模块系统不是废弃系统，而是需要标准化的兼容基础。旧 M1-M19（含 M15c 与 M-创作）继续服务于 `MODULES`、`MODULE_PRESETS`、`DATA_MODES`、`activeModules`、prompt 和 lifecycle；新的 capability module 层先提供登记、查询、映射、依赖图和审计能力，不立即重写现有功能。
 
-状态含义见 `WORLD_TREE_MODE_MODULE_ARCHITECTURE.md`。表中“直接”表示当前已有可定位的函数 API；“内联”表示能力由 world-engine/lifecycle 等共同编排；“声明”表示旧模块名或 prompt 仍在使用，但没有统一调用接口。
+状态含义见 `WORLD_TREE_MODE_MODULE_ARCHITECTURE.md`。表中“直接”表示当前已有可定位的函数 API；“wrapper”表示 P1 已提供可测试的旁路只读 hook；“内联”表示能力由 world-engine/lifecycle 等共同编排；“声明”表示旧模块名或 prompt 仍在使用，但没有统一调用接口。
 
 ## M1-M19 总表
 
 | Legacy ID | Legacy Name | New Module ID | Status | Source Files | Current Usage | Future Role | Notes |
 |---|---|---|---|---|---|---|---|
-| M1 | 世界书隔离容器 | `core.world_container` | legacy-inline | `world-engine.js`; `data-store.js`; `world-manager.js` | 内联运行时基础 | 世界实例与数据隔离边界 | 保留旧 activeModules ID |
+| M1 | 世界书隔离容器 | `core.world_container` | legacy-wrapped | `world-engine.js`; `data-store.js`; `world-manager.js`; P1 wrapper | 内联运行时基础 + 旁路摘要 | 世界实例与数据隔离边界 | 保留旧 activeModules ID；wrapper 不做 IO |
 | M2 | 触发式条目系统 | `lore.worldbook_trigger` | legacy-wrapped | `data/worldbook.js`; `runtime/worldbook-runtime.js` | 直接：匹配、注入、诊断 | 标准 lore 上下文提供者 | 已有清晰 API |
 | M3 | 动态世界状态 | `core.dynamic_state` | legacy-wrapped | `data/world-state.js`; `state-persistence.js` | 直接 + lifecycle 编排 | 状态快照与持久化能力 | 不迁移现有状态格式 |
 | M4 | 组织实体 | `entity.organization` | legacy-wrapped | `data/organizations.js` | 直接：标准化与摘要 | 组织实体能力 | — |
@@ -29,7 +29,11 @@
 | M17 | 随机性模块 | `event.random_event` | legacy-wrapped | `data/random-events.js` | 直接：提案与历史 | 事件提案能力 | 不改变现有触发策略 |
 | M18 | 场景走向预测 | `prediction.scene_direction` | legacy-wrapped | `data/prediction.js`; `direction-packet.js` | 直接 + director 编排 | 可审计的走向建议 | — |
 | M19 | 角色卡驱动模式 | `character.card_runtime` | legacy-wrapped | `data/character-card.js`; `world-engine.js` | 直接 + 专用 prompt | 角色卡运行能力 | 不把 character 变成巨型模块 |
-| M-创作 | 世界书创作工具箱 | `creation.alchemy` | implemented | `data/alchemy/alchemy-engine.js`; `alchemy-preview-service.js` | 直接且已有测试 | 创作素材导入能力 | 仍保留旧 ID |
+| M-创作 | 世界书创作工具箱 | `creation.alchemy` | legacy-wrapped | `data/alchemy/alchemy-engine.js`; `alchemy-preview-service.js`; P1 wrapper | 真实炼金实现 + 旁路格式/审核摘要 | 创作素材导入能力 | wrapper 不执行导入；仍保留旧 ID |
+
+## P1 callable wrapper 状态
+
+M1、M2、M3、M8、M9、M11、M15c、M19、M-创作已具备真实 wrapper，graph 会报告 `hasWrapper=true`、hook 列表和 callable 状态。其他模块即使 manifest 中已有旧函数能力名称，在建立对应 P2/P3 wrapper 前也不会被 graph 视为 callable。完整边界见 `WORLD_TREE_LEGACY_MODULE_STANDARDIZATION_P1.md`。
 
 ## 后续建议
 

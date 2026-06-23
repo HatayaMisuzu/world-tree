@@ -7,6 +7,21 @@
 ### Added
 
 - Added quick-setting vertical slice metadata and module graph wiring. The existing pasted-text draft flow now records `mode=quick-setting`, a JSON-safe module graph summary, and preset-compatible engine state without activating hidden modes.
+- Added P1 legacy module wrappers for hot-path World Tree modules.
+- Module graph now reports wrapper availability and real hook-backed callable state for standardized legacy modules.
+
+### Review — 2026-06-23 — legacy module standardization P1
+
+- 模板：Hermes 项目审查模板 v2.0
+- 模式：full；风险等级：L2；标签：`[CODE] [SCRIPT] [DOCS] [LOCAL]`
+- Fast Gate：14/14 适用项 PASS；2 项 N/A（无镜像副本、无新增写入/迁移输出）；阻断 0；严重 0；建议 0。
+- 需求/架构：PASS。仅为 M1、M2、M3、M8、M9、M11、M15c、M19 与 M-创作增加旁路 wrapper；不接管 lifecycle、主 prompt、server chat 或 UI，也不开展 P2/P3 与 character vertical slice。
+- 兼容/可见性：PASS。`DATA_MODES` 仍仅 `worldbook/character_card/preset` 且 normalize 结果不变；唯一可见 mode 仍为 `quick-setting`，hidden profiles 未暴露；旧 preset/worldbook/character_card 测试链保持通过。
+- 安全/边界：PASS。wrapper 无文件 IO、网络或外部 LLM 调用；prompt/debug 输出执行本机路径与常见 secret 脱敏；模块缺口保持非致命 warning。
+- 验证：`npm run test:unit` 129 tests PASS；`npm run preflight` 主测试 105/105、单元 129、集成 35、接口审计 132/132 且 0 警告/0 错误；`npm pack --dry-run --json` 153 个条目并包含 10 个 wrapper；`git diff --check` PASS。
+- 最终结论：PASS（high confidence），允许交付。
+- 遗留风险：P1 wrapper 当前仅由旁路 loader/registry 调用，未接入主叙事生命周期；这是本阶段刻意保留的兼容边界，后续接线需独立执行文件授权。
+- 回滚：撤销 P1 wrapper、manifest/registry/loader 接线、测试与文档变更；没有数据迁移、依赖变更或持久化 schema 变更。
 
 ### Review — 2026-06-23 — quick-setting vertical slice
 

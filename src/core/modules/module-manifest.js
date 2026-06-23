@@ -1,5 +1,7 @@
 import { MODULE_STATUS, normalizeModuleDefinition } from "./module-contract.js";
 
+const STANDARD_WRAPPER_HOOKS = ["buildContext", "buildPromptBlock", "getDebugInfo"];
+
 function define(id, legacyId, name, category, status, sourceFiles, capabilities, usedByModes, dependsOn = [], notes = "") {
   const definition = normalizeModuleDefinition({ id, legacyId, name, category, status, sourceFiles, capabilities, usedByModes, dependsOn, notes });
   return Object.freeze({
@@ -12,14 +14,14 @@ function define(id, legacyId, name, category, status, sourceFiles, capabilities,
 }
 
 const entries = [
-  define("core.world_container", "M1", "世界书隔离容器", "core", MODULE_STATUS.LEGACY_INLINE,
-    ["src/core/world-engine.js", "src/core/data-store.js", "src/core/engine/world-manager.js"], ["isolateWorld", "loadWorld", "manageWorld"],
-    ["quick-setting", "character", "tabletop", "mystery-puzzle", "world-rpg", "strategy-sim", "creation-forge"], [], "旧 M1。容器职责仍分布在世界引擎、存储和管理器中。"),
+  define("core.world_container", "M1", "世界书隔离容器", "core", MODULE_STATUS.LEGACY_WRAPPED,
+    ["src/core/world-engine.js", "src/core/data-store.js", "src/core/engine/world-manager.js", "src/core/modules/wrappers/core-world-container.wrapper.js"], ["isolateWorld", "loadWorld", "manageWorld", ...STANDARD_WRAPPER_HOOKS],
+    ["quick-setting", "character", "tabletop", "mystery-puzzle", "world-rpg", "strategy-sim", "creation-forge"], [], "旧 M1。P1 wrapper 提供只读容器摘要；现有运行编排保持不变。"),
   define("lore.worldbook_trigger", "M2", "触发式条目系统", "lore", MODULE_STATUS.LEGACY_WRAPPED,
-    ["src/core/data/worldbook.js", "src/core/runtime/worldbook-runtime.js"], ["matchEntries", "prepareWorldbookInjection", "diagnostics"],
+    ["src/core/data/worldbook.js", "src/core/runtime/worldbook-runtime.js", "src/core/modules/wrappers/lore-worldbook-trigger.wrapper.js"], ["matchEntries", "prepareWorldbookInjection", "diagnostics", ...STANDARD_WRAPPER_HOOKS],
     ["quick-setting", "tabletop", "world-rpg", "creation-forge"], ["core.world_container"], "旧 M2。已有明确的匹配和注入 API。"),
   define("core.dynamic_state", "M3", "动态世界状态", "core", MODULE_STATUS.LEGACY_WRAPPED,
-    ["src/core/data/world-state.js", "src/core/engine/state-persistence.js"], ["createWorldPanel", "takeSnapshot", "persistState"],
+    ["src/core/data/world-state.js", "src/core/engine/state-persistence.js", "src/core/modules/wrappers/core-dynamic-state.wrapper.js"], ["createWorldPanel", "takeSnapshot", "persistState", ...STANDARD_WRAPPER_HOOKS],
     ["quick-setting", "character", "tabletop", "mystery-puzzle", "world-rpg", "strategy-sim", "creation-forge"], ["core.world_container"], "旧 M3。状态能力已有函数边界，运行编排仍沿用旧生命周期。"),
   define("entity.organization", "M4", "组织实体", "entity", MODULE_STATUS.LEGACY_WRAPPED,
     ["src/core/data/organizations.js"], ["normalizeOrganizations", "organizationSummary"], ["strategy-sim"], ["core.world_container"], "旧 M4。"),
@@ -30,13 +32,13 @@ const entries = [
   define("entity.key_character", "M7", "关键人物", "entity", MODULE_STATUS.LEGACY_INLINE,
     ["src/core/data/characters.js", "src/core/data/character-card.js"], ["normalizeCharacterState", "characterSnapshot"], ["world-rpg"], ["entity.organization"], "旧 M7。人物数据能力存在，关键人物编排仍在运行时内联。"),
   define("character.preset", "M8", "角色预设系统", "character", MODULE_STATUS.LEGACY_WRAPPED,
-    ["src/core/data/character-card.js", "src/core/data/templates.js"], ["parseCharacterCard", "characterCardMode", "presetSummary"], ["character", "murder-mystery", "world-rpg", "creation-forge"], ["core.world_container"], "旧 M8。"),
+    ["src/core/data/character-card.js", "src/core/data/templates.js", "src/core/modules/wrappers/character-preset.wrapper.js"], ["parseCharacterCard", "characterCardMode", "presetSummary", ...STANDARD_WRAPPER_HOOKS], ["character", "murder-mystery", "world-rpg", "creation-forge"], ["core.world_container"], "旧 M8。P1 wrapper 提供只读角色预设摘要。"),
   define("character.cognition", "M9", "角色认知层", "character", MODULE_STATUS.LEGACY_WRAPPED,
-    ["src/core/data/cognition.js", "src/core/data/character-card.js"], ["filterKnownFacts", "cognitionBoundary", "cardCognitionModel"], ["character", "world-rpg", "creation-forge"], ["core.dynamic_state", "character.preset"], "旧 M9。"),
+    ["src/core/data/cognition.js", "src/core/data/character-card.js", "src/core/modules/wrappers/character-cognition.wrapper.js"], ["filterKnownFacts", "cognitionBoundary", "cardCognitionModel", ...STANDARD_WRAPPER_HOOKS], ["character", "world-rpg", "creation-forge"], ["core.dynamic_state", "character.preset"], "旧 M9。P1 wrapper 复用人格层与情绪梯度解析。"),
   define("lore.race_dimension", "M10", "种族维度", "lore", MODULE_STATUS.LEGACY_WRAPPED,
     ["src/core/data/race.js"], ["normalizeRaces", "raceSummary", "detectRacialTension"], [], ["entity.organization"], "旧 M10。当前 8 个默认 mode 映射未直接声明它。"),
   define("scene.session", "M11", "场景会话管理", "scene", MODULE_STATUS.LEGACY_WRAPPED,
-    ["src/core/data/scenes.js", "src/core/engine/context-router.js"], ["addScene", "getContextWindow", "buildSceneFrame"], ["quick-setting", "character", "tabletop", "mystery-puzzle", "world-rpg"], ["core.world_container"], "旧 M11。"),
+    ["src/core/data/scenes.js", "src/core/engine/context-router.js", "src/core/modules/wrappers/scene-session.wrapper.js"], ["addScene", "getContextWindow", "buildSceneFrame", ...STANDARD_WRAPPER_HOOKS], ["quick-setting", "character", "tabletop", "mystery-puzzle", "world-rpg"], ["core.world_container"], "旧 M11。P1 wrapper 提供只读场景会话摘要。"),
   define("narrative.story_template", "M12", "故事模板", "narrative", MODULE_STATUS.LEGACY_WRAPPED,
     ["src/core/data/templates.js"], ["presetSummary", "styleInstruction"], ["quick-setting", "world-rpg"], ["scene.session"], "旧 M12。"),
   define("narrative.five_layer_engine", "M13", "叙事引擎五层", "narrative", MODULE_STATUS.LEGACY_INLINE,
@@ -44,7 +46,7 @@ const entries = [
   define("rule.world_rule", "M15", "世界规则", "rule", MODULE_STATUS.LEGACY_WRAPPED,
     ["src/core/data/rules.js", "src/core/engine/guardian.js"], ["checkFeasibility", "checkWorldviewConflict", "checkPowerSystem"], ["tabletop", "mystery-puzzle", "world-rpg"], ["core.world_container"], "旧 M15。"),
   define("audit.narrative_quality", "M15c", "叙事质量审查", "audit", MODULE_STATUS.LEGACY_WRAPPED,
-    ["src/core/data/rules.js", "src/core/engine/guardian.js", "src/core/engine/guardian-llm.js"], ["auditNarrative", "runFullGuardian", "validateWithAutoCorrect"], ["quick-setting", "character", "tabletop", "mystery-puzzle", "world-rpg", "strategy-sim", "creation-forge"], ["narrative.five_layer_engine"], "旧 M15c。"),
+    ["src/core/data/rules.js", "src/core/engine/guardian.js", "src/core/engine/guardian-llm.js", "src/core/modules/wrappers/audit-narrative-quality.wrapper.js"], ["auditNarrative", "runFullGuardian", "validateWithAutoCorrect", ...STANDARD_WRAPPER_HOOKS, "validateOutput"], ["quick-setting", "character", "tabletop", "mystery-puzzle", "world-rpg", "strategy-sim", "creation-forge"], ["narrative.five_layer_engine"], "旧 M15c。P1 wrapper 可旁路调用 auditNarrative，不接管 Guardian。"),
   define("time.timeline", "M16", "时间模块", "time", MODULE_STATUS.LEGACY_WRAPPED,
     ["src/core/data/timeline.js", "src/core/data/timeline-causality.js"], ["createTimelineEvent", "traceCauses", "traceImpact"], ["tabletop", "world-rpg", "strategy-sim"], ["scene.session"], "旧 M16。"),
   define("event.random_event", "M17", "随机性模块", "event", MODULE_STATUS.LEGACY_WRAPPED,
@@ -52,9 +54,9 @@ const entries = [
   define("prediction.scene_direction", "M18", "场景走向预测", "prediction", MODULE_STATUS.LEGACY_WRAPPED,
     ["src/core/data/prediction.js", "src/core/engine/direction-packet.js"], ["predictScene", "buildDirectionPacket"], ["tabletop", "world-rpg"], ["scene.session", "narrative.five_layer_engine"], "旧 M18。"),
   define("character.card_runtime", "M19", "角色卡驱动模式", "character", MODULE_STATUS.LEGACY_WRAPPED,
-    ["src/core/data/character-card.js", "src/core/world-engine.js"], ["parseCharacterCard", "characterCardMode", "cardModeNarrativeHint"], ["character"], ["core.world_container", "character.preset", "character.cognition", "scene.session", "narrative.five_layer_engine"], "旧 M19。"),
-  define("creation.alchemy", "M-创作", "世界书创作炼金台", "creation", MODULE_STATUS.IMPLEMENTED,
-    ["src/core/data/alchemy/alchemy-engine.js", "src/server/alchemy-preview-service.js"], ["detectFormat", "importFile", "previewImport"], ["creation-forge"], ["core.world_container"], "旧 M-创作。已有独立实现、服务边界和单元/集成测试。"),
+    ["src/core/data/character-card.js", "src/core/world-engine.js", "src/core/modules/wrappers/character-card-runtime.wrapper.js"], ["parseCharacterCard", "characterCardMode", "cardModeNarrativeHint", ...STANDARD_WRAPPER_HOOKS], ["character"], ["core.world_container", "character.preset", "character.cognition", "scene.session", "narrative.five_layer_engine"], "旧 M19。P1 wrapper 复用人物卡检测、解析与叙事提示摘要。"),
+  define("creation.alchemy", "M-创作", "世界书创作炼金台", "creation", MODULE_STATUS.LEGACY_WRAPPED,
+    ["src/core/data/alchemy/alchemy-engine.js", "src/server/alchemy-preview-service.js", "src/core/modules/wrappers/creation-alchemy.wrapper.js"], ["detectFormat", "importFile", "previewImport", ...STANDARD_WRAPPER_HOOKS], ["creation-forge"], ["core.world_container"], "旧 M-创作。P1 wrapper 只读检测素材格式并声明审核边界，不执行导入。"),
 
   define("core.memory", null, "分层记忆", "core", MODULE_STATUS.DECLARED_ONLY, ["src/core/engine/memory-layers.js"], ["memoryLayerAdapter"], [], [], "现有实现尚未接入新 registry，先保守登记。"),
   define("core.review", null, "运行审查", "core", MODULE_STATUS.DECLARED_ONLY, [], ["reviewRun"], [], [], "未来能力声明。"),

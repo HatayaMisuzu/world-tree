@@ -1,6 +1,7 @@
 import { MODULE_MANIFEST, LEGACY_MODULE_MAP } from "./module-manifest.js";
 import { MODULE_STATUS, isCallableModule, normalizeModuleDefinition } from "./module-contract.js";
 import { getModulesForMode } from "../modes/mode-module-map.js";
+import { getModuleWrapper, listWrapperHooks } from "./wrappers/index.js";
 
 export function listModules(options = {}) {
   const status = typeof options.status === "string" ? options.status : null;
@@ -67,6 +68,8 @@ export function getModuleGraph(moduleIds = []) {
   const expanded = expandModuleDependencies(requested);
   const modules = expanded.modules.map((id) => {
     const entry = getModule(id);
+    const wrapper = getModuleWrapper(id);
+    const hooks = listWrapperHooks(id);
     return {
       id: entry.id,
       legacyId: entry.legacyId,
@@ -75,7 +78,9 @@ export function getModuleGraph(moduleIds = []) {
       status: entry.status,
       dependsOn: [...entry.dependsOn],
       sourceFiles: [...entry.sourceFiles],
-      callable: isCallableModule(entry)
+      callable: Boolean(wrapper) && isCallableModule(entry) && hooks.includes("buildContext") && hooks.includes("buildPromptBlock"),
+      hasWrapper: Boolean(wrapper),
+      hooks
     };
   });
   const warnings = expanded.missing.map((id) => `missing module: ${id}`);
@@ -100,6 +105,6 @@ export function getModuleStats() {
     byStatus,
     byCategory,
     legacyMappedCount: Object.keys(LEGACY_MODULE_MAP).length,
-    callableCount: modules.filter(isCallableModule).length
+    callableCount: modules.filter((entry) => Boolean(getModuleWrapper(entry.id)) && isCallableModule(entry)).length
   };
 }

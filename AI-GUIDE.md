@@ -190,6 +190,19 @@ Quick-setting vertical slice uses Mode/Module call layer as metadata and diagnos
 
 ---
 
+## Legacy module wrappers P1
+
+P1 为 M1、M2、M3、M8、M9、M11、M15c、M19、M-创作提供旁路 wrapper。入口可通过 `loadWrappersForMode(modeId)` 取得真实 wrapper，并显式调用 `buildContext`、`buildPromptBlock` 或 `getDebugInfo`。
+
+- graph 的 `callable=true` 现在要求真实 wrapper 存在；manifest 声明本身不等于可调用。
+- wrapper 只读已加载上下文，不做文件写入、不调用外部 LLM、不自动进入 lifecycle。
+- declared-only、prototype-hidden 和 P2/P3 缺 wrapper 模块只产生诊断 gap，不阻断 mode graph。
+- 主 prompt、server chat、DATA_MODES、旧 M 编号 activeModules 与 hidden profiles 均保持原逻辑。
+
+详见 `docs/WORLD_TREE_LEGACY_MODULE_STANDARDIZATION_P1.md`。
+
+---
+
 ## 修改规则
 
 1. **语法检查**: `node --check <file>` 通过后再提交
