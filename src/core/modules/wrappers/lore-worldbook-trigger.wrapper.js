@@ -19,6 +19,15 @@ export const moduleWrapper = Object.freeze({
 
   buildContext(ctx = {}) {
     try {
+      const livingContext = ctx.livingWorldPacket?.worldbookContext;
+      if (livingContext) {
+        const selected = [...(livingContext.base || []), ...(livingContext.context || []), ...(livingContext.instant || [])];
+        return createWrapperResult(ID, LEGACY_ID, {
+          selectedCount: selected.length,
+          selected: selected.slice(0, 5).map((entry) => ({ id: safeString(entry.id), title: truncateText(entry.title || "Untitled", 120), reason: entry.layer || "living-world", keys: safeArray(entry.keys) })),
+          diagnostics: { budgetName: "living-world", activeEntryCount: selected.length, candidateCount: selected.length, droppedCount: 0, missCount: 0, usedChars: JSON.stringify(selected).length }
+        });
+      }
       const moduleData = ctx.moduleData || ctx.model?.moduleData || {};
       const model = ctx.model?.moduleData ? ctx.model : null;
       const result = prepareWorldbookInjection({

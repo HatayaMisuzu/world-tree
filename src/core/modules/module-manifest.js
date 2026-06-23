@@ -58,6 +58,13 @@ const entries = [
   define("creation.alchemy", "M-创作", "世界书创作炼金台", "creation", MODULE_STATUS.LEGACY_WRAPPED,
     ["src/core/data/alchemy/alchemy-engine.js", "src/server/alchemy-preview-service.js", "src/core/modules/wrappers/creation-alchemy.wrapper.js"], ["detectFormat", "importFile", "previewImport", ...STANDARD_WRAPPER_HOOKS], ["creation-forge"], ["core.world_container"], "旧 M-创作。P1 wrapper 只读检测素材格式并声明审核边界，不执行导入。"),
 
+  define("scope.proximity", null, "主角邻近范围", "core", MODULE_STATUS.IMPLEMENTED,
+    ["src/core/proximity/proximity-scope.js", "src/core/modules/wrappers/proximity-scope.wrapper.js"], ["calculateProximityScope", ...STANDARD_WRAPPER_HOOKS], ["character", "tabletop", "mystery-puzzle", "murder-mystery", "world-rpg", "strategy-sim"], ["scene.session"], "P0 确定性运行时范围，不写 canon。"),
+  define("tracking.world_events", null, "世界事件追踪", "core", MODULE_STATUS.IMPLEMENTED,
+    ["src/core/tracking/tracking-store.js", "src/core/tracking/tracking-digest.js", "src/core/modules/wrappers/tracking.wrapper.js"], ["appendChange", "readTrackingDigest", ...STANDARD_WRAPPER_HOOKS], ["character", "tabletop", "mystery-puzzle", "murder-mystery", "world-rpg", "strategy-sim"], [], "P0 当前事实与变化历史分离。"),
+  define("scene.summary_chain", null, "场景摘要链", "scene", MODULE_STATUS.IMPLEMENTED,
+    ["src/core/scene/scene-summary-chain.js", "src/core/modules/wrappers/scene-summary-chain.wrapper.js"], ["transitionScene", "readRecentSceneSummaries", ...STANDARD_WRAPPER_HOOKS], ["character", "tabletop", "mystery-puzzle", "murder-mystery", "world-rpg", "strategy-sim"], ["scene.session", "tracking.world_events"], "P0 runtime-only 场景连续记忆。"),
+
   define("core.memory", null, "分层记忆", "core", MODULE_STATUS.DECLARED_ONLY, ["src/core/engine/memory-layers.js"], ["memoryLayerAdapter"], [], [], "现有实现尚未接入新 registry，先保守登记。"),
   define("core.review", null, "运行审查", "core", MODULE_STATUS.DECLARED_ONLY, [], ["reviewRun"], [], [], "未来能力声明。"),
   define("core.canon", null, "Canon / Inference / Proposal 分层", "core", MODULE_STATUS.DECLARED_ONLY, [], ["classifyFactAuthority"], [], [], "未来能力声明。"),

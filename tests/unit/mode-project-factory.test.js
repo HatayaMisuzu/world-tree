@@ -95,8 +95,8 @@ test("8. createModeProjectFiles returns world.json, runtime/state.json, runtime/
   assert.equal(files["runtime/source.txt"], "风暴中的玻璃城");
   assert.ok(files["shared/worldbook.json"]);
   assert.ok(files["shared/characters.json"]);
-  // 全部 10 个 shared 文件
-  assert.equal(Object.keys(files).length, 10);
+  // 核心文件 + P0 runtime/tracking 初始化文件
+  assert.equal(Object.keys(files).length, 17);
 });
 
 // ─── Test 9: createModeProjectDraft character ───

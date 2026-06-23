@@ -128,6 +128,8 @@ export async function approveProposal(project = {}, proposalId, services = {}, o
   // 如果有 targetFile，应用 safe patch
   // 安全规则：targetFile 必须位于 shared/ 目录下
   let patchApplied = false;
+  let trackingBefore = null;
+  let trackingAfter = null;
   if (proposal.targetFile && proposal.patch && Object.keys(proposal.patch).length > 0) {
     // 隔离检查：proposal 只能修改 shared/ 下的文件
     if (!proposal.targetFile.startsWith("shared/")) {
@@ -141,6 +143,8 @@ export async function approveProposal(project = {}, proposalId, services = {}, o
       const document = readJsonFn(targetPath, {});
       const patched = applyProposalPatch(document, proposal);
       await writeJsonFn(targetPath, patched);
+      trackingBefore = document;
+      trackingAfter = patched;
       patchApplied = true;
     } catch (err) {
       return { ok: false, proposalId, status: "error", message: `Patch apply failed: ${err.message}` };
@@ -159,6 +163,22 @@ export async function approveProposal(project = {}, proposalId, services = {}, o
     }
   } catch (err) {
     return { ok: false, proposalId, status: "error", message: `Failed to write proposal log: ${err.message}` };
+  }
+
+  if (patchApplied) {
+    try {
+      await appendJsonlFn(join(projectRoot, "runtime", "tracking", "change-log.jsonl"), {
+        id: `chg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        timestamp: new Date().toISOString(), modeId: proposal.modeId || "", sceneId: proposal.sceneId || "",
+        source: "proposal-bus", proposalId: proposal.id, moduleId: proposal.moduleId || "",
+        targetFile: proposal.targetFile, fieldPath: proposal.fieldPath || "", oldValue: proposal.oldValue ?? trackingBefore,
+        newValue: proposal.newValue ?? trackingAfter, reason: proposal.reason || proposal.summary || "",
+        changeType: proposal.changeType || "state_update", impactLevel: proposal.impactLevel || "medium",
+        rippleDepth: Number(proposal.rippleDepth || 0), causedBy: proposal.causedBy || null
+      });
+    } catch (err) {
+      return { ok: false, proposalId, status: "error", patchApplied, message: `Tracking append failed: ${err.message}` };
+    }
   }
 
   return { ok: true, proposalId, status: "approved", patchApplied, message: "proposal approved and patch applied" };

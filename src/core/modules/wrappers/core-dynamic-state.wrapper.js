@@ -24,6 +24,15 @@ export const moduleWrapper = Object.freeze({
 
   buildContext(ctx = {}) {
     try {
+      const livingState = ctx.livingWorldPacket?.worldState;
+      if (livingState?.states) {
+        return createWrapperResult(ID, LEGACY_ID, {
+          scene: truncateText(ctx.livingWorldPacket?.scene?.title || "未记录", 160),
+          time: truncateText(ctx.livingWorldPacket?.scene?.timeRef || "未记录", 120),
+          variableCount: countObjectKeys(livingState.states), emotionState: {},
+          turnCount: Number(ctx.turnId || 0), mode: safeString(ctx.modeId || ctx.options?.mode, "legacy")
+        });
+      }
       const moduleData = ctx.moduleData || ctx.model?.moduleData || {};
       const worldState = moduleData.worldState || {};
       const runtime = moduleData.runtime || {};

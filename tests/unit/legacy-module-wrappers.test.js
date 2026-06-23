@@ -24,12 +24,15 @@ const P1_MODULES = Object.freeze({
   "rule.world_rule": "M15",
   "audit.narrative_quality": "M15c",
   "character.card_runtime": "M19",
-  "creation.alchemy": "M-创作"
+  "creation.alchemy": "M-创作",
+  "scope.proximity": null,
+  "tracking.world_events": null,
+  "scene.summary_chain": null
 });
 
-test("P1 wrapper registry exposes all nine standardized legacy modules", () => {
+test("wrapper registry exposes standardized legacy and P0 modules", () => {
   const wrappers = listModuleWrappers();
-  assert.equal(wrappers.length, 13);
+  assert.equal(wrappers.length, 16);
   assert.deepEqual(new Set(wrappers.map((wrapper) => wrapper.id)), new Set(Object.keys(P1_MODULES)));
   assert.equal(getModuleWrapper("lore.worldbook_trigger")?.legacyId, "M2");
   assert.equal(loadModuleWrapper("lore.worldbook_trigger")?.id, "lore.worldbook_trigger");
@@ -39,7 +42,7 @@ test("P1 wrapper registry exposes all nine standardized legacy modules", () => {
 test("every P1 wrapper implements defensive context, prompt, and debug hooks", () => {
   for (const wrapper of listModuleWrappers()) {
     assert.equal(wrapper.legacyId, P1_MODULES[wrapper.id]);
-    assert.equal(wrapper.status, MODULE_STATUS.LEGACY_WRAPPED);
+    assert.equal(wrapper.status, wrapper.legacyId ? MODULE_STATUS.LEGACY_WRAPPED : MODULE_STATUS.IMPLEMENTED);
     for (const hook of ["buildContext", "buildPromptBlock", "getDebugInfo"]) {
       assert.equal(typeof wrapper[hook], "function", `${wrapper.id}.${hook}`);
       assert.ok(listWrapperHooks(wrapper.id).includes(hook));
@@ -141,7 +144,7 @@ test("P1 manifest status and capabilities agree with wrapper existence", () => {
   for (const [id, legacyId] of Object.entries(P1_MODULES)) {
     const definition = MODULE_MANIFEST[id];
     assert.equal(definition.legacyId, legacyId);
-    assert.equal(definition.status, MODULE_STATUS.LEGACY_WRAPPED);
+    assert.equal(definition.status, legacyId ? MODULE_STATUS.LEGACY_WRAPPED : MODULE_STATUS.IMPLEMENTED);
     assert.ok(getModuleWrapper(id), `${id} wrapper missing`);
     for (const hook of ["buildContext", "buildPromptBlock", "getDebugInfo"]) {
       assert.ok(definition.capabilities.includes(hook), `${id} manifest missing ${hook}`);

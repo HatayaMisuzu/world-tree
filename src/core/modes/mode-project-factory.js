@@ -191,7 +191,14 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     "shared/organizations.json": [],
     "shared/relations.json": [],
     "shared/timeline.json": [],
-    "shared/world_state.json": {}
+    "shared/world_state.json": { version: 1, updatedAt: null, states: {} },
+    "runtime/current-scene.json": { version: 1, sceneId: "opening", modeId: mode, title: "Opening", startedAt: now, participants: [], metadata: {} },
+    "runtime/scene-summaries.jsonl": "",
+    "runtime/proximity-scope.json": { version: 1, rings: { core: [], near: [], far: [], dormant: [] } },
+    "runtime/worldbook-activation.json": { base: [], context: [], instant: [] },
+    "runtime/tracking/change-log.jsonl": "",
+    "runtime/tracking/foreshadowing.json": { version: 1, updatedAt: now, items: [] },
+    "runtime/tracking/conflicts.json": { version: 1, updatedAt: now, items: [] }
   };
 
   // character mode: primary character record

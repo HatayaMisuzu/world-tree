@@ -11,6 +11,9 @@ import narrativeFiveLayerEngine from "./narrative-five-layer-engine.wrapper.js";
 import narrativeStoryTemplate from "./narrative-story-template.wrapper.js";
 import ruleWorldRule from "./rule-world-rule.wrapper.js";
 import entityRelationshipNetwork from "./entity-relationship-network.wrapper.js";
+import proximityScope from "./proximity-scope.wrapper.js";
+import trackingWorldEvents from "./tracking.wrapper.js";
+import sceneSummaryChain from "./scene-summary-chain.wrapper.js";
 
 const wrappers = [
   coreWorldContainer,
@@ -25,7 +28,10 @@ const wrappers = [
   narrativeFiveLayerEngine,
   narrativeStoryTemplate,
   ruleWorldRule,
-  entityRelationshipNetwork
+  entityRelationshipNetwork,
+  proximityScope,
+  trackingWorldEvents,
+  sceneSummaryChain
 ];
 
 export const MODULE_WRAPPERS = Object.freeze(Object.fromEntries(
