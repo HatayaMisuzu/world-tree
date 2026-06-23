@@ -126,8 +126,13 @@ export async function approveProposal(project = {}, proposalId, services = {}, o
   }
 
   // 如果有 targetFile，应用 safe patch
+  // 安全规则：targetFile 必须位于 shared/ 目录下
   let patchApplied = false;
   if (proposal.targetFile && proposal.patch && Object.keys(proposal.patch).length > 0) {
+    // 隔离检查：proposal 只能修改 shared/ 下的文件
+    if (!proposal.targetFile.startsWith("shared/")) {
+      return { ok: false, proposalId, status: "error", message: `Proposal targetFile must be under shared/: ${proposal.targetFile}` };
+    }
     const targetPath = join(projectRoot, proposal.targetFile);
     if (!pathCheck(projectRoot, targetPath)) {
       return { ok: false, proposalId, status: "error", message: `Target file outside project root: ${proposal.targetFile}` };

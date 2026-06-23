@@ -97,6 +97,9 @@ export async function runWorldTreeModeTurn(project = {}, userInput = {}, options
   const inputPacket = createModeInputPacket(modeId, project, userInput);
   const filtered = filterContextByModeVisibility(modeId, inputPacket.sharedContext);
 
+  // 将过滤后的 context 注入 inputPacket，确保 prompt 和 adapter 收到的是隔离后的数据
+  inputPacket.sharedContext = filtered;
+
   // 使用 route.promptProfileId 显式映射（不再猜测 prompt profile）
   const profileId = route.promptProfileId;
   const promptResult = buildModePromptResult(inputPacket, { profileId });

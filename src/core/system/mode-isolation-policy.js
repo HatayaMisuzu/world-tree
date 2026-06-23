@@ -17,12 +17,25 @@ export function getModeIsolationPolicy(modeId) {
   };
 }
 
-export function assertModeCanWrite(modeId, resourcePath) {
-  const cacheNS = resourcePath.includes("runtime/cache/")
-    ? resourcePath.split("runtime/cache/")[1]?.split("/")[0]
-    : "";
-  if (cacheNS && !resourcePath.includes(`runtime/cache/${modeId}`) && !resourcePath.includes(`runtime/cache/worldbook`)) {
-    return { allowed: false, reason: `mode ${modeId} cannot write to cache namespace: ${cacheNS}` };
+export function assertModeCanWrite(modeId, resourcePath, options = {}) {
+  // 非 cache 路径（chat.jsonl、proposal log 等）走提案/存档系统，这里放行
+  if (!resourcePath.includes("runtime/cache/")) {
+    return { allowed: true, reason: null };
+  }
+
+  // cache 路径：提取 namespace
+  const cacheNS = resourcePath.split("runtime/cache/")[1]?.split("/")[0] || "";
+
+  // 允许的 cache namespace：modeId 自身、options.allowedNamespaces、worldbook 特殊
+  const allowedNS = new Set([modeId]);
+  if (Array.isArray(options.allowedNamespaces)) {
+    for (const ns of options.allowedNamespaces) allowedNS.add(ns);
+  }
+  // world-rpg 的 worldbook 缓存命名空间特殊处理
+  if (modeId === "world-rpg") allowedNS.add("worldbook");
+
+  if (!allowedNS.has(cacheNS)) {
+    return { allowed: false, reason: `mode ${modeId} cannot write to cache namespace: ${cacheNS} (allowed: ${[...allowedNS].join(", ")})` };
   }
   return { allowed: true, reason: null };
 }

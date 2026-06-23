@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { writeJson, appendJsonl, ensureDir } from "../../server/fs-utils.js";
 import { pathWithinRoot } from "../../server/path-security.js";
+import { assertModeCanWrite } from "./mode-isolation-policy.js";
 
 export function createWorldTreeSaveSnapshot(project = {}, options = {}) {
   return {
@@ -88,6 +89,18 @@ export async function writeModeCache(project = {}, cacheWrites = [], services = 
     if (!pathCheck(projectRoot, targetPath)) {
       errors.push({ code: "PATH_UNSAFE", path: entry.relativePath });
       continue;
+    }
+
+    // 模式隔离检查：不允许跨模式写 cache（仅当 modeId 已知时检查）
+    const modeId = options.modeId || project.mode || "";
+    if (modeId) {
+      const writeCheck = assertModeCanWrite(modeId, entry.relativePath, {
+        allowedNamespaces: options.cacheNamespaces || []
+      });
+      if (!writeCheck.allowed) {
+        errors.push({ code: "ISOLATION_BLOCKED", path: entry.relativePath, reason: writeCheck.reason });
+        continue;
+      }
     }
 
     try {

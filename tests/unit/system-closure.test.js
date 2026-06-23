@@ -403,3 +403,126 @@ test("validate mode turn result", () => {
   assert.equal(validateModeTurnResult({ ok: true }).ok, true);
   assert.equal(validateModeTurnResult({ ok: false, error: { code: "FAIL" } }).ok, false);
 });
+
+// ═══ Isolation hardening ═══
+
+test("assertModeCanWrite blocks cross-mode cache write (strict)", () => {
+  // character cannot write to tabletop cache
+  const r1 = assertModeCanWrite("character", "runtime/cache/tabletop/summary.json");
+  assert.equal(r1.allowed, false);
+  assert.ok(r1.reason.includes("character"));
+
+  // character can write to own cache
+  const r2 = assertModeCanWrite("character", "runtime/cache/character/summary.json");
+  assert.equal(r2.allowed, true);
+
+  // quick-setting cannot write to mystery-puzzle cache
+  const r3 = assertModeCanWrite("quick-setting", "runtime/cache/mystery-puzzle/state.json");
+  assert.equal(r3.allowed, false);
+
+  // world-rpg can write to worldbook cache (special namespace)
+  const r4 = assertModeCanWrite("world-rpg", "runtime/cache/worldbook/summary.json");
+  assert.equal(r4.allowed, true);
+});
+
+test("assertModeCanWrite allows non-cache paths", () => {
+  // chat.jsonl is not a cache path — always allowed
+  assert.equal(assertModeCanWrite("character", "runtime/chat.jsonl").allowed, true);
+  // proposal log is not a cache path — always allowed
+  assert.equal(assertModeCanWrite("tabletop", "runtime/tabletop-proposals.jsonl").allowed, true);
+});
+
+test("assertModeCanWrite respects allowedNamespaces option", () => {
+  // tabletop cannot write to strategy-sim cache by default
+  assert.equal(assertModeCanWrite("tabletop", "runtime/cache/strategy-sim/data.json").allowed, false);
+  // but with allowedNamespaces=[strategy-sim], it can
+  const r = assertModeCanWrite("tabletop", "runtime/cache/strategy-sim/data.json", {
+    allowedNamespaces: ["strategy-sim"]
+  });
+  assert.equal(r.allowed, true);
+});
+
+test("writeModeCache blocks cross-mode cache write", async () => {
+  const root = makeTempProject("wt-isolation-cache");
+  try {
+    const project = { projectRoot: root, mode: "tabletop" };
+    // tabletop cannot write to mystery-puzzle cache namespace
+    const cacheWrites = [
+      { relativePath: "runtime/cache/mystery-puzzle/summary.json", json: { turn: 1 } }
+    ];
+    const r = await writeModeCache(project, cacheWrites, svc, { modeId: "tabletop" });
+    assert.equal(r.ok, false);
+    assert.equal(r.entriesWritten, 0);
+    assert.ok(r.errors.some(e => e.code === "ISOLATION_BLOCKED"));
+  } finally {
+    cleanupDir(root);
+  }
+});
+
+test("writeModeCache allows own cache write with isolation check", async () => {
+  const root = makeTempProject("wt-isolation-own");
+  try {
+    const project = { projectRoot: root, mode: "character" };
+    const cacheWrites = [
+      { relativePath: "runtime/cache/character/summary.json", json: { turn: 1 } }
+    ];
+    const r = await writeModeCache(project, cacheWrites, svc, { modeId: "character" });
+    assert.equal(r.ok, true);
+    assert.equal(r.entriesWritten, 1);
+    // verify file was actually written
+    assert.ok(existsSync(join(root, "runtime", "cache", "character", "summary.json")));
+  } finally {
+    cleanupDir(root);
+  }
+});
+
+test("approveProposal blocks non-shared targetFile", async () => {
+  const root = makeTempProject("wt-iso-prop");
+  try {
+    const logPath = join(root, "runtime", "world-proposals.jsonl");
+    const proposalId = "prop-iso-001";
+
+    await writeJson(join(root, "runtime", "state.json"), { turnCount: 0 });
+    await appendJsonl(logPath, {
+      id: proposalId, type: "world_state_update", status: "pending",
+      patch: { replace: { turnCount: 99 } },
+      targetFile: "runtime/state.json",  // ← 尝试写 runtime/, 不是 shared/
+      summary: "should be blocked", createdAt: new Date().toISOString()
+    });
+
+    const project = { projectRoot: root, proposalLog: logPath };
+    const r = await approveProposal(project, proposalId, svc);
+
+    assert.equal(r.ok, false);
+    assert.ok(r.message.includes("shared/"));
+  } finally {
+    cleanupDir(root);
+  }
+});
+
+test("approveProposal allows shared/ targetFile", async () => {
+  const root = makeTempProject("wt-iso-prop-ok");
+  try {
+    const logPath = join(root, "runtime", "world-proposals.jsonl");
+    const sharedPath = join(root, "shared", "world_state.json");
+    const proposalId = "prop-iso-002";
+
+    await writeJson(sharedPath, { title: "old" });
+    await appendJsonl(logPath, {
+      id: proposalId, type: "world_state_update", status: "pending",
+      patch: { replace: { title: "new" } },
+      targetFile: "shared/world_state.json",  // ← shared/ 路径，允许
+      summary: "should be allowed", createdAt: new Date().toISOString()
+    });
+
+    const project = { projectRoot: root, proposalLog: logPath };
+    const r = await approveProposal(project, proposalId, svc);
+
+    assert.equal(r.ok, true);
+    assert.equal(r.status, "approved");
+    const shared = readJsonSync(sharedPath, {});
+    assert.equal(shared.title, "new");
+  } finally {
+    cleanupDir(root);
+  }
+});
