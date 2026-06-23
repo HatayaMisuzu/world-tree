@@ -276,6 +276,10 @@ export function createModuleService(deps) {
     // Multi-mode closures: mode-specific shared state files
     if (body?.mode === "world-rpg") {
       await writeJson(join(worldDir, "shared", "world_rpg.json"), { schemaVersion: 1, mode: "world-rpg", status: "minimal", gmMode: true, currentSceneId: "opening", questSeed: null, playerState: { name: "玩家", role: "adventurer" }, notes: [], createdAt: now, updatedAt: now });
+      await writeJson(join(worldDir, "shared", "world_threads.json"), { schemaVersion: 1, items: [], activeThreadIds: [], updatedAt: now });
+      await writeFile(join(worldDir, "runtime", "world-proposals.jsonl"), "", "utf-8");
+      const cacheDir = join(worldDir, "runtime", "cache", "worldbook");
+      if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
     }
     if (body?.mode === "mystery-puzzle") {
       await writeJson(join(worldDir, "shared", "mystery.json"), { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now });

@@ -1,5 +1,5 @@
 export function createWorldThread(input = {}, context = {}, options = {}) {
-  return { id: `thread_${Date.now()}`, title: input.title || "", type: input.type || "lead", status: "active", summary: input.summary || "", relatedSceneIds: Array.isArray(input.relatedSceneIds) ? input.relatedSceneIds : [], relatedCharacterIds: [], relatedLoreIds: [], visibility: input.visibility || "player_known", createdAt: new Date().toISOString() };
+  return { id: `thread_${Date.now()}`, title: input.title || "", type: input.type || "lead", status: input.status || "active", summary: input.summary || "", relatedSceneIds: Array.isArray(input.relatedSceneIds) ? input.relatedSceneIds : [], relatedCharacterIds: [], relatedLoreIds: [], visibility: input.visibility || "player_known", createdAt: new Date().toISOString() };
 }
 
 export function normalizeWorldThreads(threads = [], options = {}) {

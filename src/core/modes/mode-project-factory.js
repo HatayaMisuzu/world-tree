@@ -210,6 +210,10 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
   // Multi-mode closures: mode-specific shared state files
   if (mode === "world-rpg") {
     files["shared/world_rpg.json"] = { schemaVersion: 1, mode: "world-rpg", status: "minimal", gmMode: true, currentSceneId: "opening", questSeed: null, playerState: { name: "玩家", role: "adventurer" }, notes: [], createdAt: now, updatedAt: now };
+    // Grand World Mode V1 foundation files
+    files["shared/world_threads.json"] = { schemaVersion: 1, items: [], activeThreadIds: [], updatedAt: now, note: "叙事牵引/当前目标，不是传统RPG quest" };
+    files["runtime/world-proposals.jsonl"] = "";
+    files["runtime/cache/worldbook/.gitkeep"] = "";
   }
   if (mode === "mystery-puzzle") {
     files["shared/mystery.json"] = { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now };
