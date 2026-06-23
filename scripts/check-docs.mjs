@@ -37,7 +37,7 @@ check("docs/STATUS", "docs/DOCUMENTATION_STATUS.md", p => existsSync(p), "missin
 // Content checks
 try {
   const readme = readFileSync(resolve(BASE, "README.md"), "utf-8");
-  check("README mentions V1", "README.md", () => readme.includes("V1 完整闭环"), "README should mention V1 milestone");
+  check("README mentions V1", "README.md", () => readme.includes("V1 full-closure") || readme.includes("V1 完整闭环"), "README should mention V1 milestone");
   check("README mode table", "README.md", () => readme.includes("quick-setting") && readme.includes("creation-forge"), "README should list all modes");
 } catch {}
 

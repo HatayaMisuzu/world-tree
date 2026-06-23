@@ -28,7 +28,7 @@ console.log(`\n📋 版本审计 (v${version})`);
 // 版本一致性
 for (const [file, regex] of [
   ["CHANGELOG.md", /^##\s+v?(\d+\.\d+\.\d+)/m],
-  ["README.md", /\*\*(?:Current version|当前版本): v(\d+\.\d+\.\d+)\*\*/],
+  ["README.md", /\*\*(?:Current version|当前版本|Package version)\*\*:\s*v(\d+\.\d+\.\d+)/],
 ]) {
   const content = readText(file);
   const m = content.match(regex);
@@ -187,7 +187,7 @@ console.log("\n🧹 开源卫生");
   const license = readText("LICENSE");
   if (pkg.license !== "MIT") fail("package.json license 必须为 MIT");
   else if (!/MIT License/.test(license)) fail("LICENSE 不是 MIT 全文");
-  else if (!/license-MIT/.test(readme)) fail("README 缺少 MIT license 徽章");
+  else if (!/license-MIT/.test(readme) && !/## License/.test(readme)) fail("README 缺少 MIT license 说明");
   else pass("MIT license 元数据一致");
 }
 
