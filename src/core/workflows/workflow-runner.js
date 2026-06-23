@@ -8,7 +8,9 @@ import { CREATION_WORKFLOWS, ALCHEMY_WORKFLOWS, PLAY_WORKFLOWS, CHARACTER_WORKFL
 import { creationWorkflowService } from "./services/creation-workflow-service.js";
 import { alchemyWorkflowService } from "./services/alchemy-workflow-service.js";
 import { playTurnWorkflowService } from "./services/play-turn-workflow-service.js";
-import { characterWorkflowService, mysteryWorkflowService, strategyWorkflowService } from "./services/character-workflow-service.js";
+import { characterWorkflowService } from "./services/character-workflow-service.js";
+import { mysteryWorkflowService } from "./services/mystery-workflow-service.js";
+import { strategyWorkflowService } from "./services/strategy-workflow-service.js";
 import { directionWorkflowService, observabilityWorkflowService } from "./services/direction-workflow-service.js";
 
 function selectService(wt) {
