@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added Character Capsule Full V1 (`src/core/character/`): parser (plain_text/V1/V2/CHARACTER.md), profile (World Tree Character Profile schema), prompt packet, lore, persona, module runtime integration (consumes 7 existing character modules), OOC checker, engine adapter, exporter (V2 JSON/WT Profile/prompt-card). See updated docs.
+
 - Added Mode Capsule Architecture P1 (`src/core/modes/mode-capsule-registry.js`) with Shared Kernel + Isolated Mode Capsules design. 7 consumer capsules + creation-forge as deferred producer. Each capsule declares save schema namespace, cache namespace, runtime state namespace, prompt profile id, engine adapter id, and artifact contract linkage. All cache/prompt/engine namespaces are unique per mode. Added `tests/unit/mode-capsule-registry.test.js` (21 tests).
 
 - Added Mode Artifact Contract P1 (`src/core/modes/mode-artifact-contract.js`) with code-level consumer contracts for all 7 active modes. Includes registry, validators, normalizers, summaries, and project-input bridge (`createModeArtifactProjectInput`) for future creation-forge artifact generation. Added `tests/unit/mode-artifact-contract.test.js` (21 tests). See `docs/WORLD_TREE_MODE_ARTIFACT_CONTRACT_P1.md`.

@@ -131,7 +131,6 @@ test("11. createProjectFromMode('character', ..., { persist: true }) now allowed
 test("12. hidden mode defaults to not creatable", () => {
   const perm = assertModeProjectCanBeCreated("creation-forge");
   assert.equal(perm.allowed, false);
-  }
 });
 
 // ─── Test 13: draft 不包含函数对象 ───
@@ -185,4 +184,3 @@ test("16. unknown mode throws explicit error", () => {
   assert.throws(() => createModeProjectDraft("nonexistent-mode", {}), {
     message: /Unknown mode/
   });
-});

@@ -32,7 +32,6 @@ test("quick-setting module graph resolves the declared core slice", () => {
     "audit.narrative_quality"
   ]) {
     assert.ok(result.graph.resolved.includes(moduleId), `missing ${moduleId}`);
-  }
 });
 
 test("quick-setting input normalization handles empty and aliased fields", () => {
@@ -46,7 +45,6 @@ test("quick-setting input normalization handles empty and aliased fields", () =>
     sourceText: "风暴档案",
     sourceType: "pasted_text"
   });
-});
 
 test("quick-setting initial state contains JSON-safe graph metadata", () => {
   const state = createQuickSettingInitialState({ createdAt: "2026-06-23T00:00:00.000Z" });
@@ -61,5 +59,4 @@ test("quick-setting initial state contains JSON-safe graph metadata", () => {
 test("quick-setting helper does not activate hidden modes", () => {
   createQuickSettingMetadata();
   assert.equal(getMode("creation-forge")?.status, MODE_STATUS.PLANNED);
-  }
 });

@@ -24,7 +24,6 @@ test("1. createModuleRuntimeContext({}) does not throw and returns safe defaults
   assert.equal(ctx.worldbookState, null);
   assert.deepEqual(ctx.cards, []);
   assert.deepEqual(ctx.options, {});
-});
 
 test("1b. createModuleRuntimeContext passes through provided values", () => {
   const ctx = createModuleRuntimeContext({
@@ -80,7 +79,6 @@ test("4. runWrapperHook catches throwing wrapper without crashing", () => {
     assert.equal(result.result, null);
     assert.ok(result.warnings.length > 0);
   });
-});
 
 // ─── Test 5: createModuleRuntimePacket("quick-setting") ───
 
@@ -156,7 +154,6 @@ test("11. hidden mode generates packet without changing visibility", () => {
     // visibility unchanged
     assert.equal(isModeVisible(modeId), false);
     assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
-  }
 });
 
 // ─── Test 12: promptBlocks 是旁路文本 ───
@@ -168,7 +165,6 @@ test("12. promptBlocks are side-channel text only", () => {
     assert.ok(block.text.length <= 1200);
     // text 不包含本机路径
     assert.doesNotMatch(block.text, /[A-Za-z]:[/\\]/);
-  }
 });
 
 // ─── Test 13: packet 不包含函数对象 ───
@@ -185,7 +181,6 @@ test("13. packet does not contain function objects", () => {
         assert.notEqual(typeof value, "function");
       }
     }
-  }
 });
 
 // ─── Test 14: packet 不包含本机绝对路径 ───

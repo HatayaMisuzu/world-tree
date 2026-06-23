@@ -76,7 +76,6 @@ test("7. world-rpg moduleState has module keys", () => {
     assert.equal(mod.updatedAt, null);
     assert.deepEqual(mod.data, {});
     assert.deepEqual(mod.warnings, []);
-  }
 });
 
 // ─── Test 8: hidden mode visibleToUser = false ───
@@ -89,7 +88,6 @@ test("8. hidden mode envelope generates but visibleToUser = false", () => {
     const env = createModeStateEnvelope(modeId);
     assert.equal(env.mode, modeId);
     assert.equal(env.runtimeFlags.visibleToUser, false);
-  }
 });
 
 // ─── Test 9: reviewPolicy.allowAutoApply = false ───
@@ -98,7 +96,6 @@ test("9. reviewPolicy.allowAutoApply = false for all modes", () => {
   for (const modeId of ["quick-setting", "character", "world-rpg", "creation-forge"]) {
     const env = createModeStateEnvelope(modeId);
     assert.equal(env.reviewPolicy.allowAutoApply, false);
-  }
 });
 
 // ─── Test 10: reviewPolicy.requireUserConfirmation = true ───

@@ -15,8 +15,7 @@ test("1. character isModeVisible() = true", () => {
 
 test("2. hidden modes remain invisible", () => {
   // Only creation-forge remains deferred; all other modes are now active
-    assert.equal(isModeVisible("creation-forge"), false);
-  }
+  assert.equal(isModeVisible("creation-forge"), false);
 });
 
 // ─── Test 3: DATA_MODES unchanged ───
@@ -97,7 +96,6 @@ test("10. createProjectFromMode('creation-forge', persist=true) still rejected",
 test("11. hidden modes still reject persist", () => {
   const r = createProjectFromMode("creation-forge", { title: "test" }, { persist: true });
   assert.equal(r.ok, false);
-  }
 });
 
 // ─── Test 12: character allowed for creation ───

@@ -1,7 +1,7 @@
 # World Tree — AI 开发指南
 
 > 本文档供 AI agent / LLM 阅读，快速理解项目架构、文件路径和修改规则。
-> 最后更新: v0.3.0 (2026-06-23) — Mode Capsule Architecture P1: Shared Kernel + 7 consumer capsules + creation-forge producer | all namespaces unique
+> 最后更新: v0.3.0 (2026-06-23) — Character Capsule Full V1: parser/profile/prompt/lore/persona/module-integration/OOC/engine-adapter/exporter | 10 files
 
 ## 项目定位
 
