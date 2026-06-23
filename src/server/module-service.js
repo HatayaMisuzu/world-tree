@@ -2,6 +2,11 @@ import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { readJsonWithLegacy } from "./fs-utils.js";
+import {
+  QUICK_SETTING_MODE_ID,
+  createQuickSettingInitialState,
+  normalizeQuickSettingInput
+} from "../core/modes/quick-setting.js";
 
 export function normalizeModuleKey(value = "") {
   return String(value || "").replace(/^world:/, "").replace(/^char:/, "").trim();
@@ -86,6 +91,7 @@ export function createModuleService(deps) {
             dataMode: meta.dataMode || "worldbook",
             subType: meta.subType || "classic",
             preset: meta.preset || "epic",
+            mode: meta.mode || "",
             draft: !!meta.draft,
             sourceType: meta.sourceType || "",
             turnCount: rt.turnCount || 0,
@@ -127,10 +133,17 @@ export function createModuleService(deps) {
 
   async function createModule(body = {}) {
     const { name, displayName, dataMode, subType, preset } = body || {};
-    const quickProject = body?.quickProject === true || body?.sourceType === "pasted_text";
-    const sourceText = String(body?.sourceText || "");
-    const sourceType = quickProject ? (body?.sourceType || "pasted_text") : "";
+    const quickSetting = body?.mode === QUICK_SETTING_MODE_ID;
+    const quickInput = quickSetting
+      ? normalizeQuickSettingInput({ ...body, title: displayName || name })
+      : null;
+    const quickProject = quickSetting || body?.quickProject === true || body?.sourceType === "pasted_text";
+    const sourceText = quickSetting ? quickInput.sourceText : String(body?.sourceText || "");
+    const sourceType = quickProject ? (quickSetting ? quickInput.sourceType : (body?.sourceType || "pasted_text")) : "";
     const draft = quickProject ? body?.draft !== false : false;
+    const effectiveDataMode = quickSetting ? "preset" : (dataMode || "worldbook");
+    const effectiveSubType = quickSetting ? "classic" : (subType || "classic");
+    const effectivePreset = quickSetting ? "preset" : (preset || "epic");
     // 安全截断：使用 Array.from 确保多字节字符（emoji/生僻字）不被截断
     const rawName = String(name || displayName || (quickProject ? `快速项目_${Date.now()}` : "新世界"));
     const cleaned = rawName.replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "");
@@ -145,12 +158,20 @@ export function createModuleService(deps) {
     mkdirSync(join(worldDir, "runtime"), { recursive: true });
 
     const now = new Date().toISOString();
+    const quickSettingState = quickSetting
+      ? createQuickSettingInitialState({ sourceType, createdAt: now })
+      : null;
     const worldData = {
       name: worldName,
-      displayName: displayName || (quickProject ? "快速项目" : worldName),
-      dataMode: dataMode || "worldbook",
-      subType: subType || "classic",
-      preset: preset || "epic",
+      displayName: displayName || (quickSetting ? quickInput.title : quickProject ? "快速项目" : worldName),
+      dataMode: effectiveDataMode,
+      subType: effectiveSubType,
+      preset: effectivePreset,
+      ...(quickSettingState ? {
+        mode: quickSettingState.mode,
+        modeMetadata: quickSettingState.modeMetadata,
+        moduleGraph: quickSettingState.moduleGraph
+      } : {}),
       draft,
       sourceType,
       sourceTextChars: sourceText.length,
@@ -165,7 +186,19 @@ export function createModuleService(deps) {
       draft,
       sourceType,
       sourceTextChars: sourceText.length,
-      engineState: { dataMode: dataMode || "worldbook", directorMode: "hybrid", preset: preset || "epic", contextBudget: "balanced", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
+      ...(quickSettingState ? {
+        mode: quickSettingState.mode,
+        modeMetadata: quickSettingState.modeMetadata,
+        moduleGraph: quickSettingState.moduleGraph
+      } : {}),
+      engineState: {
+        dataMode: effectiveDataMode,
+        worldSubType: effectiveSubType,
+        directorMode: "hybrid",
+        preset: effectivePreset,
+        contextBudget: "balanced",
+        emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 }
+      },
       createdAt: now, updatedAt: now
     });
     if (sourceText) {
@@ -180,7 +213,7 @@ export function createModuleService(deps) {
     }
 
     clearModuleCache(worldName);
-    return { status: "ok", module: { id: worldName, name: worldName, displayName: worldData.displayName, type: "world", dataMode: worldData.dataMode, subType: worldData.subType, preset: worldData.preset, draft, sourceType, turnCount: 0 } };
+    return { status: "ok", module: { id: worldName, name: worldName, displayName: worldData.displayName, type: "world", mode: worldData.mode || "", dataMode: worldData.dataMode, subType: worldData.subType, preset: worldData.preset, draft, sourceType, turnCount: 0 } };
   }
 
   async function finalizeDraft(moduleId, patch = {}) {
@@ -198,7 +231,7 @@ export function createModuleService(deps) {
     await writeJson(worldPath, nextWorld);
     await writeJson(statePath, { ...state, draft: false, updatedAt: now });
     clearModuleCache(moduleId);
-    return { status: "ok", module: { id: nextWorld.name || normalizeModuleKey(moduleId), name: nextWorld.name || normalizeModuleKey(moduleId), displayName: nextWorld.displayName, type: "world", dataMode: nextWorld.dataMode, subType: nextWorld.subType, preset: nextWorld.preset, draft: false, turnCount: nextWorld.turnCount || 0 } };
+    return { status: "ok", module: { id: nextWorld.name || normalizeModuleKey(moduleId), name: nextWorld.name || normalizeModuleKey(moduleId), displayName: nextWorld.displayName, type: "world", mode: nextWorld.mode || "", dataMode: nextWorld.dataMode, subType: nextWorld.subType, preset: nextWorld.preset, draft: false, turnCount: nextWorld.turnCount || 0 } };
   }
 
   async function deleteModule(moduleId) {

@@ -2,6 +2,26 @@
 
 > 审查记录。AI 无需阅读此文件。
 
+## Unreleased
+
+### Added
+
+- Added quick-setting vertical slice metadata and module graph wiring. The existing pasted-text draft flow now records `mode=quick-setting`, a JSON-safe module graph summary, and preset-compatible engine state without activating hidden modes.
+
+### Review — 2026-06-23 — quick-setting vertical slice
+
+- 模板：Hermes 项目审查模板 v2.0
+- 模式：full；风险等级：L2；标签：`[CODE] [SCRIPT] [DOCS] [WEB] [LOCAL]`
+- Fast Gate：15/15 适用项 PASS；1 项 N/A（无镜像副本）；阻断 0；严重 0；建议 0。
+- 需求/架构：PASS。只激活 `quick-setting` 产品入口，复用 `preset` dataMode 与现有创建/对话/持久化/世界包链路；没有新增 DATA_MODE、mode router、隐藏模式入口或前端框架。
+- 持久化/兼容：PASS。`world.json` 与 `runtime/state.json` 写入 JSON-safe mode/module graph metadata；每轮 state 覆盖保留原 metadata；`.worldtree` 导出再导入保留 `world.json` 扩展字段。
+- 浏览器 QA：PASS。`http://127.0.0.1:43127`、默认 1280×720；页面身份、非空、无框架 overlay、console health、截图与粘贴创建交互均通过。创建后真实进入草稿对话界面，API/磁盘证据为 `mode=quick-setting`、`dataMode=preset`、`worldSubType=classic`、resolved 8、missing 0。
+- 验证：新增/修改 JS `node --check` PASS；定向单元 14/14；quick-project 集成 2/2；`npm run test:unit` 122 tests PASS；`npm run preflight` 主测试 105/105、单元 122、集成 35、接口审计 132/132 且 0 警告/0 错误；`npm pack --dry-run --json` 142 个条目且包含 quick-setting helper；`git diff --check` PASS。
+- 安全/漂移：PASS。新增范围占位符与密钥模式扫描为 0；`DATA_MODES` 仍仅 `worldbook/character_card/preset`；murder-mystery/tabletop/rpg/sim profiles 仍为 hidden。
+- 最终结论：PASS（high confidence），允许交付。
+- 遗留风险：浏览器环境未配置测试 API Key，因此没有发起真实外部 LLM 生成；已验证进入既有 preset 对话管线的请求状态与持久化接线，实际生成仍依赖用户的有效连接配置。
+- 回滚：撤销本轮 helper、metadata 接线、最小 UI 文案、测试与文档变更；没有数据迁移或 schema 破坏性修改。
+
 ## v0.3.0 — 本地优先工作台基线 (2026-06-19)
 
 ### Architecture — Mode × Module 调用骨架 (2026-06-23)

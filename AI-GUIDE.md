@@ -177,6 +177,19 @@ data/engine/worlds/{name}/
 
 ---
 
+## Quick-setting vertical slice
+
+Quick-setting vertical slice uses Mode/Module call layer as metadata and diagnostics only. It does not replace `DATA_MODES` and does not activate hidden modes.
+
+- `mode: "quick-setting"` 仍映射到 `dataMode: "preset"`、`worldSubType: "classic"`、`preset: "preset"`。
+- `src/core/modes/quick-setting.js` 调用 `loadModulesForMode("quick-setting")` 并生成 JSON-safe graph 摘要。
+- `world.json` 是 mode/module metadata 的稳定真相源；`runtime/state.json` 保存运行副本且跨回合保留。
+- 现有 `/api/modules/create` 是唯一创建 API；不要新增平行 quick-setting API 或八模式 router。
+
+详细边界见 `docs/WORLD_TREE_QUICK_SETTING_SLICE.md`。
+
+---
+
 ## 修改规则
 
 1. **语法检查**: `node --check <file>` 通过后再提交

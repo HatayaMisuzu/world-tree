@@ -16,14 +16,16 @@ function mode(id, name, description, status, extra) {
     basedOn: extra.basedOn,
     dataModeHint: extra.dataModeHint,
     worldSubTypeHint: extra.worldSubTypeHint,
-    defaultVisibility: false,
+    defaultVisibility: extra.defaultVisibility === true,
     notes: extra.notes || "架构声明；本阶段不创建 UI 入口。"
   });
 }
 
 export const MODE_MANIFEST = Object.freeze({
-  "quick-setting": mode("quick-setting", "预设 / 设定", "用少量设定快速启动叙事。", MODE_STATUS.PLANNED, {
-    playerRole: "设定提供者与行动者", aiRole: "轻量故事协作者", basedOn: ["preset"], dataModeHint: "preset", worldSubTypeHint: "classic"
+  "quick-setting": mode("quick-setting", "预设 / 设定", "用少量设定快速启动叙事。", MODE_STATUS.ACTIVE, {
+    playerRole: "设定提供者与行动者", aiRole: "轻量故事协作者", basedOn: ["preset"], dataModeHint: "preset", worldSubTypeHint: "classic",
+    defaultVisibility: true,
+    notes: "首个可用纵向切片；复用 preset dataMode，不代表其他 mode 已开放。"
   }),
   character: mode("character", "人物卡", "以人物持续互动为核心。", MODE_STATUS.PLANNED, {
     playerRole: "对话参与者", aiRole: "角色扮演者", basedOn: ["character_card"], dataModeHint: "character_card", worldSubTypeHint: "classic"

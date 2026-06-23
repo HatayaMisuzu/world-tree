@@ -200,6 +200,7 @@ const C = {
     return `<div class="tabs">${items.map(t => `<button class="${active === t.id ? "active" : ""}" ${attr}="${U.esc(t.id)}">${U.esc(t.label)}${t.count !== undefined ? ` ${C.badge(t.count, "pending")}` : ""}</button>`).join("")}</div>`;
   },
   dataModeLabel(m) {
+    if (typeof m === "object" && m?.mode === "quick-setting") return "预设/设定";
     const mode = typeof m === "string" ? m : m?.dataMode;
     return ({ worldbook: "世界书", character_card: "角色卡", preset: "预设", standalone: "独立" }[mode] || mode || "未知");
   },
@@ -500,10 +501,10 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>快速开始：粘贴设定，先玩起来</h2><p class="sub">适合轻度用户、AI 设定爱好者和文字冒险玩家。你可以直接粘贴角色、世界观、开场剧情或规则片段，World Tree 会创建一个可继续、可审核、可导出的草稿世界。</p></div></div>
+        <div class="panel-head"><div><h2>预设/设定：粘贴设定，快速开始 AI 互动</h2><p class="sub">适合轻度用户、AI 设定爱好者和文字冒险玩家。你可以直接粘贴角色、世界观、开场剧情或规则片段，World Tree 会创建一个可继续、可审核、可导出的草稿世界。</p></div></div>
         <div id="quickStartDrop" class="drop-zone"><strong>拖拽文件 / 文件夹到此处，或点击选择</strong><span>支持 .md .txt .json</span></div>
         <textarea id="quickStartText" placeholder="或在这里粘贴设定、片段、角色描述..."></textarea>
-        <div class="actions"><button class="primary" data-action="quick-start-chat">创建草稿世界并开始</button><span class="tiny muted">不需要先写完整世界书。后续可以把草稿整理成正式世界。</span></div>
+        <div class="actions"><button class="primary" data-action="quick-start-chat">创建预设/设定草稿并开始</button><span class="tiny muted">不需要先写完整世界书。后续可以把草稿整理成正式世界。</span></div>
       </section>
 
       <section class="cols-2">
@@ -1329,9 +1330,10 @@ async function quickStartChat() {
   const res = await API.createModule({
     name: `快速项目_${Date.now()}`,
     displayName: title,
-    dataMode: "worldbook",
-    subType: "quick",
-    preset: "minimal",
+    mode: "quick-setting",
+    dataMode: "preset",
+    subType: "classic",
+    preset: "preset",
     quickProject: true,
     draft: true,
     sourceType: "pasted_text",

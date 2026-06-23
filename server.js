@@ -630,7 +630,16 @@ async function persistTurn(moduleId, input, result, engineState) {
   }
 
   // state.json — 完整覆盖
-  await writeJson(join(rtDir, "state.json"), { turnCount, activeBranch: "main", lastScene: result.parsedSections?.["状态"]?.scene || "", lastInput: input, engineState: engineState || {}, engineSnapshot, updatedAt: now });
+  await writeJson(join(rtDir, "state.json"), {
+    ...previousRuntimeState,
+    turnCount,
+    activeBranch: previousRuntimeState.activeBranch || "main",
+    lastScene: result.parsedSections?.["状态"]?.scene || "",
+    lastInput: input,
+    engineState: engineState || {},
+    engineSnapshot,
+    updatedAt: now
+  });
 
   // chat.jsonl — 追加用户+助手消息（截断阈值放宽：上下文窗口充足无需过度紧缩）
   await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, turnId, role: "user", content: input.slice(0, 8000), round: turnCount, ts: now, favorite: false });

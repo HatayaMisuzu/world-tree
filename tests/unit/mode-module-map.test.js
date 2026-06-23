@@ -5,11 +5,11 @@ import { loadModulesForMode } from "../../src/core/modules/module-loader.js";
 import { MODE_MANIFEST, getMode, isModeVisible } from "../../src/core/modes/mode-manifest.js";
 import { getModulesForMode, validateModeModuleMap } from "../../src/core/modes/mode-module-map.js";
 
-test("all eight future modes are declared without becoming visible", () => {
+test("all eight modes are declared and only quick-setting is visible", () => {
   assert.equal(Object.keys(MODE_MANIFEST).length, 8);
   for (const modeId of Object.keys(MODE_MANIFEST)) {
     assert.ok(getMode(modeId));
-    assert.equal(isModeVisible(modeId), false);
+    assert.equal(isModeVisible(modeId), modeId === "quick-setting");
   }
 });
 
