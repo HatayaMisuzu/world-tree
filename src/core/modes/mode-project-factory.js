@@ -220,12 +220,23 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
   }
   if (mode === "tabletop") {
     files["shared/tabletop.json"] = { schemaVersion: 1, mode: "tabletop", status: "minimal", gmMode: true, ruleset: "freeform", currentSceneId: "opening", diceSystem: { enabled: false, reason: "Dice system deferred beyond P1." }, party: [], createdAt: now, updatedAt: now };
+    files["runtime/tabletop-proposals.jsonl"] = "";
+    files["runtime/cache/tabletop/.gitkeep"] = "";
   }
   if (mode === "strategy-sim") {
     files["shared/strategy.json"] = { schemaVersion: 1, mode: "strategy-sim", status: "minimal", simulationStyle: "narrative", turn: 0, factions: [], resources: {}, numericModel: { enabled: false, reason: "Numeric simulation deferred beyond P1." }, createdAt: now, updatedAt: now };
+    files["runtime/strategy-sim-proposals.jsonl"] = "";
+    files["runtime/cache/strategy-sim/.gitkeep"] = "";
   }
   if (mode === "murder-mystery") {
     files["shared/murder_mystery.json"] = { schemaVersion: 1, mode: "murder-mystery", status: "minimal", hostRole: "murder_mystery_host", caseId: "opening", suspects: [], clues: [], truthLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now };
+    files["runtime/murder-mystery-proposals.jsonl"] = "";
+    files["runtime/cache/murder-mystery/.gitkeep"] = "";
+  }
+  if (mode === "mystery-puzzle") {
+    files["shared/mystery.json"] = { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now };
+    files["runtime/mystery-puzzle-proposals.jsonl"] = "";
+    files["runtime/cache/mystery-puzzle/.gitkeep"] = "";
   }
 
   return files;

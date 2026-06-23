@@ -286,12 +286,23 @@ export function createModuleService(deps) {
     }
     if (body?.mode === "tabletop") {
       await writeJson(join(worldDir, "shared", "tabletop.json"), { schemaVersion: 1, mode: "tabletop", status: "minimal", gmMode: true, ruleset: "freeform", currentSceneId: "opening", diceSystem: { enabled: false, reason: "Dice system deferred beyond P1." }, party: [], createdAt: now, updatedAt: now });
+      await writeFile(join(worldDir, "runtime", "tabletop-proposals.jsonl"), "", "utf-8");
+      const ttd = join(worldDir, "runtime", "cache", "tabletop"); if (!existsSync(ttd)) mkdirSync(ttd, { recursive: true });
     }
     if (body?.mode === "strategy-sim") {
       await writeJson(join(worldDir, "shared", "strategy.json"), { schemaVersion: 1, mode: "strategy-sim", status: "minimal", simulationStyle: "narrative", turn: 0, factions: [], resources: {}, numericModel: { enabled: false, reason: "Numeric simulation deferred beyond P1." }, createdAt: now, updatedAt: now });
+      await writeFile(join(worldDir, "runtime", "strategy-sim-proposals.jsonl"), "", "utf-8");
+      const ssd = join(worldDir, "runtime", "cache", "strategy-sim"); if (!existsSync(ssd)) mkdirSync(ssd, { recursive: true });
     }
     if (body?.mode === "murder-mystery") {
       await writeJson(join(worldDir, "shared", "murder_mystery.json"), { schemaVersion: 1, mode: "murder-mystery", status: "minimal", hostRole: "murder_mystery_host", caseId: "opening", suspects: [], clues: [], truthLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now });
+      await writeFile(join(worldDir, "runtime", "murder-mystery-proposals.jsonl"), "", "utf-8");
+      const mmd = join(worldDir, "runtime", "cache", "murder-mystery"); if (!existsSync(mmd)) mkdirSync(mmd, { recursive: true });
+    }
+    if (body?.mode === "mystery-puzzle") {
+      await writeJson(join(worldDir, "shared", "mystery.json"), { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now });
+      await writeFile(join(worldDir, "runtime", "mystery-puzzle-proposals.jsonl"), "", "utf-8");
+      const mpd = join(worldDir, "runtime", "cache", "mystery-puzzle"); if (!existsSync(mpd)) mkdirSync(mpd, { recursive: true });
     }
 
     clearModuleCache(worldName);

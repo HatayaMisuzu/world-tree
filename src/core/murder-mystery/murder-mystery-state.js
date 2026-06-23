@@ -1,0 +1,4 @@
+export function createDefaultState() { return { schemaVersion: 1, modeMeaning: "solo_murder_mystery", phase: "opening", truthLock: { access: "system_only", culpritId: "", hiddenFacts: [] }, suspects: [], clues: [], solved: false }; }
+export function createTruthLock(culpritId, method, motive) { return { culpritId, method, motive, access: "system_only" }; }
+export function createSuspect(id, name, knownInfo) { return { id, name, knownInfo, testimonies: [] }; }
+export function checkAccusation(accusation, truthLock) { return { match: accusation.culpritId === truthLock.culpritId, score: accusation.culpritId === truthLock.culpritId ? 100 : 0 }; }

@@ -1,0 +1,3 @@
+export function createDefaultState() { return { schemaVersion: 1, modeMeaning: "solo_mystery_puzzle", clues: [], hypotheses: [], answerLocks: [], solved: false }; }
+export function createAnswerLock(answer) { return { id: `lock_${Date.now()}`, answer, locked: true }; }
+export function checkAnswer(lock, attempt) { const ok = attempt.trim().toLowerCase() === lock.answer.toLowerCase(); return { ok, message: ok ? "correct" : "incorrect" }; }
