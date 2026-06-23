@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added Module Runtime Orchestrator P1 (`src/core/modules/module-runtime-orchestrator.js`) to aggregate wrapper `buildContext`, `buildPromptBlock`, and `getDebugInfo` outputs into JSON-safe `moduleRuntimePacket` for any mode. Added `tests/unit/module-runtime-orchestrator.test.js` (16 tests). See `docs/WORLD_TREE_MODULE_RUNTIME_ORCHESTRATOR_P1.md`.
+
 - Added quick-setting vertical slice metadata and module graph wiring. The existing pasted-text draft flow now records `mode=quick-setting`, a JSON-safe module graph summary, and preset-compatible engine state without activating hidden modes.
 - Added P1 legacy module wrappers for hot-path World Tree modules.
 - Module graph now reports wrapper availability and real hook-backed callable state for standardized legacy modules.
