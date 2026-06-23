@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added Mode Capsule Architecture P1 (`src/core/modes/mode-capsule-registry.js`) with Shared Kernel + Isolated Mode Capsules design. 7 consumer capsules + creation-forge as deferred producer. Each capsule declares save schema namespace, cache namespace, runtime state namespace, prompt profile id, engine adapter id, and artifact contract linkage. All cache/prompt/engine namespaces are unique per mode. Added `tests/unit/mode-capsule-registry.test.js` (21 tests).
+
 - Added Mode Artifact Contract P1 (`src/core/modes/mode-artifact-contract.js`) with code-level consumer contracts for all 7 active modes. Includes registry, validators, normalizers, summaries, and project-input bridge (`createModeArtifactProjectInput`) for future creation-forge artifact generation. Added `tests/unit/mode-artifact-contract.test.js` (21 tests). See `docs/WORLD_TREE_MODE_ARTIFACT_CONTRACT_P1.md`.
 
 - Added Multi-Mode Entry Closure P1 documentation with mode artifact consumption contracts for all 5 non-creation modes. Clarified creation-forge as cross-mode artifact forge. Added `tests/integration/multi-mode-first-turn.test.js` (5 tests) covering first-turn mock chat persistence for each mode. See `docs/WORLD_TREE_MULTI_MODE_ENTRY_CLOSURE_P1.md`.
