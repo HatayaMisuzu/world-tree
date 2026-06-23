@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added Mode Artifact Contract P1 (`src/core/modes/mode-artifact-contract.js`) with code-level consumer contracts for all 7 active modes. Includes registry, validators, normalizers, summaries, and project-input bridge (`createModeArtifactProjectInput`) for future creation-forge artifact generation. Added `tests/unit/mode-artifact-contract.test.js` (21 tests). See `docs/WORLD_TREE_MODE_ARTIFACT_CONTRACT_P1.md`.
+
 - Added Multi-Mode Entry Closure P1 documentation with mode artifact consumption contracts for all 5 non-creation modes. Clarified creation-forge as cross-mode artifact forge. Added `tests/integration/multi-mode-first-turn.test.js` (5 tests) covering first-turn mock chat persistence for each mode. See `docs/WORLD_TREE_MULTI_MODE_ENTRY_CLOSURE_P1.md`.
 
 - Added Multi-Mode Entry Closure P1: activated world-rpg, mystery-puzzle, tabletop, strategy-sim, and murder-mystery as minimal closures with unified project creation through Mode Project Factory, mode-specific shared state files, frontend entry panels, and .worldtree roundtrip support. Creation-forge kept deferred. Added `tests/unit/multi-mode-entry.test.js` (41 tests) and `tests/integration/multi-mode-projects.test.js` (5 tests).

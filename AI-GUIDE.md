@@ -1,7 +1,7 @@
 # World Tree — AI 开发指南
 
 > 本文档供 AI agent / LLM 阅读，快速理解项目架构、文件路径和修改规则。
-> 最后更新: v0.3.0 (2026-06-23) — Multi-Mode Closure: 7 modes active | creation-forge deferred (Mode Artifact Forge) | Docs + Chat Persistence Hardened
+> 最后更新: v0.3.0 (2026-06-23) — Mode Artifact Contract P1: 7 consumer contracts + validator/normalizer/bridge | creation-forge deferred
 
 ## 项目定位
 
