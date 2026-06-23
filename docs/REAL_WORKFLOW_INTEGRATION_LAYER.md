@@ -91,5 +91,5 @@ npm run preflight → 全绿 (21 stages)
 | W0 | ✅ | Workflow Spine (8 core files) |
 | W1 | ✅ | Creation + Alchemy (真实 M1-M3) |
 | W2 | ✅ | Play Turn + Post-check (prompt bridge) |
-| W3 | ✅ | Character / Mystery / Strategy (stubs) |
-| W4 | ✅ | Direction / Observability (stubs) |
+| W3 | ✅ | Character / Mystery / Strategy (deepened with M4-M8) |
+| W4 | ✅ | Direction / Observability (deepened with real services) |

@@ -1,37 +1,55 @@
 # World Tree 文档索引
 
-## 当前真相源（请优先阅读）
-- [README.md](../README.md) — 项目主入口
-- [AI-GUIDE.md](../AI-GUIDE.md) — AI Agent 工作手册
-- [CHANGELOG.md](../CHANGELOG.md) — 变更记录
-- [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) — 项目全景
-- [FEATURES.md](FEATURES.md) — 功能清单
-- [ARCHITECTURE_V1.md](ARCHITECTURE_V1.md) — V1 架构
-- [API_REFERENCE.md](API_REFERENCE.md) — API 文档
-- [SAVE_SYSTEM_AND_WORLD_PACK.md](SAVE_SYSTEM_AND_WORLD_PACK.md) — 存档与导入导出
-- [PROPOSAL_AND_REVIEW_SYSTEM.md](PROPOSAL_AND_REVIEW_SYSTEM.md) — 提案与审核
-- [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) — 路由与模式胶囊
-- [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) — 提示词与数据包
-- [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) — 脚本与检查
-- [AI_AGENT_OPERATING_GUIDE.md](AI_AGENT_OPERATING_GUIDE.md) — Agent 详细操作规范
-- [DOCUMENTATION_STATUS.md](DOCUMENTATION_STATUS.md) — 文档状态
-- [Living World Kernel P0](LIVING_WORLD_KERNEL_P0.md) — 活世界底盘、有限 Ripple 与运行时上下文包
-- [Experience Stability Kernel P1](EXPERIENCE_STABILITY_KERNEL_P1.md) — 上下文预算、导演计划、影响闸门与候选成长
-- [Long Play Kernel P2](P2_LONG_PLAY_KERNEL.md) — Profile Overlay、分支隔离、只读遥测与素材候选流
-- [Prompt Orchestration Layer](PROMPT_ORCHESTRATION_LAYER.md) — 提示词编排与边界治理层
-- [Asset / Function / Mechanism Inventory](WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md) — 资产/功能/机制防遗失清单 (preservation ledger)
-- [Asset Status Matrix](ASSET_STATUS_MATRIX.md) — 资产成熟化状态矩阵
-- [Asset Maturation Report](ASSET_MATURATION_REPORT.md) — 成熟化阶段总报告
+> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · 下一步：真实游玩产品化
 
-## 模式文档
-- [Character Capsule V1](WORLD_TREE_CHARACTER_CAPSULE_FULL_V1.md)
-- [Worldbook Foundation V1](WORLD_TREE_WORLDBOOK_FOUNDATION_V1.md) (TODO)
-- [Grand World Mode V1](WORLD_TREE_GRAND_WORLD_MODE_V1.md) (TODO)
-- Tabletop / Mystery-Puzzle / Strategy-Sim / Murder-Mystery V1 (TODO)
-- [Creation Forge V1](CREATION_FORGE_V1.md) (TODO)
+---
+
+## 给用户（体验和游玩）
+
+| 文档 | 用途 |
+|------|------|
+| [README.md](../README.md) | 项目入门：是什么、怎么装、怎么玩 |
+| [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | 项目全景 |
+| [FEATURES.md](FEATURES.md) | 功能清单 |
+| [API_REFERENCE.md](API_REFERENCE.md) | API 文档 |
+| [SAVE_SYSTEM_AND_WORLD_PACK.md](SAVE_SYSTEM_AND_WORLD_PACK.md) | 存档与导入导出 |
+
+## 给维护者（架构和工作流）
+
+| 文档 | 用途 |
+|------|------|
+| [ARCHITECTURE_V1.md](ARCHITECTURE_V1.md) | V1 架构 |
+| [PROPOSAL_AND_REVIEW_SYSTEM.md](PROPOSAL_AND_REVIEW_SYSTEM.md) | 提案与审核系统 |
+| [PROMPT_ORCHESTRATION_LAYER.md](PROMPT_ORCHESTRATION_LAYER.md) | 提示词编排与边界治理层 |
+| [REAL_WORKFLOW_INTEGRATION_LAYER.md](REAL_WORKFLOW_INTEGRATION_LAYER.md) | 工作流接入层架构 |
+| [Living World Kernel P0](LIVING_WORLD_KERNEL_P0.md) | P0 活世界 Kernel |
+| [Experience Stability Kernel P1](EXPERIENCE_STABILITY_KERNEL_P1.md) | P1 体验稳定 Kernel |
+| [Long Play Kernel P2](P2_LONG_PLAY_KERNEL.md) | P2 长期游玩 Kernel |
+| [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) | 脚本与检查 |
+| [DOCUMENTATION_STATUS.md](DOCUMENTATION_STATUS.md) | 文档状态 |
+
+## 给 AI Agent（操作规则和保护清单）
+
+| 文档 | 用途 |
+|------|------|
+| [AI-GUIDE.md](../AI-GUIDE.md) | AI Agent 工作手册 |
+| [AI_AGENT_OPERATING_GUIDE.md](AI_AGENT_OPERATING_GUIDE.md) | Agent 详细操作规范 |
+| [Asset / Function / Mechanism Inventory](WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md) | 资产防遗失清单 (preservation ledger) |
+| [Asset Status Matrix](ASSET_STATUS_MATRIX.md) | 资产成熟化状态矩阵 |
+| [CANON_RUNTIME_CANDIDATE_POLICY.md](CANON_RUNTIME_CANDIDATE_POLICY.md) | Canon/Runtime/Candidate 分层规则 |
+| [LEGACY_COMPATIBILITY_POLICY.md](LEGACY_COMPATIBILITY_POLICY.md) | 旧模块兼容策略 |
+
+## 验证报告（历史快照）
+
+| 文档 | 状态 |
+|------|------|
+| [Asset Maturation Report](ASSET_MATURATION_REPORT.md) | ✅ 当前 |
+| [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
+| [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |
+| [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) | 提示词与数据包 |
 
 ## 历史与归档
+
 - [archive/](archive/) — 历史设计/执行记录，不代表当前能力
 - [LEGACY_REDUNDANCY_AUDIT.md](LEGACY_REDUNDANCY_AUDIT.md) — Legacy 资产审计
 - [LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md](LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md) — 兼容与升级计划
-- 当前能力以 README.md、ARCHITECTURE_V1.md、DOCUMENTATION_STATUS.md 为准

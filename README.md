@@ -350,11 +350,11 @@ npm run legacy:check
 
 README 只介绍如何理解和开始体验项目。维护策略、兼容层、历史文档和测试细节请看 `docs/` 目录。
 
-## P0-P2 世界内核工作流
+## 给维护者和 AI Agent
 
-世界项目的真实对话回合现在会构建一个预算化、已过滤隐藏字段的 Kernel Turn Context：P0 提供当前场景、追踪和世界书补充上下文，P1 提供稳定性与节奏安全提示，P2 提供当前分支和模糊遥测。它作为 writer sidecar 使用，不代替正文生成，也不直接修改 shared canon。
+本项目有完整的架构、工作流、资产、测试和保护规则文档，位于 `docs/` 目录。维护和开发请从 `docs/INDEX.md` 开始，AI Agent 操作规则见 `docs/AI_AGENT_OPERATING_GUIDE.md`。
 
-在对话页展开“世界内核”可查看 P0/P1/P2 状态、当前分支和遥测，并可创建/切换分支、单次 Auto-light 预演、审核提案/生成逆操作、导入素材候选。分支合并、无限自动推进和“直接写入世界书”不提供。
+当前能力状态：P0-P2 Kernel、Prompt Orchestration、P3 机制扩展、资产成熟化、工作流接入层均已完成。下一步是真实游玩产品化。
 
 ---
 

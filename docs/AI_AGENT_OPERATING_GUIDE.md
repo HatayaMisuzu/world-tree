@@ -47,4 +47,23 @@
 
 ## P0-P2 Kernel 操作约束
 
-Agent 应通过 `createKernelTurnContext()` 获取当前活动分支与 prompt-safe P0/P1/P2 sidecar，不自行拼接 branch 路径。遥测只能写自身 runtime 日志；Auto-light 每请求最多一个 beat；processing 只能投递 Growth Tree 或 proposal queue。任何 shared canon 修改必须创建并批准 proposal，critical 还需二次确认；reverse 也必须保持为待审提案。对外报告应明确区分“真实 turn 已接入”“UI/API 可操作”和仍为内部 sidecar 的能力。
+Agent 应通过 `createKernelTurnContext()` 获取当前活动分支与 prompt-safe P0/P1/P2 sidecar，不自行拼接 branch 路径。遥测只能写自身 runtime 日志；Auto-light 每请求最多一个 beat；processing 只能投递 Growth Tree 或 proposal queue。任何 shared canon 修改必须创建并批准 proposal，critical 还需二次确认；reverse 也必须保持为待审提案。对外报告应明确区分"真实 turn 已接入""UI/API 可操作"和仍为内部 sidecar 的能力。
+
+## 当前项目状态
+
+- P0/P1/P2 Kernel: COMPLETE
+- Prompt Orchestration Layer v1: COMPLETE
+- P3 M1-M11 Legacy Mechanism Kernel: COMPLETE
+- Asset Maturation Stage 0-4: COMPLETE
+- Real Workflow Integration W0-W4: COMPLETE
+- Service Deepening + HTTP Wiring: COMPLETE
+- 下一步：真实游玩产品化
+
+## 硬性规则
+
+- 不得把 README 当作 AI 维护指南——维护信息在 docs/INDEX.md 和本文件。
+- 不得暴露 prototype-hidden 或 declared-only 模块为用户可见功能。
+- 普通 workflow 不得直接写 shared canon。写入必须走 proposal approved / initialization write / manual canon edit。
+- 不得删除 asset inventory 或 status matrix 条目而不替换或注明迁移。
+- 不得在未运行 preflight 的情况下报告完成，除非明确说明为何未运行。
+- 不得混淆历史验证报告与当前真相源——以 docs/INDEX.md 为准。

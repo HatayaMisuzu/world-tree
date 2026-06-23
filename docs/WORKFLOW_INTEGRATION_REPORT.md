@@ -2,6 +2,7 @@
 
 > Commit: `79fa10f` → `origin/main`
 > Result: **PASS**
+> **Superseded by**: Service Deepening (`6bfb302`), HTTP Wiring (`7aea1dc`), LLM/Console Wiring (`397e35c`). Character/mystery/strategy services are no longer stubs. Server workflow endpoints exist. Console workflow panel exists. See `docs/WORKFLOW_SERVICE_DEEPENING_REPORT.md` for current state.
 
 ## Stages
 
