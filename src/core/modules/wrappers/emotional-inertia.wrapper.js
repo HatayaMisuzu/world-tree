@@ -1,0 +1,3 @@
+import { createDebugInfo, createWrapperResult } from "../wrapper-utils.js";
+const ID = "character.emotional_inertia";
+export default Object.freeze({ id: ID, legacyId: null, name: "Emotional Inertia", status: "implemented", buildContext(ctx = {}) { return createWrapperResult(ID, null, { summaries: (ctx.emotionalInertia?.summaries || []).slice(0, 6), runtimeFirst: true }); }, buildPromptBlock(ctx = {}) { return `【情感惯性】角色=${this.buildContext(ctx).data.summaries.length}；禁止跨级跳变`; }, getDebugInfo(ctx = {}) { return createDebugInfo(this, "src/core/character/emotional-inertia.js", this.buildContext(ctx), "runtime-first"); } });

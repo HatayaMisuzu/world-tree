@@ -1,0 +1,4 @@
+import { createContextPacket } from "../../context/context-engine.js";
+import { createDebugInfo, createWrapperResult } from "../wrapper-utils.js";
+const ID = "context.engine";
+export default Object.freeze({ id: ID, legacyId: null, name: "Bounded Context Engine", status: "implemented", buildContext(ctx = {}) { return createWrapperResult(ID, null, createContextPacket({ modeId: ctx.modeId || ctx.options?.mode, livingWorldPacket: ctx.livingWorldPacket, characterInertia: ctx.characterInertia, policy: ctx.contextPolicy })); }, buildPromptBlock(ctx = {}) { const packet = this.buildContext(ctx).data; return `【上下文策略】profile=${packet.contextProfile}; blocks=${Object.values(packet.blocks).flat().length}`; }, getDebugInfo(ctx = {}) { return createDebugInfo(this, "src/core/context/context-engine.js", this.buildContext(ctx), "bounded; read-only"); } });

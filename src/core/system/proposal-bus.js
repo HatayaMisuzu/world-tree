@@ -3,6 +3,7 @@ import { readFile, appendFile } from "node:fs/promises";
 import { join } from "node:path";
 import { readJsonSync, writeJson, appendJsonl } from "../../server/fs-utils.js";
 import { pathWithinRoot } from "../../server/path-security.js";
+import { openStopLossWindow } from "../content/stop-loss-window.js";
 
 /**
  * 安全的 proposal patch：仅支持 replace shallow fields / merge object fields / append array items。
@@ -51,7 +52,18 @@ export function createProposal(input = {}, options = {}) {
     projectId: input.projectId || "",
     reason: input.reason || "",
     createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    impactLevel: input.impactLevel || null,
+    reversible: input.reversible === true || input.oldValue !== undefined || Boolean(input.rollbackPatch),
+    requiresSecondConfirm: Boolean(input.requiresSecondConfirm),
+    oldValue: input.oldValue ?? null,
+    newValue: input.newValue ?? null,
+    affectedFiles: Array.isArray(input.affectedFiles) ? input.affectedFiles : [],
+    affectedEntities: Array.isArray(input.affectedEntities) ? input.affectedEntities : [],
+    affectedModes: Array.isArray(input.affectedModes) ? input.affectedModes : [],
+    changeCategory: input.changeCategory || "description",
+    rollbackPatch: input.rollbackPatch || null,
+    stopLossWindow: input.stopLossWindow || { enabled: false, status: "none", expiresAtTurn: null }
   };
 }
 
@@ -124,6 +136,9 @@ export async function approveProposal(project = {}, proposalId, services = {}, o
   if (proposal.status !== "pending") {
     return { ok: false, proposalId, status: proposal.status, message: `Proposal is not pending: ${proposal.status}` };
   }
+  if ((proposal.impactLevel === "critical" || proposal.requiresSecondConfirm) && options.secondConfirm !== true) {
+    return { ok: false, proposalId, status: "second_confirmation_required", message: "Critical proposal requires second confirmation" };
+  }
 
   // 如果有 targetFile，应用 safe patch
   // 安全规则：targetFile 必须位于 shared/ 目录下
@@ -181,7 +196,11 @@ export async function approveProposal(project = {}, proposalId, services = {}, o
     }
   }
 
-  return { ok: true, proposalId, status: "approved", patchApplied, message: "proposal approved and patch applied" };
+  let stopLossWindow = null;
+  if (["major", "critical"].includes(proposal.impactLevel)) {
+    stopLossWindow = await openStopLossWindow(projectRoot, proposal, Number(options.currentTurn || 0));
+  }
+  return { ok: true, proposalId, status: "approved", patchApplied, stopLossWindow, message: "proposal approved and patch applied" };
 }
 
 /**

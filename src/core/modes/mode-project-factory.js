@@ -198,7 +198,11 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     "runtime/worldbook-activation.json": { base: [], context: [], instant: [] },
     "runtime/tracking/change-log.jsonl": "",
     "runtime/tracking/foreshadowing.json": { version: 1, updatedAt: now, items: [] },
-    "runtime/tracking/conflicts.json": { version: 1, updatedAt: now, items: [] }
+    "runtime/tracking/conflicts.json": { version: 1, updatedAt: now, items: [] },
+    "runtime/stop-loss-windows.json": { version: 1, updatedAt: now, windows: [] },
+    "runtime/character-inertia.json": { version: 1, characters: {} },
+    "runtime/worldbook-growth-tree.json": { version: 1, candidates: {} },
+    "runtime/worldbook-candidates.jsonl": ""
   };
 
   // character mode: primary character record

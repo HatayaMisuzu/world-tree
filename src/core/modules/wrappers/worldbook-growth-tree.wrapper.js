@@ -1,0 +1,3 @@
+import { createDebugInfo, createWrapperResult } from "../wrapper-utils.js";
+const ID = "lore.worldbook_growth_tree";
+export default Object.freeze({ id: ID, legacyId: null, name: "Worldbook Growth Tree", status: "implemented", buildContext(ctx = {}) { const candidates = Object.values(ctx.worldbookGrowthSnapshot?.candidates || {}).slice(0, 8); return createWrapperResult(ID, null, { candidates, canonicalWrites: 0 }); }, buildPromptBlock(ctx = {}) { const data = this.buildContext(ctx).data; return `【世界书候选】${data.candidates.length}；branch 必须经 proposal`; }, getDebugInfo(ctx = {}) { return createDebugInfo(this, "src/core/worldbook/worldbook-growth-tree.js", this.buildContext(ctx), "candidate-only"); } });

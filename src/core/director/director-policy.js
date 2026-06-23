@@ -1,0 +1,1 @@
+export function directorPolicyForMode(modeId) { const mystery = ["mystery-puzzle", "murder-mystery"].includes(modeId); return { conservativeReveal: mystery, maxNewEvents: 1, forbiddenMoves: mystery ? ["do_not_solve_mystery", "do_not_reveal_hidden_truth", "do_not_make_player_choice"] : ["do_not_make_player_choice", "do_not_kill_major_character"] }; }

@@ -32,7 +32,7 @@ test("loader returns graphs for planned and hidden modes", () => {
   assert.deepEqual(worldRpg.graph.missing, []);
 
   const hidden = loadModulesForMode("murder-mystery");
-  assert.equal(hidden.graph.requested.length, 13);
+  assert.equal(hidden.graph.requested.length, 18);
   assert.deepEqual(hidden.graph.missing, []);
 });
 

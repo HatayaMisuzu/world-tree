@@ -1,0 +1,2 @@
+export const CONTEXT_BUDGETS = Object.freeze({ maxBlocks: 12, maxSceneSummaries: 3, maxTrackingItems: 8, maxWorldbookEntries: 8, maxProximityEntities: 10, maxInertiaItems: 6 });
+export function contextProfileForMode(modeId) { if (["mystery-puzzle", "murder-mystery"].includes(modeId)) return "mystery_safe"; if (modeId === "strategy-sim") return "strategy"; if (modeId === "character") return "character"; if (["world-rpg", "tabletop"].includes(modeId)) return "full"; return "compact"; }

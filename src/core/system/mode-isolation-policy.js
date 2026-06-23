@@ -1,5 +1,5 @@
 const HIDDEN_FIELDS = new Set([
-  "truthLock", "answerLock", "hiddenFacts",
+  "truthLock", "answerLock", "hiddenTruth", "hiddenFacts",
   "systemOnly", "gmOnly", "culpritId",
   "solution", "secret", "privatePlan",
   "aiFactionPrivatePlan", "_systemOnly",

@@ -14,6 +14,11 @@ import entityRelationshipNetwork from "./entity-relationship-network.wrapper.js"
 import proximityScope from "./proximity-scope.wrapper.js";
 import trackingWorldEvents from "./tracking.wrapper.js";
 import sceneSummaryChain from "./scene-summary-chain.wrapper.js";
+import contextEngine from "./context-engine.wrapper.js";
+import directorLayer from "./director-layer.wrapper.js";
+import contentImpactGate from "./content-impact-gate.wrapper.js";
+import worldbookGrowthTree from "./worldbook-growth-tree.wrapper.js";
+import emotionalInertia from "./emotional-inertia.wrapper.js";
 
 const wrappers = [
   coreWorldContainer,
@@ -31,7 +36,12 @@ const wrappers = [
   entityRelationshipNetwork,
   proximityScope,
   trackingWorldEvents,
-  sceneSummaryChain
+  sceneSummaryChain,
+  contextEngine,
+  directorLayer,
+  contentImpactGate,
+  worldbookGrowthTree,
+  emotionalInertia
 ];
 
 export const MODULE_WRAPPERS = Object.freeze(Object.fromEntries(
