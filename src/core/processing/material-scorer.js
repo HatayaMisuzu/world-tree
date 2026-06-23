@@ -1,0 +1,2 @@
+const LEVELS = new Set(["low", "medium", "high", "unknown"]);
+export function scoreMaterialCandidate(candidate = {}, context = {}) { const score = { relevance: context.relevant === false ? "low" : "high", consistency: candidate.conflicts?.length ? "low" : "high", novelty: context.duplicate ? "low" : "medium", risk: LEVELS.has(candidate.riskLevel) ? candidate.riskLevel : candidate.riskLevel === "critical" ? "high" : "unknown", readiness: candidate.title && candidate.summary ? "high" : "low" }; return score; }

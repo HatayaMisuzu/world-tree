@@ -19,6 +19,11 @@ import directorLayer from "./director-layer.wrapper.js";
 import contentImpactGate from "./content-impact-gate.wrapper.js";
 import worldbookGrowthTree from "./worldbook-growth-tree.wrapper.js";
 import emotionalInertia from "./emotional-inertia.wrapper.js";
+import worldProfileOverlay from "./world-profile-overlay.wrapper.js";
+import timelineBranchTree from "./timeline-branch-tree.wrapper.js";
+import worldTelemetry from "./world-telemetry.wrapper.js";
+import autoAdvance from "./auto-advance.wrapper.js";
+import processingCompletionEngine from "./processing-completion-engine.wrapper.js";
 
 const wrappers = [
   coreWorldContainer,
@@ -41,7 +46,12 @@ const wrappers = [
   directorLayer,
   contentImpactGate,
   worldbookGrowthTree,
-  emotionalInertia
+  emotionalInertia,
+  worldProfileOverlay,
+  timelineBranchTree,
+  worldTelemetry,
+  autoAdvance,
+  processingCompletionEngine
 ];
 
 export const MODULE_WRAPPERS = Object.freeze(Object.fromEntries(

@@ -1,0 +1,3 @@
+import { canAutoLight } from "../../advance/advance-policy.js";
+import { createDebugInfo, createWrapperResult } from "../wrapper-utils.js";
+const ID="system.auto_advance"; export default Object.freeze({ id:ID,legacyId:null,name:"Auto-light Advance",status:"implemented",buildContext(ctx={}){return createWrapperResult(ID,null,canAutoLight(ctx.autoAdvanceContext||{}));},buildPromptBlock(ctx={}){const d=this.buildContext(ctx).data;return `【轻推进】allowed=${d.allowed}; maxBeat=1`;},getDebugInfo(ctx={}){return createDebugInfo(this,"src/core/advance/auto-advance.js",this.buildContext(ctx),"one-beat; no approval");} });

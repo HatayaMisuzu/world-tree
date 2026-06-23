@@ -32,12 +32,17 @@ const P1_MODULES = Object.freeze({
   "context.engine": null,
   "character.emotional_inertia": null,
   "narrative.director_layer": null,
-  "lore.worldbook_growth_tree": null
+  "lore.worldbook_growth_tree": null,
+  "world.profile_overlay": null,
+  "timeline.branch_tree": null,
+  "world.telemetry": null,
+  "system.auto_advance": null,
+  "processing.completion_engine": null
 });
 
 test("wrapper registry exposes standardized legacy and P0 modules", () => {
   const wrappers = listModuleWrappers();
-  assert.equal(wrappers.length, 21);
+  assert.equal(wrappers.length, 26);
   assert.deepEqual(new Set(wrappers.map((wrapper) => wrapper.id)), new Set(Object.keys(P1_MODULES)));
   assert.equal(getModuleWrapper("lore.worldbook_trigger")?.legacyId, "M2");
   assert.equal(loadModuleWrapper("lore.worldbook_trigger")?.id, "lore.worldbook_trigger");

@@ -1,0 +1,3 @@
+import { composeModulesForMode } from "../../modes/module-composer.js";
+import { createDebugInfo, createWrapperResult } from "../wrapper-utils.js";
+const ID="world.profile_overlay"; export default Object.freeze({ id:ID,legacyId:null,name:"World Profile Overlay",status:"implemented",buildContext(ctx={}){return createWrapperResult(ID,null,composeModulesForMode(ctx.modeId||ctx.options?.mode,ctx.profileId,ctx.profileOptions||{}));},buildPromptBlock(ctx={}){const d=this.buildContext(ctx).data;return `【世界配置】${d.profileId||"base"}; modules=${d.modules.length}`;},getDebugInfo(ctx={}){return createDebugInfo(this,"src/core/modes/module-composer.js",this.buildContext(ctx),"registered-only overlay");} });

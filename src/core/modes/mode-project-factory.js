@@ -202,7 +202,15 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     "runtime/stop-loss-windows.json": { version: 1, updatedAt: now, windows: [] },
     "runtime/character-inertia.json": { version: 1, characters: {} },
     "runtime/worldbook-growth-tree.json": { version: 1, candidates: {} },
-    "runtime/worldbook-candidates.jsonl": ""
+    "runtime/worldbook-candidates.jsonl": "",
+    "timeline-tree.json": { version: 1, rootBranchId: "main", activeBranchId: "main", branches: { main: { id: "main", label: "Main Timeline", parentBranchId: null, createdFrom: null, createdAt: now, status: "active" } } },
+    "active-branch.json": { branchId: "main", updatedAt: now },
+    "runtime/world-telemetry.jsonl": "",
+    "runtime/auto-advance-state.json": { mode: "manual", beatCount: 0 },
+    "runtime/processing/materials.jsonl": "",
+    "runtime/processing/extracted-candidates.jsonl": "",
+    "runtime/processing/completion-proposals.jsonl": "",
+    "runtime/processing/processing-reports.jsonl": ""
   };
 
   // character mode: primary character record
