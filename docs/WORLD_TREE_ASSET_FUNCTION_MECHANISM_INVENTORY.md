@@ -403,6 +403,31 @@ creation-forge
 
 ---
 
+# 6.5 Legacy Mechanism Expansion (P3 M1-M11) — ACTIVE
+
+| ID | 名称 | 状态 | 说明 | 目录 |
+|---|---|---|---|---|
+| M1-001 | Creation Wizard v2 | ACTIVE | 六阶段世界创建向导（地基→角色→世界→规则→开场→事件→审查），HARD/SOFT/OPTIONAL 字段分级，blueprint candidate delivery | src/core/creation-wizard/ (7 files) |
+| M2-001 | Alchemy Digest Candidate Flow | ACTIVE | 外部素材消化器：parse → extract → dedupe → conflict detect → classify risk。10 种候选类型 | src/core/alchemy/alchemy-digest.js |
+| M3-001 | Material Learning Warehouse | ACTIVE | 素材记忆仓库：source registry + candidate index + adoption ledger。防重复导入 | src/core/materials/material-warehouse.js |
+| M4-001 | Character Kernel v2 | ACTIVE | 角色结构化底盘：canonProfile + expressionDNA + responseLadder + growthPhase + boundaries | src/core/character/character-kernel-v2.js |
+| M5-001 | Character Cognition Matrix | ACTIVE | 角色知识边界：known/suspected/misunderstood/unknown/forbidden。强制 murder-mystery/mystery-puzzle/character/strategy-sim 启用 | src/core/cognition/cognition-matrix.js |
+| M6-001 | Organization / Faction Graph | ACTIVE | 阵营关系图：ally/enemy/neutral/vassal/trade/secret。public/secret 分离 | src/core/factions/faction-graph.js |
+| M7-001 | World Rules Engine | ACTIVE | 世界规则审核器：9 种规则类型 + hard/soft/flavor strictness + block/warn/proposal/allow policy | src/core/world-rules/world-rules-engine.js |
+| M8-001 | Narrative Consistency Radar | ACTIVE | 六维一致性审查：facts/character/time/rules/rhythm/visibility。block hidden truth leaks | src/core/narrative-radar/narrative-consistency-radar.js |
+| M9-001 | Random Event Pool + Scene Direction | ACTIVE | 候选事件池：flavor/clue/conflict/opportunity/pressure + cooldown + weighting。major events → proposal only | src/core/events/random-event-pool.js |
+| M10-001 | Macro System | ACTIVE | 安全模板变量替换：{{mode.id}}/{{branch.id}}/{{character.name}} 等。禁止读取 hidden/private/apiKey | src/core/macros/macro-registry.js |
+| M11-001 | Observability Terminal | ACTIVE | 回合观测包：kernel/prompt/proposal/radar/event/material 状态汇总 + path/secret redaction | src/core/observability/observability-packet.js |
+
+新增测试：
+- `tests/unit/creation-wizard.test.js` (8 tests)
+- `tests/integration/legacy-mechanism-expansion.test.js` (14 tests)
+- `npm run test:legacy-mechanisms` → 22/22 PASS
+
+所有机制均为 pure in-memory, no filesystem writes。candidate/runtime/canon/debug 分层完整。
+
+---
+
 # 7. 旧包高价值候选机制清单
 
 ## 7.1 创作与炼金台机制
