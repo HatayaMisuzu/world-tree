@@ -6,7 +6,7 @@ export function routeWorkflowOutput(envelope, rawOutput, authorityDecision) {
     visibleText: rawOutput?.visibleText ?? rawOutput?.text ?? "",
     candidates: rawOutput?.candidates ?? [], proposals: rawOutput?.proposals ?? [],
     runtimeUpdates: rawOutput?.runtimeUpdates ?? [], canonWrites: rawOutput?.canonWrites ?? [],
-    authorityDecision, warnings: rawOutput?.warnings ?? [], debugSummary: rawOutput?.debugSummary ?? null
+    authorityDecision, warnings: rawOutput?.warnings ?? [], errors: rawOutput?.errors ?? [], debugSummary: rawOutput?.debugSummary ?? null
   });
   if (authorityDecision?.candidateOnly && result.canonWrites.length > 0) {
     result.candidates.push(...result.canonWrites.map(c => ({ ...c, status: "candidate", movedFromCanon: true })));

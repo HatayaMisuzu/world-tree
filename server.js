@@ -42,6 +42,7 @@ import {
   previewAutoLight, approveKernelProposal, getKernelStopLoss, reverseKernelProposal,
   ingestProcessingMaterial, listProcessingCandidates, deliverProcessingById
 } from "./src/server/kernel-service.js";
+import { handleWorkflowApiRequest, getWorkflowTypesResponse, getWorkflowStatus } from "./src/core/workflows/adapters/server-workflow-adapter.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -2765,6 +2766,22 @@ async function handleAPI(req, res) {
       if (match && method === "POST") return jsonResponse(res, await deliverProcessingById(project.projectRoot, decodeURIComponent(match[1])));
       return jsonError(res, 404, "KERNEL_ROUTE_NOT_FOUND", "没有找到对应的 Kernel 操作。");
     }
+
+    // ── Workflow Integration API ──
+    if (path === "/api/workflow/run" && method === "POST") {
+      const body = await readBody(req);
+      const config = await loadConfig();
+      const apiKey = await getActiveLlmValue();
+      const deps = { kernelContext: null };
+      if (body.projectId) {
+        const pj = resolveKernelProject(body.projectId);
+        if (pj) deps.kernelContext = { projectRoot: pj.projectRoot, modeId: pj.modeId, activeBranchId: body.branchId || "main" };
+      }
+      const result = await handleWorkflowApiRequest(body, deps);
+      return jsonResponse(res, result);
+    }
+    if (path === "/api/workflow/types" && method === "GET") return jsonResponse(res, getWorkflowTypesResponse());
+    if (path === "/api/workflow/status" && method === "GET") return jsonResponse(res, getWorkflowStatus());
 
     // ── 内置示例 ──
     if (path === "/api/examples" && method === "GET") return jsonResponse(res, { status: "ok", examples: listExamples() });
