@@ -4,7 +4,7 @@
 
 ## 修改流程
 
-1. 先读取 README.md、docs/INDEX.md、AI-GUIDE.md
+1. 先读取 README.md、docs/INDEX.md、AI-GUIDE.md，以及 **`docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md`**（防遗失清单，确认不误删已有机制）
 2. 定位相关 mode capsule 文档
 3. 运行 git status --short 确认工作区干净
 4. 定位真实源文件，不凭记忆改动
@@ -25,6 +25,7 @@
 - 修改功能时必须同步更新对应文档
 - 新增 API 时必须更新 docs/API_REFERENCE.md
 - 新增模式时必须在 docs/INDEX.md 添加链接
+- 新增/删除/迁移任何机制时必须同步更新 `docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md`
 
 ## 如何判断历史文档
 

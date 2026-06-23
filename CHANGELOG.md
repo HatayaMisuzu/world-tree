@@ -7,6 +7,7 @@
 
 ### Added
 - **Prompt Orchestration Layer v1**：22 个 Prompt Block（全局 4 + 8 模式 + 9 任务）、Token Budget、Activation Log、Output Schemas、Visibility Policy、Prompt Inspector。
+- **Asset Inventory**：`docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md` — 资产/功能/机制防遗失清单，覆盖 ARCH(8) + SYS(8) + ENTRY(43) + P0(8) + P1(8) + P2(8) + PROMPT(12) + LEGACY(36) + EXT(14)，含防回归检查清单和 Agent 执行注意。
 - 三层安全防线：Global Executor Identity → Mode-Specific Blocks → Final Guard（每次生成前最后检查）。
 - 8 模式 profile：quick-setting / world-rpg / character / tabletop / mystery-puzzle / murder-mystery / strategy-sim / creation-forge，每个配专属禁止事项与边界。
 - 9 任务 contract：writer / director / guardian / proposal-extractor / scene-summary / worldbook-candidate / processing-extractor / emotional-inertia / telemetry-explanation，内部 JSON 任务有明确 schema。

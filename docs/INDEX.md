@@ -18,6 +18,8 @@
 - [Living World Kernel P0](LIVING_WORLD_KERNEL_P0.md) — 活世界底盘、有限 Ripple 与运行时上下文包
 - [Experience Stability Kernel P1](EXPERIENCE_STABILITY_KERNEL_P1.md) — 上下文预算、导演计划、影响闸门与候选成长
 - [Long Play Kernel P2](P2_LONG_PLAY_KERNEL.md) — Profile Overlay、分支隔离、只读遥测与素材候选流
+- [Prompt Orchestration Layer](PROMPT_ORCHESTRATION_LAYER.md) — 提示词编排与边界治理层
+- [Asset / Function / Mechanism Inventory](WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md) — 资产/功能/机制防遗失清单 (preservation ledger)
 
 ## 模式文档
 - [Character Capsule V1](WORLD_TREE_CHARACTER_CAPSULE_FULL_V1.md)
