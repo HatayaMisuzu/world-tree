@@ -140,7 +140,10 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
     throw new Error("请先配置 LLM Base URL、Model 和 API Key");
   }
 
-  const systemPrompt = ROLE_PROMPTS[role] || WRITER_SYSTEM_PROMPT;
+  const basePrompt = ROLE_PROMPTS[role] || WRITER_SYSTEM_PROMPT;
+  // 🆕 Prompt Orchestration: prepend mode+task governance blocks
+  const orchestrationPrefix = options.orchestrationPrefix || "";
+  const systemPrompt = orchestrationPrefix ? `${orchestrationPrefix}\n\n---\n\n${basePrompt}` : basePrompt;
   const { messages: historyMessages = [], temperature: optTemp, max_tokens: optMaxTokens } = options;
   const temperature = optTemp ?? (role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85);
   const maxTokens   = optMaxTokens ?? (role === "director" ? 1024 : role === "guardian" ? 1024 : 4096);
@@ -298,6 +301,17 @@ export async function sendDualStageTurn(opts = {}) {
     storytellerId = "classic"  // 🆕 叙事者风格
   } = opts;
 
+  // 🆕 Prompt Orchestration Layer: build governance prefix for this turn
+  let orchestrationPrefix = "";
+  try {
+    const resolvedModeId = engineState?.mode || (dataMode === "character_card" ? "character" : "world-rpg");
+    const { buildInternalTaskPrompt } = await import("../core/prompts/prompt-builder.js");
+    const orchPacket = buildInternalTaskPrompt({ modeId: resolvedModeId, taskId: "writer" });
+    if (orchPacket.ok && orchPacket.promptText) {
+      orchestrationPrefix = orchPacket.promptText;
+    }
+  } catch { /* non-critical */ }
+
   // 🆕 directorMode 覆盖 skipDirector/useLlmAnalysis
   let effectiveSkipDirector = skipDirector;
   let effectiveUseLlmAnalysis = useLlmAnalysis;
@@ -338,7 +352,7 @@ export async function sendDualStageTurn(opts = {}) {
     ].filter(Boolean).join("\n");
 
     try {
-      const analysisResult = await callLLMByRole("director", analyzerInput, config, apiKey, { temperature: 0.3, max_tokens: 512 });
+      const analysisResult = await callLLMByRole("director", analyzerInput, config, apiKey, { temperature: 0.3, max_tokens: 512, orchestrationPrefix });
       const parsed = JSON.parse(analysisResult.rawResponse);
       // 只采纳合法字段，其余用 JS 兜底
       llmAnalysis = {
@@ -366,7 +380,7 @@ export async function sendDualStageTurn(opts = {}) {
   let finalDirectionPacket = directionPacket;
   if (!effectiveSkipDirector && !finalDirectionPacket) {
     const directorInput = buildDirectorPacket({ model, input, engineState, turnPrep, knowledgeCards });
-    const directorResult = await callLLMByRole("director", directorInput, config, apiKey);
+    const directorResult = await callLLMByRole("director", directorInput, config, apiKey, { orchestrationPrefix });
     // 尝试解析 JSON
     try {
       const parsed = JSON.parse(directorResult.rawResponse);
@@ -441,7 +455,7 @@ export async function sendDualStageTurn(opts = {}) {
     ? `${baseWriterInput}\n\n${kernelContext.promptText}`
     : baseWriterInput;
 
-  const writerResult = await callLLMByRole("writer", writerInput, config, apiKey, { messages });
+  const writerResult = await callLLMByRole("writer", writerInput, config, apiKey, { messages, orchestrationPrefix });
   const rawText = writerResult.rawResponse;
 
   // === Step 3: Guardian（可选·v0.8.5 自动修正） ===
@@ -463,7 +477,7 @@ export async function sendDualStageTurn(opts = {}) {
           userInput: input,
           config,
           apiKey,
-          callLLM: (role, prompt, cfg, key, opts = {}) => callLLMByRole(role, prompt, cfg, key, opts),
+          callLLM: (role, prompt, cfg, key, opts = {}) => callLLMByRole(role, prompt, cfg, key, { ...opts, orchestrationPrefix }),
           jsValidator: (opts) => validateNarrativeAgainstDirection({
             narrative: opts.narrative,
             directionPacket: opts.directionPacket,

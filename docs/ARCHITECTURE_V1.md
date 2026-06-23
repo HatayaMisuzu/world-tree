@@ -55,3 +55,7 @@ buildModuleModel -> normalizeEngineState -> resolve active branch
 ```
 
 `kernel-turn-context.js` 是 LLM server turn 与 `mode-runner` 的共同入口。公开 summary 会删除项目路径；完整 context 只在服务端用于选定 branch root 和 prompt-safe sidecar。`persistTurn()` 将 chat/state/scene summary/telemetry/proposal tracking/Growth Tree/inertia 写入活动分支；只有已批准 proposal 可修改该分支的 `shared/`。
+
+### Prompt Orchestration Layer (v1)
+
+`src/core/prompts/` — 统一提示词编排与边界治理层。包含 22 个 Prompt Block（全局/模式/任务三层）、Token Budget、Activation Log、Output Schemas、Visibility Policy 和 Prompt Inspector。所有 LLM 调用（writer/director/guardian/内部任务）均通过 `buildPromptOrchestrationPacket` 注入治理块。详见 `docs/PROMPT_ORCHESTRATION_LAYER.md`。

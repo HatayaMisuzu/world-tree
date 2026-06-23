@@ -1,3 +1,10 @@
+// mode-prompt-registry.js — Upgraded with Prompt Orchestration Layer v1
+// Backward-compatible: old API preserved, new orchestrator available
+
+import { buildPromptOrchestrationPacket } from "./prompt-builder.js";
+import { resolveBlocks } from "./prompt-blocks.js";
+
+// ── Legacy profiles (kept for backward compat) ──
 const PROFILES = {
   "grand_world_v1": { profileId: "grand_world_v1", modeId: "world-rpg", modeMeaning: "grand_world", rules: ["不得硬套等级/职业/装备/经验值/打怪升级", "输出grand_world_output_packet_v1", "重大变化走pending proposal", "保持探索感/事件推进/关系反馈/阶段感"] },
   "character_v1": { profileId: "character_v1", modeId: "character", modeMeaning: "character", rules: ["保持角色设定/表达风格/人物边界", "输出character_output_packet_v1", "不可随意改写核心设定"] },
@@ -11,6 +18,7 @@ const PROFILES = {
 
 const GLOBAL_RULES = ["你是World Tree模式执行器", "不得把草稿当正史", "不得直接修改shared真相源", "涉及世界状态/关系/时间线/真相/答案锁时生成pending proposal", "不得泄露隐藏信息"];
 
+// ── Legacy API (backward compat) ──
 export function listModePromptProfiles() { return Object.values(PROFILES).map(p => ({ profileId: p.profileId, modeId: p.modeId })); }
 export function getModePromptProfile(profileId) { return PROFILES[profileId] ? { ...PROFILES[profileId], globalRules: GLOBAL_RULES } : null; }
 export function hasModePromptProfile(profileId) { return Boolean(PROFILES[profileId]); }
@@ -22,24 +30,44 @@ export function buildModePrompt(inputPacket = {}, options = {}) {
 }
 
 /**
- * 安全版本的 prompt builder：profile 缺失时返回 ok:false 而非空字符串。
- * mode-runner 应使用此函数而非 buildModePrompt。
+ * Safe prompt builder. Now delegates to orchestrator for richer output.
+ * Falls back to legacy if orchestrator fails.
  */
 export function buildModePromptResult(inputPacket = {}, options = {}) {
   const profileId = options.profileId || "";
   const profile = getModePromptProfile(profileId);
   if (!profile) {
-    return {
-      ok: false,
-      prompt: "",
-      errors: [{ code: "PROMPT_PROFILE_MISSING", profileId }]
-    };
+    return { ok: false, prompt: "", errors: [{ code: "PROMPT_PROFILE_MISSING", profileId }] };
   }
+  // Try orchestrator first
+  try {
+    const packet = buildPromptOrchestrationPacket({
+      modeId: profile.modeId,
+      taskId: "writer",
+      userInput: inputPacket.userInput?.text || "",
+      generationType: "normal"
+    });
+    if (packet.ok && packet.promptText) {
+      return { ok: true, prompt: packet.promptText, profileId, orchestrated: true, debug: packet.debug };
+    }
+  } catch { /* fall through to legacy */ }
+  // Legacy fallback
   return {
     ok: true,
-    prompt: [...profile.globalRules, ...(profile.rules || []), `用户输入: ${inputPacket.userInput?.text || ""}`].join("\n"),
+    prompt: [...GLOBAL_RULES, ...(profile.rules || []), `用户输入: ${inputPacket.userInput?.text || ""}`].join("\n"),
     profileId
   };
 }
 
 export function validateModePromptProfile(profile = {}) { return { ok: Boolean(profile.profileId && profile.modeId), errors: profile.profileId ? [] : ["missing profileId"] }; }
+
+// ── New Orchestration API ──
+export function getOrchestratedPrompt(modeId, taskId = "writer", userInput = "", generationType = "normal") {
+  return buildPromptOrchestrationPacket({ modeId, taskId, userInput, generationType });
+}
+
+export function getModeBlocks(modeId) {
+  return resolveBlocks({ modeId, taskId: "" });
+}
+
+export { PROFILES as MODE_PROFILES };

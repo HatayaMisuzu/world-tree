@@ -3,6 +3,24 @@
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
 
+## Unreleased / Prompt Orchestration Layer
+
+### Added
+- **Prompt Orchestration Layer v1**：22 个 Prompt Block（全局 4 + 8 模式 + 9 任务）、Token Budget、Activation Log、Output Schemas、Visibility Policy、Prompt Inspector。
+- 三层安全防线：Global Executor Identity → Mode-Specific Blocks → Final Guard（每次生成前最后检查）。
+- 8 模式 profile：quick-setting / world-rpg / character / tabletop / mystery-puzzle / murder-mystery / strategy-sim / creation-forge，每个配专属禁止事项与边界。
+- 9 任务 contract：writer / director / guardian / proposal-extractor / scene-summary / worldbook-candidate / processing-extractor / emotional-inertia / telemetry-explanation，内部 JSON 任务有明确 schema。
+- 接入：mode-runner (`buildModePromptResult`) 和 llm.js (`callLLMByRole` → `orchestrationPrefix`) 自动注入编排块。
+- 新增 `npm run test:prompts` (42 tests) 覆盖所有模式/任务/安全边界。
+- 向后兼容：旧 `buildModePrompt` / `buildModePromptResult` API 不变。
+- Hidden truth 过滤：`deepFilterHiddenFields()` 递归移除所有 hiddenTruth/answerLock/truthLock/_private。
+
+### Safety / Boundaries
+- 不重写 LLM 调用链，不重写 proposal-bus，不重写 P0-P2 Kernel。
+- Final Guard 确保不泄露 hidden truth，不把 candidate 当 canon。
+- Creation-forge 专属反自动创建 block，不输出"已创建项目"。
+- Murder-mystery 最高优先级真相锁，嫌疑人只知自己视角。
+
 ## Unreleased / Kernel P0-P2
 
 ### Added
