@@ -238,6 +238,14 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     files["runtime/mystery-puzzle-proposals.jsonl"] = "";
     files["runtime/cache/mystery-puzzle/.gitkeep"] = "";
   }
+  if (mode === "creation-forge") {
+    files["shared/creation_forge.json"] = { schemaVersion: 1, modeMeaning: "artifact_factory", status: "draft", targetArtifactTypes: [], activeBlueprintId: null, activeArtifactId: null, createdProjects: [], updatedAt: now };
+    files["shared/forge_inputs.json"] = { schemaVersion: 1, inputs: [] };
+    files["shared/forge_blueprints.json"] = { schemaVersion: 1, blueprints: [] };
+    files["shared/forge_artifacts.json"] = { schemaVersion: 1, artifacts: [] };
+    files["runtime/creation-forge-proposals.jsonl"] = "";
+    files["runtime/cache/creation-forge/.gitkeep"] = "";
+  }
 
   return files;
 }
