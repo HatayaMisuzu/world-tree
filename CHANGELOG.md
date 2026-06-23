@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added Multi-Mode Entry Closure P1 documentation with mode artifact consumption contracts for all 5 non-creation modes. Clarified creation-forge as cross-mode artifact forge. Added `tests/integration/multi-mode-first-turn.test.js` (5 tests) covering first-turn mock chat persistence for each mode. See `docs/WORLD_TREE_MULTI_MODE_ENTRY_CLOSURE_P1.md`.
+
 - Added Multi-Mode Entry Closure P1: activated world-rpg, mystery-puzzle, tabletop, strategy-sim, and murder-mystery as minimal closures with unified project creation through Mode Project Factory, mode-specific shared state files, frontend entry panels, and .worldtree roundtrip support. Creation-forge kept deferred. Added `tests/unit/multi-mode-entry.test.js` (41 tests) and `tests/integration/multi-mode-projects.test.js` (5 tests).
 
 - Added character vertical slice: character mode activated as visible entry, project creation through Mode Project Factory with character_card dataMode, minimal character-card frontend form, primary character record in shared/characters.json, .worldtree roundtrip support, and first-turn chat persistence through existing character_card pipeline. Added `tests/unit/character-mode.test.js` (13 tests) and `tests/integration/character-project.test.js` (2 tests). See `docs/WORLD_TREE_CHARACTER_VERTICAL_SLICE.md`.
