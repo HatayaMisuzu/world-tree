@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added Mode State Schema P1 (`src/core/modes/mode-state-schema.js`) defining `modeState`, `moduleState`, `runtimeFlags`, and `reviewPolicy` envelopes for unified future mode project creation. Includes `createModeStateEnvelope`, `normalizeModeStateEnvelope`, `validateModeStateEnvelope`, `createModeStateSummary`. Added `tests/unit/mode-state-schema.test.js` (17 tests). See `docs/WORLD_TREE_MODE_STATE_SCHEMA_P1.md`.
+
 - Added Module Runtime Orchestrator P1 (`src/core/modules/module-runtime-orchestrator.js`) to aggregate wrapper `buildContext`, `buildPromptBlock`, and `getDebugInfo` outputs into JSON-safe `moduleRuntimePacket` for any mode. Added `tests/unit/module-runtime-orchestrator.test.js` (16 tests). See `docs/WORLD_TREE_MODULE_RUNTIME_ORCHESTRATOR_P1.md`.
 
 - Added quick-setting vertical slice metadata and module graph wiring. The existing pasted-text draft flow now records `mode=quick-setting`, a JSON-safe module graph summary, and preset-compatible engine state without activating hidden modes.

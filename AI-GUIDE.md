@@ -1,7 +1,7 @@
 # World Tree — AI 开发指南
 
 > 本文档供 AI agent / LLM 阅读，快速理解项目架构、文件路径和修改规则。
-> 最后更新: v0.3.0 (2026-06-23) — 本地优先工作台基线：模型连接诊断、快速项目草稿、审核事实源、世界包安全导入、Mode Runtime Core + Module Runtime Orchestrator P1。
+> 最后更新: v0.3.0 (2026-06-23) — 本地优先工作台基线：Mode Runtime Core + Module Runtime Orchestrator + Mode State Schema P1。
 
 ## 项目定位
 
