@@ -16,6 +16,8 @@ function mode(id, name, description, status, extra) {
     basedOn: extra.basedOn,
     dataModeHint: extra.dataModeHint,
     worldSubTypeHint: extra.worldSubTypeHint,
+    sourceType: extra.sourceType || extra.sourceTypeHint || null,
+    sourceTypeHint: extra.sourceTypeHint || null,
     defaultVisibility: extra.defaultVisibility === true,
     notes: extra.notes || "架构声明；本阶段不创建 UI 入口。"
   });
@@ -24,11 +26,12 @@ function mode(id, name, description, status, extra) {
 export const MODE_MANIFEST = Object.freeze({
   "quick-setting": mode("quick-setting", "预设 / 设定", "用少量设定快速启动叙事。", MODE_STATUS.ACTIVE, {
     playerRole: "设定提供者与行动者", aiRole: "轻量故事协作者", basedOn: ["preset"], dataModeHint: "preset", worldSubTypeHint: "classic",
-    defaultVisibility: true,
+    sourceType: "pasted_text", defaultVisibility: true,
     notes: "首个可用纵向切片；复用 preset dataMode，不代表其他 mode 已开放。"
   }),
   character: mode("character", "人物卡", "以人物持续互动为核心。", MODE_STATUS.PLANNED, {
-    playerRole: "对话参与者", aiRole: "角色扮演者", basedOn: ["character_card"], dataModeHint: "character_card", worldSubTypeHint: "classic"
+    playerRole: "对话参与者", aiRole: "角色扮演者", basedOn: ["character_card"], dataModeHint: "character_card", worldSubTypeHint: "classic",
+    sourceType: "character_card"
   }),
   "murder-mystery": mode("murder-mystery", "剧本杀", "案件、证词与推理阶段协议。", MODE_STATUS.HIDDEN, {
     playerRole: "案件参与者", aiRole: "主持人与信息分发者", basedOn: ["murder-mystery"], dataModeHint: "worldbook", worldSubTypeHint: "murder-mystery"
@@ -40,13 +43,15 @@ export const MODE_MANIFEST = Object.freeze({
     playerRole: "调查者", aiRole: "谜题主持人", basedOn: [], dataModeHint: "worldbook", worldSubTypeHint: "mystery-puzzle"
   }),
   "world-rpg": mode("world-rpg", "世界书 / RPG", "持续世界、任务、关系与成长协议。", MODE_STATUS.PLANNED, {
-    playerRole: "世界中的行动者", aiRole: "世界叙事 DM", basedOn: ["worldbook", "rpg"], dataModeHint: "worldbook", worldSubTypeHint: "rpg"
+    playerRole: "世界中的行动者", aiRole: "世界叙事 DM", basedOn: ["worldbook", "rpg"], dataModeHint: "worldbook", worldSubTypeHint: "rpg",
+    sourceType: "worldbook"
   }),
   "strategy-sim": mode("strategy-sim", "模拟经营 / 策略", "资源、势力、决策与回合推进协议。", MODE_STATUS.HIDDEN, {
     playerRole: "管理者与决策者", aiRole: "模拟裁判", basedOn: ["sim"], dataModeHint: "worldbook", worldSubTypeHint: "sim"
   }),
   "creation-forge": mode("creation-forge", "创作模式 / 炼金台", "素材提取、整理与世界构建协议。", MODE_STATUS.PLANNED, {
-    playerRole: "创作者", aiRole: "结构化创作协作者", basedOn: ["M-创作"], dataModeHint: "worldbook", worldSubTypeHint: "classic"
+    playerRole: "创作者", aiRole: "结构化创作协作者", basedOn: ["M-创作"], dataModeHint: "worldbook", worldSubTypeHint: "classic",
+    sourceType: "creation"
   })
 });
 

@@ -4,7 +4,9 @@
 
 Mode 是玩法入口、运行协议和用户体验契约；Module 是可被多个 mode 复用的数据、规则或引擎能力。`character`、`tabletop`、`world-rpg` 是 mode，不是巨型 module；角色认知、场景会话、规则审查、骰子和任务才是 module。
 
-当前已经建立架构骨架、quick-setting 纵向切片和 P1 热路径 wrappers。wrapper 仍是旁路能力层：不会把 hidden 模式暴露给用户，不会让 LLM 自动调用所有模块，也不会接管完整玩法或 lifecycle。
+当前已经建立架构骨架、quick-setting 纵向切片、P1 热路径 wrappers 和通用 Mode Runtime Core（P1）。wrapper 仍是旁路能力层：不会把 hidden 模式暴露给用户，不会让 LLM 自动调用所有模块，也不会接管完整玩法或 lifecycle。
+
+Mode Runtime Core 将 quick-setting 的 metadata / moduleGraph / wrapperGraph / initialState 逻辑抽象为通用函数，使所有 8 个 mode 都能通过 `createModeRuntimePacket(modeId)` 结构生成 runtime packet。详见 `docs/WORLD_TREE_MODE_RUNTIME_CORE_P1.md`。
 
 ## 2. 为什么暂不补齐具体能力
 

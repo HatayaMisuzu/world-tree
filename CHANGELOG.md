@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Extracted generic Mode Runtime Core from quick-setting metadata and graph wiring. New `src/core/modes/mode-metadata.js`, `mode-initial-state.js`, `mode-runtime.js` provide `createModeRuntimePacket(modeId)` for all 8 modes. `quick-setting.js` helpers now delegate to the generic runtime while preserving backward-compatible APIs. Added `sourceType` hints to `mode-manifest.js`. Added `tests/unit/mode-runtime.test.js` (15 tests). See `docs/WORLD_TREE_MODE_RUNTIME_CORE_P1.md`.
+
 ### Added
 
 - Added quick-setting vertical slice metadata and module graph wiring. The existing pasted-text draft flow now records `mode=quick-setting`, a JSON-safe module graph summary, and preset-compatible engine state without activating hidden modes.

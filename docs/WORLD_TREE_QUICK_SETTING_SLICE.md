@@ -21,7 +21,7 @@ engineState.preset = preset
 
 ## 3. module graph 如何使用
 
-`src/core/modes/quick-setting.js` 调用 `loadModulesForMode("quick-setting")`，再将 graph 转换为无函数、无循环引用的 JSON 摘要。摘要包含 requested、resolved、missing、warnings，以及每个模块的 ID、legacy ID、分类、状态与 callable 标记。
+`src/core/modes/quick-setting.js` 调用 `loadModulesForMode("quick-setting")` 和 `loadWrappersForMode("quick-setting")`，再将 graph 转换为无函数、无循环引用的 JSON 摘要。这些逻辑已上提为通用 Mode Runtime Core（`mode-metadata.js` / `mode-initial-state.js` / `mode-runtime.js`），quick-setting 现有 helper 委托通用函数。摘要包含 requested、resolved、missing、warnings，以及每个模块的 ID、legacy ID、分类、状态与 callable 标记。
 
 本阶段 graph 只用于 metadata、诊断和未来接线，不会动态执行全部模块，也不会因为非 callable 状态阻断现有 preset 对话。
 
