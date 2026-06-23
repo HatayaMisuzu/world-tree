@@ -1,7 +1,7 @@
 // workflow-result-schema.js — Normalized workflow result
 export function createWorkflowResult(input = {}) {
   return {
-    ok: input.ok !== false, workflowType: input.workflowType ?? "unknown", modeId: input.modeId ?? null,
+    ok: input.ok !== undefined ? Boolean(input.ok) : true, workflowType: input.workflowType ?? "unknown", modeId: input.modeId ?? null,
     visibleText: input.visibleText ?? "", candidates: Array.isArray(input.candidates) ? input.candidates : [],
     proposals: Array.isArray(input.proposals) ? input.proposals : [], runtimeUpdates: Array.isArray(input.runtimeUpdates) ? input.runtimeUpdates : [],
     canonWrites: Array.isArray(input.canonWrites) ? input.canonWrites : [], authorityDecision: input.authorityDecision ?? null,
