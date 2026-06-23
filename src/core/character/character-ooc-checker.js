@@ -2,7 +2,7 @@ export function checkCharacterOoc(profile = {}, message = "", context = {}, opti
   const warnings = [], driftSignals = [], msgs = [];
   const lower = String(message || "").toLowerCase();
   // Meta language check
-  if (/(as an ai|i am an ai|language model|ai assistant|artificial intelligence)/i.test(message)) {
+  if (/\b(as an ai|i am an ai|language model|ai assistant|artificial intelligence)\b/i.test(message)) {
     driftSignals.push("meta_language"); warnings.push("AI self-reference detected");
   }
   // Name check

@@ -184,3 +184,4 @@ test("16. unknown mode throws explicit error", () => {
   assert.throws(() => createModeProjectDraft("nonexistent-mode", {}), {
     message: /Unknown mode/
   });
+});

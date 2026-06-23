@@ -1,7 +1,7 @@
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: V1 full-closure milestone (0.3.0)
+> 最后更新: v0.3.0 — V1 full-closure milestone
 
 ## 不可违反的规则
 

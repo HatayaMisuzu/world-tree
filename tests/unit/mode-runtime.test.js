@@ -73,6 +73,7 @@ test("6. quick-setting wrapperGraph does not contain function objects", () => {
     for (const hook of wrapper.hooks) {
       assert.equal(typeof hook, "string");
     }
+  }
 });
 
 // ─── Test 7: createModeRuntimeSummary("quick-setting") ───
@@ -135,7 +136,7 @@ test("12. createModeRuntimePacket('creation-forge') generates a structural packe
 test("13. hidden mode packet generates without changing visibility", () => {
   const deferredModes = ["creation-forge"];
   for (const modeId of deferredModes) {
-    assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
+    assert.equal(getMode(modeId)?.status, MODE_STATUS.PLANNED);
     assert.equal(isModeVisible(modeId), false);
 
     const packet = createModeRuntimePacket(modeId);
@@ -144,7 +145,8 @@ test("13. hidden mode packet generates without changing visibility", () => {
 
     // 确认 visibility 未被改变
     assert.equal(isModeVisible(modeId), false);
-    assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
+    assert.equal(getMode(modeId)?.status, MODE_STATUS.PLANNED);
+  }
 });
 
 // ─── Test 14: unknown mode 抛出明确错误 ───
@@ -159,6 +161,7 @@ test("14. unknown mode throws explicit error", () => {
   assert.throws(() => getModeRuntimeHints("nonexistent-mode"), {
     message: /Unknown mode/
   });
+});
 
 // ─── Test 15: quick-setting 旧 helper 与新 runtime 输出兼容 ───
 

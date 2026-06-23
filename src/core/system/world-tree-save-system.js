@@ -138,10 +138,16 @@ export async function appendModeProposal(project = {}, proposal = {}, services =
 }
 
 export function exportWorldTreeSave(project = {}, options = {}) {
+  const snapshot = createWorldTreeSaveSnapshot(project, options);
   return {
     ok: true,
-    pack: createWorldTreeSaveSnapshot(project),
-    filename: `${project.id || "project"}.worldtree`
+    status: "partial",
+    kind: "snapshot_bridge",
+    snapshot,
+    filename: `${project.id || "project"}.worldtree`,
+    warnings: [
+      "Full archive export is handled by legacy world-pack export APIs. This function provides a lightweight snapshot bridge."
+    ]
   };
 }
 

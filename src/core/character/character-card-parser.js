@@ -34,12 +34,12 @@ export function parseCharacterCard(raw, options = {}) {
         systemPrompt: d.system_prompt || d.systemPrompt || "",
         postHistoryInstructions: d.post_history_instructions || d.postHistoryInstructions || "",
         alternateGreetings: Array.isArray(d.alternate_greetings) ? d.alternate_greetings : (d.alternateGreetings || []),
-        tags: Array.isArray(d.tags) ? d.tags : (d.tags || []).split(",").map(s => s.trim()).filter(Boolean),
+        tags: Array.isArray(d.tags) ? d.tags : (typeof d.tags === 'string' ? d.tags.split(",").map(s => s.trim()).filter(Boolean) : []),
         creator: d.creator || "",
         characterVersion: d.character_version || d.characterVersion || ""
       };
       parsed.characterBook = d.character_book || d.characterBook || null;
-      parsed.extensions = d.extensions || {};
+      parsed.extensions = obj.extensions || d.extensions || {};
       // Preserve unknown top-level keys
       for (const [k, v] of Object.entries(obj)) {
         if (!["spec", "spec_version", "data", "character_book", "extensions"].includes(k)) {

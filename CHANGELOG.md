@@ -3,7 +3,7 @@
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
 
-## Unreleased / V1 Closure
+## 0.3.0 / V1 Closure
 
 **最新提交**: 0ed95c9
 

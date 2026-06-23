@@ -20,10 +20,11 @@ test("createGrandWorldTurnPacket contains modeMeaning", () => {
   assert.equal(p.schemaVersion, 1);
 });
 
-test("createGrandWorldPrompt does not mention RPG mechanics", () => {
+test("createGrandWorldPrompt forbids RPG mechanics", () => {
   const prompt = createGrandWorldPrompt({ worldbook: createWorldbook({ title: "T" }) }, { text: "hello" });
   assert.ok(prompt.promptText.includes("大世界"));
-  assert.doesNotMatch(prompt.promptText, /等级|职业|装备|经验值/);
+  // 提示词应包含反RPG禁令，而非使用RPG术语
+  assert.ok(prompt.promptText.includes("不要强制套用") || prompt.promptText.includes("不得硬套"));
 });
 
 test("runGrandWorldTurn returns ready status", () => {

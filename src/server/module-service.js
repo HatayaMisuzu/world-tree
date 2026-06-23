@@ -135,7 +135,7 @@ export function createModuleService(deps) {
   async function createModule(body = {}) {
     const { name, displayName, dataMode, subType, preset } = body || {};
     const isCharacter = body?.mode === "character";
-    const isMultiMode = body?.mode === "world-rpg" || body?.mode === "mystery-puzzle" || body?.mode === "tabletop" || body?.mode === "strategy-sim" || body?.mode === "murder-mystery";
+    const isMultiMode = body?.mode === "world-rpg" || body?.mode === "mystery-puzzle" || body?.mode === "tabletop" || body?.mode === "strategy-sim" || body?.mode === "murder-mystery" || body?.mode === "creation-forge";
     const quickSetting = body?.mode === QUICK_SETTING_MODE_ID;
     const quickInput = quickSetting
       ? normalizeQuickSettingInput({ ...body, title: displayName || name })
@@ -300,6 +300,12 @@ export function createModuleService(deps) {
       await writeJson(join(worldDir, "shared", "mystery.json"), { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now });
       await writeFile(join(worldDir, "runtime", "mystery-puzzle-proposals.jsonl"), "", "utf-8");
       const mpd = join(worldDir, "runtime", "cache", "mystery-puzzle"); if (!existsSync(mpd)) mkdirSync(mpd, { recursive: true });
+    }
+    if (body?.mode === "creation-forge") {
+      await writeJson(join(worldDir, "shared", "creation_forge.json"), { schemaVersion: 1, mode: "creation-forge", status: "minimal", forgeType: "production", activeBlueprints: [], createdAt: now, updatedAt: now });
+      await writeJson(join(worldDir, "shared", "forge_blueprints.json"), { schemaVersion: 1, blueprints: [], updatedAt: now });
+      await writeFile(join(worldDir, "runtime", "creation-forge-proposals.jsonl"), "", "utf-8");
+      const cfd = join(worldDir, "runtime", "cache", "creation-forge"); if (!existsSync(cfd)) mkdirSync(cfd, { recursive: true });
     }
 
     clearModuleCache(worldName);

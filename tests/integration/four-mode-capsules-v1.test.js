@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { api, createTempDataDir, removeTempDir, startWorldTreeServer } from "./helpers/server-process.js";
+import { getMode, MODE_STATUS } from "../../src/core/modes/mode-manifest.js";
 
 const MODES = [
   { id: "tabletop", label: "桌面叙事", dataMode: "worldbook", sourceType: "tabletop_seed" },
@@ -72,6 +73,5 @@ test("quick-setting and character remain unaffected", async () => {
 });
 
 test("creation-forge still deferred", () => {
-  const { getMode, MODE_STATUS } = require("../../src/core/modes/mode-manifest.js");
   assert.notEqual(getMode("creation-forge").status, MODE_STATUS.ACTIVE);
 });

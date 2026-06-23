@@ -25,6 +25,7 @@ test("1. createModuleRuntimeContext({}) does not throw and returns safe defaults
   assert.deepEqual(ctx.cards, []);
   assert.deepEqual(ctx.options, {});
 
+});
 test("1b. createModuleRuntimeContext passes through provided values", () => {
   const ctx = createModuleRuntimeContext({
     model: { selected: { id: "test" } },
@@ -80,6 +81,7 @@ test("4. runWrapperHook catches throwing wrapper without crashing", () => {
     assert.ok(result.warnings.length > 0);
   });
 
+});
 // ─── Test 5: createModuleRuntimePacket("quick-setting") ───
 
 test("5. createModuleRuntimePacket('quick-setting') returns contextBlocks / promptBlocks / debugInfo", () => {
@@ -145,7 +147,7 @@ test("10. missing wrappers are collected but not fatal", () => {
 test("11. hidden mode generates packet without changing visibility", () => {
   const deferredModes = ["creation-forge"];
   for (const modeId of deferredModes) {
-    assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
+    assert.equal(getMode(modeId)?.status, MODE_STATUS.PLANNED);
     assert.equal(isModeVisible(modeId), false);
 
     const packet = createModuleRuntimePacket(modeId, { input: "test" });
@@ -153,7 +155,8 @@ test("11. hidden mode generates packet without changing visibility", () => {
 
     // visibility unchanged
     assert.equal(isModeVisible(modeId), false);
-    assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
+    assert.equal(getMode(modeId)?.status, MODE_STATUS.PLANNED);
+  }
 });
 
 // ─── Test 12: promptBlocks 是旁路文本 ───
@@ -165,6 +168,7 @@ test("12. promptBlocks are side-channel text only", () => {
     assert.ok(block.text.length <= 1200);
     // text 不包含本机路径
     assert.doesNotMatch(block.text, /[A-Za-z]:[/\\]/);
+  }
 });
 
 // ─── Test 13: packet 不包含函数对象 ───
@@ -181,6 +185,7 @@ test("13. packet does not contain function objects", () => {
         assert.notEqual(typeof value, "function");
       }
     }
+  }
 });
 
 // ─── Test 14: packet 不包含本机绝对路径 ───

@@ -2196,7 +2196,7 @@ async function handleWorldPackImport(body = {}) {
   if (!existsSync(join(worldDir, "runtime", "chat.jsonl"))) writeFileSync(join(worldDir, "runtime", "chat.jsonl"), "", "utf-8");
   if (!existsSync(join(worldDir, "runtime", "memory.jsonl"))) writeFileSync(join(worldDir, "runtime", "memory.jsonl"), "", "utf-8");
   await writeJson(join(worldDir, "runtime", "state.json"), { turnCount: 0, activeBranch: "main", importedAt: new Date().toISOString(), engineState: { dataMode: pack.world?.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } } });
-  return { status: "ok", module: { id: worldName, name: worldName, displayName: body.displayName || summary.name, type: "world", dataMode: pack.world?.dataMode || "worldbook", subType: pack.world?.subType || "classic", turnCount: 0 } };
+  return { status: "ok", module: { id: worldName, name: worldName, displayName: body.displayName || summary.name, type: "world", mode: pack.world?.mode || "", dataMode: pack.world?.dataMode || "worldbook", subType: pack.world?.subType || "classic", turnCount: 0 } };
 }
 
 async function handlePlugins(body = {}, method = "GET") {

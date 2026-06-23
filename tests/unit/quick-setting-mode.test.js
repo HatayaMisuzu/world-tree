@@ -32,6 +32,7 @@ test("quick-setting module graph resolves the declared core slice", () => {
     "audit.narrative_quality"
   ]) {
     assert.ok(result.graph.resolved.includes(moduleId), `missing ${moduleId}`);
+  }
 });
 
 test("quick-setting input normalization handles empty and aliased fields", () => {
@@ -46,6 +47,7 @@ test("quick-setting input normalization handles empty and aliased fields", () =>
     sourceType: "pasted_text"
   });
 
+});
 test("quick-setting initial state contains JSON-safe graph metadata", () => {
   const state = createQuickSettingInitialState({ createdAt: "2026-06-23T00:00:00.000Z" });
   assert.equal(state.mode, QUICK_SETTING_MODE_ID);

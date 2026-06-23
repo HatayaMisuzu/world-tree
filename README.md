@@ -1,8 +1,10 @@
 # World Tree
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 本地优先的 AI 多模式叙事与创作工作台。
 
-> **包版本**: v0.3.0 | **功能里程碑**: V1 完整闭环
+> **包版本**: v0.3.0 | **当前版本: v0.3.0** | 功能里程碑: V1 完整闭环
 > world-rpg 是历史内部 ID，产品语义 = 世界书大世界模式，不是传统 RPG。
 
 ## 简介
