@@ -129,9 +129,8 @@ test("11. createProjectFromMode('character', ..., { persist: true }) now allowed
 // ─── Test 12: hidden mode 默认不可真实创建 ───
 
 test("12. hidden mode defaults to not creatable", () => {
-  for (const modeId of ["murder-mystery", "tabletop", "strategy-sim"]) {
-    const perm = assertModeProjectCanBeCreated(modeId);
-    assert.equal(perm.allowed, false);
+  const perm = assertModeProjectCanBeCreated("creation-forge");
+  assert.equal(perm.allowed, false);
   }
 });
 

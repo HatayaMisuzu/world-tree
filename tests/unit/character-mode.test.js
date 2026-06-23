@@ -14,8 +14,8 @@ test("1. character isModeVisible() = true", () => {
 // ─── Test 2: hidden modes remain invisible ───
 
 test("2. hidden modes remain invisible", () => {
-  for (const modeId of ["murder-mystery", "tabletop", "strategy-sim"]) {
-    assert.equal(isModeVisible(modeId), false);
+  // Only creation-forge remains deferred; all other modes are now active
+    assert.equal(isModeVisible("creation-forge"), false);
   }
 });
 
@@ -80,10 +80,9 @@ test("8. createModeProjectFiles(character) generates shared/characters.json with
 
 // ─── Test 9: worlds/creation-forge still rejected ───
 
-test("9. createProjectFromMode('world-rpg', persist=true) still rejected", () => {
+test("9. createProjectFromMode('world-rpg', persist=true) now allowed", () => {
   const r = createProjectFromMode("world-rpg", { title: "test" }, { persist: true });
-  assert.equal(r.ok, false);
-  assert.ok(r.error.includes("not enabled"));
+  assert.equal(r.ok, true);
 });
 
 // ─── Test 10: creation-forge still rejected ───
@@ -96,9 +95,8 @@ test("10. createProjectFromMode('creation-forge', persist=true) still rejected",
 // ─── Test 11: hidden mode still rejected ───
 
 test("11. hidden modes still reject persist", () => {
-  for (const modeId of ["murder-mystery", "tabletop", "strategy-sim"]) {
-    const r = createProjectFromMode(modeId, { title: "test" }, { persist: true });
-    assert.equal(r.ok, false);
+  const r = createProjectFromMode("creation-forge", { title: "test" }, { persist: true });
+  assert.equal(r.ok, false);
   }
 });
 

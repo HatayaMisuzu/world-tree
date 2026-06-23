@@ -135,6 +135,7 @@ export function createModuleService(deps) {
   async function createModule(body = {}) {
     const { name, displayName, dataMode, subType, preset } = body || {};
     const isCharacter = body?.mode === "character";
+    const isMultiMode = body?.mode === "world-rpg" || body?.mode === "mystery-puzzle" || body?.mode === "tabletop" || body?.mode === "strategy-sim" || body?.mode === "murder-mystery";
     const quickSetting = body?.mode === QUICK_SETTING_MODE_ID;
     const quickInput = quickSetting
       ? normalizeQuickSettingInput({ ...body, title: displayName || name })
@@ -143,14 +144,14 @@ export function createModuleService(deps) {
       ? createModeProjectDraft("character", { title: displayName || name, sourceText: String(body?.sourceText || body?.cardText || ""), sourceType: "character_card" }).title
       : null;
     const quickProject = quickSetting || body?.quickProject === true || body?.sourceType === "pasted_text";
-    const sourceText = isCharacter ? String(body?.sourceText || body?.cardText || body?.content || "") : (quickSetting ? quickInput.sourceText : String(body?.sourceText || ""));
-    const sourceType = isCharacter ? "character_card" : (quickProject ? (quickSetting ? quickInput.sourceType : (body?.sourceType || "pasted_text")) : "");
-    const draft = (quickProject || isCharacter) ? body?.draft !== false : false;
-    const effectiveDataMode = isCharacter ? "character_card" : (quickSetting ? "preset" : (dataMode || "worldbook"));
-    const effectiveSubType = isCharacter ? "classic" : (quickSetting ? "classic" : (subType || "classic"));
-    const effectivePreset = isCharacter ? "character_card" : (quickSetting ? "preset" : (preset || "epic"));
+    const sourceText = isCharacter ? String(body?.sourceText || body?.cardText || body?.content || "") : (isMultiMode ? String(body?.sourceText || body?.content || body?.seedText || "") : (quickSetting ? quickInput.sourceText : String(body?.sourceText || "")));
+    const sourceType = isCharacter ? "character_card" : (isMultiMode ? (body?.sourceType || "pasted_text") : (quickProject ? (quickSetting ? quickInput.sourceType : (body?.sourceType || "pasted_text")) : ""));
+    const draft = (quickProject || isCharacter || isMultiMode) ? body?.draft !== false : false;
+    const effectiveDataMode = isCharacter ? "character_card" : (isMultiMode ? "worldbook" : (quickSetting ? "preset" : (dataMode || "worldbook")));
+    const effectiveSubType = isCharacter ? "classic" : (isMultiMode ? "classic" : (quickSetting ? "classic" : (subType || "classic")));
+    const effectivePreset = isCharacter ? "character_card" : (isMultiMode ? "epic" : (quickSetting ? "preset" : (preset || "epic")));
     // 安全截断：使用 Array.from 确保多字节字符（emoji/生僻字）不被截断
-    const rawName = String(name || displayName || (isCharacter ? `人物卡_${Date.now()}` : (quickProject ? `快速项目_${Date.now()}` : "新世界")));
+    const rawName = String(name || displayName || (isCharacter ? `人物卡_${Date.now()}` : (isMultiMode ? `新模式_${Date.now()}` : (quickProject ? `快速项目_${Date.now()}` : "新世界"))));
     const cleaned = rawName.replace(/[^\w\u4e00-\u9fff\-_]/gu, "_").replace(/^_+|_+$/g, "");
     const safeChars = Array.from(cleaned);
     const worldName = safeChars.slice(0, 48).join("") || `world_${Date.now()}`;
@@ -163,6 +164,13 @@ export function createModuleService(deps) {
     mkdirSync(join(worldDir, "runtime"), { recursive: true });
 
     const now = new Date().toISOString();
+    const multiModeDraft = isMultiMode
+      ? createModeProjectDraft(body?.mode, {
+          title: displayName || name || body?.title || body?.mode,
+          sourceText,
+          sourceType: body?.sourceType || sourceType
+        }, { createdAt: now })
+      : null;
     const characterDraft = isCharacter
       ? createModeProjectDraft("character", {
           title: displayName || name || "未命名人物卡",
@@ -179,11 +187,16 @@ export function createModuleService(deps) {
       : null;
     const worldData = {
       name: worldName,
-      displayName: displayName || (quickSetting ? quickInput.title : quickProject ? "快速项目" : worldName),
+      displayName: displayName || (isMultiMode ? (name || body?.mode || worldName) : (quickSetting ? quickInput.title : quickProject ? "快速项目" : worldName)),
       dataMode: effectiveDataMode,
       subType: effectiveSubType,
       preset: effectivePreset,
-      ...(characterDraft ? {
+      ...(multiModeDraft ? {
+        mode: multiModeDraft.mode,
+        modeMetadata: multiModeDraft.worldJsonDraft.modeMetadata,
+        moduleGraph: multiModeDraft.worldJsonDraft.moduleGraph,
+        wrapperGraph: multiModeDraft.runtimeStateDraft.wrapperGraph
+      } : characterDraft ? {
         mode: characterDraft.mode,
         modeMetadata: characterDraft.worldJsonDraft.modeMetadata,
         moduleGraph: characterDraft.worldJsonDraft.moduleGraph,
@@ -208,7 +221,13 @@ export function createModuleService(deps) {
       draft,
       sourceType,
       sourceTextChars: sourceText.length,
-      ...(characterDraft ? {
+      ...(multiModeDraft ? {
+        mode: multiModeDraft.mode,
+        modeMetadata: multiModeDraft.runtimeStateDraft.modeMetadata,
+        moduleGraph: multiModeDraft.runtimeStateDraft.moduleGraph,
+        wrapperGraph: multiModeDraft.runtimeStateDraft.wrapperGraph,
+        modeStateEnvelope: multiModeDraft.runtimeStateDraft.modeStateEnvelope
+      } : characterDraft ? {
         mode: characterDraft.mode,
         modeMetadata: characterDraft.runtimeStateDraft.modeMetadata,
         moduleGraph: characterDraft.runtimeStateDraft.moduleGraph,
@@ -253,6 +272,22 @@ export function createModuleService(deps) {
         createdAt: now,
         updatedAt: now
       }]);
+    }
+    // Multi-mode closures: mode-specific shared state files
+    if (body?.mode === "world-rpg") {
+      await writeJson(join(worldDir, "shared", "world_rpg.json"), { schemaVersion: 1, mode: "world-rpg", status: "minimal", gmMode: true, currentSceneId: "opening", questSeed: null, playerState: { name: "玩家", role: "adventurer" }, notes: [], createdAt: now, updatedAt: now });
+    }
+    if (body?.mode === "mystery-puzzle") {
+      await writeJson(join(worldDir, "shared", "mystery.json"), { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now });
+    }
+    if (body?.mode === "tabletop") {
+      await writeJson(join(worldDir, "shared", "tabletop.json"), { schemaVersion: 1, mode: "tabletop", status: "minimal", gmMode: true, ruleset: "freeform", currentSceneId: "opening", diceSystem: { enabled: false, reason: "Dice system deferred beyond P1." }, party: [], createdAt: now, updatedAt: now });
+    }
+    if (body?.mode === "strategy-sim") {
+      await writeJson(join(worldDir, "shared", "strategy.json"), { schemaVersion: 1, mode: "strategy-sim", status: "minimal", simulationStyle: "narrative", turn: 0, factions: [], resources: {}, numericModel: { enabled: false, reason: "Numeric simulation deferred beyond P1." }, createdAt: now, updatedAt: now });
+    }
+    if (body?.mode === "murder-mystery") {
+      await writeJson(join(worldDir, "shared", "murder_mystery.json"), { schemaVersion: 1, mode: "murder-mystery", status: "minimal", hostRole: "murder_mystery_host", caseId: "opening", suspects: [], clues: [], truthLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now });
     }
 
     clearModuleCache(worldName);

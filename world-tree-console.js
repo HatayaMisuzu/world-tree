@@ -508,6 +508,41 @@ const Views = {
       </section>
 
       <section class="panel">
+        <div class="panel-head"><div><h2>世界冒险 / World RPG <span class="badge beta">Beta</span></h2><p class="sub">以 GM 方式在开放世界中冒险。粘贴世界设定或冒险背景。</p></div></div>
+        <input id="wrpgTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
+        <textarea id="wrpgText" placeholder="粘贴世界设定、冒险背景、初始场景。"></textarea>
+        <div class="actions"><button class="primary" data-action="world-rpg-start">创建世界冒险</button><span class="tiny muted">最小闭环版本，任务/战斗/成长系统后续开放。</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>解谜推理 / Mystery Puzzle <span class="badge exp">Experimental</span></h2><p class="sub">在谜题主持人的引导下探索线索、解开谜题。</p></div></div>
+        <input id="mysteryTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
+        <textarea id="mysteryText" placeholder="粘贴谜题、悬疑场景、线索片段。"></textarea>
+        <div class="actions"><button class="primary" data-action="mystery-puzzle-start">创建解谜项目</button><span class="tiny muted">最小闭环版本，推理判定系统后续开放。</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>跑团 / Tabletop <span class="badge exp">Experimental</span></h2><p class="sub">在跑团 GM 主持下进行自由规则的角色扮演冒险。</p></div></div>
+        <input id="tabletopTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
+        <textarea id="tabletopText" placeholder="粘贴跑团背景、规则偏好、开场场景。"></textarea>
+        <div class="actions"><button class="primary" data-action="tabletop-start">创建跑团项目</button><span class="tiny muted">最小闭环版本，骰子/属性/规则系统后续开放。</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>策略模拟 / Strategy Sim <span class="badge exp">Experimental</span></h2><p class="sub">在策略顾问协助下进行阵营经营与决策推演。</p></div></div>
+        <input id="strategyTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
+        <textarea id="strategyText" placeholder="粘贴阵营、局势、资源或策略目标。"></textarea>
+        <div class="actions"><button class="primary" data-action="strategy-sim-start">创建策略项目</button><span class="tiny muted">最小闭环版本，数值模拟系统后续开放。</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>剧本杀 / Murder Mystery <span class="badge exp">Experimental</span></h2><p class="sub">在案件主持人引导下调查线索、推理真相。</p></div></div>
+        <input id="murderTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
+        <textarea id="murderText" placeholder="粘贴案件背景、角色、线索设定。"></textarea>
+        <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><span class="tiny muted">最小闭环版本，真相锁/线索系统后续开放。</span></div>
+      </section>
+
+      <section class="panel">
         <div class="panel-head"><div><h2>人物卡 / Character：粘贴人物卡，开始角色扮演</h2><p class="sub">粘贴任意格式的人物卡文本（JSON / 纯文本 / 角色描述），World Tree 会创建一个 character 模式项目并使用人物卡引擎进行对话。</p></div></div>
         <input id="charCardTitle" placeholder="角色名 / 项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="charCardText" placeholder="在这里粘贴人物卡内容..."></textarea>
@@ -1246,6 +1281,11 @@ async function handleAction(e, btn) {
     if (action === "load-and-chat") return loadAndChat();
     if (action === "quick-start-chat") return quickStartChat();
     if (action === "character-start-chat") return characterStartChat();
+    if (action === "world-rpg-start") return multiModeStart("world-rpg", "#wrpgTitle", "#wrpgText");
+    if (action === "mystery-puzzle-start") return multiModeStart("mystery-puzzle", "#mysteryTitle", "#mysteryText");
+    if (action === "tabletop-start") return multiModeStart("tabletop", "#tabletopTitle", "#tabletopText");
+    if (action === "strategy-sim-start") return multiModeStart("strategy-sim", "#strategyTitle", "#strategyText");
+    if (action === "murder-mystery-start") return multiModeStart("murder-mystery", "#murderTitle", "#murderText");
     if (action === "chat-send") return sendChat();
     if (action === "clear-chat") return confirmClearChat();
     if (action === "open-command-panel") return openCommandPanel();
@@ -1381,6 +1421,33 @@ async function characterStartChat() {
   AS.workbenchMode = "chat";
   AS.view = "workbench";
   createToast("已创建人物卡项目");
+  render();
+}
+
+async function multiModeStart(modeId, titleSel, textSel) {
+  const text = U.qs(textSel)?.value.trim();
+  if (!text) return createToast("请先粘贴内容", "warn");
+  const nameInput = U.qs(titleSel)?.value.trim();
+  const title = nameInput || text.split("\n").map(x => x.trim()).find(Boolean)?.slice(0, 18) || modeId;
+  const res = await API.createModule({
+    name: `新模式_${Date.now()}`,
+    displayName: title,
+    mode: modeId,
+    dataMode: "worldbook",
+    subType: "classic",
+    preset: "epic",
+    draft: true,
+    sourceType: "pasted_text",
+    sourceText: text,
+    content: text
+  });
+  if (res.status !== "ok") throw new Error(res.errorMsg || "创建失败");
+  await refreshModules();
+  AS.selectedModule = AS.modules.find(m => m.id === res.module.id) || res.module;
+  AS.messages = [];
+  AS.workbenchMode = "chat";
+  AS.view = "workbench";
+  createToast(`已创建 ${modeId} 项目`);
   render();
 }
 

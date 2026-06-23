@@ -34,25 +34,35 @@ export const MODE_MANIFEST = Object.freeze({
     sourceType: "character_card", defaultVisibility: true,
     notes: "character vertical slice；首个功能入口。复用 character_card dataMode。"
   }),
-  "murder-mystery": mode("murder-mystery", "剧本杀", "案件、证词与推理阶段协议。", MODE_STATUS.HIDDEN, {
-    playerRole: "案件参与者", aiRole: "主持人与信息分发者", basedOn: ["murder-mystery"], dataModeHint: "worldbook", worldSubTypeHint: "murder-mystery"
+  "murder-mystery": mode("murder-mystery", "剧本杀", "案件、证词与推理阶段协议。", MODE_STATUS.ACTIVE, {
+    playerRole: "案件参与者", aiRole: "主持人与信息分发者", basedOn: ["murder-mystery"], dataModeHint: "worldbook", worldSubTypeHint: "classic",
+    sourceType: "murder_mystery_seed", defaultVisibility: true,
+    notes: "Multi-mode closure P1。最小闭环，复用 worldbook dataMode。真相锁/线索系统 deferred。"
   }),
-  tabletop: mode("tabletop", "跑团", "规则、检定与团务会话协议。", MODE_STATUS.HIDDEN, {
-    playerRole: "玩家角色", aiRole: "跑团主持人", basedOn: ["tabletop"], dataModeHint: "worldbook", worldSubTypeHint: "tabletop"
+  tabletop: mode("tabletop", "跑团", "规则、检定与团务会话协议。", MODE_STATUS.ACTIVE, {
+    playerRole: "玩家角色", aiRole: "跑团主持人", basedOn: ["tabletop"], dataModeHint: "worldbook", worldSubTypeHint: "classic",
+    sourceType: "tabletop_seed", defaultVisibility: true,
+    notes: "Multi-mode closure P1。最小闭环，复用 worldbook dataMode。骰子/属性/规则 deferred。"
   }),
-  "mystery-puzzle": mode("mystery-puzzle", "解密 / 推理", "场景谜题与线索推理协议。", MODE_STATUS.PLANNED, {
-    playerRole: "调查者", aiRole: "谜题主持人", basedOn: [], dataModeHint: "worldbook", worldSubTypeHint: "mystery-puzzle"
+  "mystery-puzzle": mode("mystery-puzzle", "解密 / 推理", "场景谜题与线索推理协议。", MODE_STATUS.ACTIVE, {
+    playerRole: "调查者", aiRole: "谜题主持人", basedOn: [], dataModeHint: "worldbook", worldSubTypeHint: "classic",
+    sourceType: "mystery_puzzle_seed", defaultVisibility: true,
+    notes: "Multi-mode closure P1。最小闭环，复用 worldbook dataMode。推理判定/真相锁 deferred。"
   }),
-  "world-rpg": mode("world-rpg", "世界书 / RPG", "持续世界、任务、关系与成长协议。", MODE_STATUS.PLANNED, {
-    playerRole: "世界中的行动者", aiRole: "世界叙事 DM", basedOn: ["worldbook", "rpg"], dataModeHint: "worldbook", worldSubTypeHint: "rpg",
-    sourceType: "worldbook"
+  "world-rpg": mode("world-rpg", "世界书 / RPG", "持续世界、任务、关系与成长协议。", MODE_STATUS.ACTIVE, {
+    playerRole: "世界中的行动者", aiRole: "世界叙事 DM", basedOn: ["worldbook", "rpg"], dataModeHint: "worldbook", worldSubTypeHint: "classic",
+    sourceType: "world_rpg_seed", defaultVisibility: true,
+    notes: "Multi-mode closure P1。最小闭环，复用 worldbook dataMode。深功能（任务/战斗/成长）deferred。"
   }),
-  "strategy-sim": mode("strategy-sim", "模拟经营 / 策略", "资源、势力、决策与回合推进协议。", MODE_STATUS.HIDDEN, {
-    playerRole: "管理者与决策者", aiRole: "模拟裁判", basedOn: ["sim"], dataModeHint: "worldbook", worldSubTypeHint: "sim"
+  "strategy-sim": mode("strategy-sim", "模拟经营 / 策略", "资源、势力、决策与回合推进协议。", MODE_STATUS.ACTIVE, {
+    playerRole: "管理者与决策者", aiRole: "模拟裁判", basedOn: ["sim"], dataModeHint: "worldbook", worldSubTypeHint: "classic",
+    sourceType: "strategy_sim_seed", defaultVisibility: true,
+    notes: "Multi-mode closure P1。最小闭环，复用 worldbook dataMode。数值模拟 deferred。"
   }),
   "creation-forge": mode("creation-forge", "创作模式 / 炼金台", "素材提取、整理与世界构建协议。", MODE_STATUS.PLANNED, {
     playerRole: "创作者", aiRole: "结构化创作协作者", basedOn: ["M-创作"], dataModeHint: "worldbook", worldSubTypeHint: "classic",
-    sourceType: "creation"
+    sourceType: "creation", defaultVisibility: false,
+    notes: "Deferred — will be the last mode entry closure. 本轮不得开放。"
   })
 });
 

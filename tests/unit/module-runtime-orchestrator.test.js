@@ -145,8 +145,8 @@ test("10. missing wrappers are collected but not fatal", () => {
 // ─── Test 11: hidden mode packet 不改变 visibility ───
 
 test("11. hidden mode generates packet without changing visibility", () => {
-  const hiddenModes = ["murder-mystery", "tabletop", "strategy-sim"];
-  for (const modeId of hiddenModes) {
+  const deferredModes = ["creation-forge"];
+  for (const modeId of deferredModes) {
     assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
     assert.equal(isModeVisible(modeId), false);
 

@@ -134,8 +134,8 @@ test("12. createModeRuntimePacket('creation-forge') generates a structural packe
 // ─── Test 13: hidden mode packet 可生成但不改变 visibility ───
 
 test("13. hidden mode packet generates without changing visibility", () => {
-  const hiddenModes = ["murder-mystery", "tabletop", "strategy-sim"];
-  for (const modeId of hiddenModes) {
+  const deferredModes = ["creation-forge"];
+  for (const modeId of deferredModes) {
     assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
     assert.equal(isModeVisible(modeId), false);
 

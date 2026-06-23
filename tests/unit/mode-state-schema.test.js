@@ -82,16 +82,13 @@ test("7. world-rpg moduleState has module keys", () => {
 // ─── Test 8: hidden mode visibleToUser = false ───
 
 test("8. hidden mode envelope generates but visibleToUser = false", () => {
-  for (const modeId of ["murder-mystery", "tabletop", "strategy-sim"]) {
-    assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
+  for (const modeId of ["creation-forge"]) {
+    assert.equal(getMode(modeId)?.status, MODE_STATUS.PLANNED);
     assert.equal(isModeVisible(modeId), false);
 
     const env = createModeStateEnvelope(modeId);
     assert.equal(env.mode, modeId);
     assert.equal(env.runtimeFlags.visibleToUser, false);
-
-    // visibility unchanged
-    assert.equal(isModeVisible(modeId), false);
   }
 });
 
@@ -151,7 +148,7 @@ test("13. validateModeStateEnvelope returns ok=false for invalid envelope", () =
   assert.ok(r1.errors.some((e) => e.includes("allowAutoApply")));
 
   // hidden mode visibleToUser = true 应失败
-  const badFlag = createModeStateEnvelope("murder-mystery");
+  const badFlag = createModeStateEnvelope("creation-forge");
   badFlag.runtimeFlags.visibleToUser = true;
   const r2 = validateModeStateEnvelope(badFlag);
   assert.equal(r2.ok, false);

@@ -44,7 +44,11 @@ export function assertModeProjectCanBeCreated(modeId, options = {}) {
 const MODE_DEFAULTS = {
   "quick-setting": { title: "未命名设定", sourceType: "pasted_text" },
   character: { title: "未命名人物卡", sourceType: "character_card" },
-  "world-rpg": { title: "未命名世界", sourceType: "worldbook" },
+  "world-rpg": { title: "未命名世界冒险", sourceType: "world_rpg_seed" },
+  "mystery-puzzle": { title: "未命名谜题", sourceType: "mystery_puzzle_seed" },
+  tabletop: { title: "未命名跑团", sourceType: "tabletop_seed" },
+  "strategy-sim": { title: "未命名策略模拟", sourceType: "strategy_sim_seed" },
+  "murder-mystery": { title: "未命名剧本杀", sourceType: "murder_mystery_seed" },
   "creation-forge": { title: "未命名创作项目", sourceType: "creation" }
 };
 
@@ -201,6 +205,23 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
       createdAt: now,
       updatedAt: now
     }];
+  }
+
+  // Multi-mode closures: mode-specific shared state files
+  if (mode === "world-rpg") {
+    files["shared/world_rpg.json"] = { schemaVersion: 1, mode: "world-rpg", status: "minimal", gmMode: true, currentSceneId: "opening", questSeed: null, playerState: { name: "玩家", role: "adventurer" }, notes: [], createdAt: now, updatedAt: now };
+  }
+  if (mode === "mystery-puzzle") {
+    files["shared/mystery.json"] = { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now };
+  }
+  if (mode === "tabletop") {
+    files["shared/tabletop.json"] = { schemaVersion: 1, mode: "tabletop", status: "minimal", gmMode: true, ruleset: "freeform", currentSceneId: "opening", diceSystem: { enabled: false, reason: "Dice system deferred beyond P1." }, party: [], createdAt: now, updatedAt: now };
+  }
+  if (mode === "strategy-sim") {
+    files["shared/strategy.json"] = { schemaVersion: 1, mode: "strategy-sim", status: "minimal", simulationStyle: "narrative", turn: 0, factions: [], resources: {}, numericModel: { enabled: false, reason: "Numeric simulation deferred beyond P1." }, createdAt: now, updatedAt: now };
+  }
+  if (mode === "murder-mystery") {
+    files["shared/murder_mystery.json"] = { schemaVersion: 1, mode: "murder-mystery", status: "minimal", hostRole: "murder_mystery_host", caseId: "opening", suspects: [], clues: [], truthLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now };
   }
 
   return files;

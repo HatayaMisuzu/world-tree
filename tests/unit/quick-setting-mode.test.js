@@ -60,7 +60,6 @@ test("quick-setting initial state contains JSON-safe graph metadata", () => {
 
 test("quick-setting helper does not activate hidden modes", () => {
   createQuickSettingMetadata();
-  for (const modeId of ["murder-mystery", "tabletop", "strategy-sim"]) {
-    assert.equal(getMode(modeId)?.status, MODE_STATUS.HIDDEN);
+  assert.equal(getMode("creation-forge")?.status, MODE_STATUS.PLANNED);
   }
 });
