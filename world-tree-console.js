@@ -115,6 +115,7 @@ const API = {
   kernel(moduleKey, tail = "kernel/summary") { return API.get(`/api/projects/${encodeURIComponent(moduleKey)}/${tail}`); },
   kernelPost(moduleKey, tail, data = {}) { return API.post(`/api/projects/${encodeURIComponent(moduleKey)}/${tail}`, data); },
   health() { return API.get("/api/health"); },
+  workflowStatus() { return API.get("/api/workflow/status"); },
 };
 
 const AS = {
@@ -331,6 +332,19 @@ function renderKernelPanel() {
       <section><div class="item-head"><strong>素材处理</strong><button class="small" data-action="kernel-ingest-material">导入文本</button></div>
         ${candidates.slice(0, 5).map(item => `<div class="kernel-row"><span title="${U.esc((item.conflicts || []).join(", "))}">${U.esc(item.title || item.name || item.id)} · 风险 ${U.esc(item.riskLevel || "unknown")} · ${U.esc(item.source?.label || "unknown source")}</span><button class="small" data-action="kernel-deliver-candidate" data-candidate-id="${U.esc(item.id)}">投递</button></div>`).join("") || `<p class="tiny muted">暂无候选</p>`}
       </section>
+    </div>
+  </details>`;
+}
+
+function renderWorkflowPanel() {
+  if (!AS.selectedModule || String(AS.selectedModule.id || "").startsWith("char:") || AS.selectedModule.id === "__quick__") return "";
+  const wf = AS.workflowStatus;
+  return `<details class="kernel-panel" data-workflow-panel>
+    <summary><strong>Workflow</strong><span class="tiny muted">${wf ? `${wf.workflowLayer || "active"} · ${wf.services?.length || 8} services` : "点击加载"}</span></summary>
+    <div class="kernel-grid" style="grid-template-columns:1fr 1fr">
+      <section><strong>状态</strong><p class="tiny">${wf ? `preflightProtected: ${wf.preflightProtected} · layer: ${wf.workflowLayer}` : "未加载"}</p>
+        <button class="small" data-action="workflow-refresh">刷新</button></section>
+      <section><strong>服务</strong><p class="tiny">${wf?.services ? wf.services.join(", ") : "-"}</p></section>
     </div>
   </details>`;
 }
@@ -2213,6 +2227,7 @@ function createToast(msg, tone = "") {
 async function updateHealth() {
   try {
     AS.health = await API.health();
+    AS.workflowStatus = await API.workflowStatus().catch(() => null);
     if (AS.health?.version) CFG.version = AS.health.version;
     const versionNode = U.qs("#appVersion");
     if (versionNode) versionNode.textContent = `叙事引擎 v${CFG.version}`;

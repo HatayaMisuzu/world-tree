@@ -4,11 +4,36 @@ import { WORKFLOW_TYPES } from "../workflow-types.js";
 
 export async function handleWorkflowApiRequest(body = {}, deps = {}) {
   const { workflowType, modeId, projectId, branchId, userInput, options } = body || {};
+  // Build real LLM adapter from server deps if available
+  const workflowDeps = { ...deps };
+  if (deps.realLlmCall && deps.llmConfig && deps.apiKey) {
+    workflowDeps.realLlm = async ({ envelope, promptPacket }) => {
+      try {
+        const baseUrl = String(deps.llmConfig.llmBaseUrl || "").replace(/\/$/, "");
+        const model = deps.llmConfig.llmModel || "";
+        if (!baseUrl || !model) throw new Error("LLM not configured");
+        const messages = [
+          { role: "system", content: "You are World Tree. Respond in Chinese. Follow the prompt." },
+          { role: "user", content: promptPacket?.promptText || envelope.userInput || "" }
+        ];
+        const resp = await fetch(`${baseUrl}/chat/completions`, {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${deps.apiKey}` },
+          body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 1024 }),
+          signal: AbortSignal.timeout(30000)
+        });
+        if (!resp.ok) throw new Error(`LLM HTTP ${resp.status}`);
+        const data = await resp.json();
+        return { text: data?.choices?.[0]?.message?.content || "", llmUsed: true, model };
+      } catch (e) {
+        return { text: "", llmUsed: false, warnings: [`LLM call failed: ${e.message}`] };
+      }
+    };
+  }
   const result = await runWorkflowAction({
     explicitWorkflowType: workflowType, modeId: modeId || "unknown",
     moduleKey: projectId, activeBranchId: branchId || "main", userInput: userInput || "",
     options: options || {}, kernelContext: deps.kernelContext || null
-  });
+  }, workflowDeps);
   const safe = { ...result };
   if (safe.debugSummary) {
     const s = JSON.stringify(safe.debugSummary);

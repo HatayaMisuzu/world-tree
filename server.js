@@ -2772,7 +2772,11 @@ async function handleAPI(req, res) {
       const body = await readBody(req);
       const config = await loadConfig();
       const apiKey = await getActiveLlmValue();
-      const deps = { kernelContext: null };
+      const deps = {
+        kernelContext: null,
+        llmConfig: config,
+        apiKey
+      };
       if (body.projectId) {
         const pj = resolveKernelProject(body.projectId);
         if (pj) deps.kernelContext = { projectRoot: pj.projectRoot, modeId: pj.modeId, activeBranchId: body.branchId || "main" };

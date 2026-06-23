@@ -24,12 +24,12 @@ function selectService(wt) {
   return playTurnWorkflowService;
 }
 
-export async function runWorkflowAction(input = {}) {
+export async function runWorkflowAction(input = {}, deps = {}) {
   const workflowType = routeWorkflowIntent(input);
   const envelope = createWorkflowContextEnvelope({ ...input, workflowType });
   const authority = decideWorkflowAuthority(envelope, input.intent || input);
   const service = selectService(workflowType);
-  const raw = await service.run(envelope, { authorityDecision: authority });
+  const raw = await service.run(envelope, { authorityDecision: authority, deps });
   const result = routeWorkflowOutput(envelope, raw, authority);
   const trace = buildWorkflowTrace(envelope, result, raw?.debug || {});
   return { ...result, debugSummary: trace };
