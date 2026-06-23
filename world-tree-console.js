@@ -112,6 +112,8 @@ const API = {
   telemetry(moduleKey) { return API.get(`/api/dashboard/telemetry?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   entities(moduleKey) { return API.get(`/api/dashboard/entities?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   narrative(moduleKey) { return API.get(`/api/dashboard/narrative?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  kernel(moduleKey, tail = "kernel/summary") { return API.get(`/api/projects/${encodeURIComponent(moduleKey)}/${tail}`); },
+  kernelPost(moduleKey, tail, data = {}) { return API.post(`/api/projects/${encodeURIComponent(moduleKey)}/${tail}`, data); },
   health() { return API.get("/api/health"); },
 };
 
@@ -150,6 +152,9 @@ const AS = {
   lastScene: "",
   lastStatusSections: {},
   dashboardData: {},
+  kernel: null,
+  kernelBranches: [],
+  kernelProcessing: [],
   turnDebug: null,
   worldPack: null,
   importPreview: null,
@@ -271,6 +276,7 @@ const C = {
           <textarea id="chatInput" placeholder="续写这一幕... 输入 / 调用命令，Enter 发送"></textarea>
           <button class="primary" data-action="chat-send" ${AS.busy ? "disabled" : ""}>发送</button>
         </div>
+        ${renderKernelPanel()}
       </section>
       ${renderStatusPanel()}
       ${renderDeveloperObservabilityDrawer()}
@@ -296,6 +302,37 @@ const C = {
 
 function currentTurnStateFrame() {
   return AS.selectedTurnId ? AS.selectedTurnFrame : AS.latestTurnFrame;
+}
+
+function renderKernelPanel() {
+  if (!AS.selectedModule || String(AS.selectedModule.id || "").startsWith("char:") || AS.selectedModule.id === "__quick__") return "";
+  const kernel = AS.kernel;
+  const metrics = kernel?.telemetry?.metrics || {};
+  const branches = AS.kernelBranches || [];
+  const proposals = kernel?.pendingProposals || [];
+  const windows = kernel?.openStopLossWindows || [];
+  const candidates = AS.kernelProcessing || [];
+  const metricLabels = { stability: "世界稳定", mysteryLoad: "谜团负载", narrativeMomentum: "叙事动量", conflictPressure: "冲突压力", characterStress: "角色压力", memoryLoad: "记忆负载" };
+  const levelLabels = { low: "低", medium: "中", high: "高", critical: "危险", stable: "平稳", tense: "紧张", moving: "推进中", stalled: "停滞" };
+  return `<details class="kernel-panel" data-kernel-panel>
+    <summary><strong>世界内核</strong><span class="tiny muted">${kernel ? `P0/P1/P2 · ${U.esc(kernel.activeBranchId || "main")}` : "点击加载"}</span></summary>
+    <div class="kernel-grid">
+      <section><div class="item-head"><strong>分支</strong><button class="small" data-action="kernel-create-branch">新建</button></div>
+        <div class="chip-row">${branches.map(branch => `<span><button class="small ${branch.id === kernel?.activeBranchId ? "primary" : ""}" data-action="kernel-switch-branch" data-branch-id="${U.esc(branch.id)}" ${branch.status === "archived" ? "disabled" : ""}>${U.esc(branch.label || branch.id)}</button>${branch.id !== "main" ? `<button class="small" data-action="kernel-diff-branch" data-branch-id="${U.esc(branch.id)}">差异</button>` : ""}</span>`).join("") || `<span class="tiny muted">尚未加载</span>`}</div>
+      </section>
+      <section><div class="item-head"><strong>遥测</strong><button class="small" data-action="kernel-refresh-telemetry">刷新</button></div>
+        <p class="tiny muted">${Object.entries(metrics).slice(0, 6).map(([key, value]) => `${U.esc(metricLabels[key] || key)}：${U.esc(levelLabels[value] || value)}`).join(" · ") || "暂无遥测"}</p>
+        <button class="small" data-action="kernel-auto-light">Auto-light 预演</button>
+      </section>
+      <section><div class="item-head"><strong>提案</strong><span class="tiny muted">${proposals.length} 待审</span></div>
+        ${proposals.slice(0, 5).map(item => `<div class="kernel-row" data-proposal-id="${U.esc(item.id)}"><span title="${U.esc((item.affectedFiles || []).join(", "))}">${U.esc(item.title)} · ${U.esc(item.impactLevel)}${item.reversible ? " · 可逆" : ""}</span><button class="small" data-action="kernel-approve-proposal" data-impact="${U.esc(item.impactLevel)}" data-second-confirm="${item.requiresSecondConfirm === true}">${item.requiresSecondConfirm || item.impactLevel === "critical" ? "二次确认" : "批准"}</button></div>`).join("") || `<p class="tiny muted">暂无待审提案</p>`}
+        ${windows.slice(0, 5).map(item => `<div class="kernel-row"><span>止损窗口：${U.esc(item.proposalId)}</span><button class="small danger" data-action="kernel-reverse-proposal" data-proposal-id="${U.esc(item.proposalId)}">生成逆操作</button></div>`).join("")}
+      </section>
+      <section><div class="item-head"><strong>素材处理</strong><button class="small" data-action="kernel-ingest-material">导入文本</button></div>
+        ${candidates.slice(0, 5).map(item => `<div class="kernel-row"><span title="${U.esc((item.conflicts || []).join(", "))}">${U.esc(item.title || item.name || item.id)} · 风险 ${U.esc(item.riskLevel || "unknown")} · ${U.esc(item.source?.label || "unknown source")}</span><button class="small" data-action="kernel-deliver-candidate" data-candidate-id="${U.esc(item.id)}">投递</button></div>`).join("") || `<p class="tiny muted">暂无候选</p>`}
+      </section>
+    </div>
+  </details>`;
 }
 
 function renderChangeMark(value, status = "") {
@@ -1123,7 +1160,61 @@ async function selectModule(id, targetView = "chat") {
   await CH.loadServer(mod);
   await loadLatestStatusFrame();
   await loadWorldbookIfPossible();
+  await loadKernelData();
   AS.view = targetView;
+}
+
+async function loadKernelData() {
+  const id = AS.selectedModule?.id || "";
+  if (!id || id.startsWith("char:") || id === "__quick__") {
+    AS.kernel = null; AS.kernelBranches = []; AS.kernelProcessing = [];
+    return;
+  }
+  const [summary, branchData, processing] = await Promise.all([
+    API.kernel(id), API.kernel(id, "branches"), API.kernel(id, "processing/candidates")
+  ]);
+  AS.kernel = summary;
+  AS.kernelBranches = branchData.branches || [];
+  AS.kernelProcessing = processing.candidates || [];
+}
+
+async function kernelAction(action, btn) {
+  const id = AS.selectedModule?.id || "";
+  if (!id || id.startsWith("char:") || id === "__quick__") return createToast("请先选择世界项目", "warn");
+  if (action === "kernel-create-branch") {
+    const label = prompt("新分支名称");
+    if (!label) return;
+    const normalized = label.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+    const branchId = normalized || `branch-${Date.now().toString(36)}`;
+    await API.kernelPost(id, "branches/create", { id: branchId, label });
+  } else if (action === "kernel-switch-branch") {
+    await API.kernelPost(id, `branches/${encodeURIComponent(btn.dataset.branchId)}/switch`);
+  } else if (action === "kernel-diff-branch") {
+    const result = await API.kernel(id, `branches/${encodeURIComponent(btn.dataset.branchId)}/diff?from=main`);
+    alert(`与 main 的差异摘要：\n${U.json(result.diff || {})}`);
+  } else if (action === "kernel-refresh-telemetry") {
+    await API.kernelPost(id, "telemetry/refresh");
+  } else if (action === "kernel-auto-light") {
+    const result = await API.kernelPost(id, "advance/auto-light", { userInput: "继续" });
+    createToast(result.result?.status === "ready" ? "Auto-light 预演已就绪" : `Auto-light 已拦截：${result.result?.reason || "需用户决策"}`, result.result?.status === "ready" ? "ok" : "warn");
+  } else if (action === "kernel-approve-proposal") {
+    const proposalId = btn.closest("[data-proposal-id]")?.dataset.proposalId;
+    const critical = btn.dataset.impact === "critical" || btn.dataset.secondConfirm === "true";
+    if (!confirm(critical ? "这是关键提案。确认进入第二次批准？" : "批准此提案？")) return;
+    if (critical && !confirm("第二次确认：允许该关键提案进入已批准状态？")) return;
+    await API.kernelPost(id, `proposals/${encodeURIComponent(proposalId)}/approve`, { secondConfirm: critical, currentTurn: AS.selectedModule.turnCount || 0 });
+  } else if (action === "kernel-reverse-proposal") {
+    if (!confirm("生成一个待审逆操作提案？原变更不会立即被修改。")) return;
+    await API.kernelPost(id, `proposals/${encodeURIComponent(btn.dataset.proposalId)}/reverse`);
+  } else if (action === "kernel-ingest-material") {
+    const text = prompt("粘贴要提取的素材文本");
+    if (!text) return;
+    await API.kernelPost(id, "processing/ingest", { text, sourceType: "manual-ui" });
+  } else if (action === "kernel-deliver-candidate") {
+    await API.kernelPost(id, `processing/candidates/${encodeURIComponent(btn.dataset.candidateId)}/deliver`);
+  }
+  await loadKernelData();
+  render();
 }
 
 async function refreshModules() {
@@ -1287,6 +1378,7 @@ async function handleAction(e, btn) {
     if (action === "strategy-sim-start") return multiModeStart("strategy-sim", "#strategyTitle", "#strategyText");
     if (action === "murder-mystery-start") return multiModeStart("murder-mystery", "#murderTitle", "#murderText");
     if (action === "chat-send") return sendChat();
+    if (action.startsWith("kernel-")) return kernelAction(action, btn);
     if (action === "clear-chat") return confirmClearChat();
     if (action === "open-command-panel") return openCommandPanel();
     if (action === "toggle-developer-observability") { AS.developerObservabilityOpen = !AS.developerObservabilityOpen; if (AS.developerObservabilityOpen) await refreshObserve(); return render(); }
@@ -1480,8 +1572,9 @@ async function sendChat() {
       CH.persist();
       AS.lastStatusSections = res.parsedSections || {};
       AS.engineState = res.engineState || AS.engineState;
+      AS.kernel = res.kernel || AS.kernel;
       if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
-      if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve()]);
+      if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve(), loadKernelData()]);
     } else {
       CH.add("error", res.errorMsg || "LLM 返回错误");
     }

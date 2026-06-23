@@ -288,8 +288,9 @@ export async function sendDualStageTurn(opts = {}) {
     engineState, injectedWorldbook = [],
     knowledgeSnippets = [], knowledgeCards = [], cardContext = [],
     moduleKey = "unloaded", dataMode = "worldbook",
-    turnPrep = null, directionPacket = null,
-    writerPacket = null,  // 🆕 外部传入的 writer 包（由 buildEnginePacket 构建，按 dataMode 分发）
+      turnPrep = null, directionPacket = null,
+      writerPacket = null,  // 🆕 外部传入的 writer 包（由 buildEnginePacket 构建，按 dataMode 分发）
+      kernelContext = null,
     skipDirector = true,  // 默认用 JS 方向包
     skipGuardian = true,  // 默认跳过 Guardian
     useLlmAnalysis = false, // 🆕 轻量 LLM 分析（混合模式）
@@ -429,13 +430,16 @@ export async function sendDualStageTurn(opts = {}) {
   }
 
   // === Step 2: Writer LLM ===
-  const writerInput = writerPacket || buildWriterPacket({
-    model, input, engineState,
+  const baseWriterInput = writerPacket || buildWriterPacket({
+      model, input, engineState,
     directionPacket: finalDirectionPacket,
     injectedWorldbook, knowledgeSnippets, knowledgeCards, cardContext,
     turnPrep,
     proximityData: turnPrep?.proximityData || null
-  });
+    });
+  const writerInput = kernelContext?.promptText
+    ? `${baseWriterInput}\n\n${kernelContext.promptText}`
+    : baseWriterInput;
 
   const writerResult = await callLLMByRole("writer", writerInput, config, apiKey, { messages });
   const rawText = writerResult.rawResponse;

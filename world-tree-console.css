@@ -151,6 +151,12 @@ pre{margin:0;max-height:360px;overflow:auto;white-space:pre-wrap;overflow-wrap:a
 .mechanism-check input{width:auto;min-height:auto}
 
 .chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;min-height:calc(100vh - 128px)}
+.kernel-panel{margin-top:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2,rgba(255,255,255,.025));padding:10px}
+.kernel-panel summary{cursor:pointer;display:flex;justify-content:space-between;gap:12px}
+.kernel-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.kernel-grid>section{border:1px solid var(--border);border-radius:10px;padding:10px;min-width:0}
+.kernel-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px}
+.kernel-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chat-card{display:grid;grid-template-rows:auto minmax(360px,1fr) auto;gap:10px;min-height:620px}
 .chat-messages{display:grid;align-content:start;gap:12px;min-height:360px;overflow:auto;border:1px solid var(--line-soft);border-radius:14px;background:#fbf7ee;padding:16px}
 .chat-message{display:grid;gap:6px;max-width:78%;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 12px}

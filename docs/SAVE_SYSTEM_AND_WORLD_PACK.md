@@ -38,3 +38,7 @@
 - runtime 私密内容默认不导出
 - mode metadata 必须保留
 - shared 文件全部导出
+
+## Branch-local saves
+
+启用时间线分支后，活动存档根为 `branches/<activeBranchId>/`，其下拥有独立 `shared/` 与 `runtime/`。真实回合的 chat、state、场景摘要、遥测、提案、Growth Tree 和处理候选写入活动分支；根目录 `world.json` 只保留项目级元数据。导出逻辑仍遵守现有 World Pack 安全筛选，不把 debug、密钥或隐藏运行数据当作 canon。

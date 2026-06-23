@@ -33,13 +33,14 @@
     "test:p0": "node --test tests/unit/living-world-kernel-p0.test.js",
     "test:p1": "node --test tests/unit/experience-stability-kernel-p1.test.js",
     "test:p2": "node --test tests/unit/long-play-kernel-p2.test.js",
+    "test:kernel": "node --test tests/unit/kernel-turn-context.test.js tests/integration/kernel-completion.test.js",
     "test:unit": "node --test tests/unit/direction-packet.test.js tests/unit/emotion-state.test.js tests/unit/output-parser.test.js tests/unit/guardian.test.js tests/unit/worldbook.test.js tests/unit/worldbook-runtime.test.js tests/unit/alchemy.test.js tests/unit/alchemy-preview-service.test.js tests/unit/mechanism-status.test.js tests/unit/overlay-store.test.js tests/unit/guardian-overlay.test.js tests/unit/llm.test.js tests/unit/path-security.test.js tests/unit/fs-utils.test.js tests/unit/module-service.test.js tests/unit/module-registry.test.js tests/unit/mode-module-map.test.js tests/unit/quick-setting-mode.test.js tests/unit/legacy-module-wrappers.test.js tests/unit/mode-runtime.test.js tests/unit/module-runtime-orchestrator.test.js tests/unit/mode-state-schema.test.js tests/unit/mode-project-factory.test.js tests/unit/character-mode.test.js tests/unit/multi-mode-entry.test.js tests/unit/mode-artifact-contract.test.js tests/unit/mode-capsule-registry.test.js tests/unit/character-v1-services.test.js tests/unit/character-module-integration.test.js tests/unit/worldbook-foundation.test.js tests/unit/grand-world-v1.test.js tests/unit/system-closure.test.js",
     "test:integration": "node --test tests/integration/*.test.js",
     "audit": "node scripts/audit.mjs",
     "interface-audit": "node scripts/interface-audit.mjs",
     "docs:check": "node scripts/check-docs.mjs",
     "legacy:check": "node scripts/check-legacy-status.mjs",
-    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:unit && npm run test:integration && npm run interface-audit"
+    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:unit && npm run test:integration && npm run interface-audit"
   },
   "keywords": [
     "world-tree",

@@ -3,6 +3,7 @@ import { getModePromptProfile, buildModePromptResult } from "../prompts/mode-pro
 import { createModeInputPacket } from "./mode-input-packets.js";
 import { createModeOutputPacket, normalizeModeOutputPacket, validateModeOutputPacket } from "./mode-output-packets.js";
 import { filterContextByModeVisibility } from "./mode-isolation-policy.js";
+import { createKernelTurnContext, summarizeKernelTurnContext } from "../kernel/kernel-turn-context.js";
 
 /**
  * 创建模式运行错误结果。
@@ -97,8 +98,19 @@ export async function runWorldTreeModeTurn(project = {}, userInput = {}, options
   const inputPacket = createModeInputPacket(modeId, project, userInput);
   const filtered = filterContextByModeVisibility(modeId, inputPacket.sharedContext);
 
+  const kernelContext = await createKernelTurnContext({
+    projectRoot: options.projectRoot || project.projectRoot || "",
+    modeId,
+    userInput: userInput.text || "",
+    model: project.model || {},
+    engineState: options.engineState || project.engineState || {},
+    sharedData: filtered,
+    runtimeFlags: options.runtimeFlags || {}
+  });
+
   // 将过滤后的 context 注入 inputPacket，确保 prompt 和 adapter 收到的是隔离后的数据
   inputPacket.sharedContext = filtered;
+  inputPacket.sharedContext.kernel = summarizeKernelTurnContext(kernelContext);
 
   // 使用 route.promptProfileId 显式映射（不再猜测 prompt profile）
   const profileId = route.promptProfileId;
@@ -146,11 +158,13 @@ export async function runWorldTreeModeTurn(project = {}, userInput = {}, options
   outputPacket.debug = {
     promptProfileId: profileId,
     inputPacketType: route.inputPacketType,
-    outputPacketType: route.outputPacketType
+    outputPacketType: route.outputPacketType,
+    kernel: summarizeKernelTurnContext(kernelContext)
   };
 
   return {
     ok: true,
+    kernelContext: summarizeKernelTurnContext(kernelContext),
     outputPacket,
     uiSummary: {
       text: result.text?.slice(0, 200),

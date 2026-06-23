@@ -43,3 +43,7 @@
 - 测试结果
 - 风险
 - 下一步建议
+
+## P0-P2 Kernel 操作约束
+
+Agent 应通过 `createKernelTurnContext()` 获取当前活动分支与 prompt-safe P0/P1/P2 sidecar，不自行拼接 branch 路径。遥测只能写自身 runtime 日志；Auto-light 每请求最多一个 beat；processing 只能投递 Growth Tree 或 proposal queue。任何 shared canon 修改必须创建并批准 proposal，critical 还需二次确认；reverse 也必须保持为待审提案。对外报告应明确区分“真实 turn 已接入”“UI/API 可操作”和仍为内部 sidecar 的能力。

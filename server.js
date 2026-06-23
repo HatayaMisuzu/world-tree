@@ -31,6 +31,17 @@ import {
   emptyConfirmedState,
   scrubStateValue
 } from "./src/server/turn-state-frame-service.js";
+import { createKernelTurnContext, summarizeKernelTurnContext } from "./src/core/kernel/kernel-turn-context.js";
+import { transitionScene } from "./src/core/scene/scene-summary-chain.js";
+import { collectWorldTelemetry } from "./src/core/telemetry/world-telemetry.js";
+import { detectWorldbookCandidates } from "./src/core/worldbook/worldbook-candidate-detector.js";
+import { recordWorldbookCandidate } from "./src/core/worldbook/worldbook-growth-tree.js";
+import { updateCharacterInertia } from "./src/core/character/emotional-inertia.js";
+import {
+  getKernelSummary, handleBranchOperation, getLatestKernelTelemetry, refreshKernelTelemetry,
+  previewAutoLight, approveKernelProposal, getKernelStopLoss, reverseKernelProposal,
+  ingestProcessingMaterial, listProcessingCandidates, deliverProcessingById
+} from "./src/server/kernel-service.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -594,23 +605,24 @@ function readOverlayData(worldDir) {
 }
 
 /** 完整持久化：保存引擎状态 + 对话记录 + 记忆快照 + overlay writeSet */
-async function persistTurn(moduleId, input, result, engineState) {
+async function persistTurn(moduleId, input, result, engineState, kernelContext = null) {
   const isCharacter = String(moduleId || "").startsWith("char:");
   const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, "").replace(/^char:/, ""), "");
-  const baseDir = isCharacter ? join(CHARACTERS_DIR(), worldName) : moduleWorldDir(moduleId);
-  if (!worldName || !baseDir || !pathWithinRoot(isCharacter ? CHARACTERS_DIR() : WORLDS_DIR(), baseDir)) return null;
+  const projectRoot = isCharacter ? join(CHARACTERS_DIR(), worldName) : moduleWorldDir(moduleId);
+  const proposedBranchRoot = kernelContext?.branchRoot || projectRoot;
+  const baseDir = !isCharacter && proposedBranchRoot && pathWithinRoot(projectRoot, proposedBranchRoot) ? proposedBranchRoot : projectRoot;
+  if (!worldName || !projectRoot || !baseDir || !pathWithinRoot(isCharacter ? CHARACTERS_DIR() : WORLDS_DIR(), projectRoot) || !pathWithinRoot(projectRoot, baseDir)) return null;
   if (!existsSync(baseDir)) return null;
   const rtDir = join(baseDir, "runtime");
   ensureDir(rtDir);
 
-  const metaFile = isCharacter ? join(rtDir, "state.json") : join(baseDir, "world.json");
   const previousRuntimeState = readJsonSync(join(rtDir, "state.json"), {});
-  const turnCount = (readJsonSync(metaFile, {}).turnCount || 0) + 1;
+  const turnCount = (previousRuntimeState.turnCount || readJsonSync(join(projectRoot, "world.json"), {}).turnCount || 0) + 1;
   const now = new Date().toISOString();
   const turnId = `turn-${turnCount}`;
   const userId = `turn-${turnCount}-user`;
   const assistantId = `turn-${turnCount}-assistant`;
-  const saveId = safeEntityId(previousRuntimeState.activeBranch || "main", "main");
+  const saveId = safeEntityId(kernelContext?.activeBranchId || previousRuntimeState.activeBranch || "main", "main");
   const engineSnapshot = result.overlayPatch?._engineState || null;
 
   // 🔄 自动备份 chat.jsonl（保留最近 5 个备份）
@@ -633,7 +645,7 @@ async function persistTurn(moduleId, input, result, engineState) {
   await writeJson(join(rtDir, "state.json"), {
     ...previousRuntimeState,
     turnCount,
-    activeBranch: previousRuntimeState.activeBranch || "main",
+    activeBranch: saveId,
     lastScene: result.parsedSections?.["状态"]?.scene || "",
     lastInput: input,
     engineState: engineState || {},
@@ -664,9 +676,39 @@ async function persistTurn(moduleId, input, result, engineState) {
     const st = readJsonSync(join(rtDir, "state.json"), {});
     await writeJson(join(rtDir, "state.json"), { ...st, turnCount, lastInput: input, engineState: engineState || {}, engineSnapshot, updatedAt: now });
   } else {
-    const wj = readJsonSync(join(baseDir, "world.json"), {});
+    const wj = readJsonSync(join(projectRoot, "world.json"), {});
     wj.turnCount = turnCount; wj.updatedAt = now;
-    await writeJson(join(baseDir, "world.json"), wj);
+    await writeJson(join(projectRoot, "world.json"), wj);
+  }
+
+  // Kernel hooks are branch-local sidecars. They never write hidden truth into prompts
+  // and never bypass proposal approval for canonical changes.
+  if (!isCharacter && kernelContext) {
+    const nextSceneName = result.parsedSections?.["状态"]?.scene || result.parsedSections?.["状态建议"]?.scene || "";
+    const previousSceneName = kernelContext.livingWorldPacket?.scene?.title || "";
+    if (nextSceneName && nextSceneName !== previousSceneName) {
+      await transitionScene(baseDir, { title: nextSceneName, modeId: kernelContext.modeId }, {
+        summary: String(result.narrative || "").slice(0, 500),
+        modeId: kernelContext.modeId,
+        changes: result.appliedMechanismChanges || result.mechanismChanges || []
+      });
+    }
+    await collectWorldTelemetry(baseDir, { branchId: saveId, turnId, turn: turnCount }, { persist: true });
+    if (kernelContext.autoAdvancePreview) {
+      await appendJsonl(join(rtDir, "auto-advance-state.jsonl"), { ...kernelContext.autoAdvancePreview, turnId, generatedAt: now });
+    }
+    const existingProposals = await readJsonlTail(join(rtDir, "world-proposals.jsonl"), 500);
+    const existingProposalIds = new Set(existingProposals.map((item) => item.id));
+    for (const proposal of (result.proposals || []).filter((item) => item?.id && item.status === "pending" && !existingProposalIds.has(item.id))) {
+      await appendJsonl(join(rtDir, "world-proposals.jsonl"), proposal);
+      await appendJsonl(join(rtDir, "tracking", "change-log.jsonl"), { id: `chg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, timestamp: now, source: "turn-kernel", proposalId: proposal.id, reason: proposal.reason || proposal.summary || "proposal generated", changeType: "proposal_generated", impactLevel: proposal.impactLevel || "medium", applied: false });
+    }
+    const growthCandidates = detectWorldbookCandidates({ concepts: result.worldbookCandidates || [], sceneId: nextSceneName || previousSceneName || null, turn: turnCount });
+    for (const candidate of growthCandidates) await recordWorldbookCandidate(baseDir, candidate);
+    for (const update of (result.emotionalInertiaUpdates || []).slice(0, 12)) {
+      if (!update?.characterId) continue;
+      await updateCharacterInertia(baseDir, update.characterId, update.patch || {}, { reason: update.reason || "turn update", sceneId: nextSceneName || previousSceneName || null, turn: turnCount });
+    }
   }
 
   // TurnStateFrame — 每轮确认完成后生成并持久化。只读取已确认运行状态与机制缓存，
@@ -686,7 +728,7 @@ async function persistTurn(moduleId, input, result, engineState) {
     turnId, round: turnCount, userMessageId: userId, assistantMessageId: assistantId,
     moduleKey: moduleId, saveId,
     beforeState, afterState, engineState: engineState || {}, mechanismCache,
-    worldbookHash: currentWorldbookHash(moduleId), createdAt: now
+    worldbookHash: currentWorldbookHash(moduleId, isCharacter ? null : baseDir), createdAt: now
   });
   await saveTurnStateFrame(moduleId, frame);
   moduleService.clearModuleCache?.(moduleId);
@@ -729,6 +771,20 @@ async function handleLlmChat(body) {
 
   // 标准化引擎状态
   const normState = normalizeEngineState(engineState || DEFAULT_ENGINE_STATE);
+  const kernelProjectRoot = moduleKey && !String(moduleKey).startsWith("char:") && !String(moduleKey).startsWith("__") ? moduleWorldDir(moduleKey) : "";
+  const kernelContext = await createKernelTurnContext({
+    projectRoot: kernelProjectRoot || "",
+    modeId: body.modeId || model.selected?.mode || model.moduleData?.runtime?.mode || (dataMode === "character_card" ? "character" : "world-rpg"),
+    userInput: input,
+    model,
+    engineState: normState,
+    runtimeFlags: {
+      advanceMode: body.advanceMode || "assisted",
+      profileId: body.profileId,
+      hiddenTruthRequired: body.hiddenTruthRequired === true,
+      suggestedUserChoices: body.suggestedUserChoices || []
+    }
+  });
 
   const { prepareWorldbookInjection } = await import("./src/core/runtime/worldbook-runtime.js");
   const worldbookRuntime = prepareWorldbookInjection({
@@ -783,7 +839,7 @@ async function handleLlmChat(body) {
     const startedAt = Date.now();
     const progress = { startedAt, stages: [] };
 
-    const result = await sendDualStageTurn({ model, config: { ...config, llmBaseUrl: config.llmBaseUrl, llmModel: config.llmModel }, apiKey, messages: messages || [], input, injectedWorldbook, engineState: effectiveState, moduleKey: moduleKey || "unloaded", dataMode: dataMode || "worldbook", skipDirector: true, skipGuardian: false, useLlmAnalysis: true, writerPacket });
+    const result = await sendDualStageTurn({ model, config: { ...config, llmBaseUrl: config.llmBaseUrl, llmModel: config.llmModel }, apiKey, messages: messages || [], input, injectedWorldbook, engineState: effectiveState, moduleKey: moduleKey || "unloaded", dataMode: dataMode || "worldbook", skipDirector: true, skipGuardian: false, useLlmAnalysis: true, writerPacket, kernelContext });
 
     // 构建阶段耗时
     const elapsed = Date.now() - startedAt;
@@ -807,7 +863,7 @@ async function handleLlmChat(body) {
     let persistedIds = null;
     if (moduleKey && !moduleKey.startsWith("__")) {
       const persistResult = { ...result, narrative: cleanNarrative };
-      persistedIds = await persistTurn(moduleKey, input, persistResult, result.engineState || normState);
+      persistedIds = await persistTurn(moduleKey, input, persistResult, result.engineState || normState, kernelContext);
       await saveTurnDebug(moduleKey, {
         moduleKey,
         input,
@@ -819,11 +875,12 @@ async function handleLlmChat(body) {
         directionPacket: result.directorResult?.packet || result.directionPacket || result._dualStage?.directionPacket || {},
         guardian: result.guardianResult || {},
         parsedSections: sections,
-        engineState: result.engineState || normState
+        engineState: result.engineState || normState,
+        kernel: summarizeKernelTurnContext(kernelContext)
       });
     }
 
-    return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: result.engineState || normState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, _dualStage: result._dualStage || null, _progress: progress };
+    return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: result.engineState || normState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, kernel: summarizeKernelTurnContext(kernelContext), _dualStage: result._dualStage || null, _progress: progress };
   } catch (err) { return { status: "error", errorMsg: err?.message || "LLM 调用失败" }; }
 }
 
@@ -1166,6 +1223,15 @@ function moduleWorldDir(moduleKey = "") {
   return moduleService.moduleWorldDir(moduleKey);
 }
 
+function resolveKernelProject(projectId = "") {
+  const decoded = decodeURIComponent(String(projectId || ""));
+  const moduleKey = decoded.startsWith("world:") ? decoded : `world:${decoded}`;
+  const projectRoot = moduleWorldDir(moduleKey);
+  if (!projectRoot || !pathWithinRoot(WORLDS_DIR(), projectRoot) || !existsSync(projectRoot)) return null;
+  const world = readJsonSync(join(projectRoot, "world.json"), {});
+  return { moduleKey, projectRoot, modeId: world.mode || world.worldMode || "world-rpg" };
+}
+
 function moduleRuntimeDir(moduleKey = "") {
   const key = String(moduleKey || "");
   if (!key || key.startsWith("__")) return null;
@@ -1189,11 +1255,11 @@ function stableJson(value) {
   return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableJson(value[key])]));
 }
 
-function currentWorldbookHash(moduleKey = "") {
+function currentWorldbookHash(moduleKey = "", worldRootOverride = null) {
   const key = String(moduleKey || "");
   const file = key.startsWith("char:")
     ? join(CHARACTERS_DIR(), safeEntityId(key.replace(/^char:/, ""), ""), "worldbook.json")
-    : join(moduleWorldDir(key) || "", "shared", "worldbook.json");
+    : join(worldRootOverride || moduleWorldDir(key) || "", "shared", "worldbook.json");
   const worldbook = file && existsSync(file) ? readJsonSync(file, { entries: [] }) : { entries: [] };
   return createHash("sha256").update(JSON.stringify(stableJson(worldbook))).digest("hex");
 }
@@ -2672,6 +2738,32 @@ async function handleAPI(req, res) {
       if (!moduleWorldDir(id)) return jsonError(res, 400, "MODULE_ID_INVALID", "模组 ID 无效。");
       const model = await buildModuleModel(id);
       return jsonResponse(res, { status: "ok", model: toPublicModuleModel(model) });
+    }
+
+    // ── P0-P2 unified kernel completion APIs ──
+    const kernelMatch = path.match(/^\/api\/projects\/([^/]+)(?:\/(.*))?$/);
+    if (kernelMatch) {
+      const project = resolveKernelProject(kernelMatch[1]);
+      if (!project) return jsonError(res, 404, "KERNEL_PROJECT_NOT_FOUND", "没有找到对应的世界项目。");
+      const tail = kernelMatch[2] || "kernel/summary";
+      if (tail === "kernel/summary" && method === "GET") return jsonResponse(res, await getKernelSummary(project.projectRoot, { modeId: project.modeId }));
+      if (tail === "branches" && method === "GET") return jsonResponse(res, await handleBranchOperation(project.projectRoot, "list"));
+      if (tail === "branches/create" && method === "POST") return jsonResponse(res, await handleBranchOperation(project.projectRoot, "create", await readBody(req)));
+      let match = tail.match(/^branches\/([^/]+)\/(switch|archive|diff)$/);
+      if (match && method === "POST") return jsonResponse(res, await handleBranchOperation(project.projectRoot, match[2], { ...(await readBody(req)), branchId: decodeURIComponent(match[1]) }));
+      if (match && match[2] === "diff" && method === "GET") return jsonResponse(res, await handleBranchOperation(project.projectRoot, "diff", { branchId: decodeURIComponent(match[1]), fromBranchId: url.searchParams.get("from") || "main" }));
+      if (tail === "telemetry/latest" && method === "GET") return jsonResponse(res, await getLatestKernelTelemetry(project.projectRoot));
+      if (tail === "telemetry/refresh" && method === "POST") return jsonResponse(res, await refreshKernelTelemetry(project.projectRoot, await readBody(req)));
+      if (tail === "advance/auto-light" && method === "POST") return jsonResponse(res, await previewAutoLight(project.projectRoot, { ...(await readBody(req)), modeId: project.modeId }));
+      if (tail === "proposals/stop-loss" && method === "GET") return jsonResponse(res, await getKernelStopLoss(project.projectRoot));
+      match = tail.match(/^proposals\/([^/]+)\/(approve|reverse)$/);
+      if (match && match[2] === "approve" && method === "POST") return jsonResponse(res, await approveKernelProposal(project.projectRoot, decodeURIComponent(match[1]), await readBody(req)));
+      if (match && match[2] === "reverse" && method === "POST") return jsonResponse(res, await reverseKernelProposal(project.projectRoot, decodeURIComponent(match[1])));
+      if (tail === "processing/ingest" && method === "POST") return jsonResponse(res, await ingestProcessingMaterial(project.projectRoot, await readBody(req)));
+      if (tail === "processing/candidates" && method === "GET") return jsonResponse(res, await listProcessingCandidates(project.projectRoot));
+      match = tail.match(/^processing\/candidates\/([^/]+)\/deliver$/);
+      if (match && method === "POST") return jsonResponse(res, await deliverProcessingById(project.projectRoot, decodeURIComponent(match[1])));
+      return jsonError(res, 404, "KERNEL_ROUTE_NOT_FOUND", "没有找到对应的 Kernel 操作。");
     }
 
     // ── 内置示例 ──

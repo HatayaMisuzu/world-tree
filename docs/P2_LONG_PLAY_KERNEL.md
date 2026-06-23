@@ -9,3 +9,7 @@ P2 adds long-play adapters above P0/P1 without replacing the fixed mode map, pro
 - Processing preserves material source metadata and delivers candidates only to the Growth Tree or proposal queue. Conflicts enter P0 tracking and never overwrite canon.
 
 Callers resolve the active branch root first, then pass that root to P0/P1/P2 services. This keeps shared state, runtime, proposals, tracking, scene summaries, telemetry, and processing data isolated by branch.
+
+## Runtime integration status
+
+The server uses the active branch root for persisted chat/state and Kernel hooks once a branch tree exists. The console exposes branch create/switch (and the API additionally exposes archive/diff), enum-only telemetry refresh, one-request Auto-light preview, and candidate-only material processing. There is deliberately no merge endpoint or repeated autonomous advance loop.

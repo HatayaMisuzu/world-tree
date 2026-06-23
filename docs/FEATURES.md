@@ -52,3 +52,14 @@
 | preflight 全量检查 | active |
 | 接口审计 | active |
 | 文档检查 | active |
+
+## P0-P2 可用性状态
+
+| 能力 | 用户入口 | 实际边界 |
+| --- | --- | --- |
+| Living World / Stability sidecar | 每个真实 LLM turn、mode-runner debug | 预算化提示；不直接写 canon |
+| Branch runtime | 世界内核面板与 API | 单活动分支；无 merge |
+| Telemetry | 面板刷新与 latest/refresh API | 只输出低/中/高等枚举，不生成剧情 |
+| Auto-light | 面板单次预演 | 最多一个 beat；遇选择/隐藏信息/critical 即停止 |
+| Critical proposal / stop-loss | 面板二次确认、逆操作 | 逆操作仍是 pending proposal |
+| Processing candidates | 面板素材导入、候选投递 | 仅 Growth Tree/proposal queue，不直接写世界书 |

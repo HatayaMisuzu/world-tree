@@ -32,3 +32,10 @@ pending → 用户查看 → approve → 写入 shared 真相源
 - mystery-puzzle answerLock: system_only
 - strategy-sim AI 阵营私有计划: 只有局势摘要可展示
 - creation-forge 蓝图草稿: 确认前不创建项目
+
+## Critical approval and stop-loss
+
+- `critical` 或 `requiresSecondConfirm` 提案第一次普通批准会返回 `second_confirmation_required`；只有显式 `secondConfirm: true` 才应用安全 patch。
+- major/critical 批准后打开 branch-local stop-loss window，并保留 tracking 原记录。
+- “逆操作”只生成新的 pending proposal；生成动作不会关闭原窗口，也不会立即回滚 canon。
+- UI 对 critical 提案执行两次确认，对 stop-loss 仅提供“生成逆操作”，不提供绕过审核的 undo。

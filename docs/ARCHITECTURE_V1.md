@@ -43,3 +43,15 @@ UI → API → Route Index → Input Packet + Isolation Filter
 3. runtime/*-proposals.jsonl = 待审核提案日志
 4. 隐藏信息（truthLock/answerLock）不得进入玩家可见上下文
 5. creation-forge 实例化必须用户确认
+
+## Unified Kernel Turn Context
+
+```text
+buildModuleModel -> normalizeEngineState -> resolve active branch
+  -> P0 Living World Packet -> P1 Experience Stability Packet
+  -> P2 Telemetry / optional Auto-light preview
+  -> hidden-field filter + prompt budget -> Writer sidecar
+  -> persist branch-local runtime hooks
+```
+
+`kernel-turn-context.js` 是 LLM server turn 与 `mode-runner` 的共同入口。公开 summary 会删除项目路径；完整 context 只在服务端用于选定 branch root 和 prompt-safe sidecar。`persistTurn()` 将 chat/state/scene summary/telemetry/proposal tracking/Growth Tree/inertia 写入活动分支；只有已批准 proposal 可修改该分支的 `shared/`。

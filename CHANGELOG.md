@@ -10,9 +10,11 @@
 - Experience Stability Kernel P1：bounded Context Engine、plan-only Director、Impact Gate 与 Stop-loss Window、Worldbook Growth Tree、runtime-first Emotional Inertia。
 - Long Play Kernel P2：registered-only World Profile Overlay、branch-local Timeline Save Tree、read-only Telemetry、one-beat Auto-light、candidate-only Processing Engine。
 - 三阶段聚焦测试与跨层集成测试；P2 包含执行文件要求的 40 项聚焦覆盖。
+- P0-P2 completion pass：统一 Kernel Turn Context 已接入真实 LLM turn 与 mode-runner；活动分支持久化、Kernel APIs、最小控制台面板和端到端测试已补齐。
+- 新增 branch/telemetry/Auto-light/critical approval/stop-loss reverse/processing candidate 用户工作流；所有接口继续受 local-only 与 path-security 保护。
 
 ### Safety / Boundaries
-- 未新增 UI、插件或 branch merge；未替换 `mode-module-map.js` 或重写 proposal/save 架构。
+- 仅新增最小 Kernel UI，不含 branch merge、复杂 redesign 或自动连播；未替换 `mode-module-map.js` 或重写 proposal/save 架构。
 - canonical shared 写入继续经 proposal/approval；critical 变更要求二次确认，major/critical 支持反向 proposal stop-loss。
 - Telemetry 只读 canon；Auto-light 不审批 proposal；Processing/Growth Tree 不直接写 canonical worldbook。
 
