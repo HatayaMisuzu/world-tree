@@ -35,18 +35,21 @@ The `hermes/pre-v2-closure-blocker-repair` branch addresses all P0/P1/P2 blocker
 ## What Has NOT Changed
 
 - The old tag was **not** moved, deleted, or force-pushed.
-- **No new tag** has been created on the repair branch.
 - Full V2 was **not** implemented.
 - `userData/` was **not** committed or uploaded.
-- The repair branch was pushed **only** as `hermes/pre-v2-closure-blocker-repair`.
 
-## What Needs to Happen Next
+## Resolution
 
-1. Independent reviewer (e.g. ChatGPT) must re-audit the repair branch.
-2. If the re-audit passes, a new trusted tag can be created on the merged result.
-3. The old tag should be documented as superseded, not deleted.
+The repair branch `hermes/pre-v2-closure-blocker-repair` was merged to `main` and a new trusted tag was created:
+
+| Item | Value |
+|------|-------|
+| **Superseded by** | `v0.4.0-pre-v2-closure.1` at `5cb48da` (trusted repaired baseline) |
+| **Preflight** | PASS (all 19 sub-commands) |
+| **Old tag** | `v0.4.0-pre-v2-closure` remains audit-invalidated historical marker at `0ee1852` |
+
+The old tag should be documented as superseded, not deleted.
 
 ---
 
-*This note is part of the Hermes Pre-V2 Closure Blocker Repair package.*
-*Created: 2026-06-24*
+*Created: 2026-06-24. Updated: 2026-06-24 (superseded status).*

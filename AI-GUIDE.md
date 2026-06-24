@@ -51,7 +51,7 @@ src/core/
 ├── engine/       world-engine/context-engine/modules
 ├── data/         旧数据文件
 server.js
-public/          UI 前端
+world-tree-console.html/css/js  UI 前端
 tests/           单元测试 + 集成测试
 docs/            文档
 scripts/         脚本
@@ -95,7 +95,7 @@ npm run preflight         # audit + check + unit + integration + interface
 1. **不要删除 legacy 文件。** 所有旧资产保留在当前目录结构中。
 2. **先查引用再判断。** 修改前搜索引用链（`search_files`），确认不会破坏运行。
 3. **active-compatibility 文件** 可以加注释和测试，但不要重写为主入口。
-4. **archived-design 文档** 不能作为当前真相源。当前能力以 `ARCHITECTURE_V1.md` 为准。
+4. **archived-design 文档** 不能作为当前真相源。当前能力以以下文档为准：`CURRENT_PROJECT_STATE.md`、`ARCHITECTURE_MAP.md`、`API_ROUTE_INVENTORY.md`、`MODE_BOUNDARY_MAP.md`、`PRE_V2_CLOSURE_REPORT.md`。`ARCHITECTURE_V1.md` 仅作为历史/V1 参考。
 5. **orphan-candidate 文件** 只能标注，不能删除。后续由人工确认是否归档。
 6. **修改 legacy bridge 前** 必须先跑 `npm run test:unit`、`npm run test:integration` 和 `npm run preflight`。
 7. 详细分类见 `docs/LEGACY_REDUNDANCY_AUDIT.md` 和 `docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md`。

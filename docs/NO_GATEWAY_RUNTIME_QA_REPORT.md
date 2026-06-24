@@ -37,9 +37,9 @@
 
 | Command | Result |
 |---|---|
-|| `npm run test:unit` | PASS (416 tests) |
-|| `npm run test:integration` | PASS (119 tests) |
-|| `npm run test:workflows` | PASS |
+| `npm run test:unit` | PASS (416 tests) |
+| `npm run test:integration` | PASS (119 tests) |
+| `npm run test:workflows` | PASS |
 | `npm run real-play:smoke` | PASS (6/6) |
 | `npm run asset:check` | PASS (0 errors, 0 warnings) |
 | `npm run interface-audit` | PASS (149/0/0) |
@@ -56,7 +56,7 @@
 
 ## Blocking Issues
 
-None. Server starts, all HTTP probes return expected statuses, all 598+ tests pass.
+None. Server starts, all HTTP probes return expected statuses. Full preflight PASS (all 19 sub-commands, integration 119/0, interface-audit 149/0/0).
 
 ## Non-Blocking Issues
 

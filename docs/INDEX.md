@@ -6,6 +6,31 @@
 
 ---
 
+## Current Trusted Baseline
+
+- **Trusted tag**: `v0.4.0-pre-v2-closure.1`
+- **Main head**: `5cb48da`
+- **Status**: Trusted Pre-V2 Closure sealed
+- **Full V2**: not implemented
+- **Browser QA**: not run
+
+Key entry points for the current baseline:
+
+| Document | Purpose |
+|----------|---------|
+| [CURRENT_PROJECT_STATE.md](CURRENT_PROJECT_STATE.md) | Current project truth source |
+| [PRE_V2_CLOSURE_REPORT.md](PRE_V2_CLOSURE_REPORT.md) | Final Pre-V2 Closure report |
+| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | Release notes for repaired baseline |
+| [RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md](RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md) | Old tag invalidation (superseded) |
+| [NO_GATEWAY_RUNTIME_QA_REPORT.md](NO_GATEWAY_RUNTIME_QA_REPORT.md) | No-gateway runtime QA |
+| [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) | Scripts and checks reference |
+| [ASSET_CLASSIFICATION_TODO.md](ASSET_CLASSIFICATION_TODO.md) | Asset classification status |
+| [ARCHITECTURE_MAP.md](ARCHITECTURE_MAP.md) | Architecture map |
+| [API_ROUTE_INVENTORY.md](API_ROUTE_INVENTORY.md) | API route inventory |
+| [MODE_BOUNDARY_MAP.md](MODE_BOUNDARY_MAP.md) | Mode boundary map |
+
+---
+
 ## 给用户（体验和游玩）
 
 | 文档 | 用途 |

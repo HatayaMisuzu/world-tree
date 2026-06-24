@@ -125,15 +125,15 @@ Hermes must update this table with the final Stage 7Z run:
 | `npm run real-play:smoke` | ✅ PASS (6/6) |
 | `npm run asset:check` | ✅ PASS (0/0) |
 | `npm run interface-audit` | ✅ PASS (149/0/0) |
-| `npm run preflight` | ✅ PASS (115/116, 1 known flaky) |
+| `npm run preflight` | ✅ PASS (all 19 sub-commands, integration 119/0, interface-audit 149/0/0) |
 | `git diff --check` | ✅ PASS |
 
 Expected current baseline before final run:
 
 ```text
-unit: 437
-integration: 116
-workflows: 66
+unit: 416
+integration: 119
+workflows: pass
 real-play smoke: 6/6
 asset:check: 0/0
 interface-audit: 149/0/0
@@ -190,9 +190,24 @@ A stable, documented, maintainable foundation for future V2 work.
 
 ## Final Seal
 
+### Original (audit-invalidated)
+
 | Item | Value |
 |---|---|
 | Final branch | `main` |
 | Final commit | `0ee1852` |
 | Tag | `v0.4.0-pre-v2-closure` |
-| Tag pushed | yes (audit-invalidated, see `docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md`) |
+| Status | Audit-invalidated; preserved as historical marker |
+
+### Repaired (trusted baseline)
+
+| Item | Value |
+|---|---|
+| Trusted tag | `v0.4.0-pre-v2-closure.1` |
+| Trusted commit / main head | `5cb48da` |
+| Runtime/package version | `0.4.0-pre-v2-closure.1` |
+| Preflight | PASS (all 19 sub-commands) |
+| Integration | 119/0 PASS |
+| Interface audit | 149/0/0 PASS |
+| Browser QA | NOT RUN |
+| Full V2 | NOT IMPLEMENTED |
