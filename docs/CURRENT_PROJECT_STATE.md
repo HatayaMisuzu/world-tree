@@ -94,4 +94,15 @@ Boundary:
 - This does not implement complete mode-specific gameplay engines.
 - This does not merge the branch into main yet.
 
-Final audit: `docs/PRE_V2_CLOSURE_FINAL_REPORT.md`
+## Stage 6 Status
+
+Stage 6 has started with a limited server architecture boundary extraction.
+
+Completed:
+- `src/server/http-response.js` extracts HTTP JSON/error response helpers from `server.js`.
+- `tests/unit/http-response.test.js` locks the existing response/error contract (5 tests).
+
+Boundary:
+- This does not split API routes.
+- This does not change persistence, proposal/canon, LLM adapter, or module-service behavior.
+- This does not remove or detach project assets.
