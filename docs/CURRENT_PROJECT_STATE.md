@@ -63,7 +63,7 @@ World Tree 已完成 kernel、prompt、asset、workflow、service-deepening、Re
 
 Status: **COMPLETE-PENDING-MERGE**
 
-Completed on branch: `hermes/pre-v2-closure` (head: `349f99d`)
+Completed on branch: `hermes/pre-v2-closure` (Stage 5Z head: `2ef932a`)
 
 Scope: 8 stages of baseline inventory, documentation cleanup, legacy removal, warning reconciliation, asset integration gate, and mode-specific shared readback integration.
 
@@ -77,7 +77,7 @@ Scope: 8 stages of baseline inventory, documentation cleanup, legacy removal, wa
 | 5F | Interface-Audit Proof & Closure Gates | `a8a67f7` |
 | 5G | Maintenance Entry & Asset Integration Gate | `e07d5aa` |
 | 5H | Mode-Specific Shared Readback | `349f99d` |
-| 5Z | Final Audit & Merge Readiness | pending |
+| 5Z | Final Audit & Merge Readiness | `2ef932a` |
 
 Current guarantees:
 - `npm run asset:check`: 0 errors, 0 warnings

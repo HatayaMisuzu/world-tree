@@ -14,11 +14,11 @@
 | `npm run asset:check` | Asset inventory validation |
 | `npm run test:unit` | All unit tests (416 tests) |
 | `npm run test:integration` | All integration tests (116 tests) |
-| `npm run test:workflows` | Workflow tests (63 tests) |
+| `npm run test:workflows` | Workflow tests (66 tests) |
 | `npm run workflow:check` | Workflow structure validation |
 | `npm run real-play:smoke` | 6 offline scenario smoke tests |
-| `npm run interface-audit` | API + file I/O interface audit |
-| `npm run preflight` | Full pre-commit gate (16 sub-commands) |
+| `npm run interface-audit` | API + file I/O interface audit (149 checks) |
+| `npm run preflight` | Full pre-commit gate (19 sub-commands) |
 
 ## Full Preflight Chain
 
@@ -50,8 +50,8 @@
 |---|---|---|
 | Unit | 416 | `npm run test:unit` |
 | Integration | 116 | `npm run test:integration` |
-| Workflows | 63 | `npm run test:workflows` |
-| **Total** | **595** | |
+| Workflows | 66 | `npm run test:workflows` |
+| **Total** | **598** | |
 
 ## Scripts Directory
 

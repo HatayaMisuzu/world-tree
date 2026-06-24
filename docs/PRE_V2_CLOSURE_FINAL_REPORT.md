@@ -8,7 +8,7 @@
 | Branch | `hermes/pre-v2-closure` |
 | Base | `3076b2f` (main, Stage 4) |
 | Head before Stage 5Z | `349f99d` |
-| Head after Stage 5Z | pending commit |
+| Head after Stage 5Z | `2ef932a` |
 | Scope | Stage 5A–5Z final audit: inventory, cleanup, warning resolution, asset integration, readback |
 
 ## Stage Summary
@@ -23,7 +23,7 @@
 | 5F | Interface-Audit Proof & Closure Gates — 8 warnings classified, PRE_V2_CLOSURE_GATES created | `a8a67f7` | ✅ |
 | 5G | Maintenance Entry & Asset Integration Gate — MAINTENANCE_ENTRY.md, gate upgraded, Stage 5F evidence corrected | `e07d5aa` | ✅ |
 | 5H | Mode-Specific Shared Readback — moduleData.modeSpecific, 8 interface-audit warnings → 0 | `349f99d` | ✅ |
-| 5Z | Final Audit & Merge Readiness — truth docs updated, preflight verified | pending | ✅ |
+| 5Z | Final Audit & Merge Readiness — truth docs updated, preflight verified | `2ef932a` | ✅ |
 
 ## Code Change Summary
 
