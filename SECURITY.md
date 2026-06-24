@@ -26,15 +26,11 @@ These protections are defense-in-depth for a local-first tool, but they are not 
 LLM keys are stored in `userData/secrets.json` as local plaintext. This is intentional and honest: local encryption would still need a local decryption key, so it would not protect against malware or another process running as the same OS user.
 
 **ACL risk**: On multi-user systems, any process running as the same OS user can read `userData/secrets.json`. Protect the project directory with OS-level access controls:
-- **Windows**: Store the project under your user profile (`C:\Users\<you>\`); avoid shared directories.
+- **Windows**: Store the project under your user profile directory; avoid shared directories.
 - **Unix-like systems**: Restrict the secrets file after it is created:
   ```bash
   chmod 600 userData/secrets.json
   ```
-
-```bash
-chmod 600 userData/secrets.json
-```
 
 Future work may integrate OS keychains such as macOS Keychain or Windows Credential Manager.
 
