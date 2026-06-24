@@ -76,3 +76,5 @@
 | `npm run interface-audit` | 0 | **RESOLVED in Stage 5H.** Mode-specific shared files now read back into `moduleData.modeSpecific`. |
 
 All warnings are non-blocking (exit code 0).
+
+As of Pre-V2 Closure Stage 5Z, `npm run preflight` passed on `hermes/pre-v2-closure`.

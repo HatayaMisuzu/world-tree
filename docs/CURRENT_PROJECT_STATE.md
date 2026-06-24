@@ -58,3 +58,40 @@ World Tree 已完成 kernel、prompt、asset、workflow、service-deepening、Re
 - 目标追踪是轻量 runtime UI，不是完整 quest engine 或长期记忆。
 - 完整 Worldbook V2 / Character Capsule V2 仍未实现。
 - V2-ready Foundation：UI 轻量预览未实现；Prompt builder v2-ready context 接入未做；各模式 normalizer 是薄切片不是完整 V2；strategy numeric/probability substrate 不是完整策略游戏。
+
+## Pre-V2 Closure Status
+
+Status: **COMPLETE-PENDING-MERGE**
+
+Completed on branch: `hermes/pre-v2-closure` (head: `349f99d`)
+
+Scope: 8 stages of baseline inventory, documentation cleanup, legacy removal, warning reconciliation, asset integration gate, and mode-specific shared readback integration.
+
+| Stage | Summary | Commit |
+|---|---|---|
+| 5A | Baseline & Inventory | `0bd25f3` |
+| 5B | Safe Documentation Cleanup | `8e67179` |
+| 5C | Legacy Workflow Directory Removal | `4401594` |
+| 5D | Inventory Reconciliation & Warning Proof | `2089c81` |
+| 5E | Asset Inventory Warning Resolution | `8eb2547` |
+| 5F | Interface-Audit Proof & Closure Gates | `a8a67f7` |
+| 5G | Maintenance Entry & Asset Integration Gate | `e07d5aa` |
+| 5H | Mode-Specific Shared Readback | `349f99d` |
+| 5Z | Final Audit & Merge Readiness | pending |
+
+Current guarantees:
+- `npm run asset:check`: 0 errors, 0 warnings
+- `npm run interface-audit`: 0 warnings (149 passes)
+- `npm run preflight`: PASS (115/116, 1 known flaky: character-project port race)
+- All 8 mode-specific shared seed files integrated into `moduleData.modeSpecific`
+- Maintenance entry: `docs/MAINTENANCE_ENTRY.md`
+- Asset Preservation & Integration Gate: `docs/PRE_V2_CLOSURE_GATES.md`
+- Mode-specific shared files read back into `moduleData.modeSpecific`
+- No assets deleted, detached, or downgraded
+
+Boundary:
+- This is not full V2.
+- This does not implement complete mode-specific gameplay engines.
+- This does not merge the branch into main yet.
+
+Final audit: `docs/PRE_V2_CLOSURE_FINAL_REPORT.md`

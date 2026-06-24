@@ -7,7 +7,7 @@
 | Status | **COMPLETE** |
 | Branch | `hermes/pre-v2-closure` |
 | Base | `e07d5aa` (Stage 5G) |
-| Head | pending commit |
+| Head | `349f99d` |
 | Scope | mode-specific shared seed readback + interface-audit resolution |
 
 ## Asset Preservation & Integration
