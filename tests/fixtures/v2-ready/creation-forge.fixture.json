@@ -1,0 +1,10 @@
+{
+  "sourceMaterialRef": "user-input-1",
+  "targetMode": "world-rpg",
+  "artifactType": "worldbook",
+  "extractionTrace": [
+    "parse",
+    "classify",
+    "extract"
+  ]
+}

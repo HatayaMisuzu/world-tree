@@ -1,0 +1,18 @@
+{
+  "controlledEntityId": "kingdom-1",
+  "displayStats": [
+    {
+      "id": "material",
+      "label": "物资",
+      "value": 80,
+      "max": 100
+    },
+    {
+      "id": "stability",
+      "label": "稳定",
+      "value": 65,
+      "max": 100
+    }
+  ],
+  "probabilityPolicy": "hint"
+}

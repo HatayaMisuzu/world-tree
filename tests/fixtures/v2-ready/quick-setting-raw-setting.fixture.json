@@ -1,0 +1,9 @@
+{
+  "rawSettingText": "这是一个跑团设定。开局问题：你是谁？指令 /roll 1d20。常驻面板显示物资状态。",
+  "expectedModeHints": [
+    "tabletop"
+  ],
+  "expectedOpeningQuestions": true,
+  "expectedCommands": true,
+  "expectedPanels": true
+}

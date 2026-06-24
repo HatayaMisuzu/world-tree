@@ -1,0 +1,16 @@
+{
+  "characterId": "test-alice",
+  "relationshipState": {
+    "stage": "stranger",
+    "trust": 0,
+    "familiarity": 0,
+    "tension": 0
+  },
+  "boundaries": [
+    "no romance",
+    "no violence"
+  ],
+  "forbiddenAssumptions": [
+    "is in love with user"
+  ]
+}
