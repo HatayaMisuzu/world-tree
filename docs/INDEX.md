@@ -87,6 +87,7 @@
 | [PLAY_MODE_GUIDE.md](PLAY_MODE_GUIDE.md) | 游戏模式使用说明 |
 | [NO_GATEWAY_RUNTIME_QA_REPORT.md](NO_GATEWAY_RUNTIME_QA_REPORT.md) | 无网关 Runtime QA 报告 |
 | [PRE_V2_CLOSURE_REPORT.md](PRE_V2_CLOSURE_REPORT.md) | Pre-V2 Closure 最终报告 |
+| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | v0.4.0 Pre-V2 Closure Release Notes |
 
 ## 历史与归档
 

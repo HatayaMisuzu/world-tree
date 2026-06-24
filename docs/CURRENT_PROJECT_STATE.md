@@ -127,5 +127,23 @@ Completed:
 
 Boundary:
 - Browser gateway QA was intentionally not used (gateway unstable).
-- Stage 7 does not implement full V2.
-- Stage 7 does not rewrite persistence, proposal/canon, LLM adapter, or mode engines.
+## v0.4.0 Pre-V2 Closure Final Seal
+
+Status: **SEALED-ON-MAIN**
+
+The Pre-V2 Closure baseline is sealed on `main` and tagged as `v0.4.0-pre-v2-closure`.
+
+This is not full V2. It is the stable baseline for future V2 design and implementation.
+
+Completed:
+- Stage 5: safety baseline, debt cleanup, warning reconciliation, asset protection and integration gate
+- Stage 6: server runtime boundary extraction, architecture map, maintenance/debugging guides, route/mode inventories
+- Stage 7: no-gateway runtime QA, user quickstart, LLM setup guide, play mode guide, final Pre-V2 Closure report
+
+Boundary:
+- No full V2 implementation.
+- No persistence format rewrite.
+- No proposal/canon rewrite.
+- No LLM adapter rewrite.
+- No mode engine rewrite.
+- No browser gateway QA claim.
