@@ -2,6 +2,7 @@
 
 > Stage 5A Inventory: 当前 main 分支的真实基线快照。
 > 本文件只记录事实，不包含计划、清理承诺或未来路线。
+> 所有 Pre-V2 Closure 阶段必须遵守 `docs/PRE_V2_CLOSURE_GATES.md`。
 
 ## Baseline Commit
 

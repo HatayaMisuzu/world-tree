@@ -7,7 +7,7 @@
 | Status | **COMPLETE** |
 | Branch | `hermes/pre-v2-closure` |
 | Base | `2089c81` (Stage 5D) |
-| Head | pending commit |
+| Head | `8eb2547` |
 | Scope | Asset inventory P3 M1-M11 warning reconciliation only |
 
 ## Reality Check
