@@ -1,6 +1,6 @@
 # World Tree 文档索引
 
-> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL
+> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL · Universal Mode V2-ready Foundation (Stage 4) COMPLETE-PARTIAL
 >
 > **真相源优先级**：CURRENT_PROJECT_STATE > docs/INDEX > 活跃架构文档 > 历史报告 > archive
 
@@ -54,6 +54,18 @@
 | [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
 | [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |
 | [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) | 提示词与数据包 |
+
+## Pre-V2 Closure 盘点 (Stage 5A)
+
+> 以下 5 个文档为 Stage 5A Baseline & Inventory 新增。只做盘点记录，不做清理/重构。
+
+| 文档 | 用途 |
+|------|------|
+| [PRE_V2_CLOSURE_BASELINE.md](PRE_V2_CLOSURE_BASELINE.md) | Pre-V2 Closure 基线快照 |
+| [TECH_DEBT_INVENTORY.md](TECH_DEBT_INVENTORY.md) | 技术债清单（分类+证据） |
+| [DOCS_INVENTORY.md](DOCS_INVENTORY.md) | 文档真实结构盘点 |
+| [TESTS_INVENTORY.md](TESTS_INVENTORY.md) | 测试体系真实盘点 |
+| [ARCHITECTURE_REALITY_CHECK.md](ARCHITECTURE_REALITY_CHECK.md) | 当前真实架构地图 |
 
 ## 历史与归档
 
