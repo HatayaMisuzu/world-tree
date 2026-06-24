@@ -1,6 +1,6 @@
 # Tech Debt Inventory
 
-> Stage 5A: 技术债清单。只分类记录，不执行清理。每项必须有路径、证据、风险和建议阶段。
+> Stage 5A 基线，Stage 5B+5C+5D 持续更新。已完成项标 RESOLVED。
 
 ## P0: Do Not Touch Without Dedicated Plan
 
@@ -25,37 +25,27 @@
 | Field | Value |
 |---|---|
 | Status | **RESOLVED in Stage 5C** |
-| Evidence | `tests/unit/workflow-context-envelope.test.js` migrated to NEW path; zero code/test imports remain for OLD; OLD directory removed |
-| Date | 2026-06-24 |
+| Original issue | `src/core/workflow/` duplicated the active `src/core/workflows/` workflow spine |
+| Action | Migrated the single active test import to `src/core/workflows/`; removed `src/core/workflow/` |
+| Evidence | `src/core/workflow/` has 0 code/test references after Stage 5C; `p3-context-builder` and `buildP3MechanismContext` have 0 code/test references |
+| Safety | No production workflow logic changed; only test import migration + orphaned OLD directory deletion |
+| Report | `docs/STAGE_5C_SAFE_CODE_CLEANUP_REPORT.md` |
+
+### P1-2: `docs/SCRIPTS_AND_CHECKS.md` outdated — RESOLVED (Stage 5B)
 
 | Field | Value |
 |---|---|
-| Path | `src/core/workflow/` (2 files: `p3-context-builder.js`, `workflow-context-envelope.js`) — **REMOVED in Stage 5C** |
-| Reason | `src/core/workflows/` 是当前主目录（19 files），`src/core/workflow/` 是旧目录，唯一的测试引用已迁移 |
-| Evidence | `search_files` 确认两个目录同时存在；`workflow-context-envelope.js` 在两处各有一份 |
-| References | `server.js` 从 `src/core/workflows/` import |
-| Risk | Low — 需确认旧文件无隐藏引用后归档 |
-| Suggested action | Investigate (Stage 5B) |
+| Status | **RESOLVED in Stage 5B** |
+| Original issue | Preflight description listed only 5 commands; actual `package.json` preflight has 19 sub-commands |
+| Action | Rewrote `docs/SCRIPTS_AND_CHECKS.md` with full preflight chain, 10 scripts listed, test suite summary |
 
-### P1-2: `docs/SCRIPTS_AND_CHECKS.md` outdated
+### P1-3: `docs/` P1 historical reports naming/placement — RESOLVED (Stage 5B)
 
 | Field | Value |
 |---|---|
-| Path | `docs/SCRIPTS_AND_CHECKS.md` |
-| Reason | 声称 preflight 顺序为 `audit → check → test:unit → test:integration → interface-audit`，但实际 `package.json` 中 preflight 包含远多于这些的命令（p0/p1/p2/kernel/prompts/legacy-mechanisms/assets/authority/legacy-modernization/workflow-readiness/workflow:check/test:workflows 等） |
-| Evidence | 对比 `package.json` scripts.preflight 实际内容 |
-| Risk | Low — 仅文档过时 |
-| Suggested action | Update or replace with reference to package.json |
-
-### P1-3: `docs/` 中 v0.3.0 历史执行报告命名不统一
-
-| Field | Value |
-|---|---|
-| Path | 多个 `WORLD_TREE_*_P1.md` 文件（如 `WORLD_TREE_MODE_RUNTIME_CORE_P1.md`、`WORLD_TREE_MODULE_RUNTIME_ORCHESTRATOR_P1.md` 等 11 个） |
-| Reason | 这些是 P1 阶段的阶段性执行报告，命名风格与当前文档不一致（`WORLD_TREE_` 前缀 + `_P1` 后缀），可能被误认为是当前架构文档 |
-| Evidence | `docs/` 目录下有 11 个 `WORLD_TREE_*_P1.md` |
-| Risk | Low — 仅命名问题 |
-| Suggested action | Archive later (Stage 5B+) |
+| Status | **RESOLVED in Stage 5B** |
+| Original issue | 14 `WORLD_TREE_*.md` historical P1 execution reports mixed with active docs |
+| Action | Archived to `docs/archive/p1-reports/` via `git mv`; updated `DOCUMENTATION_STATUS.md` paths
 
 ## P2: Needs Investigation
 
@@ -67,14 +57,14 @@
 
 ## P3: Documentation Debt
 
-| # | Problem | Location | Severity |
-|---|---|---|---|
-| D1 | `docs/INDEX.md` 顶部里程碑未列出 Stage 4 (V2-ready Foundation) | `docs/INDEX.md` line 3 | Low |
-| D2 | `docs/INDEX.md` 未索引 Stage 4 报告 (`V2_READY_FOUNDATION_REPORT.md`) | `docs/INDEX.md` | Low |
-| D3 | `docs/SCRIPTS_AND_CHECKS.md` preflight 描述与实际不一致 | `docs/SCRIPTS_AND_CHECKS.md` | Low |
-| D4 | 多名历史执行报告（`WORLD_TREE_*_P1.md`）混在活跃文档中 | `docs/` | Low |
-| D5 | `docs/ROADMAP_CANDIDATES.md` 包含已完成的 "Real Play Productization 0-3" 标记，可能引起混淆 | `docs/ROADMAP_CANDIDATES.md` | Low |
-| D6 | `docs/` 目录下有 56 个文件，命名风格不统一（`WORLD_TREE_` 前缀 vs 无前缀 vs `v0.3.0-` 前缀） | `docs/` | Medium |
+| # | Problem | Location | Status | Stage |
+|---|---|---|---|---|---|
+| D1 | INDEX 顶部里程碑未列出 Stage 4 | `docs/INDEX.md` | **RESOLVED** | Stage 5A |
+| D2 | INDEX 未索引 Stage 4/5A/5B/5C 报告 | `docs/INDEX.md` | **RESOLVED** | Stage 5A+5B+5C |
+| D3 | SCRIPTS_AND_CHECKS preflight 描述与实际不一致 | `docs/SCRIPTS_AND_CHECKS.md` | **RESOLVED** | Stage 5B |
+| D4 | 历史执行报告（WORLD_TREE_*_P1.md）混在活跃文档中 | `docs/` | **RESOLVED** | Stage 5B (archived) |
+| D5 | ROADMAP_CANDIDATES 已完成项可能误导 | `docs/ROADMAP_CANDIDATES.md` | **RESOLVED** | Stage 5B (historical annotation added) |
+| D6 | 文档命名风格不统一 | `docs/` | **PARTIAL** | Partially addressed by Stage 5B archive |
 
 ## P4: Test/Script Debt
 
@@ -92,7 +82,7 @@
 | `npm run asset:check` | 11 | P3 M1-M11 inventory missing references（M1-creation-wizard 到 M11-observability） |
 | `npm run interface-audit` | 8 | shared/*.json files: createModule writes but buildModuleModel doesn't read |
 
-All warnings are pre-existing and non-blocking (exit code 0). They should be addressed in Stage 5B or later, not in Stage 5A.
+All warnings are pre-existing and non-blocking (exit code 0). Stage 5D investigated each — see `docs/STAGE_5D_WARNING_DEBT_REALITY_CHECK_REPORT.md` for detailed analysis.
 
 ## Non-Debt: Historical Records to Preserve
 

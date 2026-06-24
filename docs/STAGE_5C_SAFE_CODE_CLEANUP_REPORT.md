@@ -7,7 +7,7 @@
 | Status | **COMPLETE** |
 | Branch | `hermes/pre-v2-closure` |
 | Base | `8e67179` (Stage 5B) |
-| Head | pending commit |
+| Head | `4401594` |
 | Scope | `src/core/workflow/` (OLD) directory removal after full reference proof and test migration |
 
 ## Reality Check
@@ -113,12 +113,13 @@ Added coverage: fallback behavior, multiple continue keywords, context acceptanc
 | `node --test tests/unit/workflow-context-envelope.test.js` | ✅ PASS | 8/8 |
 | `npm run test:workflows` | ✅ PASS | 66/66 (was 63; +3 from migrated test) |
 | `npm run workflow:check` | ✅ PASS | 0 errors, 0 warnings |
-| `npm run docs:check` | PENDING | Will run before commit |
-| `npm run check` | PENDING | Will run before commit |
-| `npm run test:unit` | PENDING | Required (code files deleted) |
-| `npm run test:integration` | PENDING | Required (code files deleted) |
-| `npm run real-play:smoke` | PENDING | Recommended |
-| `npm run asset:check` | PENDING | Recommended |
+| `npm run docs:check` | ✅ PASS | 24/24 |
+| `npm run check` | ✅ PASS | WORLD_TREE_DESKTOP_CHECK PASS |
+| `npm run test:unit` | ✅ PASS | 416/416 |
+| `npm run test:integration` | ✅ PASS | 116/116 |
+| `npm run real-play:smoke` | ✅ PASS | 6/6 |
+| `npm run asset:check` | ✅ PASS | 0 errors, 11 warnings |
+| `git diff --check` | ✅ PASS | Clean |
 
 ## Known Warnings
 
