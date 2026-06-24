@@ -75,21 +75,16 @@ test("forge run turn generates full packet", () => {
   assert.ok(r.packet.blueprint.blueprintId);
 });
 
-test("forge creates project with shared files", async () => {
+test("deferred forge cannot create a normal persisted module", async () => {
   const dataDir = await createTempDataDir();
   const server = await startWorldTreeServer({ dataDir });
   try {
     const create = await api(server, "/api/modules/create", {
       method: "POST", body: JSON.stringify({ name: "forge_test", displayName: "炼金台", mode: "creation-forge", dataMode: "preset", subType: "classic", draft: true, sourceType: "pasted_text", sourceText: "灵感" })
     });
-    assert.equal(create.body.status, "ok");
+    assert.equal(create.body.status, "error");
+    assert.equal(create.body.code, "MODE_PROJECT_CREATION_DISABLED");
     const wd = join(dataDir, "engine", "worlds", "forge_test");
-    assert.ok(existsSync(join(wd, "shared", "creation_forge.json")));
-    assert.ok(existsSync(join(wd, "shared", "forge_blueprints.json")));
-    assert.ok(existsSync(join(wd, "runtime", "creation-forge-proposals.jsonl")));
-    assert.ok(existsSync(join(wd, "runtime", "cache", "creation-forge")));
-    // Roundtrip
-    const exported = await api(server, "/api/world-pack/export", { method: "POST", body: JSON.stringify({ moduleKey: "forge_test" }) });
-    assert.equal(exported.body.status, "ok");
+    assert.equal(existsSync(wd), false);
   } finally { await server.stop(); await removeTempDir(dataDir); }
 });

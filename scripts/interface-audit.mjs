@@ -58,6 +58,17 @@ const modeSpecificContractFiles = new Set([
   "forge_blueprints.json",
 ]);
 
+// creation-forge is a deferred producer, not a normal persisted project mode.
+// Its contracts may be read from imported/approved forge output, but
+// /api/modules/create must reject the mode and must not seed these files.
+const deferredProducerReadFiles = new Set([
+  "creation_forge.json",
+  "forge_blueprints.json",
+]);
+const normalCreationRejectsDeferredModes =
+  moduleServiceCode.includes("assertModeProjectCanBeCreated") &&
+  moduleServiceCode.includes("MODE_PROJECT_CREATION_DISABLED");
+
 const hasDynamicModeSpecificReadback =
   moduleServiceCode.includes("modeSpecificSharedFilesForWorld") &&
   moduleServiceCode.includes("readModeSpecificShared") &&
@@ -70,6 +81,8 @@ if (hasDynamicModeSpecificReadback) {
 for (const f of readFiles) {
   if (explicitWrites.has(f) || f === "characters_base.json") // characters_base.json 是兼容回退
     pass(`shared/${f}: 写入→读取对齐`);
+  else if (deferredProducerReadFiles.has(f) && normalCreationRejectsDeferredModes)
+    pass(`shared/${f}: 延迟生产者读取契约，普通 createModule 已禁用且不预写`);
   else fail(`shared/${f}: 引擎读取但 createModule 不写入`);
 }
 

@@ -14,7 +14,7 @@
 | mystery-puzzle | V2-READY-SOCKET | Kernel project | Hidden truth protected |
 | strategy-sim | V2-READY-SOCKET | Kernel project | Numeric/probability substrate |
 | murder-mystery | V2-READY-SOCKET | Kernel project | Hidden truth protected |
-| creation-forge | V2-READY-SOCKET | `/api/alchemy/*` | Deferred producer |
+| creation-forge | DEFERRED-PRODUCER | `/api/alchemy/*`, workflow producer APIs | Candidate/blueprint producer only |
 
 ## quick-setting (ACTIVE-PARTIAL)
 
@@ -65,11 +65,11 @@
 - **Limits:** Hidden truth protected but scenario minimal.
 - **V2-ready:** `src/core/murder-mystery/`.
 
-## creation-forge (V2-READY-SOCKET)
+## creation-forge (DEFERRED-PRODUCER)
 
 - **Entry:** Alchemy routes `/api/alchemy/*`.
 - **Suitable for:** Material ingestion, preview, review.
-- **Limits:** Deferred producer; not a full creation engine.
+- **Limits:** Deferred producer; not a normal persisted module and not a full creation engine. `/api/modules/create` rejects `mode: "creation-forge"`.
 - **V2-ready:** `src/core/creation-forge/`.
 
 ## Hidden Truth / Answer Lock Protection

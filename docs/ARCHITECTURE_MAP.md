@@ -60,8 +60,8 @@ As of Stage 6 Local Access Boundary:
 npm run asset:check       -> 0 warnings
 npm run interface-audit   -> 0 warnings
 npm run docs:check        -> 24 checks
-npm run test:unit         -> 437 tests
-npm run test:integration  -> 116 tests
+npm run test:unit         -> 444 tests
+npm run test:integration  -> 117 tests (includes userData isolation)
 npm run test:workflows    -> 66 tests
 ```
 

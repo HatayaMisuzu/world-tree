@@ -6,6 +6,8 @@ import {
   badJsonError,
   bodyTooLargeError,
   createReadBody,
+  invalidJsonBodyError,
+  isPlainObject,
   parseContentLength,
   readJsonBody
 } from "../../src/server/http-request.js";
@@ -64,6 +66,28 @@ test("readJsonBody rejects invalid JSON with an INVALID_JSON HttpError", async (
   );
 });
 
+for (const [label, body] of [
+  ["array", "[]"],
+  ["null", "null"],
+  ["string", '"text"'],
+  ["number", "42"]
+]) {
+  test(`readJsonBody rejects ${label} JSON with INVALID_JSON_BODY`, async () => {
+    await assert.rejects(
+      readJsonBody(requestFromBody(body), 1024),
+      (err) => err instanceof HttpError && err.status === 400 && err.code === "INVALID_JSON_BODY"
+    );
+  });
+}
+
+test("isPlainObject accepts only plain JSON-object shapes", () => {
+  assert.equal(isPlainObject({}), true);
+  assert.equal(isPlainObject(Object.create(null)), true);
+  assert.equal(isPlainObject([]), false);
+  assert.equal(isPlainObject(null), false);
+  assert.equal(isPlainObject("text"), false);
+});
+
 test("createReadBody binds the default limit while allowing an override", async () => {
   const readBody = createReadBody({ limit: 32 });
   assert.deepEqual(await readBody(requestFromBody('{"a":1}')), { a: 1 });
@@ -82,4 +106,8 @@ test("error factories return stable HttpError objects", () => {
   const bad = badJsonError("bad");
   assert.equal(bad.status, 400);
   assert.equal(bad.code, "INVALID_JSON");
+
+  const invalidBody = invalidJsonBodyError("invalid");
+  assert.equal(invalidBody.status, 400);
+  assert.equal(invalidBody.code, "INVALID_JSON_BODY");
 });

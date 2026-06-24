@@ -13,6 +13,7 @@ import { prepareImportFiles, validateImportFileKey } from "./src/server/data-imp
 import { sanitizeWorldName, createModuleService } from "./src/server/module-service.js";
 import { pathWithinRoot, resolveInsideRoot } from "./src/server/path-security.js";
 import { appendJsonl, calcDirectorySizeLimited, ensureDir, readJson, readJsonSync, readJsonlTail, writeJson } from "./src/server/fs-utils.js";
+import { getUserDataRoot, userDataPath } from "./src/server/user-data-root.js";
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
@@ -136,11 +137,11 @@ function dataRoot() {
 }
 
 function configPath() {
-  return join(ROOT, "userData", "config.json");
+  return userDataPath("config.json");
 }
 
 function secretsPath() {
-  return join(ROOT, "userData", "secrets.json");
+  return userDataPath("secrets.json");
 }
 
 const DEFAULT_CONFIG = {
@@ -327,12 +328,10 @@ const CHARACTERS_DIR = () => join(dataRoot(), "engine", "characters");
 const PROFILES_DIR = () => join(ROOT, "defaults", "world-profiles");
 const EXAMPLES_DIR = () => join(ROOT, "defaults", "examples");
 const EXAMPLE_MANIFEST = () => join(EXAMPLES_DIR(), "manifest.json");
-const CONNECTIONS_PATH = () => join(ROOT, "userData", "connections.json");
-const REVIEW_QUEUE_PATH = () => DATA_ROOT_OVERRIDE
-  ? join(DATA_ROOT_OVERRIDE, "userData", "alchemy-review.json")
-  : join(ROOT, "userData", "alchemy-review.json");
-const PLUGINS_DIR = () => join(ROOT, "userData", "plugins");
-const TURN_DEBUG_DIR = (moduleId = "global") => join(ROOT, "userData", "turn-debug", slugName(moduleId, "global"));
+const CONNECTIONS_PATH = () => userDataPath("connections.json");
+const REVIEW_QUEUE_PATH = () => userDataPath("alchemy-review.json");
+const PLUGINS_DIR = () => userDataPath("plugins");
+const TURN_DEBUG_DIR = (moduleId = "global") => userDataPath("turn-debug", slugName(moduleId, "global"));
 
 // ═══════════════════════════════════════════════════════════════
 //  Module Service（工厂函数注入）
@@ -2231,7 +2230,7 @@ async function handleWorldPackImport(body = {}) {
 
 async function handlePlugins(body = {}, method = "GET") {
   ensureDir(PLUGINS_DIR());
-  const statePath = join(ROOT, "userData", "plugins-state.json");
+  const statePath = userDataPath("plugins-state.json");
   const state = readJsonSync(statePath, { enabled: {}, errors: {} });
   const plugins = [];
   for (const entry of readdirSync(PLUGINS_DIR(), { withFileTypes: true })) {
@@ -2892,7 +2891,7 @@ async function handleAPI(req, res) {
       let writable = false;
       let writableDetail = "";
       try {
-        const probe = join(ROOT, "userData", `.write-probe-${Date.now()}.tmp`);
+        const probe = userDataPath(`.write-probe-${Date.now()}.tmp`);
         writeFileSync(probe, "ok", "utf8");
         rmSync(probe, { force: true });
         writable = true;
@@ -3067,7 +3066,7 @@ const server = createServer((req, res) => {
   serveStatic(req, res);
 });
 
-ensureDir(join(ROOT, "userData"));
+ensureDir(getUserDataRoot());
 ensureDir(join(dataRoot(), "engine", "worlds"));
 ensureDir(join(dataRoot(), "engine", "runs"));
 ensureDir(join(dataRoot(), "engine", "global-memory"));

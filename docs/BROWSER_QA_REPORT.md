@@ -1,56 +1,46 @@
-# Browser QA Report — Stage 7 Product Usability Closure
+# Browser QA Report — Future Validation Only
 
-## Environment
+## Status
+
+```text
+NOT RUN
+```
+
+Browser QA was not executed as part of the Pre-V2 blocker repair. This file is a future checklist, not PASS evidence. The repair uses No-Gateway HTTP probes and automated tests; a trusted seal still requires a separately authorized browser/visual QA run or an explicit risk acceptance.
+
+## Future Environment
 
 | Item | Value |
 |---|---|
-| OS | |
-| Browser | |
-| Node version | |
-| Branch | main |
-| Commit | |
-| Start command | |
-| URL | |
+| OS | NOT RUN |
+| Browser | NOT RUN |
+| Node version | NOT RUN |
+| Branch | `codex/pre-v2-closure-blocker-repair` candidate |
+| Commit | pending repair commit |
+| Start command | NOT RUN |
+| URL | NOT RUN |
 
-## Flow Checklist
+## Future Flow Checklist
 
 | Flow | Result | Notes |
 |---|---|---|
-| Install dependencies | | |
-| Start server | | |
-| Open main page | | |
-| Console severe errors | | |
-| Quick-setting input | | |
-| Create/load project or world | | |
-| Select mode | | |
-| Run one play/action flow | | |
-| Candidate/proposal/status visible | | |
-| Save/persist | | |
-| Reload/continue | | |
-| Import/export | | |
-| LLM config/test | | |
-| LLM failure/fallback | | |
-
-## Console Errors
-
-```text
-Paste severe errors here, or write: none observed.
-```
-
-## Blocking Issues
-
-| Issue | Repro | Status |
-|---|---|---|
-| | | |
-
-## Non-Blocking Issues
-
-| Issue | Notes |
-|---|---|
-| | |
+| Install dependencies | NOT RUN | |
+| Start server | NOT RUN | |
+| Open main page | NOT RUN | |
+| Console severe errors | NOT RUN | |
+| Quick-setting input | NOT RUN | |
+| Create/load project or world | NOT RUN | |
+| Select mode | NOT RUN | |
+| Run one play/action flow | NOT RUN | |
+| Candidate/proposal/status visible | NOT RUN | |
+| Save/persist | NOT RUN | |
+| Reload/continue | NOT RUN | |
+| Import/export | NOT RUN | |
+| LLM config/test | NOT RUN | |
+| LLM failure/fallback | NOT RUN | |
 
 ## QA Conclusion
 
 ```text
-COMPLETE / BLOCKED / NEEDS FIX
+NOT RUN / FUTURE VALIDATION ONLY
 ```

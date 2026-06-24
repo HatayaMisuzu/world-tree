@@ -84,11 +84,11 @@ Future trace fields such as `traceId`, `area`, `mode`, `route`, `operation`, and
 | Interface read/write drift | `scripts/interface-audit.mjs` | `npm run interface-audit` |
 | Real play smoke | `scripts/real-play-scenarios.mjs` | `npm run real-play:smoke` |
 
-## Known Non-Blocking Issue Pattern
+## Test Failure Rule
 
-If `npm run preflight` reports `115/116` because of the known character-project port race, verify whether individual integration tests pass separately before changing code.
+Do not classify a failing integration test as flaky without an isolated reproduction. The prior `115/116` failure was traced to oversized request handling destroying the response socket; it was a real blocker and was repaired in `0.4.0-pre-v2-closure.1`.
 
-Do not rewrite functionality only to chase a known flaky issue unless the failure is reproducible and isolated.
+When a suite fails, rerun the exact test file, preserve its output, verify temporary ports/data roots, and fix the smallest proven cause.
 
 ## Debugging Report Template
 

@@ -3,6 +3,17 @@
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
 
+## 0.4.0-pre-v2-closure.1 / Audit Blocker Repair (2026-06-24)
+
+### Fixed
+- 集成测试通过 `WORLD_TREE_USER_DATA_DIR` 使用临时用户数据根，不再改写仓库真实 `userData/`。
+- 超大请求返回结构化 JSON 413；数组、`null`、字符串和数字 JSON 返回 `INVALID_JSON_BODY`。
+- `creation-forge` 保持 deferred producer，`/api/modules/create` 不再持久化普通 forge 模组。
+- 统一 package/runtime/docs 为 repair candidate 版本，并明确旧 seal tag 保留但审计失效。
+
+### Status
+- 这是等待复审的修复候选，不是新 tag，不是可信 final seal，也不是完整 V2。
+
 ## 0.3.1 / Real Play Productization 0-3
 
 ### Added

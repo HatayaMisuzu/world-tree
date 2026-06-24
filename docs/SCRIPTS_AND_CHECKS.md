@@ -12,8 +12,8 @@
 | `npm run check` | Project syntax & structure check |
 | `npm run docs:check` | Documentation completeness check |
 | `npm run asset:check` | Asset inventory validation |
-| `npm run test:unit` | All unit tests (437 tests) |
-| `npm run test:integration` | All integration tests (116 tests) |
+| `npm run test:unit` | All configured unit tests (444 tests at repair validation) |
+| `npm run test:integration` | All integration tests (117 tests, including userData isolation) |
 | `npm run test:workflows` | Workflow tests (66 tests) |
 | `npm run workflow:check` | Workflow structure validation |
 | `npm run real-play:smoke` | 6 offline scenario smoke tests |
@@ -40,18 +40,18 @@
 14. `npm run test:workflow-readiness` — Workflow readiness tests
 15. `npm run workflow:check` — Workflow structure validation
 16. `npm run test:workflows` — Workflow unit + integration tests (66 tests)
-17. `npm run test:unit` — All unit tests (437 tests)
-18. `npm run test:integration` — All integration tests (116 tests)
+17. `npm run test:unit` — All configured unit tests (444 at repair validation)
+18. `npm run test:integration` — All integration tests (117, including userData isolation)
 19. `npm run interface-audit` — Interface audit (149 checks)
 
 ## Test Suite Summary
 
 | Suite | Tests | Command |
 |---|---|---|
-| Unit | 437 | `npm run test:unit` |
-| Integration | 116 | `npm run test:integration` |
+| Unit | 444 | `npm run test:unit` |
+| Integration | 117 | `npm run test:integration` |
 | Workflows | 66 | `npm run test:workflows` |
-| **Total** | **619** | |
+| **Reported command total** | **627** | Workflow files overlap broader suites; do not treat as unique test cases |
 
 ## Scripts Directory
 
@@ -77,4 +77,4 @@
 
 All warnings are non-blocking (exit code 0).
 
-As of Pre-V2 Closure Stage 5Z, `npm run preflight` passed on `hermes/pre-v2-closure`.
+The historical Stage 5Z claim was invalidated by the full local audit. Current authoritative evidence is `docs/PRE_V2_BLOCKER_REPAIR_REPORT.md`; a trusted seal remains pending re-audit.

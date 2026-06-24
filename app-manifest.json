@@ -1,7 +1,7 @@
 {
-  "_note": "v0.3.1 Real Play Productization 0-3。真实游玩链路可测、可见、可解释、可回退。",
-  "_version": "0.3.1",
-  "_updated": "2026-06-19",
+  "_note": "v0.4.0-pre-v2-closure.1 repair candidate。旧 v0.4.0-pre-v2-closure tag 已被审计判定为不可信 final seal，等待复审。",
+  "_version": "0.4.0-pre-v2-closure.1",
+  "_updated": "2026-06-24",
   "assets": [],
   "archived_assets": [
     "src/ui/world-tree-hero.png (deprecated v2.0)",

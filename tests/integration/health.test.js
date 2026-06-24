@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
@@ -9,6 +9,8 @@ import {
   removeTempDir,
   startWorldTreeServer
 } from "./helpers/server-process.js";
+
+const PACKAGE_VERSION = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf-8")).version;
 
 test("health defaults to lightweight local status and full detail computes size", async () => {
   const dataDir = await createTempDataDir("world-tree-health-");
@@ -20,7 +22,7 @@ test("health defaults to lightweight local status and full detail computes size"
     const basic = await api(server, "/api/health");
     assert.equal(basic.status, 200);
     assert.equal(basic.body.status, "ok");
-    assert.equal(basic.body.version, "0.3.1");
+    assert.equal(basic.body.version, PACKAGE_VERSION);
     assert.equal(typeof basic.body.uptime, "number");
     assert.equal(typeof basic.body.llmConfigured, "boolean");
     assert.equal(typeof basic.body.dataWritable, "boolean");

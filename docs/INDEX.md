@@ -42,15 +42,15 @@
 | [AI_AGENT_OPERATING_GUIDE.md](AI_AGENT_OPERATING_GUIDE.md) | Agent 详细操作规范 |
 | [Asset / Function / Mechanism Inventory](WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md) | 资产防遗失清单 (preservation ledger) |
 | [Asset Status Matrix](ASSET_STATUS_MATRIX.md) | 资产成熟化状态矩阵 |
-| [CANON_RUNTIME_CANDIDATE_POLICY.md](CANON_RUNTIME_CANDIDATE_POLICY.md) | Canon/Runtime/Candidate 分层规则 |
-| [LEGACY_COMPATIBILITY_POLICY.md](LEGACY_COMPATIBILITY_POLICY.md) | 旧模块兼容策略 |
+| [PROPOSAL_AND_REVIEW_SYSTEM.md](PROPOSAL_AND_REVIEW_SYSTEM.md) | Canon/Runtime/Candidate 与提案审核分层规则 |
+| [LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md](LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md) | 旧模块兼容与升级策略 |
 
 ## 验证报告（历史快照）
 
 | 文档 | 状态 |
 |------|------|
 | [Asset Maturation Report](ASSET_MATURATION_REPORT.md) | ✅ 当前 |
-| [Real Play Productization Report](REAL_PLAY_PRODUCTIZATION_REPORT.md) | ✅ v0.3.1 当前 |
+| [Real Play Productization Report](REAL_PLAY_PRODUCTIZATION_REPORT.md) | 历史 v0.3.1 能力快照 |
 | [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
 | [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |
 | [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) | 提示词与数据包 |
@@ -87,7 +87,11 @@
 | [PLAY_MODE_GUIDE.md](PLAY_MODE_GUIDE.md) | 游戏模式使用说明 |
 | [NO_GATEWAY_RUNTIME_QA_REPORT.md](NO_GATEWAY_RUNTIME_QA_REPORT.md) | 无网关 Runtime QA 报告 |
 | [PRE_V2_CLOSURE_REPORT.md](PRE_V2_CLOSURE_REPORT.md) | Pre-V2 Closure 最终报告 |
-| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | v0.4.0 Pre-V2 Closure Release Notes |
+| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | 旧 seal 尝试，已审计失效 |
+| [RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md](RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md) | 旧 tag 审计失效说明 |
+| [PRE_V2_BLOCKER_REPAIR_REPORT.md](PRE_V2_BLOCKER_REPAIR_REPORT.md) | P0/P1 阻断修复报告 |
+| [USER_DATA_ISOLATION_REPORT.md](USER_DATA_ISOLATION_REPORT.md) | 集成测试 userData 隔离证明 |
+| [ASSET_CLASSIFICATION_TODO.md](ASSET_CLASSIFICATION_TODO.md) | PNG 资产分类待办（禁止自动删除） |
 
 ## 历史与归档
 

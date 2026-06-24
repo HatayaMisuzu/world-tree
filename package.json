@@ -1,6 +1,6 @@
 {
   "name": "world-tree",
-  "version": "0.3.1",
+  "version": "0.4.0-pre-v2-closure.1",
   "description": "World Tree — 本地优先的 AI 叙事引擎 Web 控制台",
   "type": "module",
   "main": "server.js",
@@ -45,7 +45,7 @@
     "workflow:check": "node scripts/validate-workflow-integration.mjs",
     "real-play:smoke": "node scripts/real-play-scenarios.mjs",
     "asset:check": "node scripts/validate-asset-inventory.mjs",
-    "test:unit": "node --test tests/unit/direction-packet.test.js tests/unit/emotion-state.test.js tests/unit/output-parser.test.js tests/unit/guardian.test.js tests/unit/worldbook.test.js tests/unit/worldbook-runtime.test.js tests/unit/alchemy.test.js tests/unit/alchemy-preview-service.test.js tests/unit/mechanism-status.test.js tests/unit/overlay-store.test.js tests/unit/guardian-overlay.test.js tests/unit/llm.test.js tests/unit/path-security.test.js tests/unit/fs-utils.test.js tests/unit/module-service.test.js tests/unit/module-registry.test.js tests/unit/mode-module-map.test.js tests/unit/quick-setting-mode.test.js tests/unit/legacy-module-wrappers.test.js tests/unit/mode-runtime.test.js tests/unit/module-runtime-orchestrator.test.js tests/unit/mode-state-schema.test.js tests/unit/mode-project-factory.test.js tests/unit/character-mode.test.js tests/unit/multi-mode-entry.test.js tests/unit/mode-artifact-contract.test.js tests/unit/mode-capsule-registry.test.js tests/unit/character-v1-services.test.js tests/unit/character-module-integration.test.js tests/unit/worldbook-foundation.test.js tests/unit/grand-world-v1.test.js tests/unit/system-closure.test.js tests/unit/real-play-productization.test.js tests/unit/proposal-persistence-audit.test.js",
+    "test:unit": "node --test tests/unit/http-response.test.js tests/unit/http-request.test.js tests/unit/local-access.test.js tests/unit/user-data-root.test.js tests/unit/direction-packet.test.js tests/unit/emotion-state.test.js tests/unit/output-parser.test.js tests/unit/guardian.test.js tests/unit/worldbook.test.js tests/unit/worldbook-runtime.test.js tests/unit/alchemy.test.js tests/unit/alchemy-preview-service.test.js tests/unit/mechanism-status.test.js tests/unit/overlay-store.test.js tests/unit/guardian-overlay.test.js tests/unit/llm.test.js tests/unit/path-security.test.js tests/unit/fs-utils.test.js tests/unit/module-service.test.js tests/unit/module-registry.test.js tests/unit/mode-module-map.test.js tests/unit/quick-setting-mode.test.js tests/unit/legacy-module-wrappers.test.js tests/unit/mode-runtime.test.js tests/unit/module-runtime-orchestrator.test.js tests/unit/mode-state-schema.test.js tests/unit/mode-project-factory.test.js tests/unit/character-mode.test.js tests/unit/multi-mode-entry.test.js tests/unit/mode-artifact-contract.test.js tests/unit/mode-capsule-registry.test.js tests/unit/character-v1-services.test.js tests/unit/character-module-integration.test.js tests/unit/worldbook-foundation.test.js tests/unit/grand-world-v1.test.js tests/unit/system-closure.test.js tests/unit/real-play-productization.test.js tests/unit/proposal-persistence-audit.test.js",
     "test:integration": "node --test tests/integration/*.test.js",
     "audit": "node scripts/audit.mjs",
     "interface-audit": "node scripts/interface-audit.mjs",

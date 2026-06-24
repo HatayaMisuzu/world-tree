@@ -31,7 +31,11 @@ Use normal filesystem permissions to protect the project folder. On Unix-like sy
 chmod 600 userData/secrets.json
 ```
 
-Future work may integrate OS keychains such as macOS Keychain or Windows Credential Manager.
+On Windows, review the ACL for `userData/secrets.json` and ensure only the intended account, Administrators, and SYSTEM can read or modify it. Do not upload `userData/` or paste the file into bug reports. ACL changes are a user-controlled operation; World Tree does not silently rewrite existing permissions.
+
+Tests must use `WORLD_TREE_USER_DATA_DIR` and a temporary directory. Integration tests must never write fake profiles or keys into repository-root `userData/`.
+
+Future work should integrate OS keychains such as macOS Keychain or Windows Credential Manager.
 
 ## Reporting
 

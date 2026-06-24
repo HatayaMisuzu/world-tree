@@ -19,6 +19,16 @@ export function badJsonError(detail = "") {
   return new HttpError(400, "INVALID_JSON", "请求内容不是有效 JSON。", detail);
 }
 
+export function invalidJsonBodyError(detail = "") {
+  return new HttpError(400, "INVALID_JSON_BODY", "请求内容必须是 JSON 对象。", detail);
+}
+
+export function isPlainObject(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 export function readJsonBody(req, limit) {
   if (!Number.isFinite(limit) || limit <= 0) {
     throw new TypeError("readJsonBody requires a positive numeric limit");
@@ -38,7 +48,9 @@ export function readJsonBody(req, limit) {
     const contentLength = parseContentLength(req.headers || {});
     if (contentLength > limit) {
       fail(bodyTooLargeError(`content-length=${contentLength}, limit=${limit}`));
-      if (typeof req.destroy === "function") req.destroy();
+      // Drain the request without destroying the response socket so the route
+      // catch can still return the documented JSON 413 error.
+      if (typeof req.resume === "function") req.resume();
       return;
     }
 
@@ -50,7 +62,7 @@ export function readJsonBody(req, limit) {
 
       if (received > limit) {
         fail(bodyTooLargeError(`received=${received}, limit=${limit}`));
-        if (typeof req.destroy === "function") req.destroy();
+        if (typeof req.resume === "function") req.resume();
         return;
       }
 
@@ -68,8 +80,17 @@ export function readJsonBody(req, limit) {
       }
 
       try {
-        resolve(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        if (!isPlainObject(parsed)) {
+          reject(invalidJsonBodyError(`received ${parsed === null ? "null" : Array.isArray(parsed) ? "array" : typeof parsed}`));
+          return;
+        }
+        resolve(parsed);
       } catch (err) {
+        if (err instanceof HttpError) {
+          reject(err);
+          return;
+        }
         reject(badJsonError(err?.message || String(err)));
       }
     });

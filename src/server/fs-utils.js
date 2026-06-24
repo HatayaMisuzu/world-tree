@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { appendFile, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { userDataPath } from "./user-data-root.js";
 
 export function ensureDir(dirPath) {
   if (!existsSync(dirPath)) mkdirSync(dirPath, { recursive: true });
@@ -142,23 +143,9 @@ export async function calcDirectorySizeLimited(rootDir, { maxEntries = 5000, max
 
 function logCorruptFile(filePath, err) {
   try {
-    // 使用同步 append 以避免事件循环问题；损坏日志本身失败就静默忽略
-    const userData = dirname(filePath);
-    // 尝试定位到项目根下的 userData/
-    let logDir = userData;
-    // 在项目根目录下查找 userData
-    let cursor = userData;
-    for (let i = 0; i < 5; i++) {
-      const candidate = join(cursor, "userData");
-      if (existsSync(candidate) && statSync(candidate).isDirectory()) {
-        logDir = candidate;
-        break;
-      }
-      const parent = dirname(cursor);
-      if (parent === cursor) break;
-      cursor = parent;
-    }
-    const logPath = join(logDir, "corrupt-files.jsonl");
+    // 使用统一 userData 根，确保测试损坏日志不会回写真实仓库 userData。
+    const logPath = userDataPath("corrupt-files.jsonl");
+    ensureDir(dirname(logPath));
     const entry = JSON.stringify({
       ts: new Date().toISOString(),
       filePath,

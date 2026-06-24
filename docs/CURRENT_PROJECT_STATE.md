@@ -61,9 +61,9 @@ World Tree 已完成 kernel、prompt、asset、workflow、service-deepening、Re
 
 ## Pre-V2 Closure Status
 
-Status: **COMPLETE-ON-MAIN**
+Status: **AUDIT-INVALIDATED / REPAIR CANDIDATE**
 
-Stage 5 closure branch was merged onto `main`; Stage 6 server runtime boundary cleanup and architecture diagnostics are continuing on `main`.
+Stages 5-7 landed on `main`, but the full local audit at `0ee1852` invalidated the claimed final seal. The current repair candidate is `0.4.0-pre-v2-closure.1` on `codex/pre-v2-closure-blocker-repair` and requires re-audit before any trusted seal.
 
 Scope: 8 stages of baseline inventory, documentation cleanup, legacy removal, warning reconciliation, asset integration gate, and mode-specific shared readback integration.
 
@@ -79,10 +79,11 @@ Scope: 8 stages of baseline inventory, documentation cleanup, legacy removal, wa
 | 5H | Mode-Specific Shared Readback | `349f99d` |
 | 5Z | Final Audit & Merge Readiness | `2ef932a` |
 
-Current guarantees:
+Historical checks and current repair requirements:
 - `npm run asset:check`: 0 errors, 0 warnings
 - `npm run interface-audit`: 0 warnings (149 passes)
-- `npm run preflight`: PASS (115/116, 1 known flaky: character-project port race)
+- The prior integration/preflight claim is invalidated. The real failure was a reproducible request-body socket error, not an accepted flaky port race.
+- Repair completion requires full `npm run preflight` PASS and unchanged repository `userData/` hashes.
 - All 8 mode-specific shared seed files integrated into `moduleData.modeSpecific`
 - Maintenance entry: `docs/MAINTENANCE_ENTRY.md`
 - Asset Preservation & Integration Gate: `docs/PRE_V2_CLOSURE_GATES.md`
@@ -115,7 +116,7 @@ Boundary:
 
 ## Stage 7 Status
 
-Stage 7 validates the project as a usable Pre-V2 Closure baseline through no-gateway runtime QA, smoke tests, and documentation sealing.
+Stage 7 previously claimed a usable sealed baseline. The full local audit invalidated that seal evidence; the historical artifacts remain, but they are not current release proof.
 
 Completed:
 - `docs/USER_QUICKSTART.md`
@@ -127,13 +128,13 @@ Completed:
 
 Boundary:
 - Browser gateway QA was intentionally not used (gateway unstable).
-## v0.4.0 Pre-V2 Closure Final Seal
+## Prior v0.4.0 Pre-V2 Closure Tag
 
-Status: **SEALED-ON-MAIN**
+Status: **AUDIT-INVALIDATED AS TRUSTED FINAL SEAL**
 
-The Pre-V2 Closure baseline is sealed on `main` and tagged as `v0.4.0-pre-v2-closure`.
+The tag `v0.4.0-pre-v2-closure` still exists at `0ee1852feb9496755ecc27f722dbe672732c2d65`. It was not moved or deleted. The full local audit found P0/P1 blockers, so the tag is a historical repository fact, not trusted final-seal proof.
 
-This is not full V2. It is the stable baseline for future V2 design and implementation.
+The repair candidate is not full V2 and is not a new seal. See `docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md` and `docs/PRE_V2_BLOCKER_REPAIR_REPORT.md`.
 
 Completed:
 - Stage 5: safety baseline, debt cleanup, warning reconciliation, asset protection and integration gate
@@ -147,3 +148,4 @@ Boundary:
 - No LLM adapter rewrite.
 - No mode engine rewrite.
 - No browser gateway QA claim.
+- No tag was moved/deleted and no new tag was created during blocker repair.
