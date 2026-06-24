@@ -3,6 +3,20 @@
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
 
+## 0.4.0-pre-v2-closure.1 / Pre-V2 Blocker Repair
+
+### Fixed
+- **P0 userData isolation**: server now reads `WORLD_TREE_USER_DATA_DIR`; test helper auto-creates temp userData dir. Integration suite no longer pollutes real `userData/`.
+- **P1 request-body contract**: oversized/streaming body returns 413 JSON (no socket destroy); malformed JSON → 400 INVALID_JSON; non-object JSON → 400 INVALID_JSON_BODY.
+- **P1 creation-forge authority**: `/api/modules/create` rejects `mode=creation-forge` with `MODE_PROJECT_CREATION_DISABLED`.
+- **P1 version/release truth**: unified `package.json` / `app-manifest.json` / `README` / `AI-GUIDE` to `0.4.0-pre-v2-closure.1`.
+- **P2 truth/gates**: docs links, route inventory, stale QA report version, asset classification TODO.
+
+### Notes
+- Old tag `v0.4.0-pre-v2-closure` exists and was NOT moved or deleted.
+- It is audit-invalidated as a trusted final seal — see `docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md`.
+- No new tag was created. Full V2 was NOT implemented.
+
 ## 0.3.1 / Real Play Productization 0-3
 
 ### Added

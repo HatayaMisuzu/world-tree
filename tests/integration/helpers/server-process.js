@@ -1,5 +1,5 @@
 import { once } from "node:events";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawn } from "node:child_process";
@@ -18,6 +18,12 @@ export function randomPort() {
 
 export async function startWorldTreeServer({ port = randomPort(), dataDir, env = {} } = {}) {
   const root = resolve(".");
+  // Isolate userData: when dataDir is provided (test mode), auto-create a temp userData dir
+  let userDataDir = undefined;
+  if (dataDir) {
+    userDataDir = join(dataDir, "..", ".userData");
+    await mkdir(userDataDir, { recursive: true });
+  }
   const child = spawn(process.execPath, ["server.js"], {
     cwd: root,
     env: {
@@ -25,6 +31,7 @@ export async function startWorldTreeServer({ port = randomPort(), dataDir, env =
       PORT: String(port),
       WORLD_TREE_HOST: "127.0.0.1",
       WORLD_TREE_DATA_DIR: dataDir,
+      WORLD_TREE_USER_DATA_DIR: userDataDir,
       WORLD_TREE_DISABLE_UPDATE_CHECK: "1",
       ...env
     },

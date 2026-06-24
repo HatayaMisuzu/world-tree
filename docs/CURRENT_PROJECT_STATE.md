@@ -129,11 +129,11 @@ Boundary:
 - Browser gateway QA was intentionally not used (gateway unstable).
 ## v0.4.0 Pre-V2 Closure Final Seal
 
-Status: **SEALED-ON-MAIN**
+Status: **AUDIT-INVALIDATED** — see `docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md`
 
-The Pre-V2 Closure baseline is sealed on `main` and tagged as `v0.4.0-pre-v2-closure`.
+The Pre-V2 Closure baseline was tagged `v0.4.0-pre-v2-closure` on `main`, but the subsequent project audit found P0/P1 blockers. The tag exists as a historical marker but is not trusted as a release seal. Repair branch: `hermes/pre-v2-closure-blocker-repair`.
 
-This is not full V2. It is the stable baseline for future V2 design and implementation.
+This is not full V2.
 
 Completed:
 - Stage 5: safety baseline, debt cleanup, warning reconciliation, asset protection and integration gate

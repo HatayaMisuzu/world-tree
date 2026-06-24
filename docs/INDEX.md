@@ -42,8 +42,6 @@
 | [AI_AGENT_OPERATING_GUIDE.md](AI_AGENT_OPERATING_GUIDE.md) | Agent 详细操作规范 |
 | [Asset / Function / Mechanism Inventory](WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md) | 资产防遗失清单 (preservation ledger) |
 | [Asset Status Matrix](ASSET_STATUS_MATRIX.md) | 资产成熟化状态矩阵 |
-| [CANON_RUNTIME_CANDIDATE_POLICY.md](CANON_RUNTIME_CANDIDATE_POLICY.md) | Canon/Runtime/Candidate 分层规则 |
-| [LEGACY_COMPATIBILITY_POLICY.md](LEGACY_COMPATIBILITY_POLICY.md) | 旧模块兼容策略 |
 
 ## 验证报告（历史快照）
 

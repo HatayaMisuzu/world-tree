@@ -134,6 +134,10 @@ export function createModuleService(deps) {
   }
 
   async function createModule(body = {}) {
+    // creation-forge is a deferred producer / alchemy workflow — cannot be created as a normal persisted module
+    if (body?.mode === "creation-forge") {
+      return { status: "error", code: "MODE_PROJECT_CREATION_DISABLED", errorMsg: "creation-forge is a deferred producer / alchemy workflow and cannot be created as a normal persisted module via /api/modules/create." };
+    }
     const { name, displayName, dataMode, subType, preset } = body || {};
     const isCharacter = body?.mode === "character";
     const isMultiMode = body?.mode === "world-rpg" || body?.mode === "mystery-puzzle" || body?.mode === "tabletop" || body?.mode === "strategy-sim" || body?.mode === "murder-mystery" || body?.mode === "creation-forge";

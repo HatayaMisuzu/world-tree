@@ -5,6 +5,7 @@ import { PassThrough } from "node:stream";
 import {
   badJsonError,
   bodyTooLargeError,
+  invalidJsonBodyError,
   createReadBody,
   parseContentLength,
   readJsonBody
@@ -64,6 +65,39 @@ test("readJsonBody rejects invalid JSON with an INVALID_JSON HttpError", async (
   );
 });
 
+test("readJsonBody rejects non-object JSON with INVALID_JSON_BODY", async () => {
+  // array
+  await assert.rejects(
+    readJsonBody(requestFromBody("[]"), 1024),
+    (err) => err instanceof HttpError && err.status === 400 && err.code === "INVALID_JSON_BODY"
+  );
+  // null
+  await assert.rejects(
+    readJsonBody(requestFromBody("null"), 1024),
+    (err) => err instanceof HttpError && err.status === 400 && err.code === "INVALID_JSON_BODY"
+  );
+  // string
+  await assert.rejects(
+    readJsonBody(requestFromBody('"abc"'), 1024),
+    (err) => err instanceof HttpError && err.status === 400 && err.code === "INVALID_JSON_BODY"
+  );
+  // number
+  await assert.rejects(
+    readJsonBody(requestFromBody("123"), 1024),
+    (err) => err instanceof HttpError && err.status === 400 && err.code === "INVALID_JSON_BODY"
+  );
+  // boolean
+  await assert.rejects(
+    readJsonBody(requestFromBody("true"), 1024),
+    (err) => err instanceof HttpError && err.status === 400 && err.code === "INVALID_JSON_BODY"
+  );
+});
+
+test("readJsonBody allows non-object JSON when requireObject=false", async () => {
+  const req = requestFromBody("[]");
+  assert.deepEqual(await readJsonBody(req, 1024, { requireObject: false }), []);
+});
+
 test("createReadBody binds the default limit while allowing an override", async () => {
   const readBody = createReadBody({ limit: 32 });
   assert.deepEqual(await readBody(requestFromBody('{"a":1}')), { a: 1 });
@@ -82,4 +116,8 @@ test("error factories return stable HttpError objects", () => {
   const bad = badJsonError("bad");
   assert.equal(bad.status, 400);
   assert.equal(bad.code, "INVALID_JSON");
+
+  const nonObj = invalidJsonBodyError("test");
+  assert.equal(nonObj.status, 400);
+  assert.equal(nonObj.code, "INVALID_JSON_BODY");
 });

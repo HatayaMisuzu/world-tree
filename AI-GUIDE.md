@@ -1,7 +1,7 @@
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: v0.3.1 — Real Play Productization 0-3 Complete
+> 最后更新: v0.4.0-pre-v2-closure.1 — Pre-V2 Closure Blocker Repair
 > **先读 `docs/CURRENT_PROJECT_STATE.md`** 获取当前真相源。
 > Pre-V2 Closure 期间：任何清理/删除/迁移前先读 `docs/MAINTENANCE_ENTRY.md` 和 `docs/PRE_V2_CLOSURE_GATES.md`。Asset Preservation & Integration Gate 是强制门槛。
 

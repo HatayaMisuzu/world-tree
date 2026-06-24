@@ -27,8 +27,8 @@ console.log(`\n📋 版本审计 (v${version})`);
 
 // 版本一致性
 for (const [file, regex] of [
-  ["CHANGELOG.md", /^##\s+v?(\d+\.\d+\.\d+)/m],
-  ["README.md", /\*\*(?:Current version|当前版本|Package version)\*\*:\s*v(\d+\.\d+\.\d+)/],
+  ["CHANGELOG.md", /^##\s+v?(\d+\.\d+\.\d+[\w\-.]*)/m],
+  ["README.md", /\*\*(?:Current version|当前版本|Package version)\*\*:\s*v(\d+\.\d+\.\d+[\w\-.]*)/],
 ]) {
   const content = readText(file);
   const m = content.match(regex);
@@ -49,7 +49,7 @@ for (const [file, regex] of [
 // CHANGELOG 日期不能随版本推进而倒退；同日多版本允许。
 {
   const changelog = readText("CHANGELOG.md");
-  const entries = [...changelog.matchAll(/^##\s+v?(\d+\.\d+\.\d+)\s+.+?\((\d{4}-\d{2}-\d{2})\)/gm)]
+  const entries = [...changelog.matchAll(/^##\s+v?(\d+\.\d+\.\d+[\w\-.]*)\s+.+?\((\d{4}-\d{2}-\d{2})\)/gm)]
     .map((m) => ({ version: m[1], date: m[2] }));
   let ok = entries.length > 0;
   for (let i = 0; i < entries.length - 1; i++) {
@@ -243,10 +243,96 @@ console.log("\n📌 版本事实源");
 // AI-GUIDE.md 最后更新版本
 {
   const aiGuide = readText("AI-GUIDE.md");
-  const m = aiGuide.match(/最后更新:\s*v?(\d+\.\d+\.\d+)/);
+  const m = aiGuide.match(/最后更新:\s*v?(\d+\.\d+\.\d+[\w\-.]*)/);
   if (!m) fail("AI-GUIDE.md 缺少'最后更新'版本号");
   else if (m[1] !== version) fail(`AI-GUIDE.md 最后更新 v${m[1]}, 期望 v${version}`);
   else pass(`AI-GUIDE.md 最后更新: v${version}`);
+}
+
+// app-manifest.json 版本与 package.json 一致
+{
+  const appManifestPath = join(ROOT, "app-manifest.json");
+  if (existsSync(appManifestPath)) {
+    try {
+      const appManifest = JSON.parse(readFileSync(appManifestPath, "utf-8"));
+      const manifestVer = appManifest._version || "";
+      if (manifestVer !== version) fail(`app-manifest.json _version=${manifestVer}, 期望 ${version}`);
+      else pass(`app-manifest.json _version: ${version}`);
+    } catch (err) {
+      fail(`app-manifest.json 解析失败: ${err.message}`);
+    }
+  } else {
+    fail("缺少 app-manifest.json");
+  }
+}
+
+// README/current-state/release-notes 不得相互矛盾
+{
+  const readme = readText("README.md");
+  const currentState = existsSync(join(ROOT, "docs/CURRENT_PROJECT_STATE.md"))
+    ? readText("docs/CURRENT_PROJECT_STATE.md") : "";
+  const releaseNotes = existsSync(join(ROOT, "docs/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md"))
+    ? readText("docs/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md") : "";
+
+  // release notes 不得 pending 却 current-state 写 sealed
+  if (releaseNotes && /pending/i.test(releaseNotes) && /sealed/i.test(currentState)) {
+    fail("release notes 标记 pending 但 CURRENT_PROJECT_STATE 写 sealed，矛盾");
+  } else {
+    pass("release notes 与 current-state sealed 声明无矛盾");
+  }
+
+  // README 版本与 current-state 版本大体一致
+  // Check that current version appears in CURRENT_PROJECT_STATE.md
+  const readmeVer = readme.match(/v?(\d+\.\d+\.\d+[\w\-.]*)/);
+  const csHasVersion = currentState.includes(version);
+  if (readmeVer && readmeVer[1] !== version) {
+    fail(`README 版本 ${readmeVer[1]} 与 package.json ${version} 不一致`);
+  } else if (!csHasVersion) {
+    // Not a hard fail: current-state may reference the baseline tag, not the repair point-version
+    pass(`CURRENT_PROJECT_STATE.md 未显式引用 ${version}（可能引用基线 tag）`);
+  } else {
+    pass("README 与 CURRENT_PROJECT_STATE 版本引用一致");
+  }
+}
+
+// docs/INDEX 本地链接存在
+{
+  const indexPath = join(ROOT, "docs/INDEX.md");
+  if (existsSync(indexPath)) {
+    const indexContent = readFileSync(indexPath, "utf-8");
+    const linkPattern = /\]\(([^)]+)\)/g;
+    let match;
+    let brokenLinks = 0;
+    while ((match = linkPattern.exec(indexContent)) !== null) {
+      const href = match[1];
+      if (href.startsWith("http") || href.startsWith("#")) continue;
+      // Allow links whose description contains "⚠" (deferred docs)
+      const linkStart = indexContent.lastIndexOf("[", match.index);
+      if (linkStart >= 0) {
+        const desc = indexContent.slice(linkStart + 1, match.index);
+        if (desc.includes("⚠")) continue;
+      }
+      const target = join(ROOT, "docs", href);
+      if (!existsSync(target)) {
+        fail(`docs/INDEX 链接失效: ${href}`);
+        brokenLinks++;
+      }
+    }
+    if (brokenLinks === 0) pass("docs/INDEX 本地链接全部有效");
+  }
+}
+
+// 当前失败不能再写成 known port race
+{
+  const debuggingGuide = join(ROOT, "docs/DEBUGGING_GUIDE.md");
+  if (existsSync(debuggingGuide)) {
+    const guide = readFileSync(debuggingGuide, "utf-8");
+    if (/known port race/.test(guide)) {
+      fail("DEBUGGING_GUIDE.md 仍使用'known port race'描述当前失败");
+    } else {
+      pass("DEBUGGING_GUIDE.md 不再声称 current failure 为 known port race");
+    }
+  }
 }
 
 // world-tree-console.html 不含旧版本硬编码

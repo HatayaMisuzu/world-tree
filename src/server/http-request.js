@@ -19,7 +19,15 @@ export function badJsonError(detail = "") {
   return new HttpError(400, "INVALID_JSON", "请求内容不是有效 JSON。", detail);
 }
 
-export function readJsonBody(req, limit) {
+export function invalidJsonBodyError(message = "Request body must be a JSON object.") {
+  return new HttpError(400, "INVALID_JSON_BODY", message);
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export function readJsonBody(req, limit, { requireObject = true } = {}) {
   if (!Number.isFinite(limit) || limit <= 0) {
     throw new TypeError("readJsonBody requires a positive numeric limit");
   }
@@ -37,8 +45,9 @@ export function readJsonBody(req, limit) {
 
     const contentLength = parseContentLength(req.headers || {});
     if (contentLength > limit) {
+      // Drain the request body without destroying the socket
+      req.resume();
       fail(bodyTooLargeError(`content-length=${contentLength}, limit=${limit}`));
-      if (typeof req.destroy === "function") req.destroy();
       return;
     }
 
@@ -49,8 +58,9 @@ export function readJsonBody(req, limit) {
       received += buffer.length;
 
       if (received > limit) {
+        // Stop accumulating, drain the rest, reject
+        req.resume();
         fail(bodyTooLargeError(`received=${received}, limit=${limit}`));
-        if (typeof req.destroy === "function") req.destroy();
         return;
       }
 
@@ -67,23 +77,32 @@ export function readJsonBody(req, limit) {
         return;
       }
 
+      let parsed;
       try {
-        resolve(JSON.parse(raw));
+        parsed = JSON.parse(raw);
       } catch (err) {
         reject(badJsonError(err?.message || String(err)));
+        return;
       }
+
+      if (requireObject && !isPlainObject(parsed)) {
+        reject(invalidJsonBodyError());
+        return;
+      }
+
+      resolve(parsed);
     });
 
     req.on("error", fail);
   });
 }
 
-export function createReadBody({ limit } = {}) {
+export function createReadBody({ limit, requireObject = true } = {}) {
   if (!Number.isFinite(limit) || limit <= 0) {
     throw new TypeError("createReadBody requires a positive numeric limit");
   }
 
   return function readBody(req, overrideLimit = limit) {
-    return readJsonBody(req, overrideLimit);
+    return readJsonBody(req, overrideLimit, { requireObject });
   };
 }

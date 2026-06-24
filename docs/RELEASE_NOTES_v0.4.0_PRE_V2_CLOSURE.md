@@ -193,6 +193,6 @@ A stable, documented, maintainable foundation for future V2 work.
 | Item | Value |
 |---|---|
 | Final branch | `main` |
-| Final commit | pending |
+| Final commit | `0ee1852` |
 | Tag | `v0.4.0-pre-v2-closure` |
-| Tag pushed | pending |
+| Tag pushed | yes (audit-invalidated, see `docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md`) |
