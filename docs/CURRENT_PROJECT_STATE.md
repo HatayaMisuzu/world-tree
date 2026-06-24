@@ -5,7 +5,7 @@
 
 ## Current Milestone
 
-World Tree 已完成 kernel、prompt、asset、workflow、service-deepening 与 Real Play Productization 0-3 薄切片基线。
+World Tree 已完成 kernel、prompt、asset、workflow、service-deepening、Real Play Productization 0-3 与 Universal Mode V2-ready Foundation（阶段 4）。
 
 ## Status Table
 
@@ -24,10 +24,16 @@ World Tree 已完成 kernel、prompt、asset、workflow、service-deepening 与 
 | Real Play Scenario Runner | COMPLETE | 6 个离线 scenarios；`npm run real-play:smoke` |
 | Mode Productization Slices | COMPLETE-PARTIAL | tabletop dice、mystery clue board、strategy resources 均可运行；不是完整 DND/推理引擎/4X |
 | Narrative Experience Slices | COMPLETE-PARTIAL | immersive proposal UI、fallback recap、goal tracker、rhythm tag；不等同长期记忆或 quest engine |
+| Universal Mode V2-ready Foundation | COMPLETE | universal metadata/visibility/lifecycle/capability；8 模式 normalizer/fixture/test 67 项；strategy numeric/probability substrate；不是完整 V2 系统 |
 
 ## What Is Current
 
 - 工作流层完整的创建/导入/游玩/角色/推理/策略/观测管线
+- V2-ready foundation：通用 metadata/visibility/lifecycle/capability contracts 已建立
+- 8 个模式入口均有 V2-ready normalizer、fixture、test
+- quick-setting 支持 DeepSeek 风格原始设定 intake，保留原文
+- strategy 保留固定状态面板 + 数值/概率底座 (clamp/soft cap/maxDelta/exact/range/hint/hidden)
+- 所有 V2-ready 能力遵守 runtime/candidate/proposal/shared canon 边界
 - Server workflow HTTP 端点可调用
 - LLM adapter 支持真实/离线/测试三种模式
 - 所有 workflow 默认 candidate-only，不直接写 shared canon

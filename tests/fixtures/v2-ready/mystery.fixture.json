@@ -1,0 +1,11 @@
+{
+  "clueRecord": {
+    "name": "bloody knife",
+    "location": "kitchen"
+  },
+  "truthLock": {
+    "visibility": "hidden_truth",
+    "locked": true
+  },
+  "knownToPlayer": false
+}

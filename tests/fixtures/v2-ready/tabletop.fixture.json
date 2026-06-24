@@ -1,0 +1,8 @@
+{
+  "ruleSourceRef": "custom-rules",
+  "difficultyTag": "hard",
+  "runtimeTruth": {
+    "lastResult": 18,
+    "isCritical": true
+  }
+}

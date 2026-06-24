@@ -1,0 +1,6 @@
+{
+  "worldEntityRef": "test-kingdom",
+  "locationRef": "capital-city",
+  "hiddenStorylineRef": "secret-plot-1",
+  "visibilityScope": "gm_only"
+}
