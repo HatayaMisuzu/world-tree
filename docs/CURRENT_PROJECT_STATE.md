@@ -100,7 +100,8 @@ Stage 6 has started with a limited server architecture boundary extraction.
 
 Completed:
 - `src/server/http-response.js` extracts HTTP JSON/error response helpers from `server.js`.
-- `tests/unit/http-response.test.js` locks the existing response/error contract (5 tests).
+- `src/server/http-request.js` extracts JSON request body parsing from `server.js`.
+- `tests/unit/http-response.test.js` and `tests/unit/http-request.test.js` lock the HTTP boundary contracts.
 
 Boundary:
 - This does not split API routes.

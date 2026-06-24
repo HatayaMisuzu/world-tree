@@ -24,6 +24,7 @@ import {
   jsonResponse,
   llmHttpError
 } from "./src/server/http-response.js";
+import { createReadBody } from "./src/server/http-request.js";
 import { guessTypeFromKeywords } from "./src/core/data/alchemy/types.js";
 import { AlchemyPreviewError, createAlchemyPreviewService } from "./src/server/alchemy-preview-service.js";
 import {
@@ -57,6 +58,7 @@ const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.WORLD_TREE_HOST || "127.0.0.1";
 const MAX_BODY_BYTES = Number(process.env.WORLD_TREE_MAX_BODY_BYTES || 20 * 1024 * 1024);
+const readBody = createReadBody({ limit: MAX_BODY_BYTES });
 const DATA_ROOT_OVERRIDE = process.env.WORLD_TREE_DATA_DIR
   ? resolve(process.env.WORLD_TREE_DATA_DIR)
   : "";
@@ -2617,44 +2619,9 @@ function serveConsoleShell(res) {
 //  HTTP 请求体解析
 // ═══════════════════════════════════════════════════════════════
 
-function readBody(req, limit = MAX_BODY_BYTES) {
-  return new Promise((resolve, reject) => {
-    const len = Number(req.headers["content-length"] || 0);
-    if (len > limit) {
-      reject(new HttpError(413, "BODY_TOO_LARGE", "导入内容过大，请缩小文件后重试。", `content-length=${len}`));
-      return;
-    }
-    const chunks = [];
-    let total = 0;
-    req.on("data", chunk => {
-      total += chunk.length;
-      if (total > limit) {
-        req.destroy(new Error("BODY_TOO_LARGE"));
-        reject(new HttpError(413, "BODY_TOO_LARGE", "请求内容过大。", `received=${total}`));
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on("error", err => {
-      reject(err);
-    });
-    req.on("end", () => {
-      const text = Buffer.concat(chunks).toString("utf-8").trim();
-      if (!text) { resolve({}); return; }
-      let data;
-      try { data = JSON.parse(text); }
-      catch (err) {
-        reject(new HttpError(400, "INVALID_JSON", "请求内容不是有效 JSON。", err.message));
-        return;
-      }
-      if (typeof data !== "object" || data === null || Array.isArray(data)) {
-        reject(new HttpError(400, "INVALID_JSON_BODY", "请求内容必须是 JSON 对象。", `type=${typeof data}`));
-        return;
-      }
-      resolve(data);
-    });
-  });
-}
+// ═══════════════════════════════════════════════════════════════
+//  API 路由处理器
+// ═══════════════════════════════════════════════════════════════
 
 async function handleAPI(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);

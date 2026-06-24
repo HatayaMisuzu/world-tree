@@ -12,7 +12,7 @@
 | `npm run check` | Project syntax & structure check |
 | `npm run docs:check` | Documentation completeness check |
 | `npm run asset:check` | Asset inventory validation |
-| `npm run test:unit` | All unit tests (421 tests) |
+| `npm run test:unit` | All unit tests (429 tests) |
 | `npm run test:integration` | All integration tests (116 tests) |
 | `npm run test:workflows` | Workflow tests (66 tests) |
 | `npm run workflow:check` | Workflow structure validation |
@@ -48,10 +48,10 @@
 
 | Suite | Tests | Command |
 |---|---|---|
-| Unit | 421 | `npm run test:unit` |
+| Unit | 429 | `npm run test:unit` |
 | Integration | 116 | `npm run test:integration` |
 | Workflows | 66 | `npm run test:workflows` |
-| **Total** | **603** | |
+| **Total** | **611** | |
 
 ## Scripts Directory
 
