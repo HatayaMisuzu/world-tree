@@ -24,7 +24,7 @@ World Tree 已完成 kernel、prompt、asset、workflow、service-deepening、Re
 | Real Play Scenario Runner | COMPLETE | 6 个离线 scenarios；`npm run real-play:smoke` |
 | Mode Productization Slices | COMPLETE-PARTIAL | tabletop dice、mystery clue board、strategy resources 均可运行；不是完整 DND/推理引擎/4X |
 | Narrative Experience Slices | COMPLETE-PARTIAL | immersive proposal UI、fallback recap、goal tracker、rhythm tag；不等同长期记忆或 quest engine |
-| Universal Mode V2-ready Foundation | COMPLETE | universal metadata/visibility/lifecycle/capability；8 模式 normalizer/fixture/test 67 项；strategy numeric/probability substrate；不是完整 V2 系统 |
+| Universal Mode V2-ready Foundation | COMPLETE-PARTIAL | universal metadata/visibility/lifecycle/capability；8 模式 normalizer/fixture/test 67 项；strategy numeric/probability substrate；不是完整 V2 系统 |
 
 ## What Is Current
 
@@ -57,3 +57,4 @@ World Tree 已完成 kernel、prompt、asset、workflow、service-deepening、Re
 - Chapter recap 当前以 deterministic fallback 为可测试基线，LLM summary 不是已验证能力。
 - 目标追踪是轻量 runtime UI，不是完整 quest engine 或长期记忆。
 - 完整 Worldbook V2 / Character Capsule V2 仍未实现。
+- V2-ready Foundation：UI 轻量预览未实现；Prompt builder v2-ready context 接入未做；各模式 normalizer 是薄切片不是完整 V2；strategy numeric/probability substrate 不是完整策略游戏。
