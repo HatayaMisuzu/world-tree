@@ -1,4 +1,4 @@
-# Local LLM Setup — World Tree v0.4.0 Pre-V2 Closure
+# Local LLM Setup — World Tree v0.4.0-pre-v2-closure.1
 
 > No real secrets are included in this document.
 

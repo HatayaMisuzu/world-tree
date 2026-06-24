@@ -1,56 +1,19 @@
-# Browser QA Report — Stage 7 Product Usability Closure
+# Browser QA Report — NOT RUN (future only)
+
+> **Status: NOT RUN.** Browser gateway QA was intentionally not performed during Pre-V2 Closure because the gateway is unstable in the current environment. Runtime-only verification was used instead (see `docs/NO_GATEWAY_RUNTIME_QA_REPORT.md`). This template is preserved for future browser QA execution.
 
 ## Environment
 
 | Item | Value |
 |---|---|
-| OS | |
-| Browser | |
-| Node version | |
-| Branch | main |
-| Commit | |
-| Start command | |
-| URL | |
+| OS | N/A |
+| Browser | N/A |
+| Node version | N/A |
+| Branch | N/A |
+| Commit | N/A |
+| Start command | N/A |
+| URL | N/A |
 
-## Flow Checklist
+## Verdict
 
-| Flow | Result | Notes |
-|---|---|---|
-| Install dependencies | | |
-| Start server | | |
-| Open main page | | |
-| Console severe errors | | |
-| Quick-setting input | | |
-| Create/load project or world | | |
-| Select mode | | |
-| Run one play/action flow | | |
-| Candidate/proposal/status visible | | |
-| Save/persist | | |
-| Reload/continue | | |
-| Import/export | | |
-| LLM config/test | | |
-| LLM failure/fallback | | |
-
-## Console Errors
-
-```text
-Paste severe errors here, or write: none observed.
-```
-
-## Blocking Issues
-
-| Issue | Repro | Status |
-|---|---|---|
-| | | |
-
-## Non-Blocking Issues
-
-| Issue | Notes |
-|---|---|
-| | |
-
-## QA Conclusion
-
-```text
-COMPLETE / BLOCKED / NEEDS FIX
-```
+**NOT RUN — future only.** All QA evidence for the current baseline is in `docs/NO_GATEWAY_RUNTIME_QA_REPORT.md`.

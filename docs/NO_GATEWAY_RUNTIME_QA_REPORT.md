@@ -10,16 +10,16 @@
 | OS | Windows 10 |
 | Node | v22.22.3 |
 | Port | 3000 |
-| Version | 0.3.1 (package.json) |
+| Version | 0.4.0-pre-v2-closure.1 (historical probe snapshot may show older version) |
 
 ## HTTP Probes
 
 | Target | Method | Status | Result |
 |---|---|---|---|
 | `GET /` | GET | 200 | Static console served |
-| `GET /api/health` | GET | 200 | `{"status":"ok","version":"0.3.0",...}` |
+| `GET /api/health` | GET | 200 | `{"status":"ok","version":"...","uptime":...}` (version follows package.json) |
 | `GET /api/health?detail=full` | GET | 200 | Full health with LLM status, data root, worlds count |
-| `GET /api/status` | GET | 200 | `{"version":"0.3.0","uptime":...,"profiles":1}` |
+| `GET /api/status` | GET | 200 | `{"version":"...","uptime":...,"profiles":1}` (version follows package.json) |
 | `GET /api/config` | GET | 200 | Returns current config |
 | `POST /api/config` | POST | 200 | Accepts config update |
 | `GET /api/status` (evil Origin) | GET | 403 | Non-local origin rejected |
@@ -37,9 +37,9 @@
 
 | Command | Result |
 |---|---|
-| `npm run test:unit` | PASS (437 tests) |
-| `npm run test:integration` | PASS (116 tests) |
-| `npm run test:workflows` | PASS (66 tests) |
+|| `npm run test:unit` | PASS (416 tests) |
+|| `npm run test:integration` | PASS (119 tests) |
+|| `npm run test:workflows` | PASS |
 | `npm run real-play:smoke` | PASS (6/6) |
 | `npm run asset:check` | PASS (0 errors, 0 warnings) |
 | `npm run interface-audit` | PASS (149/0/0) |
@@ -65,4 +65,4 @@ None. Server starts, all HTTP probes return expected statuses, all 598+ tests pa
 
 ## Conclusion
 
-✅ **Stage 7 No-Gateway Runtime QA PASSED.** Project is usable as v0.4.0 Pre-V2 Closure baseline.
+✅ **Stage 7 No-Gateway Runtime QA PASSED.** Project is usable as v0.4.0-pre-v2-closure.1 baseline (post-repair).

@@ -86,9 +86,7 @@ Future trace fields such as `traceId`, `area`, `mode`, `route`, `operation`, and
 
 ## Known Non-Blocking Issue Pattern
 
-If `npm run preflight` reports `115/116` because of the known character-project port race, verify whether individual integration tests pass separately before changing code.
-
-Do not rewrite functionality only to chase a known flaky issue unless the failure is reproducible and isolated.
+Pre-v2 repair resolved the userData pollution issue that previously caused integration flakiness. If `npm run preflight` reports any failure, verify whether individual tests pass separately before changing code. Do not rewrite functionality only to chase a flaky issue unless the failure is reproducible and isolated.
 
 ## Debugging Report Template
 

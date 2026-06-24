@@ -1,6 +1,6 @@
 # API Route Inventory — World Tree Pre-V2 Closure Baseline
 
-> This inventory reflects the current `server.js` (Stage 6, head `4136c92`+). It is not a future router design.
+> This inventory reflects the current `server.js` (Post-Repair, head `a2a0b52`). It is not a future router design.
 > This inventory is **partial but source-grounded** — not every handler is fully categorized.
 
 ## Status

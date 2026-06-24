@@ -12,9 +12,9 @@
 | `npm run check` | Project syntax & structure check |
 | `npm run docs:check` | Documentation completeness check |
 | `npm run asset:check` | Asset inventory validation |
-| `npm run test:unit` | All unit tests (437 tests) |
-| `npm run test:integration` | All integration tests (116 tests) |
-| `npm run test:workflows` | Workflow tests (66 tests) |
+| `npm run test:unit` | All unit tests (416 tests) |
+| `npm run test:integration` | All integration tests (119 tests) |
+| `npm run test:workflows` | Workflow tests |
 | `npm run workflow:check` | Workflow structure validation |
 | `npm run real-play:smoke` | 6 offline scenario smoke tests |
 | `npm run interface-audit` | API + file I/O interface audit (149 checks) |
@@ -39,18 +39,18 @@
 13. `npm run test:legacy-modernization` — Legacy modernization tests
 14. `npm run test:workflow-readiness` — Workflow readiness tests
 15. `npm run workflow:check` — Workflow structure validation
-16. `npm run test:workflows` — Workflow unit + integration tests (66 tests)
-17. `npm run test:unit` — All unit tests (437 tests)
-18. `npm run test:integration` — All integration tests (116 tests)
+16. `npm run test:workflows` — Workflow unit + integration tests
+17. `npm run test:unit` — All unit tests (416 tests)
+18. `npm run test:integration` — All integration tests (119 tests)
 19. `npm run interface-audit` — Interface audit (149 checks)
 
 ## Test Suite Summary
 
 | Suite | Tests | Command |
 |---|---|---|
-| Unit | 437 | `npm run test:unit` |
-| Integration | 116 | `npm run test:integration` |
-| Workflows | 66 | `npm run test:workflows` |
+| Unit | 416 | `npm run test:unit` |
+| Integration | 119 | `npm run test:integration` |
+| Workflows | dynamic | `npm run test:workflows` |
 | **Total** | **619** | |
 
 ## Scripts Directory

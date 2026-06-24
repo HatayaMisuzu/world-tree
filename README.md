@@ -231,8 +231,12 @@ world-tree/
 ├─ CHANGELOG.md
 ├─ AI-GUIDE.md
 │
-├─ public/
-│   └─ 网页界面、样式和前端交互
+├─ world-tree-console.html
+│   └─ 网页界面
+├─ world-tree-console.css
+│   └─ 样式
+├─ world-tree-console.js
+│   └─ 前端交互
 │
 ├─ server.js
 │   └─ 本地服务入口
