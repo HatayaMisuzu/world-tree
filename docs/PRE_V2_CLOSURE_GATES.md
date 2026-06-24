@@ -12,23 +12,30 @@
 - 记录假设与真实不一致处
 - 不得根据旧标题、旧总结推断当前结构
 
-## 2. Asset Preservation Gate
+## 2. Asset Preservation & Integration Gate
 
-Before any cleanup, deletion, archive, migration, or refactor, inspect:
+Asset protection is not only "do not delete."
 
-- `docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md`
-- `docs/ASSET_STATUS_MATRIX.md`
-- `docs/LEGACY_REDUNDANCY_AUDIT.md`
-- `docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md`
-- `scripts/validate-asset-inventory.mjs`
+During Pre-V2 Closure, assets must not be silently disconnected, downgraded, orphaned, or detached from the architecture. A file can still exist while the asset is effectively lost if it has no entry point, no index, no tests, no migration path, or no role in the new structure.
+
+Asset categories:
+- `ACTIVE`: currently connected to product/runtime flow; must remain reachable and tested.
+- `ACTIVE-PARTIAL`: partially connected; must keep entry point, index, and known limitations.
+- `V2-READY-SOCKET`: not full feature yet, but has a planned/implemented socket for future V2 integration.
+- `PRESERVATION-REFERENCE`: not directly active, but design semantics and reactivation path must remain indexed.
+- `LEGACY-CANDIDATE`: old mechanism candidate; cannot be deleted or detached without replacement proof and owner approval.
+- `ARCHIVED-HISTORICAL`: historical record; may be archived but must stay indexed as history.
+- `DEPRECATION-CANDIDATE`: suspected removable; requires dedicated review and owner approval.
 
 Rules:
-
-- Do not delete assets listed as ACTIVE / ACTIVE-PARTIAL / KERNEL-COMPLETE / LEGACY-CANDIDATE / PRESERVE / WATCH without a dedicated plan.
-- Archive historical documents instead of deleting them.
-- Deletion requires: reference proof, asset inventory check, replacement path, tests, and rollback plan.
+- Do not delete, detach, downgrade, archive, or disconnect an asset without a dedicated plan.
+- Do not remove an asset from routes, mode capsules, tests, docs index, or runtime flow unless replacement/reattachment is proven.
+- Do not turn an asset into an orphan: file exists but no entry, no index, no test, no reactivation path.
+- If moving an asset from ACTIVE / ACTIVE-PARTIAL / V2-READY-SOCKET to PRESERVATION / ARCHIVED / DEPRECATION, owner approval is required.
 - If safety cannot be proven, defer and document.
 - `npm run asset:check` must remain 0 errors, 0 warnings.
+
+See `docs/MAINTENANCE_ENTRY.md` for the full maintenance protocol.
 
 ## 3. Boundary Gate
 

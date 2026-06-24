@@ -80,7 +80,7 @@
 | Source | Count | Status | Description |
 |---|---:|---|---|
 | `npm run asset:check` | 0 | **RESOLVED in Stage 5E** | P3 M1-M11 exact references added to asset inventory |
-| `npm run interface-audit` | 8 | **INVESTIGATED in Stage 5F / OPEN** | See `docs/STAGE_5F_INTERFACE_AUDIT_ARCHITECTURE_PROOF.md`; these are COMPATIBILITY-SEED files created for mode-specific scaffolding — requires dedicated architecture stage to fix |
+| `npm run interface-audit` | 8 | **INVESTIGATED / OPEN** | CONTRACT-DECLARED + FINGERPRINT-TRACKED compatibility seed files; direct mode-adapter readback not yet proven; requires dedicated architecture decision before code changes |
 
 Asset warnings resolved by `docs/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md`. Interface warnings remain non-blocking and require dedicated architecture investigation.
 

@@ -113,3 +113,7 @@ All warnings are pre-existing and non-blocking (exit code 0).
 - existing saves backward compatibility（.worldtree 格式）
 - AI agent 修改规则：proposal gate, creation-forge 不是普通玩法入口
 - workflow default candidate-only（不直接写 shared canon）
+
+## Maintenance Entry
+
+All later Pre-V2 Closure stages and maintenance work must start from `docs/MAINTENANCE_ENTRY.md`.

@@ -73,6 +73,6 @@
 | Source | Count | Description |
 |---|---|---|
 | `npm run asset:check` | 0 | **RESOLVED in Stage 5E.** P3 M1-M11 exact references added to asset inventory. |
-| `npm run interface-audit` | 8 | **INVESTIGATED in Stage 5F.** 8 shared-file write-not-read warnings are COMPATIBILITY-SEED — mode-specific scaffolding intentionally not consumed by generic `buildModuleModel`. Non-blocking. See `docs/STAGE_5F_INTERFACE_AUDIT_ARCHITECTURE_PROOF.md`. |
+| `npm run interface-audit` | 8 | **INVESTIGATED / OPEN (Stage 5F+5G).** 8 shared-file warnings are CONTRACT-DECLARED + FINGERPRINT-TRACKED compatibility seed files. Direct mode-adapter readback not yet proven. Non-blocking. See `docs/STAGE_5F_INTERFACE_AUDIT_ARCHITECTURE_PROOF.md` and `docs/STAGE_5G_ASSET_INTEGRATION_GATE_REPORT.md`. |
 
 All warnings are non-blocking (exit code 0).

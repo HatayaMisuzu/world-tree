@@ -7,7 +7,7 @@
 | Status | **COMPLETE** |
 | Branch | `hermes/pre-v2-closure` |
 | Base | `8eb2547` (Stage 5E) |
-| Head | pending commit |
+| Head | `a8a67f7` |
 | Scope | interface-audit warning proof + closure gates documentation; no code changes |
 
 ## Reality Check
@@ -98,11 +98,12 @@ All 8 warnings are **COMPATIBILITY-SEED**:
 
 These files are intentionally created by `createModule` as **structural scaffolding** for each mode's project. `buildModuleModel` provides a generic view of common shared files (characters, worldbook, scenes, locations, etc.) — it does not need to read mode-specific files because:
 
-1. **Mode-specific adapters consume them directly.** Each mode's runner/adapter reads its own shared file when the mode is loaded (e.g., `tabletop-mode-adapter.js` reads `shared/tabletop.json`).
-2. **They serve as project-file structure.** The files exist so that each mode has a well-defined shared state location, even before any mode-specific code runs.
-3. **`buildModuleModel` is intentionally generic.** It reads only common files that apply across all modes — not mode-specific state files.
+1. **CONTRACT-DECLARED in mode-capsule-registry.** Each file is declared as `modeSpecificFile` for its mode — this is a formal mode contract, not just scaffolding. See `src/core/modes/mode-capsule-registry.js` lines 82, 122, 157, 196, 235, 273 for `modeSpecificFile` declarations.
+2. **FINGERPRINT-TRACKED.** `getModuleFingerprint` in `module-service.js:372-373` scans all shared/*.json files for cache invalidation. This means the files participate in module freshness tracking but are not functionally read.
+3. **CONTRACT-TESTED.** Integration tests (`four-mode-capsules-v1.test.js`, `grand-world-mode-v1.test.js`, `creation-forge-mode-v1.test.js`) verify file existence after project creation and roundtrip.
+4. **NOT directly read by mode adapters.** No mode adapter reads these files via `readJsonSync(join(shared, FILENAME))`. The common shared files (characters, worldbook, scenes, etc.) ARE read — the 8 mode-specific files are NOT.
 
-**This is by design, not a bug.**
+**This is by design, not a bug.** The files exist as structural contracts. Direct functional readback by mode-specific services would require a dedicated architecture stage.
 
 ## Recommendations
 
@@ -146,7 +147,7 @@ If a future stage wants to eliminate these warnings:
 | `npm run interface-audit` | ✅ PASS | 141 passes, 8 warnings (non-blocking) |
 | `npm run docs:check` | ✅ PASS | 24/24 |
 | `npm run check` | ✅ PASS | |
-| `git diff --check` | PENDING | |
+| `git diff --check` | ✅ PASS | Clean |
 
 ## Next Safe Step
 
