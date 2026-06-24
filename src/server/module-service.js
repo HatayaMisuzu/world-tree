@@ -8,6 +8,7 @@ import {
   normalizeQuickSettingInput
 } from "../core/modes/quick-setting.js";
 import { createModeProjectDraft } from "../core/modes/mode-project-factory.js";
+import { getModeCapsule } from "../core/modes/mode-capsule-registry.js";
 
 export function normalizeModuleKey(value = "") {
   return String(value || "").replace(/^world:/, "").replace(/^char:/, "").trim();
@@ -384,6 +385,34 @@ export function createModuleService(deps) {
     return paths.sort().map(fileFingerprint).join("|");
   }
 
+  // Stage 5H: mode-specific shared seed file readback
+  function stripSharedPrefix(value = "") {
+    return String(value || "").replace(/^shared\//, "");
+  }
+
+  function modeSpecificSharedFilesForWorld(world = {}) {
+    const modeId = world.mode || (world.modeMetadata && world.modeMetadata.modeId) || "";
+    const capsule = modeId ? getModeCapsule(modeId) : null;
+    const files = new Set();
+
+    const modeSpecificFile = stripSharedPrefix(capsule?.saveSchema?.modeSpecificFile || "");
+    if (modeSpecificFile) files.add(modeSpecificFile);
+
+    // Additional seed files written by createModule that are not the primary modeSpecificFile
+    if (modeId === "world-rpg") files.add("world_threads.json");
+    if (modeId === "creation-forge") files.add("forge_blueprints.json");
+
+    return [...files];
+  }
+
+  function readModeSpecificShared(sharedDir, files = []) {
+    const result = {};
+    for (const file of files) {
+      result[file] = readJsonSync(join(sharedDir, file), null);
+    }
+    return result;
+  }
+
   async function buildModuleModel(moduleId) {
     const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, ""), "");
     const worldDir = moduleWorldDir(moduleId);
@@ -397,6 +426,9 @@ export function createModuleService(deps) {
     const world = readJsonSync(join(worldDir, "world.json"), {});
     const state = readJsonWithLegacy(join(worldDir, "runtime", "state.json"), join(worldDir, "runtime.json"), {}); // 兼容旧格式
     const shared = join(worldDir, "shared");
+
+    const modeSpecificSharedFiles = modeSpecificSharedFilesForWorld(world);
+    const modeSpecificShared = readModeSpecificShared(shared, modeSpecificSharedFiles);
 
     const model = {
       loaded: true,
@@ -413,7 +445,12 @@ export function createModuleService(deps) {
         races: readJsonSync(join(shared, "races.json"), []),
         rules: readJsonSync(join(shared, "rules.json"), []),
         runtime: state || {},
-        tracking: [], canon: {}
+        tracking: [], canon: {},
+        modeSpecific: {
+          modeId: world.mode || (world.modeMetadata && world.modeMetadata.modeId) || "",
+          files: modeSpecificShared,
+          sourceFiles: modeSpecificSharedFiles
+        }
       },
       entities: [],
       turnCount: state.turnCount || world.turnCount || 0,

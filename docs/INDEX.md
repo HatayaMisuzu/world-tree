@@ -74,6 +74,7 @@
 | [PRE_V2_CLOSURE_GATES.md](PRE_V2_CLOSURE_GATES.md) | Pre-V2 Closure 硬门槛规则 |
 | [MAINTENANCE_ENTRY.md](MAINTENANCE_ENTRY.md) | 维护入口：AI/人类维护前必须阅读 |
 | [STAGE_5G_ASSET_INTEGRATION_GATE_REPORT.md](STAGE_5G_ASSET_INTEGRATION_GATE_REPORT.md) | Stage 5G 资产接入门槛与 interface proof 纠偏 |
+| [STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md](STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md) | Stage 5H mode-specific 读回接入报告 |
 
 ## 历史与归档
 

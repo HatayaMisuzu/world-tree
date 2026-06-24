@@ -46,6 +46,27 @@ for (const forLoopMatch of forLoopMatches) {
   for (const f of loopFiles) explicitWrites.add(f);
 }
 
+// Stage 5H: mode-specific contract readback — recognized via dynamic readback functions
+const modeSpecificContractFiles = new Set([
+  "world_rpg.json",
+  "world_threads.json",
+  "tabletop.json",
+  "strategy.json",
+  "murder_mystery.json",
+  "mystery.json",
+  "creation_forge.json",
+  "forge_blueprints.json",
+]);
+
+const hasDynamicModeSpecificReadback =
+  moduleServiceCode.includes("modeSpecificSharedFilesForWorld") &&
+  moduleServiceCode.includes("readModeSpecificShared") &&
+  moduleServiceCode.includes("modeSpecific");
+
+if (hasDynamicModeSpecificReadback) {
+  for (const f of modeSpecificContractFiles) readFiles.add(f);
+}
+
 for (const f of readFiles) {
   if (explicitWrites.has(f) || f === "characters_base.json") // characters_base.json 是兼容回退
     pass(`shared/${f}: 写入→读取对齐`);

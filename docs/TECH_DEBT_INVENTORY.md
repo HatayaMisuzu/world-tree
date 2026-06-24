@@ -80,9 +80,9 @@
 | Source | Count | Status | Description |
 |---|---:|---|---|
 | `npm run asset:check` | 0 | **RESOLVED in Stage 5E** | P3 M1-M11 exact references added to asset inventory |
-| `npm run interface-audit` | 8 | **INVESTIGATED / OPEN** | CONTRACT-DECLARED + FINGERPRINT-TRACKED compatibility seed files; direct mode-adapter readback not yet proven; requires dedicated architecture decision before code changes |
+| `npm run interface-audit` | 0 | **RESOLVED in Stage 5H** | Mode-specific shared seed files are now read back into `moduleData.modeSpecific`; interface-audit recognizes the dynamic contract readback |
 
-Asset warnings resolved by `docs/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md`. Interface warnings remain non-blocking and require dedicated architecture investigation.
+Asset warnings resolved by `docs/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md`. Interface warnings resolved by `docs/STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md`.
 
 ## Non-Debt: Historical Records to Preserve
 
