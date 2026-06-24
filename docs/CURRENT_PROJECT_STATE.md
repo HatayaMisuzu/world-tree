@@ -61,9 +61,9 @@ World Tree 已完成 kernel、prompt、asset、workflow、service-deepening、Re
 
 ## Pre-V2 Closure Status
 
-Status: **COMPLETE-PENDING-MERGE**
+Status: **COMPLETE-ON-MAIN**
 
-Completed on branch: `hermes/pre-v2-closure` (Stage 5Z head: `2ef932a`)
+Stage 5 closure branch was merged onto `main`; Stage 6 server runtime boundary cleanup and architecture diagnostics are continuing on `main`.
 
 Scope: 8 stages of baseline inventory, documentation cleanup, legacy removal, warning reconciliation, asset integration gate, and mode-specific shared readback integration.
 
@@ -96,15 +96,19 @@ Boundary:
 
 ## Stage 6 Status
 
-Stage 6 has started with a limited server architecture boundary extraction.
+Stage 6 has completed server runtime boundary extraction and architecture diagnostics closure.
 
 Completed:
-- `src/server/http-response.js` extracts HTTP JSON/error response helpers from `server.js`.
-- `src/server/http-request.js` extracts JSON request body parsing from `server.js`.
-- `src/server/local-access.js` extracts local-only access and rate-limit helpers from `server.js`.
-- `tests/unit/http-response.test.js`, `tests/unit/http-request.test.js`, and `tests/unit/local-access.test.js` lock the HTTP boundary contracts.
+- `src/server/http-response.js`
+- `src/server/http-request.js`
+- `src/server/local-access.js`
+- `docs/ARCHITECTURE_MAP.md`
+- `docs/MAINTENANCE_GUIDE.md`
+- `docs/DEBUGGING_GUIDE.md`
+- `docs/API_ROUTE_INVENTORY.md`
+- `docs/MODE_BOUNDARY_MAP.md`
 
 Boundary:
-- This does not split API routes.
-- This does not change persistence, proposal/canon, LLM adapter, or module-service behavior.
-- This does not remove or detach project assets.
+- Stage 6 does not implement full V2.
+- Stage 6 does not fully split API routes.
+- Stage 6 does not change persistence, proposal/canon, LLM adapter, or mode business behavior.

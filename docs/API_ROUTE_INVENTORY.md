@@ -1,81 +1,127 @@
-# API Route Inventory
+# API Route Inventory — World Tree Pre-V2 Closure Baseline
 
-> 当前 `server.js` 的路由清单，生成基线：2026-06-24。本文记录现状，不是未来 API 规划。
+> This inventory reflects the current `server.js` (Stage 6, head `4136c92`+). It is not a future router design.
+> This inventory is **partial but source-grounded** — not every handler is fully categorized.
 
-所有端点仅允许本机请求；带写操作的端点继续受路径安全、authority、proposal/review 或显式确认边界约束。
+## Status
 
-## Health, Config and LLM
+`server.js` still owns API route dispatch. Stage 6 did not split routes. Three infrastructure modules were extracted: `http-response.js`, `http-request.js`, `local-access.js`.
 
-- `GET /api/status`, `GET /api/health`
-- `GET|POST /api/config`
-- `GET /api/secrets`, `GET /api/secrets/llm-value`, `POST /api/secrets/llm`
-- `POST /api/llm/test`, `POST /api/llm/chat`
-- `GET|POST /api/connections`
+## Route Groups
 
-`/api/secrets/llm-value` 只返回掩码状态；真实 key 仅在服务端调用链使用。
+| Group | Purpose | Current Owner |
+|---|---|---|
+| config | local config, secrets, LLM setup checks | `server.js` |
+| examples/import | built-in examples and file import | `server.js`, import services |
+| modules | module list/create/delete/finalize/build model | `server.js`, `module-service` |
+| workflow | workflow status/readiness/adapters | `server.js`, `src/core/workflows` |
+| kernel/proposal | kernel telemetry/proposals/state frame | `server.js`, kernel services |
+| alchemy/materials | alchemy preview/material library/review | `server.js`, alchemy/mechanism services |
+| character | character card CRUD, import, backup | `server.js` |
+| worldbook | worldbook edit/test | `server.js` |
+| turn | turn debug, status frames | `server.js` |
+| export/import | world-pack, data export/import | `server.js` |
+| debug/diagnostics | health, status, engine manifest | `server.js` |
+| static | console and static assets | `server.js` |
 
-## Workflow
+## Inventory Table
 
-- `POST /api/workflow/run` — 执行 creation/alchemy/play/character/mystery/strategy 等 workflow；真实 LLM 仅在服务端配置和 key 同时存在时注入。
-- `GET /api/workflow/types` — 当前可用 workflow 类型。
-- `GET /api/workflow/status` — layer、service count 与 preflight 保护状态。
+| Method | Path | Group | Reads | Writes | Proposal/Canon Sensitive | Local Only | Handler |
+|---|---|---|---|---|---|---|---|
+| GET | `/api/config` | config | config.json | — | no | yes | `loadConfig` |
+| POST | `/api/config` | config | config.json | config.json | no | yes | `saveConfig` |
+| GET | `/api/secrets` | config | secrets.json | — | no | yes | `getSecretState` |
+| POST | `/api/secrets/llm` | config | secrets.json | secrets.json | no | yes | `saveLlmSecret` |
+| GET | `/api/secrets/llm-value` | config | secrets.json | — | no | yes | `getActiveLlmValue` |
+| POST | `/api/llm/test` | config | secrets, config | — | no | yes | `testLlmConnection` |
+| POST | `/api/llm/chat` | config | config, secrets | chat.jsonl | no | yes | `handleLlmChat` |
+| GET | `/api/connections` | config | connections store | — | no | yes | `handleConnections` |
+| POST | `/api/connections` | config | connections store | connections.json | no | yes | `handleConnections` |
+| GET | `/api/modules` | modules | engine/worlds/ | — | no | yes | `listModules` |
+| POST | `/api/modules/create` | modules | — | engine/worlds/ | no | yes | `createModule` |
+| POST | `/api/modules/finalize-draft` | modules | engine/worlds/ | engine/worlds/ | no | yes | `finalizeDraftModule` |
+| POST | `/api/modules/delete` | modules | engine/worlds/ | engine/worlds/ | no | yes | `deleteModule` |
+| POST | `/api/modules/load` | modules | engine/worlds/ | — | no | yes | `buildModuleModel` |
+| GET | `/api/modules/{id}/history` | modules | chat.jsonl | — | no | yes | `handleModuleHistory` |
+| GET | `/api/examples` | examples | manifest.json | — | no | yes | `listExamples` |
+| POST | `/api/examples/install` | examples | manifest.json | engine/worlds/ | no | yes | `installExample` |
+| POST | `/api/workflow/run` | workflow | config, secrets | — | no | yes | `handleWorkflowApiRequest` |
+| GET | `/api/workflow/types` | workflow | — | — | no | yes | `getWorkflowTypesResponse` |
+| GET | `/api/workflow/status` | workflow | — | — | no | yes | `getWorkflowStatus` |
+| GET | `/api/projects/{id}/kernel/summary` | kernel | shared/, runtime/ | — | no | yes | `getKernelSummary` |
+| GET | `/api/projects/{id}/branches` | kernel | runtime/ | — | no | yes | `handleBranchOperation` |
+| POST | `/api/projects/{id}/branches/create` | kernel | runtime/ | runtime/ | no | yes | `handleBranchOperation` |
+| POST | `/api/projects/{id}/branches/{bid}/switch` | kernel | runtime/ | runtime/ | no | yes | `handleBranchOperation` |
+| POST | `/api/projects/{id}/branches/{bid}/archive` | kernel | runtime/ | runtime/ | no | yes | `handleBranchOperation` |
+| GET/POST | `/api/projects/{id}/branches/{bid}/diff` | kernel | runtime/ | — | no | yes | `handleBranchOperation` |
+| GET | `/api/projects/{id}/telemetry/latest` | kernel | telemetry | — | no | yes | `getLatestKernelTelemetry` |
+| POST | `/api/projects/{id}/telemetry/refresh` | kernel | telemetry | telemetry | no | yes | `refreshKernelTelemetry` |
+| POST | `/api/projects/{id}/advance/auto-light` | kernel | — | — | no | yes | `previewAutoLight` |
+| GET | `/api/projects/{id}/proposals/stop-loss` | kernel | proposals | — | yes | yes | `getKernelStopLoss` |
+| POST | `/api/projects/{id}/proposals/{pid}/approve` | kernel | proposals | shared/ | yes | yes | `approveKernelProposal` |
+| POST | `/api/projects/{id}/proposals/{pid}/reject` | kernel | proposals | — | yes | yes | `rejectKernelProposal` |
+| POST | `/api/projects/{id}/proposals/{pid}/reverse` | kernel | proposals | proposals | yes | yes | `reverseKernelProposal` |
+| POST | `/api/projects/{id}/processing/ingest` | kernel | — | processing | no | yes | `ingestProcessingMaterial` |
+| GET | `/api/projects/{id}/processing/candidates` | kernel | processing | — | no | yes | `listProcessingCandidates` |
+| POST | `/api/projects/{id}/processing/candidates/{cid}/deliver` | kernel | processing | processing | no | yes | `deliverProcessingById` |
+| POST | `/api/alchemy/import` | alchemy | — | alchemy previews | no | yes | `handleAlchemyImport` |
+| POST | `/api/alchemy/preview` | alchemy | — | alchemy previews | no | yes | `handleAlchemyPreviewAction` |
+| POST | `/api/alchemy/refine` | alchemy | alchemy previews | alchemy previews | no | yes | `handleAlchemyPreviewAction` |
+| POST | `/api/alchemy/commit` | alchemy | alchemy previews | review queue | no | yes | `handleAlchemyPreviewAction` |
+| POST | `/api/alchemy/digest` | alchemy | — | — | no | yes | `handleAlchemyDigest` |
+| GET | `/api/alchemy/review` | alchemy | review queue | — | no | yes | `handleAlchemyReview` |
+| POST | `/api/alchemy/review` | alchemy | review queue | review queue | no | yes | `handleAlchemyReview` |
+| POST | `/api/mechanisms/draft/from-alchemy` | alchemy | alchemy previews | mechanism drafts | no | yes | `handleMechanismDraftFromAlchemy` |
+| GET | `/api/mechanisms/library` | alchemy | mechanism library | — | no | yes | `handleMechanismLibrary` |
+| GET | `/api/mechanisms/world` | alchemy | mechanism world | — | no | yes | `handleMechanismWorld` |
+| POST | `/api/mechanisms/world/commit-drafts` | alchemy | mechanism drafts | mechanism world | no | yes | `handleMechanismCommitDrafts` |
+| GET | `/api/review/pending` | alchemy | review queue | — | no | yes | `handleReviewFacts` |
+| POST | `/api/review/pending` | alchemy | review queue | review queue | no | yes | `handleReviewFacts` |
+| POST | `/api/review/adopt` | alchemy | review queue | review queue | yes | yes | `handleReviewFacts` |
+| POST | `/api/review/edit-and-adopt` | alchemy | review queue | review queue | yes | yes | `handleReviewFacts` |
+| POST | `/api/review/reject` | alchemy | review queue | review queue | yes | yes | `handleReviewFacts` |
+| GET | `/api/review/log` | alchemy | review log | — | no | yes | `handleReviewLog` |
+| GET | `/api/characters` | character | engine/characters/ | — | no | yes | `listCharacters` |
+| POST | `/api/characters/import` | character | — | engine/characters/ | no | yes | `handleCharacterImport` |
+| POST | `/api/characters/update` | character | engine/characters/ | engine/characters/ | no | yes | `handleCharacterUpdate` |
+| POST | `/api/characters/load` | character | engine/characters/ | — | no | yes | `parseCharacterCard` |
+| POST | `/api/characters/delete` | character | engine/characters/ | engine/characters/ | no | yes | `handle` inline |
+| POST | `/api/characters/backup` | character | engine/characters/ | characters-archive/ | no | yes | `handle` inline |
+| GET | `/api/worldbook` | worldbook | engine/worlds/ | — | no | yes | `handleWorldbook` |
+| POST | `/api/worldbook` | worldbook | — | engine/worlds/ | no | yes | `handleWorldbook` |
+| POST | `/api/worldbook/test` | worldbook | — | — | no | yes | `handleWorldbookTest` |
+| POST | `/api/chat/message` | turn | chat.jsonl | chat.jsonl | no | yes | `handleChatMessage` |
+| GET | `/api/turn/debug` | turn | turn debug | — | no | yes | `handleTurnDebug` |
+| GET | `/api/status/turn/latest` | turn | status frames | — | no | yes | `handleLatestTurnState` |
+| GET | `/api/status/turns` | turn | status frames | — | no | yes | `handleTurnStateIndex` |
+| GET | `/api/status/turn/{turnId}` | turn | status frames | — | no | yes | `handleTurnStateById` |
+| GET | `/api/world-pack/export` | export | engine/worlds/ | — | no | yes | `handleWorldPackExport` |
+| POST | `/api/world-pack/export` | export | engine/worlds/ | — | no | yes | `handleWorldPackExport` |
+| POST | `/api/world-pack/import` | export | — | engine/worlds/ | no | yes | `handleWorldPackImport` |
+| GET | `/api/data/export` | export | engine/worlds/ | — | no | yes | handler inline |
+| POST | `/api/data/import` | import | — | engine/worlds/ | no | yes | handler inline |
+| GET | `/api/overlay/pending` | debug | overlay queue | — | no | yes | `handleOverlayPending` |
+| POST | `/api/overlay/pending` | debug | overlay queue | overlay queue | no | yes | `handleOverlayPending` |
+| GET | `/api/dashboard/telemetry` | debug | engine/worlds/ | — | no | yes | `handleDashboardTelemetry` |
+| GET | `/api/dashboard/entities` | debug | engine/worlds/ | — | no | yes | `handleDashboardEntities` |
+| GET | `/api/dashboard/narrative` | debug | engine/worlds/ | — | no | yes | `handleDashboardNarrative` |
+| GET | `/api/engine/manifest` | debug | engine modules | — | no | yes | handler inline |
+| GET | `/api/worlds` | debug | engine/worlds/ | — | no | yes | handler inline |
+| GET | `/api/status` | debug | — | — | no | yes | handler inline |
+| GET | `/api/health` | debug | — | — | no | yes | handler inline |
+| GET | `/api/plugins` | debug | plugins/ | — | no | yes | `handlePlugins` |
+| POST | `/api/plugins` | debug | — | plugins/ | no | yes | `handlePlugins` |
 
-覆盖：`tests/integration/workflow-server-api.test.js`、`tests/integration/workflow-real-llm-adapter.test.js`、`tests/integration/real-play-scenarios.test.js`。
+## Route Boundary Rule
 
-## Modules and Projects
+Do not split these routes into files until this inventory is complete enough to answer:
 
-- `GET /api/modules`
-- `POST /api/modules/create`, `/api/modules/load`, `/api/modules/delete`, `/api/modules/finalize-draft`
-- `GET /api/modules/:id/history`
-- `GET /api/examples`, `POST /api/examples/install`
-- `GET /api/worlds`
+- Which group owns the route?
+- Does it read or write persistence?
+- Does it touch proposal/canon?
+- Does it affect assets?
+- Which test proves behavior?
 
-## Kernel Project Routes
+## Future Work
 
-动态前缀：`/api/projects/:projectId/`。
-
-- `GET kernel/summary`, `GET branches`, `POST branches/create`
-- `POST branches/:branchId/switch`, `POST branches/:branchId/archive`, `GET|POST branches/:branchId/diff`
-- `GET telemetry/latest`, `POST telemetry/refresh`
-- `POST advance/auto-light`
-- `GET proposals/stop-loss`
-- `POST proposals/:proposalId/approve`, `POST proposals/:proposalId/reject`, `POST proposals/:proposalId/reverse`
-- `POST processing/ingest`, `GET processing/candidates`, `POST processing/candidates/:candidateId/deliver`
-
-Approve 可写入受控 shared patch；reject/delay 不写 shared；reverse 只生成新的待审逆操作。
-
-## Alchemy, Mechanisms and Review
-
-- `POST /api/alchemy/import`, `/api/alchemy/preview`, `/api/alchemy/refine`, `/api/alchemy/commit`, `/api/alchemy/digest`
-- `GET|POST /api/alchemy/review`
-- `POST /api/mechanisms/draft/from-alchemy`
-- `GET /api/mechanisms/library`, `GET /api/mechanisms/world`, `POST /api/mechanisms/world/commit-drafts`
-- `GET|POST /api/review/pending`
-- `POST /api/review/adopt`, `/api/review/edit-and-adopt`, `/api/review/reject`
-- `GET /api/review/log`
-- `GET|POST /api/overlay/pending`
-
-## Character and Worldbook
-
-- `GET /api/characters`
-- `POST /api/characters/import`, `/api/characters/load`, `/api/characters/update`, `/api/characters/backup`, `/api/characters/delete`
-- `GET|POST /api/worldbook`, `POST /api/worldbook/test`
-
-## Chat, Status and Observability
-
-- `POST /api/chat/message`
-- `GET /api/turn/debug`, `GET /api/debug/logs`
-- `GET /api/status/turn/latest`, `GET /api/status/turns`, `GET /api/status/turn/:turnId`
-- `GET /api/dashboard/entities`, `/api/dashboard/narrative`, `/api/dashboard/telemetry`
-- `GET /api/engine/manifest`
-
-## Import and Export
-
-- `GET|POST /api/world-pack/export`, `POST /api/world-pack/import`
-- `GET /api/data/export`, `POST /api/data/import`
-
-默认安全导出排除 chat、memory、state、debug、proposal/review/session、密钥和本地运行态；显式 runtime 导出仍需调用方主动选择。
-
-## Historical / Deferred Candidates
-
-当前 inventory 未声明 embedding、SQLite、plugin marketplace、SSE 或 V2 schema 路由。这些不属于本轮 active API。
+Future route extraction may create route group files, but that is not implemented in Stage 6 Closure.
