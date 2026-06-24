@@ -25,6 +25,14 @@ import {
   llmHttpError
 } from "./src/server/http-response.js";
 import { createReadBody } from "./src/server/http-request.js";
+import {
+  LOCAL_HOSTS,
+  createRateLimiter,
+  isLocalAddress,
+  isLocalRequest,
+  isLocalUrl,
+  parseOriginHost
+} from "./src/server/local-access.js";
 import { guessTypeFromKeywords } from "./src/core/data/alchemy/types.js";
 import { AlchemyPreviewError, createAlchemyPreviewService } from "./src/server/alchemy-preview-service.js";
 import {
@@ -70,14 +78,13 @@ const DATA_ROOT_OVERRIDE = process.env.WORLD_TREE_DATA_DIR
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX_STATIC = 300;
 const RATE_MAX_API = 120;
-const rateMap = new Map();
+const { checkRateLimit, cleanupExpired: cleanupRateLimitEntries } = createRateLimiter({
+  windowMs: RATE_WINDOW_MS
+});
 
 // 定期清理过期速率限制条目（每 120s，防止内存泄漏）
 setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateMap) {
-    if (now - entry.windowStart > RATE_WINDOW_MS * 2) rateMap.delete(key);
-  }
+  cleanupRateLimitEntries();
 }, 120_000).unref(); // unref 防止阻止进程退出
 
 // ═══════════════════════════════════════════════════════════════
@@ -118,66 +125,6 @@ function debugLog(category, message, data = null) {
   DEBUG_LOG.push(entry);
   if (DEBUG_LOG.length > DEBUG_MAX) DEBUG_LOG.shift();
   console.log(`[${category}] ${message}`);
-}
-
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
-
-function isLoopbackAddress(addr = "") {
-  addr = String(addr || "");
-  return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1";
-}
-
-function parseOriginHost(value = "") {
-  try { return value ? new URL(value).hostname : ""; }
-  catch { return ""; }
-}
-
-/** 解析 Host header，正确处理 [::1]:3000 等 IPv6 格式 */
-function parseHostHeader(host = "") {
-  const value = String(host || "").trim();
-  if (value.startsWith("[")) {
-    const end = value.indexOf("]");
-    return end >= 0 ? value.slice(0, end + 1) : value;
-  }
-  return value.split(":")[0];
-}
-
-function isLocalRequest(req) {
-  const remote = req.socket?.remoteAddress || "";
-  if (!isLoopbackAddress(remote)) return false;
-  const host = parseHostHeader(req.headers.host || "");
-  if (host && !LOCAL_HOSTS.has(host)) return false;
-  const originHost = parseOriginHost(req.headers.origin || "");
-  if (originHost && !LOCAL_HOSTS.has(originHost)) return false;
-  const refererHost = parseOriginHost(req.headers.referer || "");
-  if (refererHost && !LOCAL_HOSTS.has(refererHost)) return false;
-  return true;
-}
-
-function isLocalAddress(value = "") {
-  const addr = String(value || "").replace(/^::ffff:/, "");
-  return addr === "127.0.0.1" || addr === "::1" || addr === "localhost";
-}
-
-function isLocalUrl(value = "") {
-  try {
-    const host = new URL(value).hostname;
-    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
-  } catch {
-    return false;
-  }
-}
-
-function checkRateLimit(remoteAddr, limit) {
-  const now = Date.now();
-  const key = remoteAddr || "127.0.0.1";
-  let entry = rateMap.get(key);
-  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
-    entry = { windowStart: now, count: 0 };
-    rateMap.set(key, entry);
-  }
-  entry.count++;
-  return entry.count <= limit;
 }
 
 // ═══════════════════════════════════════════════════════════════

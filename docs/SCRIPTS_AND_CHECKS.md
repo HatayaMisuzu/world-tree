@@ -12,7 +12,7 @@
 | `npm run check` | Project syntax & structure check |
 | `npm run docs:check` | Documentation completeness check |
 | `npm run asset:check` | Asset inventory validation |
-| `npm run test:unit` | All unit tests (429 tests) |
+| `npm run test:unit` | All unit tests (437 tests) |
 | `npm run test:integration` | All integration tests (116 tests) |
 | `npm run test:workflows` | Workflow tests (66 tests) |
 | `npm run workflow:check` | Workflow structure validation |
@@ -42,16 +42,16 @@
 16. `npm run test:workflows` — Workflow unit + integration tests (63 tests)
 17. `npm run test:unit` — All unit tests (416 tests)
 18. `npm run test:integration` — All integration tests (116 tests)
-19. `npm run interface-audit` — Interface audit (141 checks)
+19. `npm run interface-audit` — Interface audit (149 checks)
 
 ## Test Suite Summary
 
 | Suite | Tests | Command |
 |---|---|---|
-| Unit | 429 | `npm run test:unit` |
+| Unit | 437 | `npm run test:unit` |
 | Integration | 116 | `npm run test:integration` |
 | Workflows | 66 | `npm run test:workflows` |
-| **Total** | **611** | |
+| **Total** | **619** | |
 
 ## Scripts Directory
 
@@ -60,7 +60,7 @@
 | `scripts/check.mjs` | Project syntax & structure check |
 | `scripts/test.mjs` | Main test entry (usage: `npm test`) |
 | `scripts/audit.mjs` | Dependency security audit |
-| `scripts/interface-audit.mjs` | API + file I/O interface audit (141 checks) |
+| `scripts/interface-audit.mjs` | API + file I/O interface audit (149 checks) |
 | `scripts/check-docs.mjs` | Documentation completeness check (24 checks) |
 | `scripts/validate-workflow-integration.mjs` | Workflow structure validation |
 | `scripts/validate-asset-inventory.mjs` | Asset inventory validation |
