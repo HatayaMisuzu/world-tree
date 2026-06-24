@@ -6,7 +6,7 @@ export async function handleWorkflowApiRequest(body = {}, deps = {}) {
   const { workflowType, modeId, projectId, branchId, userInput, options } = body || {};
   // Build real LLM adapter from server deps if available
   const workflowDeps = { ...deps };
-  if (deps.realLlmCall && deps.llmConfig && deps.apiKey) {
+  if (deps.llmConfig && deps.apiKey) {
     workflowDeps.realLlm = async ({ envelope, promptPacket }) => {
       try {
         const baseUrl = String(deps.llmConfig.llmBaseUrl || "").replace(/\/$/, "");

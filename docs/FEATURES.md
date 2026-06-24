@@ -76,7 +76,15 @@
 | Strategy Turn | strategy-sim | M6/M7/M8 阵营图与规则审查 |
 | Workflow Debug | 控制台 Workflow 面板 | /api/workflow/status；safe redacted summary |
 
-## 下一步 (Next)
+## Real Play Productization (Current)
 
-- Real Play Productization：scenario runner, smoke scenarios, UX verification
-- Deep UX (dice, clue board, resource panel)：ROADMAP CANDIDATE — 见 docs/ROADMAP_CANDIDATES.md
+| 能力 | 当前边界 |
+| --- | --- |
+| Real-play scenario runner | 6 个离线 scenarios；支持单场景与 JSON 输出 |
+| Workflow visible mount | chat surface 显示 layer、services、types、last run；desktop/mobile 已验证 |
+| LLM 等待阶段 | Director / direction / writer / Guardian 阶段提示；不是 SSE/streaming |
+| Tabletop `/roll` | `1d20`、`1d20+3`、`2d6`、`4d6-1`；结果进入 runtime/prompt，不写 canon |
+| Mystery board | 玩家已知线索与假设；hidden truth 深度过滤 |
+| Strategy resources | 粮草/军力/民心/外交与 4 个有界决策；runtime/candidate only |
+| Narrative review | accept/delay/reject 复用现有 proposal gate |
+| Recap / goals / rhythm | deterministic fallback recap、公开目标、辅助 rhythmTag；不是长期记忆或完整 quest engine |

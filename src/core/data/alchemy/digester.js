@@ -408,7 +408,7 @@ function registerModule(dataRoot, safeName, worldName) {
   if (existsSync(indexPath)) {
     try {
       index = JSON.parse(readFileSync(indexPath, "utf8"));
-    } catch {}
+    } catch (err) { console.warn("[alchemy-digester] module index unreadable; rebuilding (non-fatal):", err?.message || "unknown error"); }
   }
 
   // 去重

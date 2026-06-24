@@ -81,7 +81,7 @@ export function listWorldProfiles(includeHidden = false) {
         status,
         basedOn: profile.basedOn || "worldbook"
       });
-    } catch {}
+    } catch (err) { console.warn("[world-manager] skipped invalid profile (non-fatal):", err?.message || "unknown error"); }
   }
   return profiles;
 }
@@ -246,7 +246,7 @@ export function listWorlds(fs) {
         dir: entry.name,
         ...meta
       });
-    } catch {}
+    } catch (err) { console.warn("[world-manager] skipped invalid world metadata (non-fatal):", err?.message || "unknown error"); }
   }
   return worlds.sort((a, b) => new Date(b.lastPlayedAt || 0) - new Date(a.lastPlayedAt || 0));
 }

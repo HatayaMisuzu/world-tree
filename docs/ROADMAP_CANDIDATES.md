@@ -3,29 +3,28 @@
 > 来自 UX 和工程审查文档的候选建议。**不代表当前已实现功能。**
 > 执行前必须重新检查当前仓库状态。大重构必须单独开执行文件。
 
-## Next: Real Play Productization
+## Completed: Real Play Productization 0-3
 
-- 验证 console workflow panel visible mount
-- 新增 real-play smoke scenarios
-- 新增 scenario runner
-- 验证 creation / alchemy / play-turn 回环
-- 生成 REAL_PLAY_PRODUCTIZATION_REPORT
+- Console workflow panel visible mount：已完成并经 desktop/mobile browser QA。
+- Real-play smoke scenarios / scenario runner：已完成，6 个离线 scenario。
+- Creation / alchemy / play-turn 回环：已验证 candidate-only。
+- LLM 等待进度、Tabletop 骰子、Mystery 线索板、Strategy 资源板：已完成薄切片。
+- Narrative proposal UI、fallback recap、goal tracker、rhythm tags：已完成薄切片。
+- 证据见 `docs/REAL_PLAY_PRODUCTIZATION_REPORT.md`。
 
 ## Soon: Product / UX Enhancements
 
-- LLM 等待进度可视化
-- Tabletop 骰子命令 /roll
-- Mystery 线索卡与假说板
-- Strategy 资源面板
-- Narrative proposal 审批 UI
-- Chapter recap / story summary
+- Chapter recap 的真实 LLM summary（当前只有 deterministic fallback 基线）
+- Tabletop 更完整但仍轻量的 fail-forward / scene clock
+- Mystery evidence chain / hint ladder（不得泄露 hidden truth）
+- Strategy 更完整但有界的外交与回合结算
 - Character creation 灵魂问题
 - Alchemy transformation 阶段动画
 - Worldbook explicit relations 编辑器
 
 ## Engineering Backlog
 
-- PROPOSAL_STORE 持久化
+- Proposal persistence 的多进程/异常恢复压力测试（当前主链已由 engine snapshot + JSONL 持久化）
 - Empty catch 日志补齐
 - JSONL reverse seek 优化
 - 更多 route handler 集成测试

@@ -4,7 +4,7 @@ import { createKernelTurnContext, summarizeKernelTurnContext } from "../core/ker
 import { initializeBranchTree, createBranch, switchBranch, listBranches, archiveBranch, resolveActiveBranchProjectRoot, getActiveBranch } from "../core/timeline/branch-manager.js";
 import { createBranchDiffSummary } from "../core/timeline/branch-diff-summary.js";
 import { collectWorldTelemetry } from "../core/telemetry/world-telemetry.js";
-import { approveProposal } from "../core/system/proposal-bus.js";
+import { approveProposal, rejectProposal } from "../core/system/proposal-bus.js";
 import { readStopLossWindows } from "../core/content/stop-loss-window.js";
 import { createReverseProposal } from "../core/content/reversible-change.js";
 import { prepareForgeMaterialCandidates } from "../core/creation-forge/forge-processing-adapter.js";
@@ -69,6 +69,7 @@ export async function previewAutoLight(projectRoot, input = {}) {
 }
 
 export async function approveKernelProposal(projectRoot, proposalId, input = {}) { const root = await branchRoot(projectRoot); return approveProposal({ projectRoot: root, proposalLog: join(root, "runtime", "world-proposals.jsonl") }, proposalId, {}, { secondConfirm: input.secondConfirm === true, currentTurn: Number(input.currentTurn || 0) }); }
+export async function rejectKernelProposal(projectRoot, proposalId) { const root = await branchRoot(projectRoot); return rejectProposal({ projectRoot: root, proposalLog: join(root, "runtime", "world-proposals.jsonl") }, proposalId); }
 export async function getKernelStopLoss(projectRoot) { const root = await branchRoot(projectRoot); return { status: "ok", ...(await readStopLossWindows(root)) }; }
 export async function reverseKernelProposal(projectRoot, proposalId) {
   const root = await branchRoot(projectRoot);

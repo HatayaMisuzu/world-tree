@@ -1,5 +1,7 @@
 # API Reference
 
+> 当前真实路由总表见 [`API_ROUTE_INVENTORY.md`](./API_ROUTE_INVENTORY.md)。本文保留详细协议说明；两者不一致时，应以 `server.js` 与 route inventory 的当前验证结果为准。
+
 ## Health
 
 | Method | Path | Purpose |

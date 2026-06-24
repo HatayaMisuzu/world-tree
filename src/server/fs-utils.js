@@ -36,7 +36,7 @@ export async function writeJson(filePath, data) {
     renameSync(tmpPath, filePath);
   } catch (err) {
     // 如果 rename 失败，尝试清理残留 tmp
-    try { if (existsSync(tmpPath)) rmSync(tmpPath, { force: true }); } catch {}
+    try { if (existsSync(tmpPath)) rmSync(tmpPath, { force: true }); } catch (cleanupError) { console.warn("[fs-utils] temp cleanup failed (non-fatal):", cleanupError?.message || "unknown error"); }
     throw err;
   }
 }
@@ -125,7 +125,7 @@ export async function calcDirectorySizeLimited(rootDir, { maxEntries = 5000, max
       if (entry.isDirectory()) {
         size += await walk(p);
       } else {
-        try { size += (await stat(p)).size; } catch {}
+        try { size += (await stat(p)).size; } catch (err) { console.warn("[fs-utils] skipped unreadable size entry (non-fatal):", err?.message || "unknown error"); }
       }
     }
     return size;

@@ -177,6 +177,7 @@ quick-setting 不得替用户决定核心世界方向。
 | ENTRY-TT-002 | Light Resolution / Consequence | ACTIVE-PARTIAL | 轻量判定与后果 |
 | ENTRY-TT-003 | Fail Forward | PLANNED | 失败也推进，不直接卡死 |
 | ENTRY-TT-004 | Scene Clock / Tension Clock | LEGACY-CANDIDATE | 可从旧包事件/节奏机制吸收 |
+| ENTRY-TT-005 | Bounded Dice Command | ACTIVE | `/roll` 解析、d20 critical、runtime/prompt 注入；不得写 shared canon |
 
 保护规则：
 
@@ -199,6 +200,7 @@ quick-setting 不得替用户决定核心世界方向。
 | ENTRY-MYST-004 | Evidence Chain | LEGACY-CANDIDATE | 证据链完整性机制 |
 | ENTRY-MYST-005 | Hint Ladder | LEGACY-CANDIDATE | 分级提示，不直接泄底 |
 | ENTRY-MYST-006 | Suspect Knowledge Boundary | LEGACY-CANDIDATE | 嫌疑人知识边界 |
+| ENTRY-MYST-007 | Player-visible Clue Board | ACTIVE | discovered clues + hypotheses；hidden truth 不能进入玩家上下文 |
 
 保护规则：
 
@@ -242,7 +244,8 @@ quick-setting 不得替用户决定核心世界方向。
 | ENTRY-STRAT-003 | Faction Knowledge Boundary | LEGACY-CANDIDATE | 各阵营知道/误判/隐藏计划 |
 | ENTRY-STRAT-004 | Organization / Faction Graph | LEGACY-CANDIDATE | 组织关系图谱 |
 | ENTRY-STRAT-005 | Bounded Situation Update | KERNEL-COMPLETE | 有限局势推进 |
-| ENTRY-STRAT-006 | Resource / Diplomacy Patch Proposal | PLANNED | 资源和外交变化 proposal 化 |
+| ENTRY-STRAT-006 | Resource / Diplomacy Patch Proposal | ACTIVE-PARTIAL | 四项资源薄切片写 runtime/candidate；重大变化仍走 proposal |
+| ENTRY-STRAT-007 | Bounded Resource Panel | ACTIVE | 粮草/军力/民心/外交与四个决策；数值强制 0..max |
 
 保护规则：
 

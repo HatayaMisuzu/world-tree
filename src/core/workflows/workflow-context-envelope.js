@@ -18,6 +18,7 @@ export function inferWorkflowType(input = {}) {
   if (modeId === "character") return WORKFLOW_TYPES.CHARACTER_CHAT;
   if (modeId === "mystery-puzzle" && /搜[索查]|调查|检查|观察/.test(input_)) return WORKFLOW_TYPES.MYSTERY_INVESTIGATE;
   if (modeId === "murder-mystery" && /审[问讯]|盘问|质问/.test(input_)) return WORKFLOW_TYPES.MYSTERY_INTERROGATE;
+  if (modeId === "murder-mystery" && /真相|凶手|答案/.test(input_)) return WORKFLOW_TYPES.MYSTERY_INTERROGATE;
   if ((modeId === "mystery-puzzle" || modeId === "murder-mystery") && /推理|推断|结论/.test(input_)) return WORKFLOW_TYPES.MYSTERY_DEDUCE;
   if (modeId === "strategy-sim" && /外交|谈判|交涉/.test(input_)) return WORKFLOW_TYPES.STRATEGY_DIPLOMACY;
   if (modeId === "strategy-sim" && /资源|更新/.test(input_)) return WORKFLOW_TYPES.STRATEGY_RESOURCE_UPDATE;
