@@ -39,8 +39,8 @@
 13. `npm run test:legacy-modernization` — Legacy modernization tests
 14. `npm run test:workflow-readiness` — Workflow readiness tests
 15. `npm run workflow:check` — Workflow structure validation
-16. `npm run test:workflows` — Workflow unit + integration tests (63 tests)
-17. `npm run test:unit` — All unit tests (416 tests)
+16. `npm run test:workflows` — Workflow unit + integration tests (66 tests)
+17. `npm run test:unit` — All unit tests (437 tests)
 18. `npm run test:integration` — All integration tests (116 tests)
 19. `npm run interface-audit` — Interface audit (149 checks)
 
