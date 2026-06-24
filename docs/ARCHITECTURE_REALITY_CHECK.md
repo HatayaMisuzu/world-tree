@@ -85,7 +85,7 @@ Browser → http://127.0.0.1:3000
 - `adapters/`: `server-workflow-adapter.js`, `llm-workflow-adapter.js`, `console-workflow-adapter.js`
 - `services/`: `creation-*`, `alchemy-*`, `play-turn-*`, `character-*`, `mystery-*`, `strategy-*`, `direction-*`
 
-⚠️ 存在 `src/core/workflow/` 旧目录（2 文件：`p3-context-builder.js`, `workflow-context-envelope.js`），可能是 `workflows/` 的残留。
+⚠️ ~~存在 `src/core/workflow/` 旧目录（2 文件：`p3-context-builder.js`, `workflow-context-envelope.js`），可能是 `workflows/` 的残留。~~ **Stage 5C 已删除旧的 `src/core/workflow/` 目录。** 所有引用已迁移到 `src/core/workflows/`。
 
 ### Persistence / Save Boundary
 

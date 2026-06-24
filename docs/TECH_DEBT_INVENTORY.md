@@ -20,12 +20,18 @@
 
 仅列出已通过引用搜索初步确认的候选。Stage 5A 不执行任何清理。每项标出证据和建议阶段。
 
-### P1-1: `src/core/workflow/` vs `src/core/workflows/` duplicate directory
+### P1-1: `src/core/workflow/` vs `src/core/workflows/` duplicate directory — RESOLVED (Stage 5C)
 
 | Field | Value |
 |---|---|
-| Path | `src/core/workflow/` (2 files: `p3-context-builder.js`, `workflow-context-envelope.js`) |
-| Reason | `src/core/workflows/` 是当前主目录（17 files），`src/core/workflow/` 仅 2 个旧文件 |
+| Status | **RESOLVED in Stage 5C** |
+| Evidence | `tests/unit/workflow-context-envelope.test.js` migrated to NEW path; zero code/test imports remain for OLD; OLD directory removed |
+| Date | 2026-06-24 |
+
+| Field | Value |
+|---|---|
+| Path | `src/core/workflow/` (2 files: `p3-context-builder.js`, `workflow-context-envelope.js`) — **REMOVED in Stage 5C** |
+| Reason | `src/core/workflows/` 是当前主目录（19 files），`src/core/workflow/` 是旧目录，唯一的测试引用已迁移 |
 | Evidence | `search_files` 确认两个目录同时存在；`workflow-context-envelope.js` 在两处各有一份 |
 | References | `server.js` 从 `src/core/workflows/` import |
 | Risk | Low — 需确认旧文件无隐藏引用后归档 |
