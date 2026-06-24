@@ -40,9 +40,9 @@
 | server.js (world-pack API) | legacy-bridge | 否 | src/core/system/world-tree-save-system.js | 旧 import/export API |
 | src/server/module-service.js | active-compatibility | 否 | — | 模式初始化服务 |
 | src/server/data-import-service.js | legacy-bridge | 否 | — | 数据导入服务 |
-| docs/WORLD_TREE_*_P1.md (~12 个) | archived-design | 否 | docs/ARCHITECTURE_V1.md | 历史 P1 执行记录 |
-| docs/WORLD_TREE_LEGACY_ASSET_AUDIT_P1.md | superseded-reference | 否 | docs/LEGACY_REDUNDANCY_AUDIT.md | 旧审计已被新审计替代 |
-| docs/WORLD_TREE_LEGACY_ASSET_RENOVATION_PLAN_P1.md | superseded-reference | 否 | docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md | 旧计划已被新计划替代 |
+| docs/archive/p1-reports/ (~14 个) | archived-design | 否 | docs/ARCHITECTURE_V1.md | 历史 P1 执行记录，Stage 5B 已归档 |
+| docs/archive/p1-reports/WORLD_TREE_LEGACY_ASSET_AUDIT_P1.md | superseded-reference | 否 | docs/LEGACY_REDUNDANCY_AUDIT.md | 旧审计已被新审计替代，已归档 |
+| docs/archive/p1-reports/WORLD_TREE_LEGACY_ASSET_RENOVATION_PLAN_P1.md | superseded-reference | 否 | docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md | 旧计划已被新计划替代，已归档 |
 | docs/v0.3.0-baseline-audit.md | superseded-reference | 否 | — | 历史基线审计 |
 | docs/context-engine-design-v1.md | superseded-reference | 否 | docs/ARCHITECTURE_V1.md | 旧设计文档 |
 | docs/memory-layers-design-v1.md | superseded-reference | 否 | docs/ARCHITECTURE_V1.md | 旧设计文档 |

@@ -66,9 +66,10 @@
 | [DOCS_INVENTORY.md](DOCS_INVENTORY.md) | 文档真实结构盘点 |
 | [TESTS_INVENTORY.md](TESTS_INVENTORY.md) | 测试体系真实盘点 |
 | [ARCHITECTURE_REALITY_CHECK.md](ARCHITECTURE_REALITY_CHECK.md) | 当前真实架构地图 |
+| [STAGE_5B_SAFE_CLEANUP_REPORT.md](STAGE_5B_SAFE_CLEANUP_REPORT.md) | Stage 5B 安全文档清理与引用证明 |
 
 ## 历史与归档
 
-- [archive/](archive/) — 历史设计/执行记录，不代表当前能力
+- [archive/](archive/) — 历史设计/执行记录（含 P1 报告），不代表当前能力
 - [LEGACY_REDUNDANCY_AUDIT.md](LEGACY_REDUNDANCY_AUDIT.md) — Legacy 资产审计
 - [LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md](LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md) — 兼容与升级计划
