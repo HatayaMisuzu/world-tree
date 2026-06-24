@@ -112,3 +112,20 @@ Boundary:
 - Stage 6 does not implement full V2.
 - Stage 6 does not fully split API routes.
 - Stage 6 does not change persistence, proposal/canon, LLM adapter, or mode business behavior.
+
+## Stage 7 Status
+
+Stage 7 validates the project as a usable Pre-V2 Closure baseline through no-gateway runtime QA, smoke tests, and documentation sealing.
+
+Completed:
+- `docs/USER_QUICKSTART.md`
+- `docs/LOCAL_LLM_SETUP.md`
+- `docs/PLAY_MODE_GUIDE.md`
+- `docs/NO_GATEWAY_RUNTIME_QA_REPORT.md`
+- `docs/PRE_V2_CLOSURE_REPORT.md`
+- README updated with current state
+
+Boundary:
+- Browser gateway QA was intentionally not used (gateway unstable).
+- Stage 7 does not implement full V2.
+- Stage 7 does not rewrite persistence, proposal/canon, LLM adapter, or mode engines.
