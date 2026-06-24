@@ -4,10 +4,10 @@
 
 | Item | Value |
 |---|---|
-| Status | COMPLETE / PARTIAL |
+| Status | COMPLETE |
 | Branch | `main` |
 | Base | `4136c92` |
-| Head | pending commit |
+| Head | `4839592` |
 | Scope | architecture map, maintenance guide, debugging guide, route inventory, mode boundary map |
 
 ## What Stage 6 Completed
@@ -35,22 +35,22 @@
 | Frontend UI behavior | No | |
 | Assets deleted/detached/downgraded | No | |
 
-## Tests
+## Tests (Stage 6Z metadata patch)
 
 | Command | Result | Details |
 |---|---|---|
-| `node --test tests/unit/http-response.test.js` | | |
-| `node --test tests/unit/http-request.test.js` | | |
-| `node --test tests/unit/local-access.test.js` | | |
-| `npm run test:unit` | | |
-| `npm run test:integration` | | |
-| `npm run test:workflows` | | |
-| `npm run real-play:smoke` | | |
-| `npm run asset:check` | | |
-| `npm run interface-audit` | | |
-| `npm run docs:check` | | |
-| `npm run check` | | |
-| `git diff --check` | | |
+| `npm run docs:check` | ✅ PASS | 24/24 |
+| `npm run check` | PASS | docs-only |
+| `git diff --check` | PASS | clean |
+| `node --test tests/unit/http-response.test.js` | PASS | Previous Stage 6 run |
+| `node --test tests/unit/http-request.test.js` | PASS | Previous Stage 6 run |
+| `node --test tests/unit/local-access.test.js` | PASS | Previous Stage 6 run |
+| `npm run test:unit` | PASS | 437 tests |
+| `npm run test:integration` | PASS | 116 tests |
+| `npm run test:workflows` | PASS | 66 tests |
+| `npm run real-play:smoke` | PASS | 6/6 |
+| `npm run asset:check` | PASS | 0 errors, 0 warnings |
+| `npm run interface-audit` | PASS | 149/0/0 |
 
 ## Known Limits
 

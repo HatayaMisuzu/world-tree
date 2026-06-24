@@ -92,7 +92,7 @@ Current guarantees:
 Boundary:
 - This is not full V2.
 - This does not implement complete mode-specific gameplay engines.
-- This does not merge the branch into main yet.
+- Stage 5 closure is now landed on `main`; Stage 6 closure continues the Pre-V2 baseline on `main`.
 
 ## Stage 6 Status
 
