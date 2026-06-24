@@ -1,6 +1,6 @@
 # World Tree 文档索引
 
-> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · 下一步：Real Play Productization
+> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL
 >
 > **真相源优先级**：CURRENT_PROJECT_STATE > docs/INDEX > 活跃架构文档 > 历史报告 > archive
 
@@ -15,6 +15,7 @@
 | [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | 项目全景 |
 | [FEATURES.md](FEATURES.md) | 功能清单 |
 | [API_REFERENCE.md](API_REFERENCE.md) | API 文档 |
+| [API_ROUTE_INVENTORY.md](API_ROUTE_INVENTORY.md) | 当前真实 API 路由总表 |
 | [SAVE_SYSTEM_AND_WORLD_PACK.md](SAVE_SYSTEM_AND_WORLD_PACK.md) | 存档与导入导出 |
 | [ROADMAP_CANDIDATES.md](ROADMAP_CANDIDATES.md) | 路线候选建议（不代表已实现） |
 
@@ -31,6 +32,7 @@
 | [Long Play Kernel P2](P2_LONG_PLAY_KERNEL.md) | P2 长期游玩 Kernel |
 | [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) | 脚本与检查 |
 | [DOCUMENTATION_STATUS.md](DOCUMENTATION_STATUS.md) | 文档状态 |
+| [WORLD_TREE_REAL_PLAY_PRODUCTIZATION_0_3_EXECUTION.md](WORLD_TREE_REAL_PLAY_PRODUCTIZATION_0_3_EXECUTION.md) | Real Play 0-3 仓库内执行入口 |
 
 ## 给 AI Agent（操作规则和保护清单）
 
@@ -48,6 +50,7 @@
 | 文档 | 状态 |
 |------|------|
 | [Asset Maturation Report](ASSET_MATURATION_REPORT.md) | ✅ 当前 |
+| [Real Play Productization Report](REAL_PLAY_PRODUCTIZATION_REPORT.md) | ✅ v0.3.1 当前 |
 | [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
 | [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |
 | [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) | 提示词与数据包 |

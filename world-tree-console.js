@@ -116,7 +116,17 @@ const API = {
   kernelPost(moduleKey, tail, data = {}) { return API.post(`/api/projects/${encodeURIComponent(moduleKey)}/${tail}`, data); },
   health() { return API.get("/api/health"); },
   workflowStatus() { return API.get("/api/workflow/status"); },
+  workflowTypes() { return API.get("/api/workflow/types"); },
 };
+
+const PROGRESS_STAGES = [
+  "导演正在分析你的行动……",
+  "生成叙事方向……",
+  "故事正在书写……",
+  "Guardian 正在审核……",
+  "本轮完成"
+];
+let progressTimer = null;
 
 const AS = {
   view: "workbench",
@@ -189,6 +199,11 @@ const AS = {
   selectedTurnFrame: null,
   latestTurnFrame: null,
   turnStateIndex: [],
+  workflowStatus: null,
+  workflowTypes: [],
+  lastWorkflowRun: null,
+  progressIndex: -1,
+  modePlay: null,
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
 };
 
@@ -273,11 +288,14 @@ const C = {
           </div>
         </div>
         <div id="chatMessages" class="chat-messages">${AS.messages.length ? AS.messages.map(C.chatMsg).join("") : C.empty("开始对话", "输入行动、台词或 / 命令。")}</div>
+        ${renderProgressPanel()}
         <div class="composer">
           <textarea id="chatInput" placeholder="续写这一幕... 输入 / 调用命令，Enter 发送"></textarea>
           <button class="primary" data-action="chat-send" ${AS.busy ? "disabled" : ""}>发送</button>
         </div>
         ${renderKernelPanel()}
+        ${renderWorkflowPanel()}
+        ${renderModePlayPanel()}
       </section>
       ${renderStatusPanel()}
       ${renderDeveloperObservabilityDrawer()}
@@ -306,7 +324,7 @@ function currentTurnStateFrame() {
 }
 
 function renderKernelPanel() {
-  if (!AS.selectedModule || String(AS.selectedModule.id || "").startsWith("char:") || AS.selectedModule.id === "__quick__") return "";
+  if (!AS.selectedModule || AS.selectedModule.type === "profile" || String(AS.selectedModule.id || "").startsWith("char:") || AS.selectedModule.id === "__quick__") return "";
   const kernel = AS.kernel;
   const metrics = kernel?.telemetry?.metrics || {};
   const branches = AS.kernelBranches || [];
@@ -326,7 +344,7 @@ function renderKernelPanel() {
         <button class="small" data-action="kernel-auto-light">Auto-light 预演</button>
       </section>
       <section><div class="item-head"><strong>提案</strong><span class="tiny muted">${proposals.length} 待审</span></div>
-        ${proposals.slice(0, 5).map(item => `<div class="kernel-row" data-proposal-id="${U.esc(item.id)}"><span title="${U.esc((item.affectedFiles || []).join(", "))}">${U.esc(item.title)} · ${U.esc(item.impactLevel)}${item.reversible ? " · 可逆" : ""}</span><button class="small" data-action="kernel-approve-proposal" data-impact="${U.esc(item.impactLevel)}" data-second-confirm="${item.requiresSecondConfirm === true}">${item.requiresSecondConfirm || item.impactLevel === "critical" ? "二次确认" : "批准"}</button></div>`).join("") || `<p class="tiny muted">暂无待审提案</p>`}
+        ${proposals.slice(0, 5).map(item => `<div class="proposal-story-card" data-proposal-id="${U.esc(item.id)}"><p>你感到世界的脉络似乎在重新织就……</p><strong>${U.esc(item.title)}</strong><span class="tiny muted">${U.esc(item.summary || "检测到重大世界状态变更")} · ${U.esc(item.impactLevel)}${item.reversible ? " · 可逆" : ""}</span><div class="actions"><button class="small primary" data-action="kernel-approve-proposal" data-impact="${U.esc(item.impactLevel)}" data-second-confirm="${item.requiresSecondConfirm === true}">${item.requiresSecondConfirm || item.impactLevel === "critical" ? "二次确认这个变化" : "接受这个变化"}</button><button class="small" data-action="kernel-delay-proposal">先继续，稍后决定</button><button class="small danger" data-action="kernel-reject-proposal">拒绝这个变化</button></div></div>`).join("") || `<p class="tiny muted">暂无待审提案</p>`}
         ${windows.slice(0, 5).map(item => `<div class="kernel-row"><span>止损窗口：${U.esc(item.proposalId)}</span><button class="small danger" data-action="kernel-reverse-proposal" data-proposal-id="${U.esc(item.proposalId)}">生成逆操作</button></div>`).join("")}
       </section>
       <section><div class="item-head"><strong>素材处理</strong><button class="small" data-action="kernel-ingest-material">导入文本</button></div>
@@ -339,14 +357,41 @@ function renderKernelPanel() {
 function renderWorkflowPanel() {
   if (!AS.selectedModule || String(AS.selectedModule.id || "").startsWith("char:") || AS.selectedModule.id === "__quick__") return "";
   const wf = AS.workflowStatus;
-  return `<details class="kernel-panel" data-workflow-panel>
+  const types = AS.workflowTypes || [];
+  return `<details class="kernel-panel" data-workflow-panel open>
     <summary><strong>Workflow</strong><span class="tiny muted">${wf ? `${wf.workflowLayer || "active"} · ${wf.services?.length || 8} services` : "点击加载"}</span></summary>
     <div class="kernel-grid" style="grid-template-columns:1fr 1fr">
       <section><strong>状态</strong><p class="tiny">${wf ? `preflightProtected: ${wf.preflightProtected} · layer: ${wf.workflowLayer}` : "未加载"}</p>
         <button class="small" data-action="workflow-refresh">刷新</button></section>
       <section><strong>服务</strong><p class="tiny">${wf?.services ? wf.services.join(", ") : "-"}</p></section>
+      <section><strong>可用类型</strong><p class="tiny">${types.length ? types.map(item => U.esc(item.type || item)).join(" · ") : "未加载"}</p></section>
+      <section><strong>最近运行</strong><p class="tiny">${AS.lastWorkflowRun ? `${U.esc(AS.lastWorkflowRun.status)} · ${U.esc(AS.lastWorkflowRun.totalMs || 0)}ms` : "尚未运行"}</p></section>
     </div>
   </details>`;
+}
+
+function renderProgressPanel() {
+  if (!AS.busy || AS.progressIndex < 0) return "";
+  return `<section class="progress-panel" aria-live="polite" data-progress-stage="${AS.progressIndex}">
+    <div class="progress-track">${PROGRESS_STAGES.map((label, index) => `<span class="${index < AS.progressIndex ? "done" : index === AS.progressIndex ? "active" : ""}" title="${U.esc(label)}"></span>`).join("")}</div>
+    <strong>${U.esc(PROGRESS_STAGES[AS.progressIndex] || PROGRESS_STAGES[0])}</strong>
+    <span class="tiny muted">这是阶段状态提示，不代表流式输出。</span>
+  </section>`;
+}
+
+function renderModePlayPanel() {
+  const modeId = AS.selectedModule?.mode || AS.selectedModule?.type || "";
+  const play = AS.modePlay || AS.engineState?.realPlay || {};
+  const sections = [];
+  const dice = play.tabletop?.lastDiceResult;
+  if (modeId === "tabletop") sections.push(`<section><strong>骰子判定</strong>${dice ? `<p>${U.esc(dice.notation)} → [${(dice.rolls || []).map(U.esc).join(", ")}] = <strong>${U.esc(dice.total)}</strong></p>` : `<p class="tiny muted">输入 /roll 1d20+3 进行判定。</p>`}</section>`);
+  const mystery = play.mystery?.discoveredClues ? play.mystery : play.mystery?.clueBoard;
+  if (["mystery-puzzle", "murder-mystery"].includes(modeId)) sections.push(`<section><strong>线索卡与假设白板</strong><div class="play-card-grid">${(mystery?.discoveredClues || []).map(item => `<article><b>${U.esc(item.name)}</b><span>${U.esc(item.location || "已发现")}</span></article>`).join("") || `<span class="tiny muted">输入 /clue 线索名 记录已知线索。</span>`}</div>${(mystery?.hypotheses || []).length ? `<p class="tiny">假设：${mystery.hypotheses.map(item => U.esc(item.statement)).join(" · ")}</p>` : `<p class="tiny muted">输入 /hypothesis 假设内容 建立假设。</p>`}</section>`);
+  const resources = play.strategy?.resources;
+  if (modeId === "strategy-sim") sections.push(`<section><strong>策略资源</strong><div class="resource-grid">${Object.entries(resources || {}).map(([key, item]) => `<article><span>${U.esc(item.label || key)}</span><b>${U.esc(item.value)} / ${U.esc(item.max)}</b><div class="meter-track"><div class="meter-fill" style="width:${Math.max(0, Math.min(100, Number(item.value || 0)))}%"></div></div></article>`).join("") || `<span class="tiny muted">资源状态将在第一轮载入。</span>`}</div><p class="tiny muted">可用：/invest_military · /expand_trade · /fortify_defense · /diplomacy_focus</p></section>`);
+  const narrative = play.narrative;
+  if (narrative?.rhythmTag || narrative?.goals?.activeQuests?.length || narrative?.latestRecap) sections.push(`<section><strong>旅程</strong><p class="tiny">节奏：${U.esc(narrative.rhythmTag || "breath")}</p>${narrative.latestRecap ? `<p>${U.esc(narrative.latestRecap.summary)}</p>` : ""}${(narrative.goals?.activeQuests || []).map(item => `<p class="tiny">目标：${U.esc(item.name)} · ${U.esc(item.progress)}%</p>`).join("")}</section>`);
+  return sections.length ? `<details class="kernel-panel mode-play-panel" open><summary><strong>真实游玩状态</strong><span class="tiny muted">runtime / candidate only</span></summary><div class="kernel-grid">${sections.join("")}</div></details>` : "";
 }
 
 function renderChangeMark(value, status = "") {
@@ -569,28 +614,28 @@ const Views = {
         <div class="panel-head"><div><h2>解谜推理 / Mystery Puzzle <span class="badge exp">Experimental</span></h2><p class="sub">在谜题主持人的引导下探索线索、解开谜题。</p></div></div>
         <input id="mysteryTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="mysteryText" placeholder="粘贴谜题、悬疑场景、线索片段。"></textarea>
-        <div class="actions"><button class="primary" data-action="mystery-puzzle-start">创建解谜项目</button><span class="tiny muted">最小闭环版本，推理判定系统后续开放。</span></div>
+        <div class="actions"><button class="primary" data-action="mystery-puzzle-start">创建解谜项目</button><span class="tiny muted">已提供线索卡与假设白板薄切片；完整推理引擎未实现。</span></div>
       </section>
 
       <section class="panel">
         <div class="panel-head"><div><h2>跑团 / Tabletop <span class="badge exp">Experimental</span></h2><p class="sub">在跑团 GM 主持下进行自由规则的角色扮演冒险。</p></div></div>
         <input id="tabletopTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="tabletopText" placeholder="粘贴跑团背景、规则偏好、开场场景。"></textarea>
-        <div class="actions"><button class="primary" data-action="tabletop-start">创建跑团项目</button><span class="tiny muted">最小闭环版本，骰子/属性/规则系统后续开放。</span></div>
+        <div class="actions"><button class="primary" data-action="tabletop-start">创建跑团项目</button><span class="tiny muted">支持 /roll 骰子薄切片；不是完整 DND 规则系统。</span></div>
       </section>
 
       <section class="panel">
         <div class="panel-head"><div><h2>策略模拟 / Strategy Sim <span class="badge exp">Experimental</span></h2><p class="sub">在策略顾问协助下进行阵营经营与决策推演。</p></div></div>
         <input id="strategyTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="strategyText" placeholder="粘贴阵营、局势、资源或策略目标。"></textarea>
-        <div class="actions"><button class="primary" data-action="strategy-sim-start">创建策略项目</button><span class="tiny muted">最小闭环版本，数值模拟系统后续开放。</span></div>
+        <div class="actions"><button class="primary" data-action="strategy-sim-start">创建策略项目</button><span class="tiny muted">已提供四项资源与决策薄切片；不是完整 4X。</span></div>
       </section>
 
       <section class="panel">
         <div class="panel-head"><div><h2>剧本杀 / Murder Mystery <span class="badge exp">Experimental</span></h2><p class="sub">在案件主持人引导下调查线索、推理真相。</p></div></div>
         <input id="murderTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="murderText" placeholder="粘贴案件背景、角色、线索设定。"></textarea>
-        <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><span class="tiny muted">最小闭环版本，真相锁/线索系统后续开放。</span></div>
+        <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><span class="tiny muted">真相锁继续生效，并提供玩家可见线索板薄切片。</span></div>
       </section>
 
       <section class="panel">
@@ -1169,7 +1214,7 @@ async function selectModule(id, targetView = "chat") {
     try {
       const res = await API.loadCharacter(mod._characterId || mod.id.replace("char:", ""));
       if (res.status === "ok") AS.currentCharacterCard = res.card;
-    } catch {}
+    } catch (err) { console.warn("[moduleSelect] character card unavailable (non-fatal):", err?.message || "unknown error"); }
   }
   await CH.loadServer(mod);
   await loadLatestStatusFrame();
@@ -1180,16 +1225,21 @@ async function selectModule(id, targetView = "chat") {
 
 async function loadKernelData() {
   const id = AS.selectedModule?.id || "";
-  if (!id || id.startsWith("char:") || id === "__quick__") {
+  if (!id || AS.selectedModule?.type === "profile" || id.startsWith("char:") || id === "__quick__") {
     AS.kernel = null; AS.kernelBranches = []; AS.kernelProcessing = [];
     return;
   }
-  const [summary, branchData, processing] = await Promise.all([
-    API.kernel(id), API.kernel(id, "branches"), API.kernel(id, "processing/candidates")
-  ]);
-  AS.kernel = summary;
-  AS.kernelBranches = branchData.branches || [];
-  AS.kernelProcessing = processing.candidates || [];
+  try {
+    const [summary, branchData, processing] = await Promise.all([
+      API.kernel(id), API.kernel(id, "branches"), API.kernel(id, "processing/candidates")
+    ]);
+    AS.kernel = summary;
+    AS.kernelBranches = branchData.branches || [];
+    AS.kernelProcessing = processing.candidates || [];
+  } catch (err) {
+    AS.kernel = null; AS.kernelBranches = []; AS.kernelProcessing = [];
+    console.warn("[kernel] project sidecar unavailable (non-fatal):", err?.message || "unknown error");
+  }
 }
 
 async function kernelAction(action, btn) {
@@ -1217,6 +1267,13 @@ async function kernelAction(action, btn) {
     if (!confirm(critical ? "这是关键提案。确认进入第二次批准？" : "批准此提案？")) return;
     if (critical && !confirm("第二次确认：允许该关键提案进入已批准状态？")) return;
     await API.kernelPost(id, `proposals/${encodeURIComponent(proposalId)}/approve`, { secondConfirm: critical, currentTurn: AS.selectedModule.turnCount || 0 });
+  } else if (action === "kernel-delay-proposal") {
+    createToast("变化仍保留在待审队列，你可以继续故事。", "warn");
+    return;
+  } else if (action === "kernel-reject-proposal") {
+    const proposalId = btn.closest("[data-proposal-id]")?.dataset.proposalId;
+    if (!confirm("拒绝这个变化？它不会写入 shared canon。")) return;
+    await API.kernelPost(id, `proposals/${encodeURIComponent(proposalId)}/reject`);
   } else if (action === "kernel-reverse-proposal") {
     if (!confirm("生成一个待审逆操作提案？原变更不会立即被修改。")) return;
     await API.kernelPost(id, `proposals/${encodeURIComponent(btn.dataset.proposalId)}/reverse`);
@@ -1234,7 +1291,7 @@ async function kernelAction(action, btn) {
 async function refreshModules() {
   const mods = await API.loadModules();
   let chars = [];
-  try { chars = await API.loadCharacters(); } catch {}
+  try { chars = await API.loadCharacters(); } catch (err) { console.warn("[modules] character list unavailable (non-fatal):", err?.message || "unknown error"); }
   AS.characters = chars || [];
   const charModules = AS.characters.map(c => ({
     id: `char:${c.id}`,
@@ -1392,6 +1449,7 @@ async function handleAction(e, btn) {
     if (action === "strategy-sim-start") return multiModeStart("strategy-sim", "#strategyTitle", "#strategyText");
     if (action === "murder-mystery-start") return multiModeStart("murder-mystery", "#murderTitle", "#murderText");
     if (action === "chat-send") return sendChat();
+    if (action === "workflow-refresh") { const [status, types] = await Promise.all([API.workflowStatus(), API.workflowTypes()]); AS.workflowStatus = status; AS.workflowTypes = types.types || []; return render(); }
     if (action.startsWith("kernel-")) return kernelAction(action, btn);
     if (action === "clear-chat") return confirmClearChat();
     if (action === "open-command-panel") return openCommandPanel();
@@ -1564,14 +1622,22 @@ async function sendChat() {
   if (!AS.selectedModule) return createToast("请先加载一个世界", "warn");
   input.value = "";
   AS.busy = true;
+  AS.progressIndex = 0;
   const userMessage = CH.add("user", text);
   render();
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    if (!AS.busy) return;
+    AS.progressIndex = Math.min(3, AS.progressIndex + 1);
+    render();
+  }, 1400);
   try {
     let messages = AS.messages.map(m => ({ role: m.role, content: m.content })).slice(-40);
     if (AS.isQuickStart && AS.quickStartContent) messages = [{ role: "system", content: `以下为叙事设定背景：\n${AS.quickStartContent}` }, ...messages];
     const res = await API.chatSend({
       input: text,
       moduleKey: AS.selectedModule.id,
+      modeId: AS.selectedModule.mode || AS.selectedModule.type || (AS.selectedModule.dataMode === "character_card" ? "character" : "world-rpg"),
       dataMode: AS.selectedModule.dataMode || "worldbook",
       engineState: AS.engineState || { turnCount: AS.selectedModule.turnCount || 0, dataMode: AS.selectedModule.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
       messages,
@@ -1586,6 +1652,8 @@ async function sendChat() {
       CH.persist();
       AS.lastStatusSections = res.parsedSections || {};
       AS.engineState = res.engineState || AS.engineState;
+      AS.modePlay = res.modePlay || AS.engineState?.realPlay || AS.modePlay;
+      AS.lastWorkflowRun = { status: "completed", totalMs: res._progress?.totalMs || 0, stages: res._progress?.stages || [] };
       AS.kernel = res.kernel || AS.kernel;
       if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
       if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve(), loadKernelData()]);
@@ -1594,7 +1662,11 @@ async function sendChat() {
     }
   } catch (err) {
     CH.add("error", err.message || String(err));
+    AS.lastWorkflowRun = { status: "failed", totalMs: 0, stages: [] };
   }
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = null;
+  AS.progressIndex = 4;
   AS.busy = false;
   render();
 }
@@ -1607,7 +1679,7 @@ function confirmClearChat() {
 }
 
 function openCommandPanel() {
-  const commands = ["/recap", "/world", "/save", "/branch", "/who", "/审查 check"].join("\n");
+  const commands = ["/recap", "/world", "/save", "/branch", "/who", "/roll 1d20+3", "/clue 线索名", "/hypothesis 假设内容", "/goal 长期目标", "/invest_military", "/expand_trade", "/fortify_defense", "/diplomacy_focus", "/审查 check"].join("\n");
   alert(`可用命令：\n${commands}`);
 }
 
@@ -2227,14 +2299,19 @@ function createToast(msg, tone = "") {
 async function updateHealth() {
   try {
     AS.health = await API.health();
-    AS.workflowStatus = await API.workflowStatus().catch(() => null);
+    const [workflowStatus, workflowTypes] = await Promise.all([
+      API.workflowStatus().catch(() => null),
+      API.workflowTypes().catch(() => ({ types: [] }))
+    ]);
+    AS.workflowStatus = workflowStatus;
+    AS.workflowTypes = workflowTypes.types || [];
     if (AS.health?.version) CFG.version = AS.health.version;
     const versionNode = U.qs("#appVersion");
     if (versionNode) versionNode.textContent = `叙事引擎 v${CFG.version}`;
     if (AS.health?.llm?.status === "connected") AS.llmConnected = true;
     const debug = U.qs("#debugToggle");
     if (debug && AS.health?.debugMode) debug.style.display = "block";
-  } catch {}
+  } catch (err) { console.warn("[health] status refresh failed (non-fatal):", err?.message || "unknown error"); }
 }
 
 async function init() {
@@ -2242,17 +2319,17 @@ async function init() {
     try {
       const res = await fetch(`${base}/api/status`);
       if (res.ok) { API.base = base; break; }
-    } catch {}
+    } catch (err) { console.warn("[init] API probe failed (non-fatal):", err?.message || "unknown error"); }
   }
-  try { Object.assign(AS.config, await API.loadConfig()); } catch {}
+  try { Object.assign(AS.config, await API.loadConfig()); } catch (err) { console.warn("[init] config load failed (non-fatal):", err?.message || "unknown error"); }
   try {
     const secrets = await API.getSecrets();
     AS.hasApiKey = !!secrets?.llm?.items?.length;
-  } catch {}
+  } catch (err) { console.warn("[init] secret state unavailable (non-fatal):", err?.message || "unknown error"); }
   try {
     const ex = await API.loadExamples();
     AS.examples = ex.examples || [];
-  } catch {}
+  } catch (err) { console.warn("[init] examples unavailable (non-fatal):", err?.message || "unknown error"); }
   await refreshModules().catch(err => createToast(`模块加载失败：${err.message}`, "bad"));
   await Promise.all([
     API.connections().then(d => { AS.connections = d; }).catch(() => {}),

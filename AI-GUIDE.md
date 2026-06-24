@@ -1,7 +1,7 @@
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: Current — Workflow HTTP Baseline + Service Deepening Complete
+> 最后更新: v0.3.1 — Real Play Productization 0-3 Complete
 > **先读 `docs/CURRENT_PROJECT_STATE.md`** 获取当前真相源。
 > 不要把 README 当维护手册。不要把旧审查建议当当前事实。旧 v0.3.0 审查建议只能进 ROADMAP_CANDIDATES。
 

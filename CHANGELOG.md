@@ -3,9 +3,13 @@
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
 
-## Unreleased / Prompt Orchestration Layer
+## 0.3.1 / Real Play Productization 0-3
 
 ### Added
+- **Real Play Productization 0-3**：离线 scenario runner、Workflow visible mount、等待阶段 UI、Tabletop `/roll`、Mystery 线索/假设板、Strategy 资源板、叙事化 proposal、fallback recap、goal tracker 与 rhythm tags。
+- 新增 `npm run real-play:smoke`、real-play unit/integration tests 与当前 API route inventory。
+- Workflow server adapter 在 `llmConfig + apiKey` 存在时真实注入 LLM；无 key 保持安全 fallback，响应不泄露 key。
+- Proposal persistence 审计证明主链由 engine snapshot 与 JSONL 队列持久化，并新增 snapshot roundtrip 回归测试。
 - **Prompt Orchestration Layer v1**（略，详见上次提交）
 - **Asset Inventory**（略，详见上次提交）
 - **Legacy Mechanism Expansion P3 — M1-M11**：

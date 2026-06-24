@@ -16,6 +16,7 @@ import { appendJsonl, calcDirectorySizeLimited, ensureDir, readJson, readJsonSyn
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
+import { buildRealPlayTurnContext } from "./src/core/real-play/turn-context.js";
 import { guessTypeFromKeywords } from "./src/core/data/alchemy/types.js";
 import { AlchemyPreviewError, createAlchemyPreviewService } from "./src/server/alchemy-preview-service.js";
 import {
@@ -39,7 +40,7 @@ import { recordWorldbookCandidate } from "./src/core/worldbook/worldbook-growth-
 import { updateCharacterInertia } from "./src/core/character/emotional-inertia.js";
 import {
   getKernelSummary, handleBranchOperation, getLatestKernelTelemetry, refreshKernelTelemetry,
-  previewAutoLight, approveKernelProposal, getKernelStopLoss, reverseKernelProposal,
+  previewAutoLight, approveKernelProposal, rejectKernelProposal, getKernelStopLoss, reverseKernelProposal,
   ingestProcessingMaterial, listProcessingCandidates, deliverProcessingById
 } from "./src/server/kernel-service.js";
 import { handleWorkflowApiRequest, getWorkflowTypesResponse, getWorkflowStatus } from "./src/core/workflows/adapters/server-workflow-adapter.js";
@@ -637,9 +638,9 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
       // 轮转：保留最近 5 个
       const backups = readdirSync(backupDir).filter(f => f.startsWith("chat-")).sort().reverse();
       for (const old of backups.slice(5)) {
-        try { rmSync(join(backupDir, old), { force: true }); } catch {}
+        try { rmSync(join(backupDir, old), { force: true }); } catch (err) { console.warn("[persistTurn] old chat backup cleanup failed:", err?.message || "unknown error"); }
       }
-    } catch { /* 备份失败不影响主流程 */ }
+    } catch (err) { console.warn("[persistTurn] chat backup failed (non-fatal):", err?.message || "unknown error"); }
   }
 
   // state.json — 完整覆盖
@@ -772,13 +773,18 @@ async function handleLlmChat(body) {
 
   // 标准化引擎状态
   const normState = normalizeEngineState(engineState || DEFAULT_ENGINE_STATE);
+  const modeId = body.modeId || model.selected?.mode || model.moduleData?.runtime?.mode || (dataMode === "character_card" ? "character" : "world-rpg");
+  const realPlayContext = buildRealPlayTurnContext({ modeId, input, engineState: normState, messages: messages || [] });
+  if (!realPlayContext.ok) return { status: "error", code: "REAL_PLAY_COMMAND_INVALID", errorMsg: realPlayContext.error || "玩法命令无效" };
+  const realPlayInput = realPlayContext.promptBlock ? `${input}\n\n${realPlayContext.promptBlock}` : input;
+  const realPlayState = normalizeEngineState({ ...normState, realPlay: realPlayContext.state });
   const kernelProjectRoot = moduleKey && !String(moduleKey).startsWith("char:") && !String(moduleKey).startsWith("__") ? moduleWorldDir(moduleKey) : "";
   const kernelContext = await createKernelTurnContext({
     projectRoot: kernelProjectRoot || "",
-    modeId: body.modeId || model.selected?.mode || model.moduleData?.runtime?.mode || (dataMode === "character_card" ? "character" : "world-rpg"),
+    modeId,
     userInput: input,
     model,
-    engineState: normState,
+    engineState: realPlayState,
     runtimeFlags: {
       advanceMode: body.advanceMode || "assisted",
       profileId: body.profileId,
@@ -806,7 +812,7 @@ async function handleLlmChat(body) {
   try {
     // 按 dataMode 构建模式专属 writer 包（仅角色卡模式走 buildCharacterCardPacket）
     let writerPacket = null;
-    let effectiveState = normState;
+    let effectiveState = realPlayState;
     if (dataMode === "character_card") {
       const { buildEnginePacket } = await import("./src/core/world-engine.js");
       const { characterCardMode } = await import("./src/core/data/character-card.js");
@@ -822,7 +828,7 @@ async function handleLlmChat(body) {
         }
       }
 
-      const ccState = { ...normState, dataMode: "character_card" };
+      const ccState = { ...realPlayState, dataMode: "character_card" };
       effectiveState = ccState;
       const cardContext = cardData ? [{ kind: "character-card", ...cardData }] : [];
       writerPacket = buildEnginePacket({
@@ -840,7 +846,7 @@ async function handleLlmChat(body) {
     const startedAt = Date.now();
     const progress = { startedAt, stages: [] };
 
-    const result = await sendDualStageTurn({ model, config: { ...config, llmBaseUrl: config.llmBaseUrl, llmModel: config.llmModel }, apiKey, messages: messages || [], input, injectedWorldbook, engineState: effectiveState, moduleKey: moduleKey || "unloaded", dataMode: dataMode || "worldbook", skipDirector: true, skipGuardian: false, useLlmAnalysis: true, writerPacket, kernelContext });
+    const result = await sendDualStageTurn({ model, config: { ...config, llmBaseUrl: config.llmBaseUrl, llmModel: config.llmModel }, apiKey, messages: messages || [], input: realPlayInput, injectedWorldbook, engineState: effectiveState, moduleKey: moduleKey || "unloaded", dataMode: dataMode || "worldbook", skipDirector: true, skipGuardian: false, useLlmAnalysis: true, writerPacket, kernelContext });
 
     // 构建阶段耗时
     const elapsed = Date.now() - startedAt;
@@ -881,7 +887,8 @@ async function handleLlmChat(body) {
       });
     }
 
-    return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: result.engineState || normState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, kernel: summarizeKernelTurnContext(kernelContext), _dualStage: result._dualStage || null, _progress: progress };
+    const returnedState = normalizeEngineState({ ...(result.engineState || realPlayState), realPlay: realPlayContext.state });
+    return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: returnedState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, kernel: summarizeKernelTurnContext(kernelContext), modePlay: realPlayContext.publicState, commandResult: realPlayContext.commandResult, _dualStage: result._dualStage || null, _progress: progress };
   } catch (err) { return { status: "error", errorMsg: err?.message || "LLM 调用失败" }; }
 }
 
@@ -2463,7 +2470,7 @@ async function handleDashboardEntities(moduleId) {
   try {
     const { CONTENT_TYPES } = await import("./src/core/engine/content-registry.js");
     contentStats = { types: CONTENT_TYPES.length, totalEntries: CONTENT_TYPES.length };
-  } catch (e) {}
+  } catch (err) { console.warn("[dashboardEntities] content registry unavailable (non-fatal):", err?.message || "unknown error"); }
 
   return {
     status: "ok",
@@ -2757,8 +2764,9 @@ async function handleAPI(req, res) {
       if (tail === "telemetry/refresh" && method === "POST") return jsonResponse(res, await refreshKernelTelemetry(project.projectRoot, await readBody(req)));
       if (tail === "advance/auto-light" && method === "POST") return jsonResponse(res, await previewAutoLight(project.projectRoot, { ...(await readBody(req)), modeId: project.modeId }));
       if (tail === "proposals/stop-loss" && method === "GET") return jsonResponse(res, await getKernelStopLoss(project.projectRoot));
-      match = tail.match(/^proposals\/([^/]+)\/(approve|reverse)$/);
+      match = tail.match(/^proposals\/([^/]+)\/(approve|reject|reverse)$/);
       if (match && match[2] === "approve" && method === "POST") return jsonResponse(res, await approveKernelProposal(project.projectRoot, decodeURIComponent(match[1]), await readBody(req)));
+      if (match && match[2] === "reject" && method === "POST") return jsonResponse(res, await rejectKernelProposal(project.projectRoot, decodeURIComponent(match[1])));
       if (match && match[2] === "reverse" && method === "POST") return jsonResponse(res, await reverseKernelProposal(project.projectRoot, decodeURIComponent(match[1])));
       if (tail === "processing/ingest" && method === "POST") return jsonResponse(res, await ingestProcessingMaterial(project.projectRoot, await readBody(req)));
       if (tail === "processing/candidates" && method === "GET") return jsonResponse(res, await listProcessingCandidates(project.projectRoot));
@@ -3088,7 +3096,7 @@ async function handleAPI(req, res) {
             }
             else if (entry.name.endsWith(".json") || entry.name.endsWith(".jsonl")) {
               if (!includeRuntime && shouldExcludeFromSafeExport(key)) continue;
-              try { bundle.files[key] = readFileSync(full, "utf-8"); } catch {}
+              try { bundle.files[key] = readFileSync(full, "utf-8"); } catch (err) { console.warn("[legacyExport] skipped unreadable data file (non-fatal):", err?.message || "unknown error"); }
             }
           }
         };

@@ -28,6 +28,8 @@ export async function runMysteryWorkflow(envelope, deps = {}) {
     const reveal = canCharacterReveal(cognition, "truth_lock_answer");
     if (reveal.canReveal) {
       warnings.push("SUSPECT_KNOWS_TOO_MUCH: cognition boundary failure");
+    } else {
+      warnings.push("truth lock protected by cognition boundary");
     }
     visibleText = `[审问] 嫌疑人：${userInput.includes("真相") ? "我不明白你在说什么" : "关于这件事，我知道的不多…"}`;
     if (userInput.includes("证据") || userInput.includes("线索")) {

@@ -77,7 +77,7 @@ const combinedCode = htmlCode + "\n" + jsCode;
 
 // 检查 API 端点是否被 HTML 调用且响应字段被使用
 const apiContracts = [
-  { endpoint: "/api/llm/chat", sentFields: ["input","moduleKey","dataMode","engineState","messages"], recvFields: ["status","narrative","errorMsg","engineState"] },
+  { endpoint: "/api/llm/chat", sentFields: ["input","moduleKey","modeId","dataMode","engineState","messages"], recvFields: ["status","narrative","errorMsg","engineState","modePlay"] },
   { endpoint: "/api/modules", recvFields: ["id","name","displayName","type","dataMode","subType","turnCount"] },
   { endpoint: "/api/modules/create", sentFields: ["name","displayName","dataMode","subType","preset"], recvFields: ["status","module"] },
   { endpoint: "/api/modules/{id}/history", recvFields: ["status","messages","turnCount","engineState","lastScene"] },
@@ -253,6 +253,24 @@ if (combinedCode.includes('data-turn-id=') && combinedCode.includes("selectTurnS
 else fail("历史消息 turnId 回溯链路缺失");
 if (serverCode.includes("runtime\\/status") && serverCode.includes("runtime\\/mechanisms") && serverCode.includes("debug|proposal|proposals|session|sessions")) pass("默认数据导出排除状态调试、机制缓存、proposal 与 session");
 else fail("默认数据导出排除规则不完整");
+
+// ═══════════════════════════════════════════════════════════════
+//  9. Real Play 可见挂载
+// ═══════════════════════════════════════════════════════════════
+
+console.log("\n🎲 Real Play 可见挂载");
+for (const endpoint of ["/api/workflow/status", "/api/workflow/types"]) {
+  if (serverCode.includes(endpoint) && combinedCode.includes(endpoint)) pass(`${endpoint}: 前后端路由存在`);
+  else fail(`${endpoint}: 前后端路由缺失`);
+}
+if (combinedCode.includes("${renderWorkflowPanel()}") && combinedCode.includes("data-workflow-panel open")) pass("Workflow panel 在真实 chat surface 可见挂载");
+else fail("Workflow panel 未稳定挂载到 chat surface");
+if (combinedCode.includes("PROGRESS_STAGES") && combinedCode.includes("renderProgressPanel()") && combinedCode.includes("不代表流式输出")) pass("非 SSE 等待阶段 UI 已挂载并正确说明");
+else fail("等待阶段 UI 缺失或误导为流式输出");
+for (const marker of ["骰子判定", "线索卡与假设白板", "策略资源", "真实游玩状态"]) {
+  if (combinedCode.includes(marker)) pass(`模式 UI 包含“${marker}”`);
+  else fail(`模式 UI 缺少“${marker}”`);
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  结论
