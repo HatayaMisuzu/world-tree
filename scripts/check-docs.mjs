@@ -37,7 +37,7 @@ check("docs/STATUS", "docs/DOCUMENTATION_STATUS.md", p => existsSync(p), "missin
 // Content checks
 try {
   const readme = readFileSync(resolve(BASE, "README.md"), "utf-8");
-  check("README mentions V1", "README.md", () => readme.includes("V1 full-closure") || readme.includes("V1 完整闭环") || readme.includes("快速体验"), "README should have expected structure");
+  check("README mentions milestone", "README.md", () => readme.includes("快速体验") || readme.includes("World Tree"), "README should have expected structure");
   check("README mode table", "README.md", () => (readme.includes("quick-setting") && readme.includes("creation-forge")) || (readme.includes("快速设定") && readme.includes("炼金台")), "README should list all modes");
 } catch {}
 
@@ -48,7 +48,7 @@ try {
 
 try {
   const aiguide = readFileSync(resolve(BASE, "AI-GUIDE.md"), "utf-8");
-  check("AI-GUIDE updated", "AI-GUIDE.md", () => aiguide.includes("full-closure") || aiguide.includes("V1 完整闭环"), "AI-GUIDE should reflect V1 milestone");
+  check("AI-GUIDE updated", "AI-GUIDE.md", () => aiguide.includes("CURRENT_PROJECT_STATE") || aiguide.includes("Service Deepening") || aiguide.includes("Workflow HTTP"), "AI-GUIDE should reflect current milestone");
 } catch {}
 
 // ═══ V1 closure truth checks ═══

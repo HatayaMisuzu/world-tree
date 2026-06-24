@@ -93,4 +93,49 @@
 | POST | `/api/projects/:projectId/proposals/:proposalId/reverse` | 生成待审逆操作提案，不立即回滚 |
 | POST | `/api/projects/:projectId/processing/ingest` | 摄取素材并保留 source label/hash |
 | GET | `/api/projects/:projectId/processing/candidates` | 列出 branch-local 候选 |
-| POST | `/api/projects/:projectId/processing/candidates/:candidateId/deliver` | 投递 Growth Tree 或 proposal queue，不直写 canon |
+| POST | `/api/projects/:projectId/processing/candidates/:candidateId/deliver` | 投递候选到 Growth Tree 或 proposal queue |
+
+## Workflow APIs (Current)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/workflow/run` | 执行工作流编排操作 |
+| GET | `/api/workflow/types` | 返回活跃 workflow 类型列表（prototype/declared 不暴露） |
+| GET | `/api/workflow/status` | 返回工作流层状态与服务列表 |
+
+### POST /api/workflow/run
+
+Request:
+```json
+{
+  "workflowType": "play.turn",
+  "modeId": "world-rpg",
+  "projectId": "demo",
+  "branchId": "main",
+  "userInput": "前往酒馆",
+  "options": { "disableNetwork": false }
+}
+```
+
+Response:
+```json
+{
+  "ok": true,
+  "workflowType": "play.turn",
+  "visibleText": "...",
+  "routed": {
+    "candidates": [],
+    "proposals": [],
+    "runtimeUpdates": [],
+    "debug": {}
+  },
+  "warnings": [],
+  "errors": [],
+  "debugSummary": {}
+}
+```
+
+重要规则：
+- 普通 workflow 不直接写 shared canon；写入必须走 candidate → proposal 或 initialization write
+- debug 输出已 redact，不包含 hiddenTruth / private / system_only / 绝对路径
+- 真实 LLM 使用 server config，不可用时有安全 fallback

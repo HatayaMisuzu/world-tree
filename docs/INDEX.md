@@ -1,6 +1,8 @@
 # World Tree 文档索引
 
-> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · 下一步：真实游玩产品化
+> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · 下一步：Real Play Productization
+>
+> **真相源优先级**：CURRENT_PROJECT_STATE > docs/INDEX > 活跃架构文档 > 历史报告 > archive
 
 ---
 
@@ -9,10 +11,12 @@
 | 文档 | 用途 |
 |------|------|
 | [README.md](../README.md) | 项目入门：是什么、怎么装、怎么玩 |
+| [CURRENT_PROJECT_STATE.md](CURRENT_PROJECT_STATE.md) | 当前项目真相源 |
 | [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | 项目全景 |
 | [FEATURES.md](FEATURES.md) | 功能清单 |
 | [API_REFERENCE.md](API_REFERENCE.md) | API 文档 |
 | [SAVE_SYSTEM_AND_WORLD_PACK.md](SAVE_SYSTEM_AND_WORLD_PACK.md) | 存档与导入导出 |
+| [ROADMAP_CANDIDATES.md](ROADMAP_CANDIDATES.md) | 路线候选建议（不代表已实现） |
 
 ## 给维护者（架构和工作流）
 

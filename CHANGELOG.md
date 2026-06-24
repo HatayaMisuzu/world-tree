@@ -29,12 +29,21 @@
 - **Stage 3**: workflow-context-envelope, P3 context builder, prompt-context-bridge, macro-safe-context, observability-bridge, test:workflow-readiness (5 tests)
 - preflight now covers all maturation tests (18 stages total)
 
-### Final Documentation Cleanup
-- README 恢复为人类用户入口，移除内部 P0-P2 工作流细节
-- docs/INDEX.md 重构为按受众分类的文档路由器
-- AI_AGENT_OPERATING_GUIDE 加入当前状态和硬性规则
-- 过时工作流报告标注 superseded
-- 工作流文档更新为当前 deepened 状态
+### Final Documentation Closure
+
+- README kept as human user entrypoint
+- docs/INDEX updated as audience-based document router
+- Added CURRENT_PROJECT_STATE as current truth source
+- Added ROADMAP_CANDIDATES from UX/engineering review docs
+- Added WORKFLOW_SERVICE_DEEPENING_REPORT
+- Updated stale workflow report references (historical limitations marked resolved)
+- Updated API reference with workflow endpoints
+- Updated AI-GUIDE current milestone and directory map
+- Updated PROJECT_OVERVIEW architecture flow
+- Updated FEATURES with workflow capabilities
+- Updated DOCUMENTATION_STATUS with new files
+
+Notes: No runtime code changes. No new gameplay features. Roadmap candidates are not active features.
 - 三层安全防线：Global Executor Identity → Mode-Specific Blocks → Final Guard（每次生成前最后检查）。
 - 8 模式 profile：quick-setting / world-rpg / character / tabletop / mystery-puzzle / murder-mystery / strategy-sim / creation-forge，每个配专属禁止事项与边界。
 - 9 任务 contract：writer / director / guardian / proposal-extractor / scene-summary / worldbook-candidate / processing-extractor / emotional-inertia / telemetry-explanation，内部 JSON 任务有明确 schema。

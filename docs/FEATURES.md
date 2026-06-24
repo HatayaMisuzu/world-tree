@@ -63,3 +63,20 @@
 | Auto-light | 面板单次预演 | 最多一个 beat；遇选择/隐藏信息/critical 即停止 |
 | Critical proposal / stop-loss | 面板二次确认、逆操作 | 逆操作仍是 pending proposal |
 | Processing candidates | 面板素材导入、候选投递 | 仅 Growth Tree/proposal queue，不直接写世界书 |
+
+## 工作流能力 (Current)
+
+| 工作流 | 用户入口 | 说明 |
+|--------|---------|------|
+| Creation Wizard | creation-forge → 创建世界 | M1 六阶段向导；初始化写入需用户确认 |
+| Alchemy Digest | creation-forge → 导入素材 | M2/M3 候选提取；不直接写 shared |
+| Play Turn | world-rpg/tabletop 对话 | LLM adapter + post-check；default candidate-only |
+| Character Chat | character 模式 | M4/M5 角色一致性与认知边界 |
+| Mystery Investigate | mystery/murder-mystery | M5/M7/M8 真相锁保护 |
+| Strategy Turn | strategy-sim | M6/M7/M8 阵营图与规则审查 |
+| Workflow Debug | 控制台 Workflow 面板 | /api/workflow/status；safe redacted summary |
+
+## 下一步 (Next)
+
+- Real Play Productization：scenario runner, smoke scenarios, UX verification
+- Deep UX (dice, clue board, resource panel)：ROADMAP CANDIDATE — 见 docs/ROADMAP_CANDIDATES.md

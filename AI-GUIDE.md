@@ -1,7 +1,9 @@
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: v0.3.0 — V1 full-closure milestone
+> 最后更新: Current — Workflow HTTP Baseline + Service Deepening Complete
+> **先读 `docs/CURRENT_PROJECT_STATE.md`** 获取当前真相源。
+> 不要把 README 当维护手册。不要把旧审查建议当当前事实。旧 v0.3.0 审查建议只能进 ROADMAP_CANDIDATES。
 
 ## 不可违反的规则
 
@@ -30,6 +32,21 @@ src/core/
 ├── murder-mystery/ 单人剧本杀
 ├── creation-forge/ 炼金台
 ├── modes/        manifest/capsule/contract/factory/runtime/schema
+├── workflows/    工作流接入层 (types/authority/output/runner/services/adapters)
+├── assets/       资产成熟化注册表
+├── legacy/       Legacy 现代化注册表与 P3 映射
+├── authority/    Authority 策略
+├── candidates/   Candidate 统一 schema
+├── creation-wizard/  M1 创建向导
+├── alchemy/      M2 炼金台 digest
+├── materials/    M3 素材仓库
+├── cognition/    M5 认知矩阵
+├── factions/     M6 阵营图
+├── world-rules/  M7 世界规则引擎
+├── narrative-radar/ M8 叙事一致性雷达
+├── events/       M9 随机事件池
+├── macros/       M10 宏系统
+├── observability/ M11 观测终端
 ├── modules/      模块清单/orchestrator/wrappers/loader
 ├── engine/       world-engine/context-engine/modules
 ├── data/         旧数据文件

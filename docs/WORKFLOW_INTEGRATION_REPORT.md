@@ -78,13 +78,13 @@ tests/unit/
 docs/REAL_WORKFLOW_INTEGRATION_LAYER.md
 ```
 
-## Remaining Limitations
+## Historical Limitations at 79fa10f
 
-- Character/mystery/strategy services are stubs (real M4-M8 integration is next pass)
-- Play-turn service uses prompt-builder but doesn't call real LLM (adapter needed)
-- Server.js has no workflow API endpoints yet (adapter available in docs)
-- Console UI has no workflow panel yet
+The following limitations were true when this report was created and have since been addressed by Service Deepening / HTTP Wiring / LLM+Console Wiring:
 
-## Next Recommended Pass
+- Character/mystery/strategy services ARE stubs → **resolved**: deepened with real M4-M8 kernels
+- Play-turn doesn't call real LLM → **resolved**: LLM adapter with real/fake/fallback modes
+- Server.js has no workflow API endpoints → **resolved**: /api/workflow/run/types/status
+- Console UI has no workflow panel → **resolved**: renderWorkflowPanel() + data loading
 
-`WORLD_TREE_SERVICE_DEEPENING_EXECUTION.md` — deepen character/mystery/strategy services with real M4-M8 kernels, add server API endpoints, and add UI workflow panel.
+See `docs/WORKFLOW_SERVICE_DEEPENING_REPORT.md` and `docs/CURRENT_PROJECT_STATE.md` for current status.

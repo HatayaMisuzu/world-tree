@@ -6,8 +6,11 @@
 | --- | --- | --- | --- | --- |
 | README.md | current | 用户/开发者 | 是 | 主入口 |
 | CHANGELOG.md | current | 维护者/AI | 是 | V1 closure + test debt cleanup 已记录 |
-| AI-GUIDE.md | current | AI agent | 是 | V1 full-closure |
-| docs/INDEX.md | current | 所有人 | 是 | 导航 |
+| AI-GUIDE.md | current | AI agent | 是 | Workflow HTTP Baseline + Service Deepening Complete |
+| docs/INDEX.md | current | 所有人 | 是 | 按受众分类的文档路由器 |
+| docs/CURRENT_PROJECT_STATE.md | current | 所有人/AI 优先 | 是 | **真相源第一优先级** |
+| docs/ROADMAP_CANDIDATES.md | current | 维护者/AI | 否 | 候选建议，不代表已实现 |
+| docs/WORKFLOW_SERVICE_DEEPENING_REPORT.md | current | 维护者/AI | 是 | Service Deepening 完成验证 |
 | docs/PROJECT_OVERVIEW.md | current | 所有人 | 是 | 项目全景 |
 | docs/FEATURES.md | current | 用户/开发者 | 是 | 功能清单 |
 | docs/ARCHITECTURE_V1.md | current | 开发者/AI | 是 | 架构说明 |
