@@ -7,8 +7,8 @@
 | Status | **COMPLETE** |
 | Branch | `hermes/pre-v2-closure` |
 | Base | `4401594` (Stage 5C) |
-| Head before Stage 5D | `4401594` |
-| Scope | Inventory/report reconciliation + warning debt reality check |
+| Head after Stage 5D | `2089c81` |
+| Stage 5E follow-up | Asset warnings resolved in `STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md` |
 
 ## Reality Check
 

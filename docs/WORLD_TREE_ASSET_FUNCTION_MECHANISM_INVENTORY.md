@@ -287,6 +287,27 @@ quick-setting 不得替用户决定核心世界方向。
 
 ---
 
+## 2.9 P3 M1-M11 Asset References
+
+> 本节用于和 `scripts/validate-asset-inventory.mjs` 的 P3 asset registry 对齐。
+> 它是 preservation reference，不代表这些机制全部已完整产品化；具体成熟度以相关架构文档、测试和当前功能文档为准。
+
+| Validator ID | Name | Source Path | Inventory Role | Status |
+|---|---|---|---|---|
+| `M1-creation-wizard` | Creation Wizard v2 | `src/core/creation-wizard/` | P3 mechanism preservation reference | PRESERVE |
+| `M2-alchemy-digest` | Alchemy Digest Candidate Flow | `src/core/alchemy/alchemy-digest.js` | P3 mechanism preservation reference | PRESERVE |
+| `M3-material-warehouse` | Material Learning Warehouse | `src/core/materials/material-warehouse.js` | P3 mechanism preservation reference | PRESERVE |
+| `M4-character-kernel-v2` | Character Kernel v2 | `src/core/character/character-kernel-v2.js` | P3 mechanism preservation reference | PRESERVE |
+| `M5-cognition-matrix` | Character Cognition Matrix | `src/core/cognition/cognition-matrix.js` | P3 mechanism preservation reference | PRESERVE |
+| `M6-faction-graph` | Organization / Faction Graph | `src/core/factions/faction-graph.js` | P3 mechanism preservation reference | PRESERVE |
+| `M7-world-rules` | World Rules Engine | `src/core/world-rules/world-rules-engine.js` | P3 mechanism preservation reference | PRESERVE |
+| `M8-narrative-radar` | Narrative Consistency Radar | `src/core/narrative-radar/narrative-consistency-radar.js` | P3 mechanism preservation reference | PRESERVE |
+| `M9-random-events` | Random Event Pool | `src/core/events/random-event-pool.js` | P3 mechanism preservation reference | PRESERVE |
+| `M10-macros` | Macro System | `src/core/macros/macro-registry.js` | P3 mechanism preservation reference | PRESERVE |
+| `M11-observability` | Observability Terminal | `src/core/observability/observability-packet.js` | P3 mechanism preservation reference | PRESERVE |
+
+---
+
 # 3. P0 Living World Kernel 清单
 
 | ID | 名称 | 状态 | 说明 | 不得丢失的能力 |

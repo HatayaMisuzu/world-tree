@@ -75,14 +75,14 @@
 | T3 | V2-ready tests (67 items) 已计入 `test:unit` 但不单独有 npm script | `package.json` 无 `test:v2-ready` | Low |
 | T4 | Browser QA 未脚本化（仅手动 browser QA 验证） | docs 记录 | Medium |
 
-## P5: Warning Debt (Pre-existing)
+## P5: Warning Debt
 
-| Source | Count | Description |
-|---|---|---|
-| `npm run asset:check` | 11 | P3 M1-M11 inventory missing references（M1-creation-wizard 到 M11-observability） |
-| `npm run interface-audit` | 8 | shared/*.json files: createModule writes but buildModuleModel doesn't read |
+| Source | Count | Status | Description |
+|---|---:|---|---|
+| `npm run asset:check` | 0 | **RESOLVED in Stage 5E** | P3 M1-M11 exact references added to asset inventory |
+| `npm run interface-audit` | 8 | **OPEN / DEFERRED** | shared/*.json files: createModule writes but buildModuleModel doesn't read |
 
-All warnings are pre-existing and non-blocking (exit code 0). Stage 5D investigated each — see `docs/STAGE_5D_WARNING_DEBT_REALITY_CHECK_REPORT.md` for detailed analysis.
+Asset warnings resolved by `docs/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md`. Interface warnings remain non-blocking and require dedicated architecture investigation.
 
 ## Non-Debt: Historical Records to Preserve
 
