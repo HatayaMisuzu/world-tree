@@ -787,7 +787,7 @@ function renderCharacters() {
       <div class="module-grid">${list.length ? list.map(c => `<div class="module-card" data-character-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.name)}</strong>${C.badge(c.format || "native", "info")}</div><p class="tiny muted">${U.esc(U.compact(c.description || "无描述", 100))}</p><div class="chip-row">${(c.tags || []).slice(0, 6).map(t => `<span class="chip">${U.esc(t)}</span>`).join("") || `<span class="tiny muted">暂无标签</span>`}</div><div class="actions"><button class="small primary" data-action="rp-character">开始 RP</button><button class="small" data-action="preview-character">预览</button><button class="small" data-action="edit-character-meta">标签/说明</button><button class="small" data-action="backup-character">备份</button><button class="small danger" data-action="delete-character">删除</button></div></div>`).join("") : C.empty("暂无角色卡", "导入角色卡后会显示在这里。")}</div>
     </div>
     <aside class="panel">${AS.currentCharacterCard ? `<h3>角色预览</h3><pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>` : C.empty("角色预览", "选择一张角色卡查看详情。")}</aside>
-  </section>`;
+  </section>
   <section class="panel character-v2-advanced-panel" data-character-v2-advanced-panel="character-v2-advanced" hidden>
     <div class="panel-head"><h3>高级设置</h3><span class="tiny muted">Character Capsule V2 — 未实现</span></div>
     <p class="tiny muted">此处将展示完整字段编辑、表现指纹、记忆详细管理、关系详细管理、Lore 管理、CHARACTER.md 预览/导出、Prompt 预览、模块调用摘要、OOC/drift 分数、Dialogue regression、Token budget、来源映射等高级功能。当前这些模块尚未实现。</p>
