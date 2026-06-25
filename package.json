@@ -59,7 +59,7 @@
     "test:character-v2-runtime-mvp": "node --test tests/unit/character-v2-prompt-packet-preview.test.js tests/unit/character-v2-runtime-candidates.test.js tests/unit/character-v2-runtime-mvp.test.js",
     "test:character-v2-live": "node --test tests/unit/character-v2-live-runtime-turn.test.js tests/unit/character-v2-live-turn-service.test.js tests/unit/character-v2-live-ui-state.test.js",
     "test:character-v2-final": "node --test tests/unit/character-v2-live-runtime-turn.test.js tests/unit/character-v2-live-turn-service.test.js tests/unit/character-v2-live-ui-state.test.js tests/unit/character-v2-candidate-workbench.test.js tests/unit/character-v2-export-service.test.js",
-    "test:character-v2-long-term": "npm run test:character-v2-final",
+    "test:character-v2-long-term": "npm run test:character-v2-final && node --test tests/unit/character-v2-long-term-end-to-end.test.js tests/unit/character-v2-runtime-context-long-term.test.js",
     "test:entry-closures": "node scripts/audit-entry-closures.mjs",
     "test:world-tree-v2-entries": "npm run test:tabletop-v2-full && npm run test:detective-v2-full && npm run test:character-v2-long-term && npm run test:entry-closures && npm run test:final-v2-closures",
     "test:final-v2-closures": "node scripts/audit-world-tree-v2-final-closures.mjs",
