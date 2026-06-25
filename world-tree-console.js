@@ -124,6 +124,33 @@ const API = {
   tabletopV2Save(data) { return API.post("/api/tabletop-v2/save", data); },
   tabletopV2Branch(data) { return API.post("/api/tabletop-v2/branch", data); },
   tabletopV2EndSummary(data) { return API.post("/api/tabletop-v2/end-summary", data); },
+  tabletopV2ImportCommit(data) { return API.post("/api/tabletop-v2/import-commit", data); },
+  tabletopV2Runs() { return API.get("/api/tabletop-v2/runs"); },
+  tabletopV2LoadRun(data) { return API.post("/api/tabletop-v2/load-run", data); },
+  tabletopV2RestoreSave(data) { return API.post("/api/tabletop-v2/restore-save", data); },
+  tabletopV2SwitchBranch(data) { return API.post("/api/tabletop-v2/switch-branch", data); },
+  tabletopV2ExportRun(data) { return API.post("/api/tabletop-v2/export-run", data); },
+  // Detective V2
+  detectiveV2ImportPreview(data) { return API.post("/api/detective-v2/import-preview", data); },
+  detectiveV2ImportCommit(data) { return API.post("/api/detective-v2/import-commit", data); },
+  detectiveV2Start(data) { return API.post("/api/detective-v2/start", data); },
+  detectiveV2Investigate(data) { return API.post("/api/detective-v2/investigate", data); },
+  detectiveV2Interrogate(data) { return API.post("/api/detective-v2/interrogate", data); },
+  detectiveV2NotebookExtract(data) { return API.post("/api/detective-v2/notebook/extract", data); },
+  detectiveV2NotebookUpdate(data) { return API.post("/api/detective-v2/notebook/update", data); },
+  detectiveV2DeductionSubmit(data) { return API.post("/api/detective-v2/deduction/submit", data); },
+  detectiveV2GeneratePreview(data) { return API.post("/api/detective-v2/generate-preview", data); },
+  detectiveV2GenerateCommit(data) { return API.post("/api/detective-v2/generate-commit", data); },
+  detectiveV2QualityCheck(data) { return API.post("/api/detective-v2/quality-check", data); },
+  detectiveV2ReviewCaseQuality(data) { return API.post("/api/detective-v2/review-case-quality", data); },
+  detectiveV2ExportRun(data) { return API.post("/api/detective-v2/export-run", data); },
+  detectiveV2ExportPlayerPack(data) { return API.post("/api/detective-v2/export-case-player-pack", data); },
+  detectiveV2ExportGMPack(data) { return API.post("/api/detective-v2/export-case-gm-pack", data); },
+  // Character V2
+  characterV2Candidates(characterId) { return API.get(`/api/characters/v2/candidates?characterId=${encodeURIComponent(characterId || "")}`); },
+  characterV2CandidateReview(data) { return API.post("/api/characters/v2/candidates/review", data); },
+  characterV2CandidateBulkReview(data) { return API.post("/api/characters/v2/candidates/bulk-review", data); },
+  characterV2CandidateUndo(data) { return API.post("/api/characters/v2/candidates/undo", data); },
 };
 
 const PROGRESS_STAGES = [

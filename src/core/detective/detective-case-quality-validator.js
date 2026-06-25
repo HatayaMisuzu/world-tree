@@ -1,28 +1,56 @@
 // Detective V2 Case Quality Validator
-// Validates playability, detects speedrun risks, scores quality.
+// Current schema validator: testimonies, truthLedger.culpritIds, timeline.realTimeline/publicTimeline.
 
 export function validatePlayableDetectiveCase(caseCapsule = {}) {
-  const checks = [];
   const errors = [];
   const warnings = [];
+  const checks = [];
 
-  // Required fields
+  const characters = Array.isArray(caseCapsule.characters) ? caseCapsule.characters : [];
+  const locations = Array.isArray(caseCapsule.locations) ? caseCapsule.locations : [];
+  const evidence = Array.isArray(caseCapsule.evidence) ? caseCapsule.evidence : [];
+  const testimonies = Array.isArray(caseCapsule.testimonies) ? caseCapsule.testimonies : [];
+  const contradictions = Array.isArray(caseCapsule.contradictions) ? caseCapsule.contradictions : [];
+  const timeline = caseCapsule.timeline || {};
+  const truthLedger = caseCapsule.truthLedger || {};
+
   if (!caseCapsule.caseId) errors.push("missing caseId");
   if (!caseCapsule.title) errors.push("missing title");
-  if (!caseCapsule.premise) errors.push("missing premise");
-  if (!(caseCapsule.characters || []).length) errors.push("no characters");
-  if (!(caseCapsule.locations || []).length) errors.push("no locations");
-  if (!(caseCapsule.evidence || []).length) errors.push("no evidence");
-  if (!(caseCapsule.testimony || []).length) warnings.push("no testimony");
-  if (!caseCapsule.truthLedger) errors.push("missing truthLedger");
+  if (!caseCapsule.premise && !caseCapsule.playerBrief?.premise) errors.push("missing premise");
+  if (characters.length < 4) errors.push("need at least 4 characters for Detective V2");
+  if (locations.length < 4) errors.push("need at least 4 locations for Detective V2");
+  if (evidence.length < 6) errors.push("need at least 6 evidence entries");
+  if (testimonies.length < 4) errors.push("need at least 4 testimonies");
+  if (!truthLedger || typeof truthLedger !== "object") errors.push("missing truthLedger");
 
-  // Truth ledger checks
-  const tl = caseCapsule.truthLedger || {};
-  if (!tl.culprit) errors.push("truthLedger missing culprit");
-  if (!tl.motive) errors.push("truthLedger missing motive");
-  if (!tl.method) errors.push("truthLedger missing method");
+  if (!Array.isArray(truthLedger.culpritIds) || truthLedger.culpritIds.length === 0) errors.push("truthLedger.culpritIds required");
+  if (!truthLedger.motive) errors.push("truthLedger.motive required");
+  if (!truthLedger.method) errors.push("truthLedger.method required");
+  if (!Array.isArray(truthLedger.criticalEvidenceIds) || truthLedger.criticalEvidenceIds.length === 0) errors.push("truthLedger.criticalEvidenceIds required");
+  if (!Array.isArray(truthLedger.solutionChain) || truthLedger.solutionChain.length === 0) errors.push("truthLedger.solutionChain required");
 
-  checks.push({ check: "required_fields", passed: errors.length === 0, errors, warnings });
+  if (!Array.isArray(timeline.realTimeline) || timeline.realTimeline.length === 0) errors.push("timeline.realTimeline required");
+  if (!Array.isArray(timeline.publicTimeline) || timeline.publicTimeline.length === 0) warnings.push("timeline.publicTimeline missing");
+
+  const evidenceIds = new Set(evidence.map((e) => e.evidenceId).filter(Boolean));
+  const testimonyIds = new Set(testimonies.map((t) => t.testimonyId).filter(Boolean));
+  const characterIds = new Set(characters.map((c) => c.characterId).filter(Boolean));
+
+  for (const id of truthLedger.culpritIds || []) {
+    if (!characterIds.has(id)) errors.push(`culpritId not found in characters: ${id}`);
+  }
+  for (const id of truthLedger.criticalEvidenceIds || []) {
+    if (!evidenceIds.has(id)) errors.push(`criticalEvidenceId not found in evidence: ${id}`);
+  }
+
+  const hasEvidenceTestimonyLink = evidence.some((e) => (e.contradictsTestimonyIds || e.linkedTestimonyIds || []).some((id) => testimonyIds.has(id)))
+    || testimonies.some((t) => (t.linkedEvidenceIds || t.relatedEvidenceIds || []).some((id) => evidenceIds.has(id)));
+  if (!hasEvidenceTestimonyLink) errors.push("no evidence-testimony cross links");
+
+  const validContradictions = contradictions.filter((c) => evidenceIds.has(c.evidenceId) && testimonyIds.has(c.testimonyId));
+  if (validContradictions.length === 0) warnings.push("no valid contradiction pairs");
+
+  checks.push({ check: "required_current_schema", passed: errors.length === 0, errors, warnings });
 
   return {
     playable: errors.length === 0,
@@ -30,87 +58,94 @@ export function validatePlayableDetectiveCase(caseCapsule = {}) {
     checks,
     errors,
     warnings,
+    counts: {
+      characters: characters.length,
+      locations: locations.length,
+      evidence: evidence.length,
+      testimonies: testimonies.length,
+      contradictions: contradictions.length,
+      realTimeline: timeline.realTimeline?.length || 0,
+      publicTimeline: timeline.publicTimeline?.length || 0
+    }
   };
 }
 
 export function scoreDetectiveCaseQuality(caseCapsule = {}) {
-  const scores = {};
-  let total = 0;
-  const maxTotal = 100;
-
-  // Character diversity (20 pts)
-  const chars = caseCapsule.characters || [];
-  const hasCulprit = chars.some((c) => c.isCulprit);
-  const hasWitness = chars.some((c) => c.role === "witness");
-  const hasSuspects = chars.filter((c) => c.role === "suspect").length >= 2;
-  scores.characterDiversity = (hasCulprit ? 7 : 0) + (hasWitness ? 6 : 0) + (hasSuspects ? 7 : 0);
-  total += scores.characterDiversity;
-
-  // Location coverage (15 pts)
-  const locs = caseCapsule.locations || [];
-  const hasCrimeScene = locs.some((l) => l.isCrimeScene);
-  scores.locationCoverage = Math.min(15, locs.length * 2 + (hasCrimeScene ? 3 : 0));
-  total += scores.locationCoverage;
-
-  // Evidence depth (25 pts)
-  const evidence = caseCapsule.evidence || [];
-  scores.evidenceDepth = Math.min(25, evidence.length * 2);
-  total += scores.evidenceDepth;
-
-  // Testimony coverage (15 pts)
-  const testimony = caseCapsule.testimony || [];
-  scores.testimonyCoverage = Math.min(15, testimony.length * 1.5);
-  total += scores.testimonyCoverage;
-
-  // Contradictions (10 pts)
-  const contradictions = caseCapsule.contradictions || [];
-  scores.contradictions = Math.min(10, contradictions.length * 2);
-  total += scores.contradictions;
-
-  // Truth ledger completeness (15 pts)
+  const characters = Array.isArray(caseCapsule.characters) ? caseCapsule.characters : [];
+  const locations = Array.isArray(caseCapsule.locations) ? caseCapsule.locations : [];
+  const evidence = Array.isArray(caseCapsule.evidence) ? caseCapsule.evidence : [];
+  const testimonies = Array.isArray(caseCapsule.testimonies) ? caseCapsule.testimonies : [];
+  const contradictions = Array.isArray(caseCapsule.contradictions) ? caseCapsule.contradictions : [];
+  const timeline = caseCapsule.timeline || {};
   const tl = caseCapsule.truthLedger || {};
-  let tlScore = 0;
-  if (tl.culprit) tlScore += 4;
-  if (tl.motive) tlScore += 4;
-  if (tl.method) tlScore += 4;
-  if ((tl.criticalEvidenceIds || []).length > 0) tlScore += 3;
-  scores.truthLedgerCompleteness = tlScore;
-  total += tlScore;
 
+  const scores = {};
+
+  const hasCulprit = (tl.culpritIds || []).length > 0 && characters.some((c) => (tl.culpritIds || []).includes(c.characterId));
+  const witnessCount = characters.filter((c) => c.role === "witness").length;
+  const suspectCount = characters.filter((c) => c.role === "suspect").length;
+  scores.characterDiversity = Math.min(20, (hasCulprit ? 6 : 0) + Math.min(6, witnessCount * 3) + Math.min(8, suspectCount * 2));
+
+  const hasCrimeScene = locations.some((l) => l.isCrimeScene);
+  scores.locationCoverage = Math.min(15, locations.length * 2 + (hasCrimeScene ? 3 : 0));
+
+  const decisiveCount = evidence.filter((e) => ["key", "decisive"].includes(e.evidenceStrength)).length;
+  scores.evidenceDepth = Math.min(25, evidence.length * 1.5 + decisiveCount * 2);
+
+  const linkedTestimonyCount = testimonies.filter((t) => (t.linkedEvidenceIds || t.relatedEvidenceIds || []).length > 0).length;
+  scores.testimonyCoverage = Math.min(15, testimonies.length + linkedTestimonyCount);
+
+  scores.contradictions = Math.min(10, contradictions.length * 3);
+
+  let truthScore = 0;
+  if ((tl.culpritIds || []).length) truthScore += 3;
+  if (tl.motive) truthScore += 3;
+  if (tl.method) truthScore += 3;
+  if ((tl.criticalEvidenceIds || []).length) truthScore += 3;
+  if ((tl.solutionChain || []).length) truthScore += 3;
+  scores.truthLedgerCompleteness = truthScore;
+
+  scores.timelineDepth = Math.min(15, (timeline.realTimeline?.length || 0) * 2 + (timeline.publicTimeline?.length || 0));
+
+  const totalRaw = Object.values(scores).reduce((a, b) => a + b, 0);
+  const total = Math.min(100, Math.round(totalRaw));
   return {
-    total: Math.round(Math.min(maxTotal, total)),
-    maxTotal,
-    grade: total >= 75 ? "A" : total >= 50 ? "B" : total >= 25 ? "C" : "D",
-    scores,
+    total,
+    maxTotal: 100,
+    grade: total >= 85 ? "A" : total >= 70 ? "B" : total >= 50 ? "C" : "D",
+    scores
   };
 }
 
 export function detectDetectiveCaseSpeedrunRisks(caseCapsule = {}) {
   const risks = [];
+  const characters = Array.isArray(caseCapsule.characters) ? caseCapsule.characters : [];
+  const evidence = Array.isArray(caseCapsule.evidence) ? caseCapsule.evidence : [];
+  const testimonies = Array.isArray(caseCapsule.testimonies) ? caseCapsule.testimonies : [];
+  const contradictions = Array.isArray(caseCapsule.contradictions) ? caseCapsule.contradictions : [];
+  const timeline = caseCapsule.timeline || {};
   const tl = caseCapsule.truthLedger || {};
-  const chars = caseCapsule.characters || [];
 
-  // Single culprit? Easy guess
-  const culpritCount = chars.filter((c) => c.isCulprit).length;
-  if (culpritCount <= 1) risks.push({ risk: "single_culprit", severity: "medium", description: "只有一个凶手，可能被直接猜到" });
+  if ((tl.culpritIds || []).length === 1 && characters.filter((c) => c.role === "suspect").length < 3) {
+    risks.push({ risk: "too_few_suspects", severity: "high", description: "嫌疑人数量不足，容易速通。" });
+  }
+  if ((tl.criticalEvidenceIds || []).length < 3) {
+    risks.push({ risk: "thin_evidence_chain", severity: "high", description: "关键证据链过短。" });
+  }
+  if (contradictions.length < 2) {
+    risks.push({ risk: "few_contradictions", severity: "medium", description: "证词矛盾不足。" });
+  }
+  if ((timeline.realTimeline || []).length < 3) {
+    risks.push({ risk: "weak_timeline", severity: "medium", description: "真实时间线过短。" });
+  }
+  const crossLinks = evidence.some((e) => (e.contradictsTestimonyIds || e.linkedTestimonyIds || []).length > 0)
+    || testimonies.some((t) => (t.linkedEvidenceIds || t.relatedEvidenceIds || []).length > 0);
+  if (!crossLinks) {
+    risks.push({ risk: "no_cross_links", severity: "high", description: "证据与证词缺少互链。" });
+  }
 
-  // Only one suspect with motive?
-  const motiveSuspects = chars.filter((c) => c.interviewProfile?.knows?.includes("动机"));
-  if (motiveSuspects.length <= 1 && tl.motive) risks.push({ risk: "obvious_motive", severity: "high", description: "动机指向过于明显" });
-
-  // Single deception type
-  const deceptionTypes = tl.deceptionTypes || [];
-  if (deceptionTypes.length <= 1) risks.push({ risk: "single_deception", severity: "low", description: "只有一种欺骗类型，缺乏深度" });
-
-  // Missing timeline
-  const hasTimeline = (caseCapsule.realTimeline || []).length > 0 || (caseCapsule.publicTimeline || []).length > 0;
-  if (!hasTimeline) risks.push({ risk: "no_timeline", severity: "high", description: "没有时间线，缺少推理维度" });
-
-  // Evidence-testimony links
-  const evidence = caseCapsule.evidence || [];
-  const testimony = caseCapsule.testimony || [];
-  const hasCrossLinks = evidence.some((e) => e.linkedTestimonyIds?.length) || testimony.some((t) => t.linkedEvidenceIds?.length);
-  if (!hasCrossLinks) risks.push({ risk: "no_cross_links", severity: "medium", description: "证据和证词没有互链" });
-
-  return { speedrunRisk: risks.length > 2 ? "high" : risks.length > 0 ? "medium" : "low", risks };
+  return {
+    speedrunRisk: risks.some((r) => r.severity === "high") ? "high" : risks.length > 0 ? "medium" : "low",
+    risks
+  };
 }

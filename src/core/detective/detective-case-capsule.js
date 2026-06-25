@@ -64,6 +64,7 @@ export function normalizeDetectiveCaseCapsule(input = {}) {
     evidence: normalizeEvidenceRegistry(input.evidence || []),
     testimonies: normalizeTestimonyRegistry(input.testimonies || []),
     timeline: input.timeline || { realTimeline: [], publicTimeline: [] },
+    contradictions: input.contradictions || [],
     notebookPolicy: input.notebookPolicy || { allowPlayerNotes: true, allowTags: true, allowLinks: true },
     deductionReportSchema: input.deductionReportSchema || null,
     generatorBlueprint: input.generatorBlueprint || null,

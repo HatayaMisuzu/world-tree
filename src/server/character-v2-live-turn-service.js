@@ -88,46 +88,29 @@ export async function handleCharacterV2LiveTurn(body = {}, deps = {}) {
     return { status: "error", code: "CHARACTER_V2_LIVE_TURN_RESULT_INVALID", errorMsg: resultValidation.errors.join("；") };
   }
 
-  // Persist candidates to long-term pending queue
-  const candidates = result.candidates || [];
-  if (candidates.length > 0 && deps.persistCandidates !== false) {
+  // Persist candidates to long-term pending queue (flatten envelope, never auto-confirm)
+  if (result.candidates && deps.persistCandidates !== false) {
     try {
       const { existsSync, readFileSync, mkdirSync, writeFileSync } = await import("node:fs");
       const { join } = await import("node:path");
+      const { persistCharacterV2PendingCandidates } = await import("../core/character/character-v2-candidate-persistence.js");
+
       const v2Dir = join(charactersRoot, body.characterId, "v2");
       if (!existsSync(v2Dir)) mkdirSync(v2Dir, { recursive: true });
       const ltPath = join(v2Dir, "long-term-state.json");
-      let ltState = { memory: { pending: [] }, relationship: { pending: [] }, canon: { proposals: [] }, quality: { issues: [] }, auditLog: [] };
+      let ltState = {};
       if (existsSync(ltPath)) {
         try { ltState = JSON.parse(readFileSync(ltPath, "utf-8")); } catch {}
       }
-      for (const c of candidates) {
-        const envelope = {
-          candidateId: `cand_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-          characterId: body.characterId,
-          kind: c.kind || "memory",
-          sourceTurnId: result.turnId || `turn_${Date.now()}`,
-          excerpt: c.excerpt || c.content?.slice(0, 200) || "",
-          payload: c,
-          confidence: c.confidence || 0.5,
-          riskLevel: c.riskLevel || "low",
-          status: "pending",
-          requiresUserConfirmation: true,
-          autoWrite: false,
-          createdAt: new Date().toISOString(),
-        };
-        if (c.kind === "memory" || !c.kind) {
-          ltState.memory = ltState.memory || { pending: [] };
-          ltState.memory.pending = [...(ltState.memory.pending || []), envelope];
-        } else if (c.kind === "relationship") {
-          ltState.relationship = ltState.relationship || { pending: [] };
-          ltState.relationship.pending = [...(ltState.relationship.pending || []), envelope];
-        } else if (c.kind === "canon_proposal") {
-          ltState.canon = ltState.canon || { proposals: [] };
-          ltState.canon.proposals = [...(ltState.canon.proposals || []), envelope];
-        }
-      }
-      writeFileSync(ltPath, JSON.stringify(ltState, null, 2));
+
+      const persistResult = persistCharacterV2PendingCandidates({
+        state: ltState,
+        candidateEnvelope: result.candidates,
+        characterId: body.characterId,
+        sourceTurnId: result.turnId || `turn_${Date.now()}`
+      });
+
+      writeFileSync(ltPath, JSON.stringify(persistResult.state, null, 2));
     } catch (persistErr) {
       // Non-fatal: candidates are still returned to caller
     }

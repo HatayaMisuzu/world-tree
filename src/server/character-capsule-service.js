@@ -224,6 +224,7 @@ export function loadCharacterCapsuleRuntimeContext(charactersRoot, characterId) 
     performanceFingerprint: readJson(path.join(v2Dir, "performance-fingerprint.json"), null),
     relationship: readJson(path.join(v2Dir, "relationship.seed.json"), null),
     memorySeed: readJson(path.join(v2Dir, "memory.seed.json"), null),
+    longTermState: readJson(path.join(v2Dir, "long-term-state.json"), null),
     uiSummary: readJson(path.join(v2Dir, "ui-summary.json"), null),
     characterId
   });
