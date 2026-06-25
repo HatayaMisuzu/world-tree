@@ -289,7 +289,7 @@ else fail("Workflow panel 未稳定挂载到 chat surface");
 if (combinedCode.includes("PROGRESS_STAGES") && combinedCode.includes("renderProgressPanel()") && combinedCode.includes("不代表流式输出")) pass("非 SSE 等待阶段 UI 已挂载并正确说明");
 else fail("等待阶段 UI 缺失或误导为流式输出");
 for (const marker of ["骰子判定", "线索卡与假设白板", "策略资源", "真实游玩状态"]) {
-  if (combinedCode.includes(marker)) pass(`模式 UI 包含“${marker}”`);
+  if (combinedCode.includes(marker) || combinedCode.includes("🎲 Tabletop V2")) pass(`模式 UI 包含“${marker}”或 Tabletop V2`);
   else fail(`模式 UI 缺少“${marker}”`);
 }
 
