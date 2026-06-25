@@ -9,12 +9,13 @@
 |------|-------|
 | **Current trusted baseline** | `v0.4.1-v2-entry-closure.0` |
 | **Current branch** | `main` |
-| **Latest audited commit** | `87472741c229afe2597a6229d98059b29d61913c` |
+| **Latest audited commit** | `44b53c8` plus validated UX_ALIAS_REPAIR_P1 patch in current HEAD |
 | **Remote CI** | `UNKNOWN` |
 | **Status** | **V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI** |
+| **Current patch overlay** | LLM_ROUTING_ALIGNMENT_COMPLETE + UX_ENTRY_COHERENCE_COMPLETE + FEATURE_ALIAS_REGISTRY_COMPLETE |
 | **Old tag** `v0.4.0-pre-v2-closure` | Audit-invalidated historical marker at `0ee1852` |
 | **Full V2** | Full product-wide V2 not complete; four V2 entry closures complete |
-| **Browser QA** | Not run (gateway unstable; runtime QA used) |
+| **Browser QA** | Not run for this UX alias patch; covered by command audits, not visual browser proof |
 | **Preflight** | PASS (includes V2 entry gates + project-complete-audit) |
 | **userData isolation** | PASS (real userData unchanged before/after full suite) |
 
@@ -25,7 +26,10 @@
 | P0 Living World Kernel | COMPLETE | `npm run test:p0` 7/7 |
 | P1 Experience Stability Kernel | COMPLETE | `npm run test:p1` 8/8 |
 | P2 Long Play Kernel | COMPLETE | `npm run test:p2` 40/40 |
-| Prompt Orchestration Layer v1 | COMPLETE | 22 prompt blocks, 8 mode profiles, 9 task contracts, test:prompts 42/42 |
+| Prompt Orchestration Layer v1 | COMPLETE | 22 prompt blocks, 8 canonical mode profiles, 9 task contracts, `npm run test:prompts` |
+| LLM_ROUTING_ALIGNMENT | COMPLETE-P0 | Prompt task contracts and safe routing gates covered by `npm run test:llm-routing` |
+| FEATURE_ALIAS_REGISTRY | COMPLETE-P1 | Exactly 8 canonical product features; ScriptKill, Detective V2, Tabletop V2 are aliases/runtime slices |
+| UX_ENTRY_COHERENCE | COMPLETE-P1 | `npm run ux:check` covers Tabletop V2 preview, state sync, health wording, progress profiles, aliases |
 | P3 M1-M11 Legacy Mechanism Kernel | COMPLETE | 11 mechanisms, test:legacy-mechanisms 22/22 |
 | Asset Maturation Stage 0-4 | COMPLETE | test:assets, test:authority, test:legacy-modernization, test:workflow-readiness |
 | Real Workflow Integration W0-W4 | COMPLETE | test:workflows, workflow:check 0 errors |
@@ -42,6 +46,7 @@
 - 工作流层完整的创建/导入/游玩/角色/推理/策略/观测管线
 - V2-ready foundation：通用 metadata/visibility/lifecycle/capability contracts 已建立
 - 8 个模式入口均有 V2-ready normalizer、fixture、test
+- 产品功能数仍为 8 个 canonical features；`single-player-scriptkill-v2` 是 `murder-mystery` 的服务别名，`detective-v2` 是 `mystery-puzzle` 的服务别名，`tabletop-v2` 是 `tabletop` 的服务别名
 - quick-setting 支持 DeepSeek 风格原始设定 intake，保留原文
 - strategy 保留固定状态面板 + 数值/概率底座
 - 所有 V2-ready 能力遵守 runtime/candidate/proposal/shared canon 边界
@@ -97,6 +102,7 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - `server.js` still owns route dispatch (monolithic if-chain)
 - `world-tree-console.js` is a monolithic ES module
 - Browser QA was not performed (gateway unstable)
+- UX alias repair is command-audited; browser visual QA remains not automated in this baseline
 - No TypeScript migration; no automated browser testing
 
 ## Boundary

@@ -2,6 +2,8 @@
 // Resolve mode/data runtime identity for prompt usage.
 // dataMode remains storage-level; promptModeId is gameplay prompt-level.
 
+import { canonicalFeatureId } from "../features/feature-alias-registry.js";
+
 export const PROMPT_MODE_PROFILES = Object.freeze({
   "quick-setting": Object.freeze({
     modeId: "quick-setting",
@@ -82,8 +84,13 @@ export function resolvePromptRuntimeIdentity(input = {}) {
   const explicitModeId = asText(input.modeId || input.mode || input.modeID);
   const dataMode = asText(input.dataMode);
   const worldSubType = asText(input.worldSubType || input.subType);
+  const canonicalModeId = canonicalFeatureId(explicitModeId) || canonicalFeatureId(worldSubType) || canonicalFeatureId(dataMode);
 
-  let profile = explicitModeId ? PROMPT_MODE_PROFILES[explicitModeId] : null;
+  let profile = canonicalModeId ? PROMPT_MODE_PROFILES[canonicalModeId] : null;
+
+  if (!profile && explicitModeId) {
+    profile = PROMPT_MODE_PROFILES[explicitModeId] || null;
+  }
 
   if (!profile && worldSubType) {
     profile = PROMPT_MODE_PROFILES[WORLD_SUBTYPE_TO_MODE[worldSubType]] || null;
@@ -100,6 +107,7 @@ export function resolvePromptRuntimeIdentity(input = {}) {
     requestedModeId: explicitModeId || "",
     requestedDataMode: dataMode || "",
     requestedWorldSubType: worldSubType || "",
+    canonicalFeatureId: profile.modeId,
     storageDataMode: dataMode || profile.dataMode,
     promptModeId: profile.promptModeId,
     warnings: buildWarnings({ explicitModeId, dataMode, worldSubType, profile })

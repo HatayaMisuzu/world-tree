@@ -1,6 +1,6 @@
 # World Tree 文档索引
 
-> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt Orchestration COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL · Universal Mode V2-ready Foundation (Stage 4) COMPLETE-PARTIAL
+> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt/LLM Routing Alignment COMPLETE · UX Entry Coherence COMPLETE · Feature Alias Registry COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL · Universal Mode V2-ready Foundation (Stage 4) COMPLETE-PARTIAL
 >
 > **真相源优先级**：CURRENT_PROJECT_STATE > docs/INDEX > 活跃架构文档 > 历史报告 > archive
 
@@ -10,11 +10,17 @@
 
 - **Trusted tag**: `v0.4.1-v2-entry-closure.0`
 - **Current branch**: `main`
-- **Latest audited commit**: `87472741c229afe2597a6229d98059b29d61913c`
+- **Latest audited commit**: `44b53c8` plus validated UX alias repair patch in current HEAD
 - **Remote CI**: `UNKNOWN`
-- **Status**: V2 Entry Closure sealed, pending remote CI
+- **Status**: V2 Entry Closure sealed; Prompt/LLM routing alignment and UX alias coherence added; pending remote CI
 - **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries
-- **Browser QA**: not run
+- **Browser QA**: not run for UX alias patch; command audits cover routing and coherence
+
+Product feature identity:
+
+- World Tree has exactly 8 canonical product features.
+- `tabletop-v2`, `detective-v2`, `character-v2`, and `single-player-scriptkill-v2` are runtime/service slices or aliases of existing features, not additional product features.
+- ScriptKill resolves to `murder-mystery`; Detective V2 resolves to `mystery-puzzle`; Tabletop V2 resolves to `tabletop`.
 
 Key entry points for the current baseline:
 

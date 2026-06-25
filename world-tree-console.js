@@ -168,14 +168,81 @@ const API = {
   singlePlayerScriptKillV2LoadRun(data) { return API.post("/api/single-player-scriptkill-v2/load-run", data); },
 };
 
-const PROGRESS_STAGES = [
-  "导演正在分析你的行动……",
-  "生成叙事方向……",
-  "故事正在书写……",
-  "Guardian 正在审核……",
-  "本轮完成"
-];
+const PROGRESS_STAGE_PROFILES = {
+  "chat-default": [
+    "正在读取当前项目上下文……",
+    "正在生成本轮回应……",
+    "正在整理状态变化……",
+    "正在保存本轮结果……",
+    "本轮完成"
+  ],
+  "tabletop-v2": [
+    "GM 正在读取当前场景……",
+    "规则引擎正在判定行动……",
+    "正在生成玩家可见叙事……",
+    "正在同步跑团状态……",
+    "本轮完成"
+  ],
+  "dual-stage-chat": [
+    "导演正在分析你的行动……",
+    "生成叙事方向……",
+    "故事正在书写……",
+    "Guardian 正在审核……",
+    "本轮完成"
+  ]
+};
+const PROGRESS_STAGES = PROGRESS_STAGE_PROFILES["chat-default"];
 let progressTimer = null;
+
+function getProgressStages(profile = "chat-default") {
+  return PROGRESS_STAGE_PROFILES[profile] || PROGRESS_STAGE_PROFILES["chat-default"];
+}
+
+function setProgressProfile(profile = "chat-default") {
+  AS.progressProfile = profile;
+  AS.progressIndex = 0;
+}
+
+function buildTabletopV2ModuleDraftFromText(text = "", preview = {}) {
+  const clean = String(text || "").trim();
+  if (!clean) return null;
+  try {
+    const parsed = JSON.parse(clean);
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {}
+  const previewInfo = preview.preview || preview;
+  return {
+    title: previewInfo.title || clean.split(/\r?\n/).map(line => line.trim()).find(Boolean)?.slice(0, 40) || "导入冒险",
+    sourceType: "external_text",
+    playerBrief: {
+      premise: previewInfo.playerBrief?.premise || clean.slice(0, 500),
+      objective: previewInfo.playerBrief?.objective || "",
+      setting: previewInfo.playerBrief?.setting || "",
+      playerCharacters: [],
+      allowedActions: []
+    },
+    gmBook: {
+      hiddenTruth: "",
+      npcs: [],
+      gmScenes: [],
+      secretClocks: [],
+      twistPoints: []
+    },
+    scenes: [
+      {
+        sceneId: "scene_start",
+        title: "开场",
+        description: previewInfo.playerBrief?.premise || clean.slice(0, 500),
+        isStarting: true,
+        isHidden: false,
+        exitTransitions: []
+      }
+    ],
+    characters: [],
+    clocks: [],
+    rulesetProfileId: previewInfo.rulesetProfileId || "d20_fantasy"
+  };
+}
 
 const AS = {
   view: "workbench",
@@ -258,6 +325,7 @@ const AS = {
   workflowTypes: [],
   lastWorkflowRun: null,
   progressIndex: -1,
+  progressProfile: "chat-default",
   modePlay: null,
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
   characterV2Create: { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false },
@@ -435,9 +503,10 @@ function renderWorkflowPanel() {
 
 function renderProgressPanel() {
   if (!AS.busy || AS.progressIndex < 0) return "";
+  const stages = getProgressStages(AS.progressProfile);
   return `<section class="progress-panel" aria-live="polite" data-progress-stage="${AS.progressIndex}">
-    <div class="progress-track">${PROGRESS_STAGES.map((label, index) => `<span class="${index < AS.progressIndex ? "done" : index === AS.progressIndex ? "active" : ""}" title="${U.esc(label)}"></span>`).join("")}</div>
-    <strong>${U.esc(PROGRESS_STAGES[AS.progressIndex] || PROGRESS_STAGES[0])}</strong>
+    <div class="progress-track">${stages.map((label, index) => `<span class="${index < AS.progressIndex ? "done" : index === AS.progressIndex ? "active" : ""}" title="${U.esc(label)}"></span>`).join("")}</div>
+    <strong>${U.esc(stages[AS.progressIndex] || stages[0])}</strong>
     <span class="tiny muted">这是阶段状态提示，不代表流式输出。</span>
   </section>`;
 }
@@ -492,14 +561,14 @@ function renderModePlayPanel() {
       // V2 导入面板（增强：支持预览展示 + 导入提交）
       const preview = tv2.importPreview;
       sections.push(`<section><strong>🎲 Tabletop V2 导入</strong>
-        <p class="tiny muted">粘贴模组 JSON、Markdown 或自由文本开始冒险</p>
-        <textarea id="tabletopV2ImportText" rows="5" placeholder='${U.esc('{\n  "title": "我的冒险",\n  "sourceType": "quick_start",\n  "playerBrief": { "premise": "..." }\n}')}' class="full-width" style="margin-bottom:6px;font-size:12px"></textarea>
+        <p class="tiny muted">这是 Tabletop 的结构化 V2 导入/游玩切片。普通"跑团 / Tabletop"入口只创建项目草稿。</p>
+        <textarea id="tabletopV2ImportText" rows="5" placeholder='${U.esc('{\n  "title": "我的冒险",\n  "sourceType": "quick_start",\n  "playerBrief": { "premise": "..." }\n}')}' class="full-width" style="margin-bottom:6px;font-size:12px">${U.esc(tv2.importText || "")}</textarea>
         <div class="actions">
           <button data-action="tabletop-v2-preview-import">🔍 预览</button>
           <button class="primary" data-action="tabletop-v2-start">▶ 快速开始</button>
           <button data-action="tabletop-v2-import-commit">📥 导入并保存</button>
         </div>
-        ${preview ? `<div class="notice" style="margin-top:6px"><strong>${U.esc(preview.title || preview.moduleId || "预览")}</strong><br><span class="tiny">场景: ${preview.sceneCount||preview.sceneNames?.length||0} · 角色: ${preview.characterCount||preview.characterNames?.length||0} · 规则: ${U.esc(preview.rulesetProfileId||"")}</span></div>` : ""}
+        ${preview ? `<div class="notice" style="margin-top:6px"><strong>${U.esc(preview.title || preview.moduleDraft?.title || preview.moduleId || "预览")}</strong><br><span class="tiny">场景: ${preview.sceneCount || preview.moduleDraft?.scenes?.length || preview.sceneNames?.length || 0} · 角色: ${preview.characterCount || preview.moduleDraft?.characters?.length || preview.characterNames?.length || 0} · 规则: ${U.esc(preview.rulesetProfileId || preview.moduleDraft?.rulesetProfileId || "")}</span></div>` : ""}
       </section>`);
     }
   }
@@ -736,10 +805,10 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>跑团 / Tabletop <span class="badge exp">Experimental</span></h2><p class="sub">在跑团 GM 主持下进行自由规则的角色扮演冒险。</p></div></div>
+        <div class="panel-head"><div><h2>跑团项目草稿 / Tabletop <span class="badge exp">Experimental</span></h2><p class="sub">创建普通 Tabletop 项目草稿并进入对话；结构化 Tabletop V2 导入会在加载 Tabletop 项目后显示。</p></div></div>
         <input id="tabletopTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="tabletopText" placeholder="粘贴跑团背景、规则偏好、开场场景。"></textarea>
-        <div class="actions"><button class="primary" data-action="tabletop-start">创建跑团项目</button><span class="tiny muted">支持 /roll 骰子薄切片；不是完整 DND 规则系统。</span></div>
+        <div class="actions"><button class="primary" data-action="tabletop-start">创建 Tabletop 草稿</button><span class="tiny muted">支持 /roll 骰子薄切片；不是完整 DND 规则系统，也不是 Tabletop V2 导入确认。</span></div>
       </section>
 
       <section class="panel">
@@ -1717,7 +1786,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "tabletop-v2-end") return endTabletopV2FromUI();
     if (action === "tabletop-v2-clear") { AS.tabletopV2 = { runId: null, module: null, ruleset: null, lastRuling: null, ending: null, endingAvailable: false, importText: "", importPreview: null, playerIntent: "", lastNarrative: "", currentScene: "", diceLog: [], publicClocks: [], resources: {}, inventory: [], questLog: [], visibleNpcs: [], saveSlots: [], branches: [], activeTab: "scene", busy: false, error: "" }; return render(); }
     if (action === "tabletop-v2-tab") { AS.tabletopV2.activeTab = btn.dataset.tab || "scene"; return render(); }
-    if (action === "tabletop-v2-send-turn") return sendTabletopV2TurnFromInput();
+    if (action === "tabletop-v2-send-turn") return handleTabletopV2TurnInput();
     if (action === "tabletop-v2-import-commit") return commitTabletopV2Import();
     if (action === "tabletop-v2-export") return exportTabletopV2FromUI();
     if (action === "tabletop-v2-load-save") return loadTabletopV2SaveFromUI(btn.dataset.saveId);
@@ -1853,14 +1922,26 @@ async function quickStartChat() {
 async function previewTabletopV2Import() {
   const text = U.qs("#tabletopV2ImportText")?.value.trim();
   if (!text) return createToast("请粘贴 Tabletop V2 模组 JSON 或文本", "warn");
-  try {
-    const data = JSON.parse(text);
-    AS.tabletopV2.importPreview = data;
-    createToast("导入预览已生成");
-  } catch {
-    AS.tabletopV2.importPreview = { title: "文本导入", playerBrief: { premise: text.slice(0, 200) } };
-  }
+  AS.tabletopV2.importText = text;
+  AS.tabletopV2.busy = true;
+  AS.tabletopV2.error = "";
   render();
+  try {
+    const res = await API.tabletopV2ImportPreview({ text });
+    if (res.status === "ok") {
+      AS.tabletopV2.importPreview = res;
+      createToast("Tabletop V2 后端预览已生成");
+    } else {
+      AS.tabletopV2.error = res.errorMsg || "预览失败";
+      createToast(AS.tabletopV2.error, "warn");
+    }
+  } catch (e) {
+    AS.tabletopV2.error = e.message;
+    createToast(e.message, "warn");
+  } finally {
+    AS.tabletopV2.busy = false;
+    render();
+  }
 }
 
 async function startTabletopV2FromUI() {
@@ -1868,8 +1949,11 @@ async function startTabletopV2FromUI() {
   if (!text && !AS.tabletopV2.importPreview) return createToast("请先粘贴模组内容并预览", "warn");
   try {
     AS.tabletopV2.busy = true; render();
-    let module;
-    try { module = JSON.parse(text); } catch { module = { title: "快速冒险", sourceType: "quick_start", playerBrief: { premise: text.slice(0, 500) } }; }
+    AS.tabletopV2.importText = text || AS.tabletopV2.importText || "";
+    const preview = AS.tabletopV2.importPreview || await API.tabletopV2ImportPreview({ text: AS.tabletopV2.importText });
+    if (preview.status && preview.status !== "ok") throw new Error(preview.errorMsg || "预览失败");
+    AS.tabletopV2.importPreview = preview;
+    const module = preview.moduleDraft || preview.module || buildTabletopV2ModuleDraftFromText(AS.tabletopV2.importText, preview);
     const res = await API.tabletopV2Start({ module, playerCharacter: null });
     if (res.status === "ok") {
       AS.tabletopV2.runId = res.run.runId;
@@ -1877,6 +1961,14 @@ async function startTabletopV2FromUI() {
       AS.tabletopV2.ruleset = res.rulesetKind;
       AS.tabletopV2.lastRuling = null;
       AS.tabletopV2.endingAvailable = false;
+      AS.tabletopV2.currentScene = res.run.publicState?.sceneTitle || "";
+      AS.tabletopV2.lastNarrative = res.run.publicState?.lastNarrative || "";
+      AS.tabletopV2.publicClocks = res.run.publicState?.publicClocks || [];
+      AS.tabletopV2.resources = res.run.publicState?.resources || {};
+      AS.tabletopV2.inventory = res.run.publicState?.inventory || [];
+      AS.tabletopV2.questLog = res.run.publicState?.questLog || [];
+      AS.tabletopV2.visibleNpcs = res.run.publicState?.visibleNpcs || [];
+      AS.tabletopV2.diceLog = res.run.publicState?.diceLog || [];
       AS.tabletopV2.error = "";
       createToast("Tabletop V2 冒险已开始！");
     } else {
@@ -1933,7 +2025,7 @@ async function endTabletopV2FromUI() {
   render();
 }
 
-async function sendTabletopV2TurnFromInput() {
+async function handleTabletopV2TurnInput() {
   const input = document.getElementById("tabletopV2PlayerIntent");
   const playerIntent = input?.value.trim();
   if (!playerIntent) return createToast("请输入你的行动", "warn");
@@ -1942,6 +2034,8 @@ async function sendTabletopV2TurnFromInput() {
 }
 
 async function sendTabletopV2Turn(playerIntent) {
+  AS.busy = true;
+  setProgressProfile("tabletop-v2");
   if (progressTimer) clearInterval(progressTimer);
   progressTimer = setInterval(() => {
     if (!AS.busy) return;
@@ -1956,6 +2050,14 @@ async function sendTabletopV2Turn(playerIntent) {
     if (res.status === "ok") {
       AS.tabletopV2.lastRuling = res.ruling?.roll || null;
       AS.tabletopV2.endingAvailable = res.endingAvailable || false;
+      AS.tabletopV2.lastNarrative = res.narrative || "";
+      AS.tabletopV2.currentScene = res.publicState?.sceneTitle || res.run?.publicState?.sceneTitle || AS.tabletopV2.currentScene || "";
+      AS.tabletopV2.publicClocks = res.publicState?.publicClocks || res.run?.publicState?.publicClocks || AS.tabletopV2.publicClocks || [];
+      AS.tabletopV2.resources = res.publicState?.resources || res.run?.publicState?.resources || AS.tabletopV2.resources || {};
+      AS.tabletopV2.inventory = res.publicState?.inventory || res.run?.publicState?.inventory || AS.tabletopV2.inventory || [];
+      AS.tabletopV2.questLog = res.publicState?.questLog || res.run?.publicState?.questLog || AS.tabletopV2.questLog || [];
+      AS.tabletopV2.visibleNpcs = res.publicState?.visibleNpcs || res.run?.publicState?.visibleNpcs || AS.tabletopV2.visibleNpcs || [];
+      AS.tabletopV2.diceLog = res.publicState?.diceLog || res.run?.publicState?.diceLog || AS.tabletopV2.diceLog || [];
       CH.add("assistant", res.narrative || "（Tabletop V2 无叙事返回）");
       CH.persist();
       render();
@@ -1994,8 +2096,11 @@ async function commitTabletopV2Import() {
   if (!text) return createToast("请粘贴模组内容", "warn");
   try {
     AS.tabletopV2.busy = true; render();
-    let module;
-    try { module = JSON.parse(text); } catch { module = { title: "导入模组", sourceType: "external_text", playerBrief: { premise: text.slice(0, 500) } }; }
+    AS.tabletopV2.importText = text;
+    const preview = AS.tabletopV2.importPreview || await API.tabletopV2ImportPreview({ text });
+    if (preview.status && preview.status !== "ok") throw new Error(preview.errorMsg || "预览失败");
+    AS.tabletopV2.importPreview = preview;
+    const module = preview.moduleDraft || preview.module || buildTabletopV2ModuleDraftFromText(text, preview);
     const res = await API.tabletopV2ImportCommit({ module });
     if (res.status === "ok") {
       createToast("模组已导入: " + res.title + " (" + res.sceneCount + " 场景)");
@@ -2096,7 +2201,7 @@ async function sendChat() {
   if (!AS.selectedModule) return createToast("请先加载一个世界", "warn");
   input.value = "";
   AS.busy = true;
-  AS.progressIndex = 0;
+  setProgressProfile((AS.selectedModule?.mode || AS.selectedModule?.type || "") === "world-rpg" ? "dual-stage-chat" : "chat-default");
   const userMessage = CH.add("user", text);
   render();
 
@@ -2802,10 +2907,24 @@ async function updateHealth() {
     if (AS.health?.version) CFG.version = AS.health.version;
     const versionNode = U.qs("#appVersion");
     if (versionNode) versionNode.textContent = `叙事引擎 v${CFG.version}`;
-    if (AS.health?.llm?.status === "connected") AS.llmConnected = true;
+    const legacyLlmStatus = AS.health?.llm?.status;
+    const llmStatus = deriveLlmUiStatus(AS.health, AS.config, AS.hasApiKey);
+    const dataWritable = llmStatus.dataWritable;
+    AS.llmConnected = llmStatus.connected;
+    AS.hasApiKey = llmStatus.llmConfigured || AS.hasApiKey;
+    AS.health.dataWritable = dataWritable;
+    AS.health.legacyLlmStatus = legacyLlmStatus || llmStatus.status || "";
     const debug = U.qs("#debugToggle");
     if (debug && AS.health?.debugMode) debug.style.display = "block";
   } catch (err) { console.warn("[health] status refresh failed (non-fatal):", err?.message || "unknown error"); }
+}
+
+function deriveLlmUiStatus(health = {}, config = {}, hasApiKey = false) {
+  const llmConfigured = Boolean(health?.llmConfigured ?? health?.llm?.configured ?? hasApiKey);
+  const status = String(health?.llm?.status || "").toLowerCase();
+  const connected = status === "connected" || Boolean(health?.llm?.connected) || (llmConfigured && Boolean(config?.llmBaseUrl || config?.llmModel));
+  const dataWritable = Boolean(health?.data?.writable ?? health?.dataWritable ?? health?.writable);
+  return { connected, llmConfigured, dataWritable, status };
 }
 
 async function init() {

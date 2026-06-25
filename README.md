@@ -113,6 +113,8 @@ http://127.0.0.1:3000
 
 说明：
 
+- World Tree 对外保持 8 个 canonical 产品入口；`tabletop-v2`、`detective-v2`、`character-v2`、`single-player-scriptkill-v2` 是运行时服务切片或别名，不是第九个入口。
+- `ScriptKill` / `single-player-scriptkill-v2` 归属于"单人剧本杀"；`detective-v2` 归属于"解谜调查"；`tabletop-v2` 归属于"桌面叙事"。
 - `world-rpg` 是项目里的历史内部名字，现在代表"世界书大世界"，不是传统刷级 RPG。
 - `creation-forge` 是"炼金台"，主要负责生产可体验内容，不是普通游玩入口。
 
