@@ -8,7 +8,9 @@
 | Item | Value |
 |------|-------|
 | **Current trusted baseline** | `v0.4.1-v2-entry-closure.0` |
-| **Main head** | `87472741c229afe2597a6229d98059b29d61913c` |
+| **Current branch** | `main` |
+| **Latest audited commit** | `87472741c229afe2597a6229d98059b29d61913c` |
+| **Remote CI** | `UNKNOWN` |
 | **Status** | **V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI** |
 | **Old tag** `v0.4.0-pre-v2-closure` | Audit-invalidated historical marker at `0ee1852` |
 | **Full V2** | Full product-wide V2 not complete; four V2 entry closures complete |

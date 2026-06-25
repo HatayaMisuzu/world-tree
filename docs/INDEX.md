@@ -9,7 +9,9 @@
 ## Current Trusted Baseline
 
 - **Trusted tag**: `v0.4.1-v2-entry-closure.0`
-- **Main head**: `87472741c229afe2597a6229d98059b29d61913c`
+- **Current branch**: `main`
+- **Latest audited commit**: `87472741c229afe2597a6229d98059b29d61913c`
+- **Remote CI**: `UNKNOWN`
 - **Status**: V2 Entry Closure sealed, pending remote CI
 - **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries
 - **Browser QA**: not run

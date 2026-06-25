@@ -131,12 +131,22 @@ for (const pattern of stalePatterns) {
   }
 }
 
-// Strong checks for CURRENT_PROJECT_STATE and INDEX
+// Strong checks for CURRENT_PROJECT_STATE and INDEX — no hash-specific checks
 check("CURRENT_PROJECT_STATE: Trusted Baseline is v0.4.1-v2-entry-closure.0", currentState.includes("v0.4.1-v2-entry-closure.0"));
-check("CURRENT_PROJECT_STATE: Main head is 8747274", currentState.includes("8747274"));
+check("CURRENT_PROJECT_STATE: no stale Main head field", !currentState.includes("Main head"));
+check("CURRENT_PROJECT_STATE: has Current branch", currentState.includes("Current branch"));
+check("CURRENT_PROJECT_STATE: has Latest audited commit", currentState.includes("Latest audited commit"));
+check("CURRENT_PROJECT_STATE: has Remote CI", currentState.includes("Remote CI"));
+check("CURRENT_PROJECT_STATE: Latest audited commit looks like a hash", /Latest audited commit.*[0-9a-f]{7,40}/i.test(currentState));
+check("CURRENT_PROJECT_STATE: Remote CI is UNKNOWN", /Remote CI.*UNKNOWN/i.test(currentState));
 check("CURRENT_PROJECT_STATE: Status is V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI", currentState.includes("V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI"));
 check("docs/INDEX: Trusted Baseline is v0.4.1-v2-entry-closure.0", docsIndex.includes("v0.4.1-v2-entry-closure.0"));
-check("docs/INDEX: Main head is 8747274", docsIndex.includes("8747274"));
+check("docs/INDEX: no stale Main head field", !docsIndex.includes("Main head"));
+check("docs/INDEX: has Current branch", docsIndex.includes("Current branch"));
+check("docs/INDEX: has Latest audited commit", docsIndex.includes("Latest audited commit"));
+check("docs/INDEX: has Remote CI", docsIndex.includes("Remote CI"));
+check("docs/INDEX: Latest audited commit looks like a hash", /Latest audited commit.*[0-9a-f]{7,40}/i.test(docsIndex));
+check("docs/INDEX: Remote CI is UNKNOWN", /Remote CI.*UNKNOWN/i.test(docsIndex));
 check("docs/INDEX: Character Capsule V2 not marked 未实现", !/Character Capsule V2.*未实现/.test(docsIndex));
 
 // Malformed HTML checks
@@ -146,7 +156,7 @@ check("world-tree-console.js: no <button> containing phases.map", !/<button[^>]*
 
 check("V2 status doc exists", existsSync(join(root, "docs/V2_ENTRY_COMPLETION_STATUS.md")));
 check("V2 status doc covers all four V2 entries", includesAll(v2Status, ["Tabletop V2", "Detective V2", "Character V2", "Single Player ScriptKill V2"]));
-check("CURRENT_PROJECT_STATE names current V2 entry closure", currentState.includes("V2 Entry Closure") && currentState.includes("8747274"));
+check("CURRENT_PROJECT_STATE names current V2 entry closure", currentState.includes("V2 Entry Closure") && currentState.includes("Latest audited commit"));
 check("docs/INDEX links V2 status doc", docsIndex.includes("V2_ENTRY_COMPLETION_STATUS.md"));
 check("README reflects V2 entry closure", readme.includes("V2 Entry Closure") && includesAll(readme, ["Tabletop V2", "Detective V2", "Character V2", "单人剧本杀 V2"]));
 check("AI-GUIDE documents Single Player ScriptKill V2 boundary", includesAll(aiGuide, ["single-player-scriptkill", "陌生", "DM", "fullTruth"]));
