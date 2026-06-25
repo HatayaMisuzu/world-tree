@@ -1,4 +1,8 @@
 ﻿# World Tree · CHANGELOG
+## v0.4.1-v2-entry-closure.0
+
+V2 Entry Closure — 四个 V2 入口已完成闭环：Tabletop V2、Detective V2、Character V2 长期系统、单人剧本杀 V2。
+
 
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
