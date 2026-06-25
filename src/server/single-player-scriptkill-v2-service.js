@@ -10,6 +10,7 @@ import { buildSinglePlayerScriptKillImportPreview, commitSinglePlayerScriptKillI
 import { validateSinglePlayerScriptKillPackage } from "../core/single-player-scriptkill/single-player-scriptkill-package.js";
 import { createSinglePlayerScriptKillRun, stripSinglePlayerScriptKillRunForPlayer, validateSinglePlayerScriptKillRunState } from "../core/single-player-scriptkill/single-player-scriptkill-runtime-state.js";
 import { readCurrentRoleAct, performPublicTalk, performPrivateChat, performSearch, performRevealClue, performVote, performDebrief, advanceSinglePlayerScriptKillPhase } from "../core/single-player-scriptkill/single-player-scriptkill-solo-runtime.js";
+import { createScriptKillLlmDialogueClient } from "../core/single-player-scriptkill/single-player-scriptkill-llm-dialogue.js";
 
 function ensureDir(dir) { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); }
 function readJson(path, fallback = null) { try { return JSON.parse(readFileSync(path, "utf-8")); } catch { return fallback; } }
@@ -22,6 +23,16 @@ function writeJson(path, data) {
 function assertScriptKillV2Path(path) {
   if (!String(path).includes(`${sep}single-player-scriptkill-v2${sep}`)) {
     throw new Error(`Single Player ScriptKill V2 path escaped namespace: ${path}`);
+  }
+}
+
+async function createScriptKillDialogueClientFromDeps(deps = {}) {
+  if (!deps.config || !deps.apiKey) return null;
+  try {
+    const { callLLMByRole } = await import("../adapters/llm.js");
+    return createScriptKillLlmDialogueClient({ callLLMByRole, config: deps.config, apiKey: deps.apiKey });
+  } catch {
+    return null;
   }
 }
 
@@ -87,20 +98,24 @@ export async function readSinglePlayerScriptKillV2RoleAct(body = {}, deps = {}) 
 }
 
 export async function publicTalkSinglePlayerScriptKillV2(body = {}, deps = {}) {
+  const dialogueClient = await createScriptKillDialogueClientFromDeps(deps);
   return withRunMutating(body, deps, (pkg, run) => performPublicTalk({
     packageData: pkg,
     runState: run,
     realPlayerText: body.text || body.realPlayerText,
     simulatedRoleIds: body.simulatedRoleIds || [],
+    llmDialogueClient: dialogueClient,
   }));
 }
 
 export async function privateChatSinglePlayerScriptKillV2(body = {}, deps = {}) {
+  const dialogueClient = await createScriptKillDialogueClientFromDeps(deps);
   return withRunMutating(body, deps, (pkg, run) => performPrivateChat({
     packageData: pkg,
     runState: run,
     targetRoleId: body.targetRoleId,
     text: body.text,
+    llmDialogueClient: dialogueClient,
   }));
 }
 

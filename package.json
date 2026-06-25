@@ -35,6 +35,8 @@
     "test:p2": "node --test tests/unit/long-play-kernel-p2.test.js",
     "test:kernel": "node --test tests/unit/kernel-turn-context.test.js tests/integration/kernel-completion.test.js",
     "test:prompts": "node --test tests/unit/prompt-*.test.js tests/integration/prompt-runtime-integration.test.js",
+    "test:prompt-contracts": "node --test tests/unit/prompt-task-contracts.test.js tests/unit/prompt-runtime-identity.test.js tests/unit/llm-task-gateway.test.js",
+    "test:llm-routing": "node --test tests/unit/tabletop-v2-llm-polish.test.js tests/unit/detective-v2-llm-narration.test.js tests/unit/single-player-scriptkill-llm-dialogue.test.js",
     "test:legacy-mechanisms": "node --test tests/unit/creation-wizard.test.js tests/integration/legacy-mechanism-expansion.test.js",
     "test:assets": "node --test tests/unit/asset-status-matrix.test.js",
     "test:authority": "node --test tests/unit/authority-policy.test.js",

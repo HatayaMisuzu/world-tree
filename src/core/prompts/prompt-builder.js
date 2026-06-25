@@ -8,6 +8,7 @@ import {
   logHiddenFieldFilter, finalizeActivationLog, summarizeActivationLog
 } from "./prompt-activation-log.js";
 import { deepFilterHiddenFields, buildVisibilityInstruction } from "./prompt-visibility-policy.js";
+import { sanitizeForLlm } from "./prompt-hidden-sanitizer.js";
 
 /**
  * Build a complete prompt orchestration packet.
@@ -58,8 +59,8 @@ export function buildPromptOrchestrationPacket(input = {}) {
   }
 
   // 5. Filter hidden fields from kernel/character context
-  const safeKernel = kernelContext ? deepFilterHiddenFields(kernelContext) : null;
-  const safeCharacter = characterContext ? deepFilterHiddenFields(characterContext) : null;
+  const safeKernel = kernelContext ? sanitizeForLlm(deepFilterHiddenFields(kernelContext)) : null;
+  const safeCharacter = characterContext ? sanitizeForLlm(deepFilterHiddenFields(characterContext)) : null;
   if (kernelContext) {
     // Count what was filtered
     const orig = JSON.stringify(kernelContext);

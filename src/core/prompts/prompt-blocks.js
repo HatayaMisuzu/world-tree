@@ -298,6 +298,44 @@ const GUARDIAN_TASK = createPromptBlock({
   tags: ["task", "guardian", "json"]
 });
 
+const DIRECTOR_ANALYSIS_TASK = createPromptBlock({
+  id: "task.director_analysis",
+  title: "Director Analysis Task",
+  layer: "task", modeIds: [], taskIds: ["director-analysis"],
+  trigger: { type: "task", value: "director-analysis" },
+  role: "system", position: "post_history", priority: 600, order: 58, required: true,
+  content: `【导演分析任务】
+只输出 JSON: {intent, emotionalSubtext, engagementDelta, tensionDelta, fatigueDelta, curiosityDelta, pacingSuggestion, shouldEscalate, shouldOfferChoice, notes}。
+禁止写正文、禁止创造世界事实、禁止修改 canon/proposal/state。`,
+  tags: ["task", "director", "json"]
+});
+
+const GUARDIAN_AUDIT_TASK = createPromptBlock({
+  id: "task.guardian_audit",
+  title: "Guardian Audit Task",
+  layer: "task", modeIds: [], taskIds: ["guardian-audit"],
+  trigger: { type: "task", value: "guardian-audit" },
+  role: "system", position: "post_history", priority: 600, order: 60, required: true,
+  content: `【审计任务】
+只检查，不重写，不创作。
+输出 JSON: {pass, severity, issues, revisionInstructions}。
+检查 hidden 泄露、OOC、用户自主性侵犯、canon/candidate 混淆、过度推进、格式错误。`,
+  tags: ["task", "guardian", "json"]
+});
+
+const GUARDIAN_CORRECTION_TASK = createPromptBlock({
+  id: "task.guardian_correction",
+  title: "Guardian Correction Task",
+  layer: "task", modeIds: [], taskIds: ["guardian-correction"],
+  trigger: { type: "task", value: "guardian-correction" },
+  role: "system", position: "post_history", priority: 600, order: 61, required: true,
+  content: `【修正任务】
+只输出修正后的用户可见正文。
+不输出 JSON，不解释系统，不新增剧情，不扩大改写范围。
+只修复审计指出的问题，并保持原叙事意图。`,
+  tags: ["task", "guardian", "correction"]
+});
+
 const PROPOSAL_EXTRACTOR_TASK = createPromptBlock({
   id: "task.proposal_extractor",
   title: "Proposal Extractor Task",
@@ -392,6 +430,7 @@ export const ALL_BLOCKS = [
   CF_IDENTITY, CF_ANTI_AUTOCREATE,
   // Task
   WRITER_TASK, DIRECTOR_TASK, GUARDIAN_TASK,
+  DIRECTOR_ANALYSIS_TASK, GUARDIAN_AUDIT_TASK, GUARDIAN_CORRECTION_TASK,
   PROPOSAL_EXTRACTOR_TASK, SCENE_SUMMARY_TASK, WORLD_CANDIDATE_TASK,
   PROCESSING_EXTRACTOR_TASK, EMOTIONAL_INERTIA_TASK, TELEMETRY_EXPLANATION_TASK
 ];

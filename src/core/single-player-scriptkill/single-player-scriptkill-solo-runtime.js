@@ -18,7 +18,10 @@ export function readCurrentRoleAct(packageData = {}, runState = {}, roleId = "")
   return { status: "ok", phase, role: { roleId: role.roleId, roleName: role.roleName }, acts };
 }
 
-export function performPublicTalk({ packageData = {}, runState = {}, realPlayerText = "", simulatedRoleIds = [] } = {}) {
+export function performPublicTalk({ packageData = {}, runState = {}, realPlayerText = "", simulatedRoleIds = [], llmDialogueClient = null } = {}) {
+  if (llmDialogueClient) {
+    return performPublicTalkAsync({ packageData, runState, realPlayerText, simulatedRoleIds, llmDialogueClient });
+  }
   const phase = getCurrentScriptPhase(packageData, runState);
   if (!canPerformPhaseAction(phase, "publicTalk")) return { status: "error", code: "PHASE_PUBLIC_TALK_NOT_ALLOWED", phase };
   let next = runState;
@@ -30,13 +33,40 @@ export function performPublicTalk({ packageData = {}, runState = {}, realPlayerT
   return { status: "ok", phase, messages: aiMessages, runState: next, playerRun: stripSinglePlayerScriptKillRunForPlayer(packageData, next) };
 }
 
-export function performPrivateChat({ packageData = {}, runState = {}, targetRoleId = "", text = "" } = {}) {
+async function performPublicTalkAsync({ packageData = {}, runState = {}, realPlayerText = "", simulatedRoleIds = [], llmDialogueClient = null } = {}) {
+  const phase = getCurrentScriptPhase(packageData, runState);
+  if (!canPerformPhaseAction(phase, "publicTalk")) return { status: "error", code: "PHASE_PUBLIC_TALK_NOT_ALLOWED", phase };
+  let next = runState;
+  if (realPlayerText) {
+    next = recordPublicMessage(next, { channel: "public", speaker: { speakerType: "real_player", assignedRoleId: next.realPlayerRoleId, visibleName: getRoleName(packageData, next.realPlayerRoleId) }, text: realPlayerText });
+  }
+  const aiMessages = await buildAiPublicResponses({ packageData, runState: next, roleIds: simulatedRoleIds, llmDialogueClient });
+  for (const message of aiMessages) next = recordPublicMessage(next, message);
+  return { status: "ok", phase, messages: aiMessages, runState: next, playerRun: stripSinglePlayerScriptKillRunForPlayer(packageData, next) };
+}
+
+export function performPrivateChat({ packageData = {}, runState = {}, targetRoleId = "", text = "", llmDialogueClient = null } = {}) {
+  if (llmDialogueClient) {
+    return performPrivateChatAsync({ packageData, runState, targetRoleId, text, llmDialogueClient });
+  }
   const phase = getCurrentScriptPhase(packageData, runState);
   if (!canPerformPhaseAction(phase, "privateTalk")) return { status: "error", code: "PHASE_PRIVATE_CHAT_NOT_ALLOWED", phase };
   const targetPlayer = asArray(runState.simulatedPlayers).find(p => p.assignedRoleId === targetRoleId);
   if (!targetPlayer) return { status: "error", code: "TARGET_ROLE_NOT_SIMULATED" };
   const role = asArray(packageData.roleBooks).find(r => r.roleId === targetRoleId) || {};
   const responseText = buildConstrainedRoleResponse({ packageData, runState, simulatedPlayer: targetPlayer, role, userText: text, channel: "private" });
+  const chat = { fromRoleId: runState.realPlayerRoleId, toRoleId: targetRoleId, userText: text, responseText, exchangedClueIds: [], disclosedSecrets: [] };
+  const next = recordPrivateChat(runState, chat);
+  return { status: "ok", phase, chat, runState: next, playerRun: stripSinglePlayerScriptKillRunForPlayer(packageData, next) };
+}
+
+async function performPrivateChatAsync({ packageData = {}, runState = {}, targetRoleId = "", text = "", llmDialogueClient = null } = {}) {
+  const phase = getCurrentScriptPhase(packageData, runState);
+  if (!canPerformPhaseAction(phase, "privateTalk")) return { status: "error", code: "PHASE_PRIVATE_CHAT_NOT_ALLOWED", phase };
+  const targetPlayer = asArray(runState.simulatedPlayers).find(p => p.assignedRoleId === targetRoleId);
+  if (!targetPlayer) return { status: "error", code: "TARGET_ROLE_NOT_SIMULATED" };
+  const role = asArray(packageData.roleBooks).find(r => r.roleId === targetRoleId) || {};
+  const responseText = await buildConstrainedRoleResponseAsync({ packageData, runState, simulatedPlayer: targetPlayer, role, userText: text, channel: "private", llmDialogueClient });
   const chat = { fromRoleId: runState.realPlayerRoleId, toRoleId: targetRoleId, userText: text, responseText, exchangedClueIds: [], disclosedSecrets: [] };
   const next = recordPrivateChat(runState, chat);
   return { status: "ok", phase, chat, runState: next, playerRun: stripSinglePlayerScriptKillRunForPlayer(packageData, next) };
@@ -101,6 +131,17 @@ function buildDeterministicAiPublicResponses(packageData, runState, roleIds = []
   });
 }
 
+async function buildAiPublicResponses({ packageData, runState, roleIds = [], llmDialogueClient = null } = {}) {
+  const players = asArray(runState.simulatedPlayers).filter(p => !roleIds.length || roleIds.includes(p.assignedRoleId)).slice(0, 3);
+  const messages = [];
+  for (const player of players) {
+    const role = asArray(packageData.roleBooks).find(r => r.roleId === player.assignedRoleId) || {};
+    const text = await buildConstrainedRoleResponseAsync({ packageData, runState, simulatedPlayer: player, role, channel: "public", llmDialogueClient });
+    messages.push(buildRoleFirstMessageEnvelope({ text, simulatedPlayer: player, role, channel: "public", meta: { knowledgeChecked: true, llmAttempted: Boolean(llmDialogueClient) } }));
+  }
+  return messages;
+}
+
 function buildConstrainedRoleResponse({ packageData, runState, simulatedPlayer, role, userText = "", channel = "public" }) {
   const boundary = buildKnowledgeBoundaryContext({ packageData, runState, roleId: role.roleId, phase: getCurrentScriptPhase(packageData, runState) });
   const secretCount = asArray(role.secrets).length;
@@ -117,6 +158,33 @@ function buildConstrainedRoleResponse({ packageData, runState, simulatedPlayer, 
   text = sanitizeImmersiveSpeech(text);
   const validation = validateSimulatedPlayerSpeech(text, { ...boundary, channel });
   if (!validation.ok) return "我先保留意见。现在这些信息还不足以说明最终真相。";
+  return text;
+}
+
+async function buildConstrainedRoleResponseAsync({ packageData, runState, simulatedPlayer, role, userText = "", channel = "public", llmDialogueClient = null } = {}) {
+  const fallback = buildConstrainedRoleResponse({ packageData, runState, simulatedPlayer, role, userText, channel });
+  if (!llmDialogueClient || typeof llmDialogueClient.speak !== "function") return fallback;
+
+  const boundary = buildKnowledgeBoundaryContext({ packageData, runState, roleId: role.roleId, phase: getCurrentScriptPhase(packageData, runState) });
+  let text = "";
+  try {
+    text = await llmDialogueClient.speak({
+      packageData,
+      runState,
+      simulatedPlayer,
+      role,
+      userText,
+      channel,
+      boundary,
+      phase: getCurrentScriptPhase(packageData, runState),
+    });
+  } catch {
+    return fallback;
+  }
+
+  text = sanitizeImmersiveSpeech(text || "");
+  const validation = validateSimulatedPlayerSpeech(text, { ...boundary, channel });
+  if (!validation.ok || !text) return fallback;
   return text;
 }
 

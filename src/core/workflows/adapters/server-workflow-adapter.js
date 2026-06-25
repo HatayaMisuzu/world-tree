@@ -1,6 +1,7 @@
 // adapters/server-workflow-adapter.js — WSD-6 minimal server workflow API
 import { runWorkflowAction } from "../workflow-runner.js";
 import { WORKFLOW_TYPES } from "../workflow-types.js";
+import { buildContractInstruction } from "../../prompts/prompt-task-contracts.js";
 
 export async function handleWorkflowApiRequest(body = {}, deps = {}) {
   const { workflowType, modeId, projectId, branchId, userInput, options } = body || {};
@@ -12,8 +13,17 @@ export async function handleWorkflowApiRequest(body = {}, deps = {}) {
         const baseUrl = String(deps.llmConfig.llmBaseUrl || "").replace(/\/$/, "");
         const model = deps.llmConfig.llmModel || "";
         if (!baseUrl || !model) throw new Error("LLM not configured");
+        const taskContract = buildContractInstruction("workflow-writer");
         const messages = [
-          { role: "system", content: "You are World Tree. Respond in Chinese. Follow the prompt." },
+          {
+            role: "system",
+            content: [
+              "你是 World Tree 工作流执行器。",
+              "必须遵守当前 prompt packet 与 workflow-writer task contract。",
+              "不要声称已保存、已写入 canon、已完成外部操作，除非上游明确返回。",
+              taskContract
+            ].join("\n")
+          },
           { role: "user", content: promptPacket?.promptText || envelope.userInput || "" }
         ];
         const resp = await fetch(`${baseUrl}/chat/completions`, {

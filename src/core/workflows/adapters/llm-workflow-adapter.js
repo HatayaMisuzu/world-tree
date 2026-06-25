@@ -9,7 +9,11 @@ export async function generateWorkflowDraft({ envelope, promptPacket, deps = {} 
   }
   try {
     const result = await deps.realLlm({ envelope, promptPacket });
-    return normalizeDraft(result);
+    const draft = normalizeDraft(result);
+    if (!draft.text || containsHiddenWorkflowLeak(draft.text)) {
+      return { ok: true, text: buildOfflineFallback(envelope), llmUsed: false, warnings: [...draft.warnings, "LLM output empty or unsafe; fallback used."], debug: { adapter: "llm-workflow-adapter", fallback: true } };
+    }
+    return draft;
   } catch (error) {
     return { ok: true, text: buildOfflineFallback(envelope), llmUsed: false, warnings: [`LLM error: ${error?.message || "unknown"}`], debug: { adapter: "llm-workflow-adapter", fallback: true } };
   }
@@ -24,4 +28,8 @@ function buildOfflineFallback(envelope) {
   if (input.includes("继续")) return "世界继续运转…";
   if (input.includes("创建") || input.includes("新建")) return "创建向导已就绪，请提供更多信息。";
   return `[离线模式] 收到：「${input.slice(0, 80)}」`;
+}
+
+function containsHiddenWorkflowLeak(text = "") {
+  return /hiddenTruth|truthLedger|API\s*key|api[_-]?key|token|Bearer\s+/i.test(String(text || ""));
 }

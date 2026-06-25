@@ -224,6 +224,9 @@ export function extractorSystemPrompt(typeId) {
   prompt += `2. 数组字段用 [] 包裹，对象字段用 {} 包裹\n`;
   prompt += `3. 输出纯 JSON，不要加 markdown 代码块标记\n`;
   prompt += `4. 如果整段文本没有该类型的任何信息，输出 {"_empty": true}\n`;
+  prompt += `5. 所有结果都是 candidate，不是 canon\n`;
+  prompt += `6. 不要声称已经保存、写入世界书、创建项目\n`;
+  prompt += `7. 不要输出 hidden/private/system/gm/dm 字段\n`;
 
   return prompt;
 }
@@ -240,5 +243,8 @@ export function classifierSystemPrompt() {
   prompt += `2. confidence 0-1，低于 0.5 的不输出\n`;
   prompt += `3. entities 是从段落中提取到的具体实体名称\n`;
   prompt += `4. 输出纯 JSON 数组\n`;
+  prompt += `5. 所有结果都是 candidate，不是 canon\n`;
+  prompt += `6. 不要声称已经保存、写入世界书、创建项目\n`;
+  prompt += `7. 不要输出 hidden/private/system/gm/dm 字段\n`;
   return prompt;
 }

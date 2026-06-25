@@ -143,7 +143,12 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   const basePrompt = ROLE_PROMPTS[role] || WRITER_SYSTEM_PROMPT;
   // 🆕 Prompt Orchestration: prepend mode+task governance blocks
   const orchestrationPrefix = options.orchestrationPrefix || "";
-  const systemPrompt = orchestrationPrefix ? `${orchestrationPrefix}\n\n---\n\n${basePrompt}` : basePrompt;
+  const taskContractPrefix = options.taskContractPrefix || "";
+  const systemPrompt = [
+    orchestrationPrefix,
+    taskContractPrefix,
+    basePrompt
+  ].filter(Boolean).join("\n\n---\n\n");
   const { messages: historyMessages = [], temperature: optTemp, max_tokens: optMaxTokens } = options;
   const temperature = optTemp ?? (role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85);
   const maxTokens   = optMaxTokens ?? (role === "director" ? 1024 : role === "guardian" ? 1024 : 4096);
@@ -231,6 +236,17 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   }
 
   throw lastError || new Error(`LLM 调用失败：所有候选均不可用 (role=${role}, attempts=${attempts.length})`);
+}
+
+export async function callLLMWithTaskContract(taskId, promptText, config, apiKey, options = {}) {
+  const { buildContractInstruction, requirePromptTaskContract } = await import("../core/prompts/prompt-task-contracts.js");
+  const contract = requirePromptTaskContract(taskId);
+  return callLLMByRole(contract.role || "writer", promptText, config, apiKey, {
+    ...options,
+    temperature: options.temperature ?? contract.temperature,
+    max_tokens: options.max_tokens ?? contract.maxTokens,
+    taskContractPrefix: buildContractInstruction(taskId)
+  });
 }
 
 /** 🆕 v0.9.5 构建模型候选列表：[角色专属, 默认, 兜底] */

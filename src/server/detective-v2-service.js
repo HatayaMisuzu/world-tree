@@ -13,6 +13,7 @@ import { generateDetectiveCaseFromPremise, expandGeneratorBlueprintToPlayableCas
 import { validatePlayableDetectiveCase, scoreDetectiveCaseQuality, detectDetectiveCaseSpeedrunRisks } from "../core/detective/detective-case-quality-validator.js";
 import { reviewDetectiveCase } from "../core/detective/detective-case-review.js";
 import { buildDetectiveCasePlayerPack, buildDetectiveCaseGMPack, buildDetectiveRunReport } from "../core/detective/detective-export-service.js";
+import { createDetectiveV2LlmClient } from "../core/detective/detective-v2-llm-narration.js";
 
 // ── Paths ──
 
@@ -21,6 +22,36 @@ function runsDir(dataRoot) { return join(dataRoot, "engine", "detective-v2", "ru
 function caseDir(dataRoot, caseId) { return join(casesDir(dataRoot), caseId); }
 function runDir(dataRoot, runId) { return join(runsDir(dataRoot), runId); }
 function ensureDir(dir) { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); }
+
+async function createDetectiveLlmClientFromDeps(deps = {}) {
+  if (!deps.config || !deps.apiKey) return null;
+  try {
+    const { callLLMByRole } = await import("../adapters/llm.js");
+    return createDetectiveV2LlmClient({ callLLMByRole, config: deps.config, apiKey: deps.apiKey });
+  } catch {
+    return null;
+  }
+}
+
+async function generateDetectiveCaseWithOptionalLlm({ premise = "", genre = "", deps = {} } = {}) {
+  const fallback = () => generateDetectiveCaseFromPremise(premise || "神秘案件", { genre });
+  const llm = await createDetectiveLlmClientFromDeps(deps);
+  if (!llm) return fallback();
+  try {
+    const blueprint = await llm.generateCaseBlueprint({ premise, genre });
+    const result = blueprint
+      ? expandGeneratorBlueprintToPlayableCase(blueprint, { premise, genre })
+      : fallback();
+    if (result.status !== "ok") return fallback();
+    const validation = validatePlayableDetectiveCase(result.draft);
+    const quality = scoreDetectiveCaseQuality(result.draft);
+    const risks = detectDetectiveCaseSpeedrunRisks(result.draft);
+    if (!validation.playable || risks.speedrunRisk === "high") return fallback();
+    return { ...result, generationSource: "llm_blueprint", validation, quality, risks };
+  } catch {
+    return fallback();
+  }
+}
 
 function assertDetectiveV2Path(path) {
   if (!String(path).includes(`${sep}detective-v2${sep}`)) throw new Error(`Detective V2 path escaped namespace: ${path}`);
@@ -128,6 +159,19 @@ export async function investigateDetectiveV2(body = {}, deps = {}) {
 
     const result = investigateDetectiveLocation({ caseCapsule, runState, locationId, target });
     if (result.status !== "ok") return result;
+    const llm = await createDetectiveLlmClientFromDeps(deps);
+    if (llm) {
+      try {
+        const narrative = await llm.narrateInvestigation({
+          location: result.location,
+          discoveredEvidence: result.discoveredEvidence,
+          target,
+        });
+        if (narrative) result.narrative = narrative;
+      } catch {
+        // Deterministic result remains authoritative.
+      }
+    }
 
     runState = recordDetectiveDiscovery(runState, { locationId, newEvidenceIds: result.newEvidenceIds });
     writeFileSync(statePath, JSON.stringify(runState, null, 2));
@@ -159,6 +203,20 @@ export async function interrogateDetectiveV2(body = {}, deps = {}) {
 
     const result = interrogateDetectiveCharacter({ caseCapsule, runState, characterId, question, presentedEvidenceIds });
     if (result.status !== "ok") return result;
+    const llm = await createDetectiveLlmClientFromDeps(deps);
+    if (llm) {
+      try {
+        const answer = await llm.narrateInterrogation({
+          character: result.character,
+          publicTestimonies: result.allTestimonies || (result.testimony ? [result.testimony] : []),
+          question,
+          presentedEvidence: [],
+        });
+        if (answer) result.answer = answer;
+      } catch {
+        // Deterministic testimony remains authoritative.
+      }
+    }
 
     runState = recordDetectiveInterview(runState, { characterId, newTestimonyIds: result.newTestimonyIds });
     writeFileSync(statePath, JSON.stringify(runState, null, 2));
@@ -261,8 +319,11 @@ export async function previewDetectiveV2Generate(body = {}, deps = {}) {
   try {
     const { premise, genre } = body;
     if (!premise) return { status: "error", code: "NO_PREMISE", errorMsg: "premise required" };
-    const result = generateDetectiveCaseFromPremise(premise, { genre });
+    const result = await generateDetectiveCaseWithOptionalLlm({ premise, genre, deps });
     if (result.status !== "ok") return result;
+    const validation = result.validation || validatePlayableDetectiveCase(result.draft);
+    const quality = result.quality || scoreDetectiveCaseQuality(result.draft);
+    const risks = result.risks || detectDetectiveCaseSpeedrunRisks(result.draft);
     return {
       status: "ok",
       preview: {
@@ -273,6 +334,10 @@ export async function previewDetectiveV2Generate(body = {}, deps = {}) {
         locationCount: result.locationCount,
       },
       draft: result.draft,
+      generationSource: result.generationSource || "deterministic",
+      validation,
+      quality,
+      risks,
     };
   } catch (err) {
     return { status: "error", code: "GENERATE_PREVIEW_FAILED", errorMsg: err.message };
@@ -286,14 +351,18 @@ export async function commitDetectiveV2Generate(body = {}, deps = {}) {
   if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot required" };
   try {
     const { premise, genre } = body;
-    const result = generateDetectiveCaseFromPremise(premise || "神秘案件", { genre });
+    const result = await generateDetectiveCaseWithOptionalLlm({ premise: premise || "神秘案件", genre, deps });
     if (result.status !== "ok") return result;
+    const validation = result.validation || validatePlayableDetectiveCase(result.draft);
+    const quality = result.quality || scoreDetectiveCaseQuality(result.draft);
+    const risks = result.risks || detectDetectiveCaseSpeedrunRisks(result.draft);
+    if (!validation.playable) return { status: "needs_revision", code: "GENERATED_CASE_NOT_PLAYABLE", validation, quality, risks };
 
     const caseDir = join(dataRoot, "engine", "detective-v2", "cases", result.draft.caseId);
     ensureDir(caseDir);
     writeFileSync(join(caseDir, "case.json"), JSON.stringify(result.draft, null, 2));
 
-    return { status: "ok", caseId: result.draft.caseId, title: result.draft.title };
+    return { status: "ok", caseId: result.draft.caseId, title: result.draft.title, generationSource: result.generationSource || "deterministic", quality, risks };
   } catch (err) {
     return { status: "error", code: "GENERATE_COMMIT_FAILED", errorMsg: err.message };
   }

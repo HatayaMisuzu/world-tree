@@ -13,6 +13,7 @@ import { MURDER_MYSTERY_DM_INSTRUCTION } from "./engine/murder-mystery.js";
 import { assembleContext } from "./engine/context-engine.js";
 import { directorModePromptBlock } from "./engine/director-modes.js";
 import { telemetryForLLM } from "./engine/world-telemetry.js";
+import { resolvePromptRuntimeIdentity } from "./prompts/prompt-runtime-identity.js";
 
 export { ENGINE_VERSION, MODULES, MODULE_PRESETS, DEFAULT_ENGINE_STATE, normalizeEngineState, DIRECTOR_MODES, classifyWorldTreeInput };
 export { parseMarkedOutput, sectionsToOverlayPatch } from "./engine/output-parser.js";
@@ -69,7 +70,7 @@ export function renderKnowledgeCards(cards = [], mode = "rules") {
 //  模式专属 Prompt 构建器
 // ═══════════════════════════════════════════════════════════════
 
-function buildWorldbookPacket({ model, input, engineState, knowledgeCards, turnPrep, proximityData, contextResult }) {
+function buildWorldbookPacket({ model, input, engineState, knowledgeCards, turnPrep, proximityData, contextResult, promptIdentity = null }) {
   const prep = turnPrep || prepareTurn({ model, input, engineState, worldbookState: {}, cards: [], knowledgeCards });
   const state = normalizeEngineState(engineState);
   const budget = budgetFor(state.contextBudget);
@@ -115,6 +116,9 @@ function buildWorldbookPacket({ model, input, engineState, knowledgeCards, turnP
     "",
     `【引擎配置】`,
     `Data Mode: ${state.dataMode}  |  Preset: ${state.preset}  |  Budget: ${state.contextBudget}`,
+    `【Prompt Runtime Identity】`,
+    `modeId: ${promptIdentity?.promptModeId || "world-rpg"}`,
+    `writerProfile: ${promptIdentity?.writerProfile || "grand-world"}`,
     `Active Modules: ${modules}`,
     `Guardian: ${prep.guard.ok ? "pass" : `❌ ${prep.guard.blockedReason}`}`,
     "",
@@ -317,11 +321,16 @@ function buildPresetPacket({ model, input, engineState, knowledgeCards, turnPrep
 
 export function buildEnginePacket({ model, input, engineState, injectedWorldbook = [], knowledgeSnippets = [], knowledgeCards = [], cardContext = [], turnPrep = null, proximityData = null }) {
   const state = normalizeEngineState(engineState);
-  const dataMode = state.dataMode || "worldbook";
+  const identity = resolvePromptRuntimeIdentity({
+    modeId: state.modeId || state.mode || model?.selected?.mode || model?.moduleData?.mode || "",
+    dataMode: state.dataMode || "worldbook",
+    worldSubType: state.worldSubType || model?.moduleData?.modeMetadata?.worldSubType || ""
+  });
+  const dataMode = identity.storageDataMode || state.dataMode || "worldbook";
 
   // 🆕 统一上下文组装
   const contextResult = assembleContext(model, {
-    mode: dataMode,
+    mode: identity.promptModeId || dataMode,
     contextBudget: state.contextBudget
   });
 
@@ -332,7 +341,7 @@ export function buildEnginePacket({ model, input, engineState, injectedWorldbook
       return buildPresetPacket({ model, input, engineState, knowledgeCards, turnPrep, contextResult });
     case "worldbook":
     default:
-      return buildWorldbookPacket({ model, input, engineState, knowledgeCards, turnPrep, proximityData, contextResult });
+      return buildWorldbookPacket({ model, input, engineState, knowledgeCards, turnPrep, proximityData, contextResult, promptIdentity: identity });
   }
 }
 
@@ -409,8 +418,13 @@ export function buildWriterPacket({ model, input, engineState, directionPacket, 
 
   // 完整叙事上下文
   const state = normalizeEngineState(engineState);
-  const isTabletop = state.worldSubType === "tabletop" || state.preset === "tabletop";
-  const st = isTabletop ? "tabletop" : state.worldSubType || "classic";
+  const identity = resolvePromptRuntimeIdentity({
+    modeId: state.modeId || state.mode || "",
+    dataMode: state.dataMode,
+    worldSubType: state.worldSubType
+  });
+  const st = identity.promptModeId || state.worldSubType || "world-rpg";
+  const isTabletop = st === "tabletop";
   const modules = state.activeModules.map((id) => MODULES.find((item) => item.id === id)).filter(Boolean).map((item) => `${item.id}:${item.name}`).join(", ");
   const worldbook = injectedWorldbook.length
     ? injectedWorldbook.map((item) => `- ${item.title}: ${item.content}`).join("\n")
@@ -458,16 +472,27 @@ export function buildWriterPacket({ model, input, engineState, directionPacket, 
 
 // 🆕 四模式隔离 — 统一返回模式专属的 prompt 头部
 function buildModeHeader(st) {
-  // st = "classic" | "tabletop" | "rpg" | "sim"
+  // st = prompt mode id or a legacy subtype.
   switch (st) {
+    case "quick-setting":
+      return ["【你的角色：快速设定协作器】", "你帮助用户整理最小可启动设定，只输出候选和缺口问题，不扩写成长篇正文。"];
+    case "character":
+      return ["【你的角色：Character Story Writer】", "你稳定演绎当前角色；叙事、动作和台词必须符合角色卡与情绪惯性。"];
+    case "world-rpg":
+      return [RPG_DM_INSTRUCTION, "", "【你的角色：大世界 RPG DM】", "你围绕主角邻近范围推进探索、角色反应和轻量事件。"];
     case "tabletop":
       return [TABLETOP_DM_INSTRUCTION, "", "【你的角色：TRPG 跑团 DM】", "你是跑团模式下的 DM。用法庭式的叙事和隐喻式的骰子判定驱动故事。"];
     case "rpg":
       return [RPG_DM_INSTRUCTION, "", "【你的角色：日式 RPG DM】", "你驱动一个章节递进、角色成长的日式 RPG 剧情叙事。"];
+    case "strategy-sim":
     case "sim":
       return [SIM_DM_INSTRUCTION, "", "【你的角色：经营报告者】", "你以报告和事件驱动的方式叙述经营故事，展示决策后果。"];
+    case "mystery-puzzle":
+      return ["【你的角色：解谜调查主持人】", "你分级呈现线索、调查反馈和合理推测，绝不提前给出答案锁。"];
     case "murder-mystery":
       return [MURDER_MYSTERY_DM_INSTRUCTION, "", "【你的角色：剧本杀 DM】", "你是案件主持人，分发线索、扮演嫌疑人、管理调查流程。信息管制是第一原则。"];
+    case "creation-forge":
+      return ["【你的角色：炼金台候选生成器】", "你把素材整理为可审查候选，不声称已保存、已写入 canon 或已创建项目。"];
     default: // classic
       return ["【你的角色：Story Writer】", "你是故事叙述者。你不决定剧情大方向，你在 Direction Packet 的边界内写出沉浸、准确、完整、可继续互动的故事。"];
   }
@@ -487,9 +512,11 @@ function buildWritingRules(st) {
     case "tabletop":
       base.push("8. DM 主动提供场景入口——2-3 个可探索方向", "9. 失败不卡关——'是的，但是……'或'不，但是……'", "10. 必要时用【检定建议】标注 DC 和属性（不输出数字结果）");
       break;
+    case "world-rpg":
     case "rpg":
       base.push("8. 用【任务更新】标记任务状态变化", "9. 战斗/完成目标→经验提示→【成长提示】标记", "10. 羁绊事件在合适时机自然触发");
       break;
+    case "strategy-sim":
     case "sim":
       base.push("8. 每次回复推动时间前进（天数/周数/月数）", "9. 用【周期报告】呈现资源变化", "10. 决策节点给出 3-4 个选项，标注资源代价");
       break;

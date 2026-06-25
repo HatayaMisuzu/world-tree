@@ -17,6 +17,7 @@ import {
 } from "../core/tabletop/tabletop-v2-module-importer.js";
 import { validateExternalTabletopModuleCompleteness } from "../core/tabletop/tabletop-v2-module-completeness.js";
 import { executeTabletopGmLoop } from "../core/tabletop/tabletop-v2-gm-loop.js";
+import { createTabletopV2PolishClient } from "../core/tabletop/tabletop-v2-llm-polish.js";
 
 // ── Path guard ──
 
@@ -50,6 +51,16 @@ function branchesDir(dataRoot, runId) {
 
 function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+}
+
+async function createTabletopV2PolishClientFromDeps(deps = {}) {
+  if (!deps.config || !deps.apiKey) return null;
+  try {
+    const { callLLMByRole } = await import("../adapters/llm.js");
+    return createTabletopV2PolishClient({ callLLMByRole, config: deps.config, apiKey: deps.apiKey });
+  } catch {
+    return null;
+  }
 }
 
 // ── Start run ──
@@ -196,12 +207,14 @@ export async function handleTabletopV2Turn(body = {}, deps = {}) {
       return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: `module ${runState.moduleId} not found` };
     }
     const module = JSON.parse(readFileSync(modulePath, "utf-8"));
+    const llmClient = await createTabletopV2PolishClientFromDeps(deps);
 
     // Use the full GM loop
     const loopResult = await executeTabletopGmLoop({
       module,
       runState,
       playerIntent,
+      llmClient,
     });
 
     // Handle blocked/warned/error statuses from the loop

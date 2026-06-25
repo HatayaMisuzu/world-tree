@@ -1,17 +1,7 @@
 // prompt-visibility-policy.js — hidden truth / answer lock / private field filtering
 // Part of World Tree Prompt Orchestration Layer v1
 
-const HIDDEN_FIELD_PATTERNS = [
-  "hiddenTruth",
-  "answerLock",
-  "truthLock",
-  "_private",
-  "_systemOnly",
-  "_secret",
-  "privateNotes",
-  "gmNotes",
-  "dmOnly"
-];
+import { sanitizeForLlm, isHiddenKey } from "./prompt-hidden-sanitizer.js";
 
 const HIDDEN_PATH_PATTERNS = [
   /\.hiddenTruth/i,
@@ -33,31 +23,14 @@ const HIDDEN_PATH_PATTERNS = [
  * Returns a new object with hidden fields replaced by "[FILTERED]".
  */
 export function deepFilterHiddenFields(obj, depth = 0) {
-  if (depth > 20) return obj; // Max recursion depth
-  if (obj === null || obj === undefined) return obj;
-  if (typeof obj !== "object") return obj;
-  if (Array.isArray(obj)) {
-    return obj.map(item => deepFilterHiddenFields(item, depth + 1));
-  }
-  const result = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (HIDDEN_FIELD_PATTERNS.some(p => key.includes(p) || key === p)) {
-      result[key] = "[FILTERED]";
-    } else if (typeof value === "object" && value !== null) {
-      result[key] = deepFilterHiddenFields(value, depth + 1);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
+  return sanitizeForLlm(obj, { maxDepth: 20 });
 }
 
 /**
  * Check if a field key contains hidden/private patterns.
  */
 export function isHiddenField(key) {
-  if (!key || typeof key !== "string") return false;
-  return HIDDEN_FIELD_PATTERNS.some(p => key.includes(p) || key === p);
+  return isHiddenKey(key);
 }
 
 /**

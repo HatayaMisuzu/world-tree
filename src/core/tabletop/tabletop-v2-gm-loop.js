@@ -117,6 +117,10 @@ export async function executeTabletopGmLoop({
         const polished = await llmClient.polish({
           deterministicText: narrationPacket,
           namespace: state.runtimeIsolation?.llmNamespace || "tabletop-v2:llm",
+          publicContext: {
+            sceneTitle: state.publicState?.sceneTitle || "",
+            turnIndex: state.turnIndex || 0,
+          },
           constraints: {
             noReroll: true,
             noStateChange: true,

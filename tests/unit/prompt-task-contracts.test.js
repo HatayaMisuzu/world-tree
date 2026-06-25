@@ -1,10 +1,16 @@
 // tests/unit/prompt-task-contracts.test.js
-// Verify each task has a contract, output schema, and prompt blocks
+// Verify each task has a contract, output schema, and prompt blocks.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolveBlocks } from "../../src/core/prompts/prompt-blocks.js";
-import { getTaskSchema, TASK_SCHEMAS } from "../../src/core/prompts/prompt-output-schemas.js";
+import { getTaskSchema } from "../../src/core/prompts/prompt-output-schemas.js";
 import { buildInternalTaskPrompt } from "../../src/core/prompts/prompt-builder.js";
+import {
+  getPromptTaskContract,
+  listPromptTaskContracts,
+  validatePromptTaskContract,
+  OUTPUT_FORMAT
+} from "../../src/core/prompts/prompt-task-contracts.js";
 
 const TASKS = ["writer", "director", "guardian", "proposal-extractor", "scene-summary", "worldbook-candidate", "processing-extractor", "emotional-inertia", "telemetry-explanation"];
 
@@ -52,4 +58,40 @@ test("proposal-extractor outputs candidates not canon", () => {
   const text = blocks.map(b => b.content).join(" ");
   assert.ok(text.includes("candidates") || text.includes("候选"));
   assert.ok(text.includes("JSON") || text.includes("json"));
+});
+
+test("prompt task contracts include core role split", () => {
+  for (const taskId of [
+    "director-analysis",
+    "director-packet",
+    "writer",
+    "guardian-audit",
+    "guardian-correction",
+    "tabletop-narration-polish",
+    "detective-investigation-narration",
+    "detective-interrogation-response",
+    "scriptkill-public-talk",
+    "scriptkill-private-talk",
+    "workflow-writer"
+  ]) {
+    assert.ok(getPromptTaskContract(taskId), `${taskId} missing`);
+  }
+});
+
+test("guardian audit and correction have different output formats", () => {
+  assert.equal(getPromptTaskContract("guardian-audit").outputFormat, OUTPUT_FORMAT.JSON);
+  assert.equal(getPromptTaskContract("guardian-correction").outputFormat, OUTPUT_FORMAT.TEXT);
+});
+
+test("all contracts validate", () => {
+  for (const c of listPromptTaskContracts()) {
+    const result = validatePromptTaskContract(c);
+    assert.equal(result.ok, true, `${c.taskId}: ${result.errors.join(", ")}`);
+  }
+});
+
+test("tabletop polish forbids dice and state changes", () => {
+  const c = getPromptTaskContract("tabletop-narration-polish");
+  assert.ok(c.forbiddenActions.includes("do_not_change_roll_result"));
+  assert.ok(c.forbiddenActions.includes("do_not_change_state"));
 });

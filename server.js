@@ -2859,7 +2859,11 @@ async function handleAPI(req, res) {
     }
     if (path === "/api/tabletop-v2/turn" && method === "POST") {
       const { handleTabletopV2Turn } = await import("./src/server/tabletop-v2-service.js");
-      return jsonResponse(res, await handleTabletopV2Turn(await readBody(req), { dataRoot: dataRoot() }));
+      return jsonResponse(res, await handleTabletopV2Turn(await readBody(req), {
+        dataRoot: dataRoot(),
+        config: await loadConfig(),
+        apiKey: await getActiveLlmValue()
+      }));
     }
     if (path === "/api/tabletop-v2/save" && method === "POST") {
       const { saveTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
@@ -2913,11 +2917,19 @@ async function handleAPI(req, res) {
     }
     if (path === "/api/detective-v2/investigate" && method === "POST") {
       const { investigateDetectiveV2 } = await import("./src/server/detective-v2-service.js");
-      return jsonResponse(res, await investigateDetectiveV2(await readBody(req), { dataRoot: dataRoot() }));
+      return jsonResponse(res, await investigateDetectiveV2(await readBody(req), {
+        dataRoot: dataRoot(),
+        config: await loadConfig(),
+        apiKey: await getActiveLlmValue()
+      }));
     }
     if (path === "/api/detective-v2/interrogate" && method === "POST") {
       const { interrogateDetectiveV2 } = await import("./src/server/detective-v2-service.js");
-      return jsonResponse(res, await interrogateDetectiveV2(await readBody(req), { dataRoot: dataRoot() }));
+      return jsonResponse(res, await interrogateDetectiveV2(await readBody(req), {
+        dataRoot: dataRoot(),
+        config: await loadConfig(),
+        apiKey: await getActiveLlmValue()
+      }));
     }
     if (path === "/api/detective-v2/notebook/extract" && method === "POST") {
       const { extractDetectiveV2Notebook } = await import("./src/server/detective-v2-service.js");
@@ -2933,11 +2945,19 @@ async function handleAPI(req, res) {
     }
     if (path === "/api/detective-v2/generate-preview" && method === "POST") {
       const { previewDetectiveV2Generate } = await import("./src/server/detective-v2-service.js");
-      return jsonResponse(res, await previewDetectiveV2Generate(await readBody(req), { dataRoot: dataRoot() }));
+      return jsonResponse(res, await previewDetectiveV2Generate(await readBody(req), {
+        dataRoot: dataRoot(),
+        config: await loadConfig(),
+        apiKey: await getActiveLlmValue()
+      }));
     }
     if (path === "/api/detective-v2/generate-commit" && method === "POST") {
       const { commitDetectiveV2Generate } = await import("./src/server/detective-v2-service.js");
-      return jsonResponse(res, await commitDetectiveV2Generate(await readBody(req), { dataRoot: dataRoot() }));
+      return jsonResponse(res, await commitDetectiveV2Generate(await readBody(req), {
+        dataRoot: dataRoot(),
+        config: await loadConfig(),
+        apiKey: await getActiveLlmValue()
+      }));
     }
     if (path === "/api/detective-v2/quality-check" && method === "POST") {
       const { checkDetectiveV2Quality } = await import("./src/server/detective-v2-service.js");
@@ -2979,11 +2999,19 @@ async function handleAPI(req, res) {
     }
     if (path === "/api/single-player-scriptkill-v2/public-talk" && method === "POST") {
       const { publicTalkSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
-      return jsonResponse(res, await publicTalkSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+      return jsonResponse(res, await publicTalkSinglePlayerScriptKillV2(await readBody(req), {
+        dataRoot: dataRoot(),
+        config: await loadConfig(),
+        apiKey: await getActiveLlmValue()
+      }));
     }
     if (path === "/api/single-player-scriptkill-v2/private-chat" && method === "POST") {
       const { privateChatSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
-      return jsonResponse(res, await privateChatSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+      return jsonResponse(res, await privateChatSinglePlayerScriptKillV2(await readBody(req), {
+        dataRoot: dataRoot(),
+        config: await loadConfig(),
+        apiKey: await getActiveLlmValue()
+      }));
     }
     if (path === "/api/single-player-scriptkill-v2/search" && method === "POST") {
       const { searchSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
