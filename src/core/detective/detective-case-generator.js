@@ -69,21 +69,23 @@ export function generateDetectiveCaseFromPremise(premise = "", options = {}) {
     })),
     // Evidence: generate 12-24 stub items
     evidence: [],
-    // Testimony: generate 8-16 stub items
-    testimony: [],
+    // Testimonies: generate 8-16 stub items
+    testimonies: [],
     // Contradictions: 3-6 pairs
     contradictions: [],
     // Timeline
-    realTimeline: [],
-    publicTimeline: [],
+    timeline: { realTimeline: [], publicTimeline: [] },
     // Truth Ledger
     truthLedger: {
-      culprit: null,
+      culpritIds: [],
       motive: "",
       method: "",
       criticalEvidenceIds: [],
+      misleadingEvidenceIds: [],
+      keyContradictions: [],
+      witnessDeceptions: [],
       solutionChain: [],
-      deceptionTypes: [],
+      realTimeline: [],
     },
     deductionReportSchema: {
       locks: [

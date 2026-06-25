@@ -15,10 +15,10 @@ export function createMemoryEntry(candidate = {}) {
     candidateId: candidate.candidateId || null,
     confidence: candidate.confidence || 0.5,
     tags: candidate.tags || [],
-    userDecision: candidate.userDecision || null,  // "accepted" | "rejected" | "merged"
+    userDecision: candidate.userDecision || null,
     userPatch: candidate.userPatch || null,
-    acceptedAt: null,
-    rejectedAt: null,
+    acceptedAt: candidate.acceptedAt || null,
+    rejectedAt: candidate.rejectedAt || null,
     expiresAt: candidate.expiresAt || null,
     active: true,
     version: 1,

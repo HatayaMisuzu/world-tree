@@ -77,7 +77,9 @@ export async function reviewCharacterV2Candidate(body = {}, deps = {}) {
           const result = acceptMemoryCandidate({ state, candidate, userPatch: patch || {} });
           state = result.state;
         } else if (candidate.kind === "relationship") {
-          const result = acceptRelationshipWriteback({ state, proposal: candidate, userDecision: "accepted" });
+          const { doubleConfirmed } = body;
+          const result = acceptRelationshipWriteback({ state, proposal: candidate, userDecision: "accepted", doubleConfirmed: doubleConfirmed === true });
+          if (result.status === "pending_double_confirm") return result;
           if (result.status !== "ok") return result;
           state = result.state;
         } else if (candidate.kind === "canon_proposal") {

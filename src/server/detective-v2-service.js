@@ -291,7 +291,7 @@ export async function commitDetectiveV2Generate(body = {}, deps = {}) {
 
     const caseDir = join(dataRoot, "engine", "detective-v2", "cases", result.draft.caseId);
     ensureDir(caseDir);
-    writeFileSync(join(caseDir, "case-capsule.json"), JSON.stringify(result.draft, null, 2));
+    writeFileSync(join(caseDir, "case.json"), JSON.stringify(result.draft, null, 2));
 
     return { status: "ok", caseId: result.draft.caseId, title: result.draft.title };
   } catch (err) {
@@ -327,7 +327,7 @@ export async function reviewDetectiveV2Case(body = {}, deps = {}) {
     if (!existsSync(statePath)) return { status: "error", code: "RUN_NOT_FOUND" };
 
     const runState = JSON.parse(readFileSync(statePath, "utf-8"));
-    const casePath = join(caseDir(dataRoot, runState.caseId), "case-capsule.json");
+    const casePath = join(caseDir(dataRoot, runState.caseId), "case.json");
     if (!existsSync(casePath)) return { status: "error", code: "CASE_NOT_FOUND" };
     const caseCapsule = JSON.parse(readFileSync(casePath, "utf-8"));
 
@@ -350,7 +350,7 @@ export async function exportDetectiveV2Run(body = {}, deps = {}) {
     const statePath = join(runDir(dataRoot, runId), "run-state.json");
     if (!existsSync(statePath)) return { status: "error", code: "RUN_NOT_FOUND" };
     const runState = JSON.parse(readFileSync(statePath, "utf-8"));
-    const casePath = join(caseDir(dataRoot, runState.caseId), "case-capsule.json");
+    const casePath = join(caseDir(dataRoot, runState.caseId), "case.json");
     const caseCapsule = existsSync(casePath) ? JSON.parse(readFileSync(casePath, "utf-8")) : null;
 
     const report = buildDetectiveRunReport({ caseCapsule, runState });
@@ -370,7 +370,7 @@ export async function exportDetectiveV2PlayerPack(body = {}, deps = {}) {
     if (!runId) return { status: "error", code: "NO_RUN_ID" };
     const statePath = join(runDir(dataRoot, runId), "run-state.json");
     const runState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf-8")) : null;
-    const casePath = join(caseDir(dataRoot, runState?.caseId || body.caseId), "case-capsule.json");
+    const casePath = join(caseDir(dataRoot, runState?.caseId || body.caseId), "case.json");
     const caseCapsule = existsSync(casePath) ? JSON.parse(readFileSync(casePath, "utf-8")) : null;
 
     const pack = buildDetectiveCasePlayerPack({ caseCapsule, runState });
@@ -389,7 +389,7 @@ export async function exportDetectiveV2GMPack(body = {}, deps = {}) {
     const { runId } = body;
     const statePath = join(runDir(dataRoot, runId), "run-state.json");
     const runState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf-8")) : null;
-    const casePath = join(caseDir(dataRoot, runState?.caseId || body.caseId), "case-capsule.json");
+    const casePath = join(caseDir(dataRoot, runState?.caseId || body.caseId), "case.json");
     const caseCapsule = existsSync(casePath) ? JSON.parse(readFileSync(casePath, "utf-8")) : null;
 
     const pack = buildDetectiveCaseGMPack({ caseCapsule, runState });

@@ -3,13 +3,20 @@
 // Local-first persistence under data/engine/tabletop-v2/.
 
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { normalizeAdventureModule, validateAdventureModule, validatePlayerIntentAgainstBook } from "../core/tabletop/tabletop-v2-adventure-module.js";
 import { normalizeRulesetProfile } from "../core/tabletop/tabletop-v2-ruleset-profile.js";
 import { createTabletopRun, createSaveSlot, restoreSaveSlot, forkBranchFromSave, recordTurn, validateRunState, stripHiddenState } from "../core/tabletop/tabletop-v2-save-branch.js";
 import { createRulingRequest, resolveRulingWithoutLlm, buildGmNarrationPacket, buildDeterministicGmTurnText } from "../core/tabletop/tabletop-v2-turn-ruling.js";
 import { detectEndingAvailable, buildEndingSummary } from "../core/tabletop/tabletop-v2-ending-summary.js";
 import { assertRuntimeNamespaceIsolation } from "../core/mode/mode-asset-linkage-contract.js";
+import {
+  buildTabletopImportPreview,
+  createAdventureModuleDraftFromExternalText,
+  normalizeImportedAdventureModule,
+} from "../core/tabletop/tabletop-v2-module-importer.js";
+import { validateExternalTabletopModuleCompleteness } from "../core/tabletop/tabletop-v2-module-completeness.js";
+import { executeTabletopGmLoop } from "../core/tabletop/tabletop-v2-gm-loop.js";
 
 // ── Path guard ──
 
@@ -97,27 +104,57 @@ export async function startTabletopV2Run(body = {}, deps = {}) {
 
 export async function previewTabletopV2Import(body = {}, deps = {}) {
   try {
-    const input = body.text || body.module || {};
-    const module = normalizeAdventureModule(typeof input === "string" ? { title: "导入预览", playerBrief: { premise: input } } : input);
+    const { text, module, options } = body;
 
-    return {
-      status: "ok",
-      preview: {
-        title: module.title,
-        sourceType: module.sourceType,
-        rulesetProfileId: module.rulesetProfileId,
-        playerBrief: {
-          premise: module.playerBrief?.premise || "",
-          objective: module.playerBrief?.objective || "",
-          setting: module.playerBrief?.setting || "",
+    // If a structured module object is provided, normalize and preview it
+    if (module && typeof module === "object") {
+      const normalized = normalizeAdventureModule(module);
+      return {
+        status: "ok",
+        preview: {
+          title: normalized.title,
+          sourceType: normalized.sourceType,
+          rulesetProfileId: normalized.rulesetProfileId,
+          playerBrief: {
+            premise: normalized.playerBrief?.premise || "",
+            objective: normalized.playerBrief?.objective || "",
+            setting: normalized.playerBrief?.setting || "",
+          },
+          sceneCount: (normalized.scenes || []).length,
+          characterCount: (normalized.characters || []).length,
+          clockCount: (normalized.clocks || []).length,
+          hasHiddenGmBook: !!(normalized.gmBook?.hiddenTruth || normalized.gmBook?.gmScenes?.length),
+          warnings: (!normalized.title || normalized.title === "未命名冒险") ? [{ code: "MISSING_TITLE", message: "未提供标题" }] : [],
         },
-        sceneCount: module.scenes.length,
-        characterCount: module.characters.length,
-        clockCount: module.clocks.length,
-        hasHiddenGmBook: !!(module.gmBook?.hiddenTruth || module.gmBook?.gmScenes?.length),
-        warnings: (!module.title || module.title === "未命名冒险") ? ["未提供标题"] : [],
-      },
-    };
+      };
+    }
+
+    // Text input: use the full importer pipeline
+    if (text && typeof text === "string") {
+      const result = buildTabletopImportPreview(text, options || {});
+      if (result.status === "error") return result;
+      return {
+        status: "ok",
+        preview: {
+          title: result.title,
+          sourceType: result.type,
+          rulesetProfileId: result.rulesetProfileId,
+          playerBrief: {
+            premise: result.playerBriefPreview?.premise || "",
+            objective: result.playerBriefPreview?.objective || "",
+            setting: result.playerBriefPreview?.setting || "",
+          },
+          sceneCount: (result.sceneNames || []).length,
+          characterCount: (result.characterNames || []).length,
+          clockCount: result.clockCount || 0,
+          hasHiddenGmBook: result.hasGmBook || false,
+          warnings: result.warnings || [],
+          extractedSections: result.extractedSections || [],
+        },
+      };
+    }
+
+    return { status: "error", code: "NO_INPUT", errorMsg: "提供 text 或 module" };
   } catch (err) {
     return { status: "error", code: "PREVIEW_FAILED", errorMsg: err.message };
   }
@@ -139,6 +176,7 @@ export async function handleTabletopV2Turn(body = {}, deps = {}) {
     // Load run
     const rDir = runDir(dataRoot, runId);
     const statePath = join(rDir, "run-state.json");
+    assertTabletopV2RuntimePath(statePath);  // path guard
     if (!existsSync(statePath)) {
       return { status: "error", code: "RUN_NOT_FOUND", errorMsg: `run ${runId} not found` };
     }
@@ -153,90 +191,65 @@ export async function handleTabletopV2Turn(body = {}, deps = {}) {
     // Load module
     const mDir = moduleDir(dataRoot, runState.moduleId);
     const modulePath = join(mDir, "module.json");
+    assertTabletopV2RuntimePath(modulePath);
     if (!existsSync(modulePath)) {
       return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: `module ${runState.moduleId} not found` };
     }
     const module = JSON.parse(readFileSync(modulePath, "utf-8"));
 
-    // Create ruling request (classify first)
-    const rulingRequest = createRulingRequest({
+    // Use the full GM loop
+    const loopResult = await executeTabletopGmLoop({
       module,
       runState,
       playerIntent,
-      actor: runState.publicState?.playerCharacter,
     });
 
-    if (rulingRequest.error) {
-      return { status: "error", code: "RULING_REQUEST_FAILED", errorMsg: rulingRequest.error };
-    }
-
-    // Book validation (BEFORE dice/ruling)
-    const bookCheck = validatePlayerIntentAgainstBook({
-      module,
-      scene: rulingRequest.scene,
-      runState,
-      intent: playerIntent,
-      classification: rulingRequest.classification,
-    });
-
-    if (!bookCheck.allowed) {
-      // Blocked by book — no dice roll, return explanation
+    // Handle blocked/warned/error statuses from the loop
+    if (loopResult.status === "blocked" || loopResult.status === "blocked_by_book") {
       return {
-        status: "blocked_by_book",
-        code: bookCheck.severity === "warn" ? "ACTION_WARNED_BY_BOOK" : "ACTION_BLOCKED_BY_BOOK",
-        bookCheck: {
-          reason: bookCheck.reason,
-          suggestion: bookCheck.suggestion,
-          severity: bookCheck.severity,
-          source: bookCheck.source,
-        },
-        run: stripHiddenState(runState),
+        status: loopResult.status,
+        code: loopResult.code || "ACTION_BLOCKED",
+        bookCheck: loopResult.bookCheck,
+        narrative: loopResult.playerNarrative,
+        run: loopResult.runState,
       };
     }
 
-    // Resolve ruling (deterministic, no LLM)
-    const ruling = resolveRulingWithoutLlm(rulingRequest);
+    if (loopResult.status === "warned") {
+      return {
+        status: "ok",
+        code: "ACTION_WARNED_INLINE",
+        bookCheck: loopResult.bookCheck,
+        narrative: loopResult.playerNarrative || loopResult.narrative,
+        run: loopResult.runState,
+      };
+    }
 
-    // Build deterministic GM turn text
-    const gmTurnText = buildDeterministicGmTurnText({
-      request: rulingRequest,
-      ruling,
-      bookCheck,
-      module,
-      scene: rulingRequest.scene,
-    });
-
-    // Record turn
-    const turnRecord = {
-      roll: ruling.roll,
-      publicStateUpdate: {
-        lastNarrative: gmTurnText,
-      },
-      reviewCandidates: ruling.consequences.some((c) => c.type === "setback" || c.type === "bonus")
-        ? [{ type: "major_choice", description: `${ruling.classification}: ${ruling.roll?.outcome || "no roll"}` }]
-        : [],
-    };
-
-    runState = recordTurn(runState, turnRecord);
+    if (loopResult.status === "error") {
+      return {
+        status: "error",
+        code: loopResult.code || "GM_LOOP_ERROR",
+        errorMsg: loopResult.error?.message || loopResult.playerNarrative || "GM loop error",
+        run: loopResult.runState,
+      };
+    }
 
     // Check endings
-    const endingCheck = detectEndingAvailable({ module, runState });
+    const endingCheck = detectEndingAvailable({ module, runState: loopResult.fullState });
 
-    // Persist updated state
-    writeFileSync(statePath, JSON.stringify(runState, null, 2));
+    // Persist full state (includes hidden GM state)
+    writeFileSync(statePath, JSON.stringify(loopResult.fullState, null, 2));
 
     return {
       status: "ok",
-      run: stripHiddenState(runState),
-      narrative: gmTurnText,
-      ruling: {
-        classification: ruling.classification,
-        consequences: ruling.consequences,
-        roll: publicRollInfo(ruling.roll),
-        noRoll: ruling.noRoll,
-      },
+      run: loopResult.runState,
+      narrative: loopResult.narrative,
+      ruling: loopResult.ruling,
       endingAvailable: endingCheck.available,
-      endings: publicEndingInfo(endingCheck.endings || [], runState),
+      endings: publicEndingInfo(endingCheck.endings || [], loopResult.fullState),
+      sceneTitle: loopResult.sceneTitle,
+      publicClocks: loopResult.publicClocks,
+      loopLog: (loopResult.loopLog || []).slice(-3),  // last 3 steps for transparency
     };
   } catch (err) {
     return { status: "error", code: "TURN_FAILED", errorMsg: err.message };
@@ -393,35 +406,64 @@ export async function commitTabletopV2Import(body = {}, deps = {}) {
   if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot is required" };
 
   try {
-    const { module } = body;
-    if (!module) return { status: "error", code: "NO_MODULE", errorMsg: "module is required" };
+    let draft;
 
-    const normalized = normalizeAdventureModule(module);
-    const validation = validateAdventureModule(normalized);
+    // Accept module object, text string, or pre-built draft
+    if (body.module && typeof body.module === "object") {
+      draft = normalizeAdventureModule(body.module);
+    } else if (body.text && typeof body.text === "string") {
+      const result = createAdventureModuleDraftFromExternalText(body.text, body.options || {});
+      if (result.error) return { status: "error", code: result.error, errorMsg: result.message };
+      draft = result.draft;
+    } else if (body.draft && typeof body.draft === "object") {
+      draft = normalizeAdventureModule(body.draft);
+    } else {
+      return { status: "error", code: "NO_INPUT", errorMsg: "提供 module, text, 或 draft" };
+    }
+
+    // Validate completeness
+    const completeness = validateExternalTabletopModuleCompleteness(draft);
+    if (!completeness.ready) {
+      return {
+        status: "needs_completion",
+        code: "INCOMPLETE_MODULE",
+        missing: completeness.checks.filter((c) => !c.passed).map((c) => c.label),
+        warnings: completeness.warnings,
+        draftPreview: {
+          title: draft.title,
+          sceneCount: (draft.scenes || []).length,
+          characterCount: (draft.characters || []).length,
+        },
+      };
+    }
+
+    // Validate
+    const validation = validateAdventureModule(draft);
     if (!validation.valid) {
       return { status: "error", code: "INVALID_MODULE", errorMsg: validation.errors.join("; ") };
     }
 
     // Persist committed module
-    const mDir = moduleDir(dataRoot, normalized.moduleId);
+    const mDir = moduleDir(dataRoot, draft.moduleId);
     ensureDir(mDir);
-    writeFileSync(join(mDir, "module.json"), JSON.stringify(normalized, null, 2));
+    writeFileSync(join(mDir, "module.json"), JSON.stringify(draft, null, 2));
 
     // Write metadata
     writeFileSync(join(mDir, "import-meta.json"), JSON.stringify({
       importedAt: new Date().toISOString(),
-      sourceType: normalized.sourceType || "external",
-      originalTitle: normalized.title,
-      moduleId: normalized.moduleId,
+      sourceType: draft.sourceType || "external",
+      originalTitle: draft.title,
+      moduleId: draft.moduleId,
     }, null, 2));
 
     return {
       status: "ok",
-      moduleId: normalized.moduleId,
-      title: normalized.title,
-      sceneCount: normalized.scenes?.length || 0,
-      characterCount: normalized.characters?.length || 0,
-      clockCount: normalized.clocks?.length || 0,
+      moduleId: draft.moduleId,
+      title: draft.title,
+      sceneCount: (draft.scenes || []).length,
+      characterCount: (draft.characters || []).length,
+      clockCount: (draft.clocks || []).length,
+      gmBookQuality: completeness.gmBookQuality,
     };
   } catch (err) {
     return { status: "error", code: "IMPORT_COMMIT_FAILED", errorMsg: err.message };
