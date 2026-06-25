@@ -148,6 +148,9 @@ const AS = {
   currentCharacterCard: null,
   currentV2Capsule: null,
   currentV2RuntimeContext: null,
+  currentV2RuntimeMvp: null,
+  characterV2RuntimeAdvancedOpen: false,
+  characterPreviewRawOpen: false,
   worldbookEntries: [],
   worldbookTest: null,
   reviewItems: [],
@@ -803,7 +806,7 @@ function renderCharacters() {
       </div>
       <div class="module-grid">${list.length ? list.map(c => `<div class="module-card" data-character-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.name)}</strong>${C.badge(c.format || "native", "info")}</div><p class="tiny muted">${U.esc(U.compact(c.description || "无描述", 100))}</p><div class="chip-row">${(c.tags || []).slice(0, 6).map(t => `<span class="chip">${U.esc(t)}</span>`).join("") || `<span class="tiny muted">暂无标签</span>`}</div><div class="actions"><button class="small primary" data-action="rp-character">开始 RP</button><button class="small" data-action="preview-character">预览</button><button class="small" data-action="edit-character-meta">标签/说明</button><button class="small" data-action="backup-character">备份</button><button class="small danger" data-action="delete-character">删除</button></div></div>`).join("") : C.empty("暂无角色卡", "导入角色卡后会显示在这里。")}</div>
     </div>
-    <aside class="panel">${AS.currentCharacterCard ? `<h3>角色预览</h3>${AS.currentV2Capsule ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>${U.esc(AS.currentV2Capsule.displayName || "角色胶囊")}</strong><p class="tiny">${U.esc(AS.currentV2Capsule.summary?.subtitle || "")}</p>${(AS.currentV2Capsule.summary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}${AS.currentV2Capsule.avatar ? `<p class="tiny muted">头像：UI-only 展示资产</p>` : ""}</div>` : ""}${AS.currentV2RuntimeContext?.available ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>运行上下文：已就绪</strong><p class="tiny muted">Read-only · 未注入 LLM</p>${(AS.currentV2RuntimeContext.normalSummary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}</div>` : ""}<pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>` : C.empty("角色预览", "选择一张角色卡查看详情。")}</aside>
+    <aside class="panel">${AS.currentCharacterCard ? `<h3>角色预览</h3>${AS.currentV2Capsule ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>${U.esc(AS.currentV2Capsule.displayName || "角色胶囊")}</strong><p class="tiny">${U.esc(AS.currentV2Capsule.summary?.subtitle || "")}</p>${(AS.currentV2Capsule.summary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}${AS.currentV2Capsule.avatar ? `<p class="tiny muted">头像：UI-only 展示资产</p>` : ""}</div>` : ""}${AS.currentV2RuntimeMvp?.available ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>${U.esc(AS.currentV2RuntimeMvp.normalSummary?.title || "Runtime MVP")}</strong><p class="tiny">${U.esc(AS.currentV2RuntimeMvp.normalSummary?.subtitle || "")}</p>${(AS.currentV2RuntimeMvp.normalSummary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}${AS.currentV2RuntimeMvp.candidates ? `<p class="tiny muted">候选：记忆 ${AS.currentV2RuntimeMvp.candidates.memoryCount} · 关系 ${AS.currentV2RuntimeMvp.candidates.relationshipCount} · 质量 ${AS.currentV2RuntimeMvp.candidates.qualityCount}</p>` : ""}<div class="actions"><button class="small" data-action="character-v2-runtime-advanced" type="button">${AS.characterV2RuntimeAdvancedOpen ? "隐藏高级详情" : "高级详情"}</button></div>${AS.characterV2RuntimeAdvancedOpen ? `<div class="character-v2-advanced-panel is-open" style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px"><p class="tiny muted"><strong>Prompt Preview</strong>：${AS.currentV2RuntimeMvp.promptPacketSummary?.blockCount || 0} blocks</p><p class="tiny muted"><strong>First-turn Template</strong>：${(AS.currentV2RuntimeMvp.firstTurnDraftTemplate?.template || []).length} lines</p><p class="tiny muted"><strong>Safety</strong>：previewOnly · readOnly · 未注入 LLM</p>${(AS.currentV2RuntimeMvp.advancedSummary?.errors || []).map(e => `<p class="tiny" style="color:var(--bad)">${U.esc(e)}</p>`).join("")}</div>` : ""}</div>` : ""}${AS.currentV2RuntimeContext?.available && !AS.currentV2RuntimeMvp?.available ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>运行上下文：已就绪</strong><p class="tiny muted">Read-only · 未注入 LLM</p>${(AS.currentV2RuntimeContext.normalSummary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}</div>` : ""}${AS.currentV2Capsule ? `<div class="actions" style="margin-bottom:8px"><button class="small" data-action="character-preview-raw-toggle" type="button">${AS.characterPreviewRawOpen ? "隐藏原始 JSON" : "显示原始 JSON"}</button></div>${AS.characterPreviewRawOpen ? `<pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>` : ""}` : `<pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>`}` : C.empty("角色预览", "选择一张角色卡查看详情。")}</aside>
   </section>
   <section class="panel character-v2-advanced-panel" data-character-v2-advanced-panel="character-v2-advanced" hidden>
     <div class="panel-head"><h3>高级设置</h3><span class="tiny muted">Character Capsule V2 — 未实现</span></div>
@@ -1548,6 +1551,8 @@ async function handleAction(e, btn) {
     if (action === "character-v2-confirm") return characterV2Confirm();
     if (action === "character-v2-advanced-toggle") { AS.characterV2Create.advancedOpen = !AS.characterV2Create.advancedOpen; return render(); }
     if (action === "character-v2-avatar-select") { document.getElementById("v2CreateAvatar")?.click(); return; }
+    if (action === "character-preview-raw-toggle") { AS.characterPreviewRawOpen = !AS.characterPreviewRawOpen; return render(); }
+    if (action === "character-v2-runtime-advanced") { AS.characterV2RuntimeAdvancedOpen = !AS.characterV2RuntimeAdvancedOpen; return render(); }
     if (action === "load-worldbook") { await loadWorldbookIfPossible(); return render(); }
     if (action === "import-worldbook-json") return importWorldbookJson();
     if (action === "export-worldbook-json") return exportWorldbookJson();
@@ -1882,8 +1887,8 @@ async function editCharacterMeta(id) {
 async function previewCharacter(id) {
   if (!id) return;
   const res = await API.loadCharacter(id);
-  if (res.status === "ok") { AS.currentCharacterCard = res.card; AS.currentV2Capsule = res.v2Capsule || null; AS.currentV2RuntimeContext = res.v2RuntimeContext || null; }
-  else { AS.currentV2Capsule = null; AS.currentV2RuntimeContext = null; }
+  if (res.status === "ok") { AS.currentCharacterCard = res.card; AS.currentV2Capsule = res.v2Capsule || null; AS.currentV2RuntimeContext = res.v2RuntimeContext || null; AS.currentV2RuntimeMvp = res.v2RuntimeMvp || null; }
+  else { AS.currentV2Capsule = null; AS.currentV2RuntimeContext = null; AS.currentV2RuntimeMvp = null; }
   render();
 }
 
@@ -1893,8 +1898,10 @@ async function rpCharacter(id) {
     const res = await API.loadCharacter(id);
     if (res.status === "ok") {
       AS.currentV2Capsule = res.v2Capsule || null;
-      AS.currentV2RuntimeContext = res.v2RuntimeContext || null;
-      if (AS.currentV2RuntimeContext?.available) {
+      AS.currentV2RuntimeMvp = res.v2RuntimeMvp || null;
+      if (AS.currentV2RuntimeMvp?.available) {
+        createToast("V2 Runtime MVP 已就绪：Prompt Preview / 候选 Hooks 已准备（尚未注入 LLM）", "ok");
+      } else if (AS.currentV2RuntimeContext?.available) {
         createToast("V2 角色运行上下文已就绪（尚未注入 LLM）", "ok");
       }
     }

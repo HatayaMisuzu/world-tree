@@ -35,6 +35,21 @@ Minimal UI integration.
 - Add UI helper tests or interface audit check.
 - Do not implement full advanced editor.
 
+## Slice 4 — Runtime Context Bridge (COMPLETED, v2-2)
+
+- Runtime context snapshot from V2 sidecars.
+- Read-only, no LLM injection.
+- Server load returns v2RuntimeContext.
+- UI shows "运行上下文已就绪" badge.
+
+## Slice 5 — Runtime MVP (COMPLETED, v2-3)
+
+- Prompt packet preview generation.
+- First-turn draft template.
+- Memory / relationship / quality candidate hooks (candidate-only, no writes).
+- Advanced details hidden behind toggle.
+- V2 raw JSON hidden by default in preview.
+
 ## Deferred
 
 - Full Character Engine.

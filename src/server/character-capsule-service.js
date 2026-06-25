@@ -18,6 +18,11 @@ import {
   summarizeCharacterV2RuntimeContext
 } from "../core/character/character-v2-runtime-context.js";
 
+import {
+  buildCharacterV2RuntimeMvp,
+  validateCharacterV2RuntimeMvp
+} from "../core/character/character-v2-runtime-mvp.js";
+
 const SAFE_AVATAR_MAX_CHARS = 700000; // roughly <= 512KB base64 plus header
 
 function ensureDir(dir) {
@@ -236,6 +241,45 @@ export function loadCharacterCapsuleRuntimeContext(charactersRoot, characterId) 
   }
 
   return summarizeCharacterV2RuntimeContext(context);
+}
+
+export function loadCharacterCapsuleRuntimeMvp(charactersRoot, characterId, options = {}) {
+  const runtimeContext = loadCharacterCapsuleRuntimeContext(charactersRoot, characterId);
+  if (!runtimeContext?.available) return null;
+
+  const mvp = buildCharacterV2RuntimeMvp(runtimeContext, options);
+  const validation = validateCharacterV2RuntimeMvp(mvp);
+
+  if (!validation.ok) {
+    return {
+      available: false,
+      characterId,
+      displayName: runtimeContext.displayName || characterId,
+      error: validation.errors.join("；"),
+      previewOnly: true,
+      readOnly: true,
+      llmInjectionEnabled: false
+    };
+  }
+
+  return {
+    available: true,
+    characterId: mvp.characterId,
+    displayName: mvp.displayName,
+    previewOnly: true,
+    readOnly: true,
+    llmInjectionEnabled: false,
+    normalSummary: mvp.normalSummary,
+    promptPacketSummary: mvp.promptPacketSummary,
+    firstTurnDraftTemplate: mvp.firstTurnDraftTemplate,
+    candidates: {
+      normalSummary: mvp.candidates.normalSummary,
+      memoryCount: mvp.candidates.memoryCandidates.length,
+      relationshipCount: mvp.candidates.relationshipCandidates.length,
+      qualityCount: mvp.candidates.qualityCandidates.length
+    },
+    advancedSummary: mvp.advancedSummary
+  };
 }
 
 export { SAFE_AVATAR_MAX_CHARS };

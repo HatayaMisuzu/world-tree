@@ -2747,13 +2747,15 @@ async function handleAPI(req, res) {
       const parsed = parseCharacterCard(card);
       let v2Capsule = null;
       let v2RuntimeContext = null;
+      let v2RuntimeMvp = null;
       try {
-        const { loadCharacterCapsuleSummary, loadCharacterCapsuleRuntimeContext } = await import("./src/server/character-capsule-service.js");
+        const { loadCharacterCapsuleSummary, loadCharacterCapsuleRuntimeContext, loadCharacterCapsuleRuntimeMvp } = await import("./src/server/character-capsule-service.js");
         const charactersRoot = join(dataRoot(), "engine", "characters");
         v2Capsule = loadCharacterCapsuleSummary(charactersRoot, id);
         v2RuntimeContext = loadCharacterCapsuleRuntimeContext(charactersRoot, id);
+        v2RuntimeMvp = loadCharacterCapsuleRuntimeMvp(charactersRoot, id);
       } catch { /* V2 capsule unavailable; legacy-only */ }
-      return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}), ...(v2RuntimeContext ? { v2RuntimeContext } : {}) });
+      return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}), ...(v2RuntimeContext ? { v2RuntimeContext } : {}), ...(v2RuntimeMvp ? { v2RuntimeMvp } : {}) });
     }
     if (path === "/api/characters/delete" && method === "POST") {
       const body = await readBody(req);
