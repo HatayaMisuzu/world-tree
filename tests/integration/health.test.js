@@ -20,7 +20,7 @@ test("health defaults to lightweight local status and full detail computes size"
     const basic = await api(server, "/api/health");
     assert.equal(basic.status, 200);
     assert.equal(basic.body.status, "ok");
-    assert.equal(basic.body.version, "0.4.0-pre-v2-closure.1");
+    assert.equal(basic.body.version, "0.4.1-v2-entry-closure.0");
     assert.equal(typeof basic.body.uptime, "number");
     assert.equal(typeof basic.body.llmConfigured, "boolean");
     assert.equal(typeof basic.body.dataWritable, "boolean");
