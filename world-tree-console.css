@@ -270,3 +270,5 @@ tr:last-child td{border-bottom:0}
   .toolbar button#refreshBtn{display:none}
   .debug-entry{grid-template-columns:1fr}
 }
+.character-v2-advanced-panel[hidden]{display:none!important}
+.character-v2-advanced-panel{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:var(--radius)}
