@@ -2,6 +2,8 @@
 // Normalization, validation, and extraction of adventure module assets.
 // Separates player-visible brief from hidden GM book.
 
+import { normalizeModeAssetBindings } from "../mode/mode-asset-linkage-contract.js";
+
 // ── Schema version ──
 
 const SCHEMA_VERSION = "world-tree.tabletop.v2.module.1";
@@ -51,6 +53,19 @@ export function normalizeAdventureModule(input = {}) {
     branchPolicy: input.branchPolicy || { type: "default", allowArbitraryFork: true },
     endingPolicy: input.endingPolicy || { type: "default", summaryTemplate: null },
     assetLinks: input.assetLinks || {},
+    assetBindings: normalizeModeAssetBindings({
+      modeId: "tabletop",
+      moduleId: input.moduleId || input.id,
+      worldbookRefs: input.worldbookRefs || input.assetBindings?.worldbookRefs || [],
+      characterRefs: input.characterRefs || input.assetBindings?.characterRefs || [],
+      rulesetRefs: input.rulesetRefs || input.assetBindings?.rulesetRefs || [],
+      clockRefs: input.clockRefs || input.assetBindings?.clockRefs || [],
+      randomTableRefs: input.randomTableRefs || input.assetBindings?.randomTableRefs || [],
+      uiComponentRefs: input.uiComponentRefs || input.assetBindings?.uiComponentRefs || [],
+      sourceRefs: input.sourceRefs || input.assetBindings?.sourceRefs || [],
+    }),
+    // backward compat aliases
+    worldbookRefs: (input.worldbookRefs || input.assetBindings?.worldbookRefs || []).slice(),
     constraints: input.constraints || {
       allowedActionTypes: input.constraints?.allowedActionTypes || ["explore", "social", "combat", "investigate", "use_skill", "stealth", "knowledge"],
       forbiddenActions: input.constraints?.forbiddenActions || [],

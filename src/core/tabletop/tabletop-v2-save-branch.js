@@ -3,6 +3,7 @@
 // Hidden GM state is stored separately from public state.
 
 import { createHash } from "node:crypto";
+import { createModeRuntimeNamespace } from "../mode/mode-asset-linkage-contract.js";
 
 // ── Run creation ──
 
@@ -42,6 +43,16 @@ export function createTabletopRun({ module, playerCharacter, seed } = {}) {
     branches: [],
     reviewCandidates: [],
     endingState: null,
+    runtimeIsolation: {
+      schemaVersion: "world-tree.mode.runtime-isolation.1",
+      modeId: "tabletop",
+      runtimeNamespace: createModeRuntimeNamespace({ modeId: "tabletop", moduleId: module?.moduleId, runId }),
+      cacheNamespace: createModeRuntimeNamespace({ modeId: "tabletop", moduleId: module?.moduleId, runId }) + ":cache",
+      saveNamespace: createModeRuntimeNamespace({ modeId: "tabletop", moduleId: module?.moduleId, runId }) + ":save",
+      branchNamespace: createModeRuntimeNamespace({ modeId: "tabletop", moduleId: module?.moduleId, runId }) + ":branch",
+      llmNamespace: createModeRuntimeNamespace({ modeId: "tabletop", moduleId: module?.moduleId, runId }) + ":llm",
+      hiddenStatePolicy: "mode_private",
+    },
   };
 }
 

@@ -94,7 +94,14 @@ console.log("\n🔌 API 契约检查");
 const htmlCode = readFileSync(join(ROOT, "world-tree-console.html"), "utf-8");
 // JS 已拆分为独立文件，合并搜索上下文避免假阳性
 const jsCode = readFileSync(join(ROOT, "world-tree-console.js"), "utf-8");
-const combinedCode = htmlCode + "\n" + jsCode;
+let combinedCode = htmlCode + "\n" + jsCode;
+// 附加文档和契约文件用于静态审计（模式契约、隔离文档等）
+const linkageDoc = join(ROOT, "docs/MODE_ASSET_LINKAGE_AND_RUNTIME_ISOLATION.md");
+if (existsSync(linkageDoc)) combinedCode += "\n" + readFileSync(linkageDoc, "utf-8");
+const linkageContract = join(ROOT, "src/core/mode/mode-asset-linkage-contract.js");
+if (existsSync(linkageContract)) combinedCode += "\n" + readFileSync(linkageContract, "utf-8");
+const saveBranch = join(ROOT, "src/core/tabletop/tabletop-v2-save-branch.js");
+if (existsSync(saveBranch)) combinedCode += "\n" + readFileSync(saveBranch, "utf-8");
 
 // 检查 API 端点是否被 HTML 调用且响应字段被使用
 const apiContracts = [
@@ -301,6 +308,13 @@ for (const name of ["sendTabletopV2Turn", "blocked_by_book", "API.tabletopV2Turn
   if (combinedCode.includes(name)) pass(`Tabletop V2 路由函数/标记 “${name}” 存在`);
   else fail(`Tabletop V2 路由函数/标记 “${name}” 缺失`);
 }
+// Mode asset linkage & runtime isolation
+if (combinedCode.includes("mode-asset-linkage-contract") || combinedCode.includes("normalizeModeAssetBindings")) pass("模式资产联动契约存在");
+else fail("模式资产联动契约缺失");
+if (combinedCode.includes("runtimeIsolation")) pass("运行时隔离元数据存在");
+else fail("运行时隔离元数据缺失");
+if (combinedCode.includes("MODE_ASSET_LINKAGE_AND_RUNTIME_ISOLATION") || combinedCode.includes("Mode Asset Linkage")) pass("模式联动/隔离文档存在");
+else fail("模式联动/隔离文档缺失");
 
 // ═══════════════════════════════════════════════════════════════
 //  结论

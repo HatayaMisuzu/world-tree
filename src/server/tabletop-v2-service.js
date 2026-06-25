@@ -9,6 +9,15 @@ import { normalizeRulesetProfile } from "../core/tabletop/tabletop-v2-ruleset-pr
 import { createTabletopRun, createSaveSlot, restoreSaveSlot, forkBranchFromSave, recordTurn, validateRunState, stripHiddenState } from "../core/tabletop/tabletop-v2-save-branch.js";
 import { createRulingRequest, resolveRulingWithoutLlm, buildGmNarrationPacket, buildDeterministicGmTurnText } from "../core/tabletop/tabletop-v2-turn-ruling.js";
 import { detectEndingAvailable, buildEndingSummary } from "../core/tabletop/tabletop-v2-ending-summary.js";
+import { assertRuntimeNamespaceIsolation } from "../core/mode/mode-asset-linkage-contract.js";
+
+// ── Path guard ──
+
+function assertTabletopV2RuntimePath(path) {
+  if (!String(path).includes(`${sep}tabletop-v2${sep}`)) {
+    throw new Error(`Tabletop V2 runtime path escaped namespace: ${path}`);
+  }
+}
 
 // ── Paths ──
 
@@ -135,6 +144,11 @@ export async function handleTabletopV2Turn(body = {}, deps = {}) {
     }
 
     let runState = JSON.parse(readFileSync(statePath, "utf-8"));
+
+    // Runtime isolation check
+    if (runState.runtimeIsolation?.modeId !== "tabletop") {
+      return { status: "error", code: "RUNTIME_ISOLATION_VIOLATION", errorMsg: "run state is not a Tabletop V2 runtime" };
+    }
 
     // Load module
     const mDir = moduleDir(dataRoot, runState.moduleId);
