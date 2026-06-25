@@ -8,7 +8,7 @@
 | Item | Value |
 |------|-------|
 | **Current trusted baseline** | `v0.4.1-v2-entry-closure.0` |
-| **Main head** | `0e07938` |
+| **Main head** | `87472741c229afe2597a6229d98059b29d61913c` |
 | **Status** | **V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI** |
 | **Old tag** `v0.4.0-pre-v2-closure` | Audit-invalidated historical marker at `0ee1852` |
 | **Full V2** | Full product-wide V2 not complete; four V2 entry closures complete |
@@ -53,7 +53,7 @@
 
 - WORKFLOW_INTEGRATION_REPORT — 已被 Service Deepening 替代
 - v0.3.0 审查建议 — 进入 ROADMAP_CANDIDATES，不代表当前能力
-- v0.4.0-pre-v2-closure (tag at `0ee1852`) — audit-invalidated; superseded by `v0.4.1-v2-entry-closure.0` at `0e07938`
+- v0.4.0-pre-v2-closure (tag at `0ee1852`) — audit-invalidated; superseded by `v0.4.1-v2-entry-closure.0` at `87472741c229afe2597a6229d98059b29d61913c`
 
 ## Pre-V2 Closure — Stages Completed
 
@@ -105,7 +105,7 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - No proposal/canon rewrite
 - No LLM adapter rewrite
 - Old tag `v0.4.0-pre-v2-closure` preserved as historical audit-invalidated marker
-- Trusted seal is `v0.4.1-v2-entry-closure.0` at `0e07938`
+- Trusted seal is `v0.4.1-v2-entry-closure.0` at `87472741c229afe2597a6229d98059b29d61913c`
 
 ## V2 Entry Closure (基准提交 9b35bbf)
 
