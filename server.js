@@ -1423,6 +1423,12 @@ function listCharacters() {
 }
 
 async function handleCharacterImport(body = {}) {
+  // V2 Capsule: 纯文本创建路线，不走 ST 卡解析
+  if (body?.v2Capsule === true || body?.draft?.schemaVersion === "character-capsule.v2-draft.1") {
+    const { createOrPreviewCharacterCapsule } = await import("./src/server/character-capsule-service.js");
+    return createOrPreviewCharacterCapsule(body, { charactersRoot: CHARACTERS_DIR() });
+  }
+
   const filename = String(body.filename || body.name || "character.json");
   let input = body.card || body.json || body.data || body.content || null;
   try {
@@ -2739,7 +2745,12 @@ async function handleAPI(req, res) {
       const card = existsSync(cardJsonPath) ? readJsonSync(cardJsonPath, null) : null;
       if (!card) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "没有找到这张角色卡。它可能已被删除或移动。");
       const parsed = parseCharacterCard(card);
-      return jsonResponse(res, { status: "ok", card: parsed });
+      let v2Capsule = null;
+      try {
+        const { loadCharacterCapsuleSummary } = await import("./src/server/character-capsule-service.js");
+        v2Capsule = loadCharacterCapsuleSummary(join(dataRoot(), "engine", "characters"), id);
+      } catch { /* V2 capsule unavailable; legacy-only */ }
+      return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}) });
     }
     if (path === "/api/characters/delete" && method === "POST") {
       const body = await readBody(req);
