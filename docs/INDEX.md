@@ -8,10 +8,10 @@
 
 ## Current Trusted Baseline
 
-- **Trusted tag**: `v0.4.0-pre-v2-closure.1`
-- **Main head**: `5cb48da`
+- **Trusted tag**: `v0.4.1-v2-entry-closure.0`
+- **Main head**: `10b0c2e`
 - **Status**: Trusted Pre-V2 Closure sealed
-- **Full V2**: not implemented
+- **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries
 - **Browser QA**: not run
 
 Key entry points for the current baseline:
@@ -58,9 +58,9 @@ Key entry points for the current baseline:
 | [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) | 脚本与检查 |
 | [DOCUMENTATION_STATUS.md](DOCUMENTATION_STATUS.md) | 文档状态 |
 | [WORLD_TREE_REAL_PLAY_PRODUCTIZATION_0_3_EXECUTION.md](WORLD_TREE_REAL_PLAY_PRODUCTIZATION_0_3_EXECUTION.md) | Real Play 0-3 仓库内执行入口 |
-| [CHARACTER_CAPSULE_V2_PRODUCT_SPEC.md](CHARACTER_CAPSULE_V2_PRODUCT_SPEC.md) | Character Capsule V2 Text-first 产品与边界设计（未实现） |
-| [CHARACTER_CAPSULE_V2_UI_RULES.md](CHARACTER_CAPSULE_V2_UI_RULES.md) | Character Capsule V2 普通 UI / 高级设置折叠规则（未实现） |
-| [CHARACTER_CAPSULE_V2_ROADMAP.md](CHARACTER_CAPSULE_V2_ROADMAP.md) | Character Capsule V2 分步执行路线（未实现） |
+| [CHARACTER_CAPSULE_V2_PRODUCT_SPEC.md](CHARACTER_CAPSULE_V2_PRODUCT_SPEC.md) | Character Capsule V2 Text-first 产品与边界设计（V2 text-first / long-term entry closure implemented; full advanced editor deferred） |
+| [CHARACTER_CAPSULE_V2_UI_RULES.md](CHARACTER_CAPSULE_V2_UI_RULES.md) | Character Capsule V2 普通 UI / 高级设置折叠规则（V2 text-first / long-term entry closure implemented; full advanced editor deferred） |
+| [CHARACTER_CAPSULE_V2_ROADMAP.md](CHARACTER_CAPSULE_V2_ROADMAP.md) | Character Capsule V2 分步执行路线（V2 text-first / long-term entry closure implemented; full advanced editor deferred） |
 
 ## 给 AI Agent（操作规则和保护清单）
 

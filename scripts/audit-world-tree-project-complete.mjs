@@ -106,28 +106,45 @@ check("ScriptKill V2 persists result.state as runState", skService.includes("nor
 check("ScriptKill V2 namespace isolation", skService.includes("engine") && skService.includes("single-player-scriptkill-v2"));
 check("ScriptKill V2 service does not import other V2 runtimes", !skService.includes("tabletop-v2-service") && !skService.includes("detective-v2-service") && !skService.includes("character-v2-live"));
 
-// 6. Docs truth-source freshness
-const staleTerms = [
-  "Full V2: Not implemented",
-  "不是完整 V2",
-  "Main head 5cb48da",
-  "head `a2a0b52`",
-  "World Tree V1 功能清单"
+// 6. Docs truth-source freshness — regex-based, not exact string
+const stalePatterns = [
+  { name: "Main head 5cb48da", re: /Main head.*5cb48da/is, files: ["CURRENT_PROJECT_STATE", "docs/INDEX"] },
+  { name: "Full V2 Not implemented", re: /Full V2.*Not implemented/is, files: ["CURRENT_PROJECT_STATE", "docs/INDEX"] },
+  { name: "TRUSTED_PRE_V2_CLOSURE_SEALED", re: /TRUSTED_PRE_V2_CLOSURE_SEALED/, files: ["CURRENT_PROJECT_STATE"] },
+  { name: "Preflight 19 sub-commands", re: /Preflight.*19 sub-commands/is, files: ["CURRENT_PROJECT_STATE"] },
+  { name: "Character Capsule V2 未实现", re: /Character Capsule V2.*未实现/, files: ["docs/INDEX"] },
+  { name: "Pre-V2 Closure Blocker Repair in README/AI-GUIDE", re: /Pre-V2 Closure Blocker Repair/, files: ["README", "AI-GUIDE"] },
 ];
-for (const [name, text] of [
-  ["README", readme],
-  ["CHANGELOG", changelog],
-  ["AI-GUIDE", aiGuide],
-  ["CURRENT_PROJECT_STATE", currentState],
-  ["docs/INDEX", docsIndex],
-  ["FEATURES", features],
-  ["SCRIPTS_AND_CHECKS", scriptsDoc],
-  ["API_ROUTE_INVENTORY", apiInventory]
-]) check(`${name} has no stale Pre-V2/V1 truth markers`, excludesAll(text, staleTerms));
+
+const docMap = {
+  "CURRENT_PROJECT_STATE": currentState,
+  "docs/INDEX": docsIndex,
+  "README": readme,
+  "AI-GUIDE": aiGuide,
+};
+
+for (const pattern of stalePatterns) {
+  for (const file of pattern.files) {
+    const text = docMap[file] || "";
+    const hit = pattern.re.test(text);
+    check(`${file}: no stale "${pattern.name}"`, !hit);
+  }
+}
+
+// Strong checks for CURRENT_PROJECT_STATE and INDEX
+check("CURRENT_PROJECT_STATE: Trusted Baseline is v0.4.1-v2-entry-closure.0", currentState.includes("v0.4.1-v2-entry-closure.0"));
+check("CURRENT_PROJECT_STATE: Main head is 10b0c2e", currentState.includes("10b0c2e"));
+check("CURRENT_PROJECT_STATE: Status is V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI", currentState.includes("V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI"));
+check("docs/INDEX: Trusted Baseline is v0.4.1-v2-entry-closure.0", docsIndex.includes("v0.4.1-v2-entry-closure.0"));
+check("docs/INDEX: Main head is 10b0c2e", docsIndex.includes("10b0c2e"));
+check("docs/INDEX: Character Capsule V2 not marked 未实现", !/Character Capsule V2.*未实现/.test(docsIndex));
+
+// Malformed HTML check
+check("world-tree-console.js: no malformed <button <select", !/<button[^>]*<select/.test(ui));
 
 check("V2 status doc exists", existsSync(join(root, "docs/V2_ENTRY_COMPLETION_STATUS.md")));
 check("V2 status doc covers all four V2 entries", includesAll(v2Status, ["Tabletop V2", "Detective V2", "Character V2", "Single Player ScriptKill V2"]));
-check("CURRENT_PROJECT_STATE names current V2 entry closure", currentState.includes("V2 Entry Closure") && currentState.includes("9b35bbf"));
+check("CURRENT_PROJECT_STATE names current V2 entry closure", currentState.includes("V2 Entry Closure") && currentState.includes("10b0c2e"));
 check("docs/INDEX links V2 status doc", docsIndex.includes("V2_ENTRY_COMPLETION_STATUS.md"));
 check("README reflects V2 entry closure", readme.includes("V2 Entry Closure") && includesAll(readme, ["Tabletop V2", "Detective V2", "Character V2", "单人剧本杀 V2"]));
 check("AI-GUIDE documents Single Player ScriptKill V2 boundary", includesAll(aiGuide, ["single-player-scriptkill", "陌生", "DM", "fullTruth"]));

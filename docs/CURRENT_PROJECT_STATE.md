@@ -7,13 +7,13 @@
 
 | Item | Value |
 |------|-------|
-| **Current trusted baseline** | `v0.4.0-pre-v2-closure.1` |
-| **Main head** | `5cb48da` |
-| **Status** | **TRUSTED_PRE_V2_CLOSURE_SEALED** |
+| **Current trusted baseline** | `v0.4.1-v2-entry-closure.0` |
+| **Main head** | `10b0c2e` |
+| **Status** | **V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI** |
 | **Old tag** `v0.4.0-pre-v2-closure` | Audit-invalidated historical marker at `0ee1852` |
-| **Full V2** | Not implemented |
+| **Full V2** | Full product-wide V2 not complete; four V2 entry closures complete |
 | **Browser QA** | Not run (gateway unstable; runtime QA used) |
-| **Preflight** | PASS (all 19 sub-commands) |
+| **Preflight** | PASS (includes V2 entry gates + project-complete-audit) |
 | **userData isolation** | PASS (real userData unchanged before/after full suite) |
 
 ## Status Table
@@ -53,7 +53,7 @@
 
 - WORKFLOW_INTEGRATION_REPORT — 已被 Service Deepening 替代
 - v0.3.0 审查建议 — 进入 ROADMAP_CANDIDATES，不代表当前能力
-- v0.4.0-pre-v2-closure (tag at `0ee1852`) — audit-invalidated; superseded by `v0.4.0-pre-v2-closure.1` at `5cb48da`
+- v0.4.0-pre-v2-closure (tag at `0ee1852`) — audit-invalidated; superseded by `v0.4.1-v2-entry-closure.0` at `10b0c2e`
 
 ## Pre-V2 Closure — Stages Completed
 
@@ -83,7 +83,7 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - `npm run interface-audit`: 149 passes, 0 warnings
 - `npm run test:unit`: 416 pass
 - `npm run test:integration`: 119 pass
-- `npm run preflight`: PASS (all 19 sub-commands)
+- `npm run preflight`: PASS (includes V2 entry gates + project-complete-audit)
 - userData isolation verified: real `userData/` files unchanged before/after full test suite
 
 ## Current Limitations
@@ -105,7 +105,7 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - No proposal/canon rewrite
 - No LLM adapter rewrite
 - Old tag `v0.4.0-pre-v2-closure` preserved as historical audit-invalidated marker
-- Trusted seal is `v0.4.0-pre-v2-closure.1` at `5cb48da`
+- Trusted seal is `v0.4.1-v2-entry-closure.0` at `10b0c2e`
 
 ## V2 Entry Closure (基准提交 9b35bbf)
 

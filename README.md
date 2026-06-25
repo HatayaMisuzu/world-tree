@@ -1,6 +1,6 @@
 # World Tree
 
-> **当前版本：v0.4.1-v2-entry-closure.0 — Pre-V2 Closure Blocker Repair** — V2 Entry Closure (sealed)。
+> **当前版本：v0.4.1-v2-entry-closure.0 — V2 Entry Closure maintenance** — V2 Entry Closure (sealed)。
 > 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md)
 
 World Tree 让用户进入角色、世界、案件、局势和故事现场，进行持续的互动、探索、推理、扮演和体验。它也提供创作能力，但创作不是终点：创作角色，是为了互动；创作世界书，是为了探索；创作案件，是为了推理；创作项目包，是为了让体验能保存、继续和扩展。
