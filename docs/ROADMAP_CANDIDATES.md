@@ -51,6 +51,21 @@
 - TypeScript 迁移
 - SQLite 可选后端
 
+## Character Capsule V2 — Text-first Candidate
+
+Status: candidate, not implemented.
+
+First slices:
+1. Docs-only design seal.
+2. Text-first core contracts.
+3. Advanced settings UI gate.
+
+Deferred:
+- PNG/JPG metadata.
+- CHARX.
+- image understanding.
+- Live2D / voice / expression assets.
+
 ## Rules
 
 - 不得在本文件未更新的情况下声称候选已实现。
