@@ -59,6 +59,9 @@
     "test:character-v2-runtime-mvp": "node --test tests/unit/character-v2-prompt-packet-preview.test.js tests/unit/character-v2-runtime-candidates.test.js tests/unit/character-v2-runtime-mvp.test.js",
     "test:character-v2-live": "node --test tests/unit/character-v2-live-runtime-turn.test.js tests/unit/character-v2-live-turn-service.test.js tests/unit/character-v2-live-ui-state.test.js",
     "test:character-v2-final": "node --test tests/unit/character-v2-live-runtime-turn.test.js tests/unit/character-v2-live-turn-service.test.js tests/unit/character-v2-live-ui-state.test.js tests/unit/character-v2-candidate-workbench.test.js tests/unit/character-v2-export-service.test.js",
+    "test:tabletop-v2-foundation": "node --test tests/unit/tabletop-v2-dice-engine.test.js tests/unit/tabletop-v2-ruleset-profile.test.js tests/unit/tabletop-v2-adventure-module.test.js tests/unit/tabletop-v2-clock-engine.test.js",
+    "test:tabletop-v2-runtime": "node --test tests/unit/tabletop-v2-turn-ruling.test.js tests/unit/tabletop-v2-save-branch.test.js tests/unit/tabletop-v2-ending-summary.test.js tests/unit/tabletop-v2-service.test.js",
+    "test:tabletop-v2": "npm run test:tabletop-v2-foundation && npm run test:tabletop-v2-runtime",
     "legacy:check": "node scripts/check-legacy-status.mjs",
     "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run interface-audit"
   },

@@ -1,0 +1,8 @@
+HEAD: 0ee1852feb9496755ecc27f722dbe672732c2d65
+head hash in all reports: PASS
+wrong provisional hash absent: PASS
+code decision blocked: PASS
+arch decision blocked: PASS
+finding counts: PASS
+required reports exist: PASS
+tracked source unchanged: PASS

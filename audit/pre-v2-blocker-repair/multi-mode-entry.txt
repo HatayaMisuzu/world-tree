@@ -1,0 +1,256 @@
+COMMAND: node --test tests/unit/multi-mode-entry.test.js
+EXIT_CODE: 0
+
+STDOUT:
+TAP version 13
+# Subtest: world-rpg is visible and active
+ok 1 - world-rpg is visible and active
+  ---
+  duration_ms: 0.9204
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle is visible and active
+ok 2 - mystery-puzzle is visible and active
+  ---
+  duration_ms: 0.085
+  type: 'test'
+  ...
+# Subtest: tabletop is visible and active
+ok 3 - tabletop is visible and active
+  ---
+  duration_ms: 0.0566
+  type: 'test'
+  ...
+# Subtest: strategy-sim is visible and active
+ok 4 - strategy-sim is visible and active
+  ---
+  duration_ms: 0.0551
+  type: 'test'
+  ...
+# Subtest: murder-mystery is visible and active
+ok 5 - murder-mystery is visible and active
+  ---
+  duration_ms: 0.1076
+  type: 'test'
+  ...
+# Subtest: creation-forge remains not visible and not persisted
+ok 6 - creation-forge remains not visible and not persisted
+  ---
+  duration_ms: 6.497
+  type: 'test'
+  ...
+# Subtest: DATA_MODES unchanged
+ok 7 - DATA_MODES unchanged
+  ---
+  duration_ms: 1.6453
+  type: 'test'
+  ...
+# Subtest: world-rpg draft dataMode = worldbook
+ok 8 - world-rpg draft dataMode = worldbook
+  ---
+  duration_ms: 3.116
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft dataMode = worldbook
+ok 9 - mystery-puzzle draft dataMode = worldbook
+  ---
+  duration_ms: 1.3862
+  type: 'test'
+  ...
+# Subtest: tabletop draft dataMode = worldbook
+ok 10 - tabletop draft dataMode = worldbook
+  ---
+  duration_ms: 1.677
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft dataMode = worldbook
+ok 11 - strategy-sim draft dataMode = worldbook
+  ---
+  duration_ms: 1.1641
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft dataMode = worldbook
+ok 12 - murder-mystery draft dataMode = worldbook
+  ---
+  duration_ms: 0.706
+  type: 'test'
+  ...
+# Subtest: world-rpg draft includes modeRuntimePacket
+ok 13 - world-rpg draft includes modeRuntimePacket
+  ---
+  duration_ms: 1.1076
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft includes modeRuntimePacket
+ok 14 - mystery-puzzle draft includes modeRuntimePacket
+  ---
+  duration_ms: 0.6729
+  type: 'test'
+  ...
+# Subtest: tabletop draft includes modeRuntimePacket
+ok 15 - tabletop draft includes modeRuntimePacket
+  ---
+  duration_ms: 1.0498
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft includes modeRuntimePacket
+ok 16 - strategy-sim draft includes modeRuntimePacket
+  ---
+  duration_ms: 1.0715
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft includes modeRuntimePacket
+ok 17 - murder-mystery draft includes modeRuntimePacket
+  ---
+  duration_ms: 0.9251
+  type: 'test'
+  ...
+# Subtest: world-rpg draft includes moduleRuntimePacket
+ok 18 - world-rpg draft includes moduleRuntimePacket
+  ---
+  duration_ms: 0.9832
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft includes moduleRuntimePacket
+ok 19 - mystery-puzzle draft includes moduleRuntimePacket
+  ---
+  duration_ms: 0.8706
+  type: 'test'
+  ...
+# Subtest: tabletop draft includes moduleRuntimePacket
+ok 20 - tabletop draft includes moduleRuntimePacket
+  ---
+  duration_ms: 0.862
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft includes moduleRuntimePacket
+ok 21 - strategy-sim draft includes moduleRuntimePacket
+  ---
+  duration_ms: 1.0568
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft includes moduleRuntimePacket
+ok 22 - murder-mystery draft includes moduleRuntimePacket
+  ---
+  duration_ms: 0.8681
+  type: 'test'
+  ...
+# Subtest: world-rpg draft includes modeStateEnvelope
+ok 23 - world-rpg draft includes modeStateEnvelope
+  ---
+  duration_ms: 0.921
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft includes modeStateEnvelope
+ok 24 - mystery-puzzle draft includes modeStateEnvelope
+  ---
+  duration_ms: 0.887
+  type: 'test'
+  ...
+# Subtest: tabletop draft includes modeStateEnvelope
+ok 25 - tabletop draft includes modeStateEnvelope
+  ---
+  duration_ms: 0.7755
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft includes modeStateEnvelope
+ok 26 - strategy-sim draft includes modeStateEnvelope
+  ---
+  duration_ms: 1.064
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft includes modeStateEnvelope
+ok 27 - murder-mystery draft includes modeStateEnvelope
+  ---
+  duration_ms: 0.5333
+  type: 'test'
+  ...
+# Subtest: world-rpg files has shared/world_rpg.json
+ok 28 - world-rpg files has shared/world_rpg.json
+  ---
+  duration_ms: 0.9769
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle files has shared/mystery.json
+ok 29 - mystery-puzzle files has shared/mystery.json
+  ---
+  duration_ms: 1.1294
+  type: 'test'
+  ...
+# Subtest: tabletop files has shared/tabletop.json
+ok 30 - tabletop files has shared/tabletop.json
+  ---
+  duration_ms: 1.0924
+  type: 'test'
+  ...
+# Subtest: strategy-sim files has shared/strategy.json
+ok 31 - strategy-sim files has shared/strategy.json
+  ---
+  duration_ms: 1.1549
+  type: 'test'
+  ...
+# Subtest: murder-mystery files has shared/murder_mystery.json
+ok 32 - murder-mystery files has shared/murder_mystery.json
+  ---
+  duration_ms: 0.6066
+  type: 'test'
+  ...
+# Subtest: createProjectFromMode('creation-forge', persist=true) rejected
+ok 33 - createProjectFromMode('creation-forge', persist=true) rejected
+  ---
+  duration_ms: 0.6097
+  type: 'test'
+  ...
+# Subtest: quick-setting remains visible
+ok 34 - quick-setting remains visible
+  ---
+  duration_ms: 0.0626
+  type: 'test'
+  ...
+# Subtest: character remains visible
+ok 35 - character remains visible
+  ---
+  duration_ms: 0.0414
+  type: 'test'
+  ...
+# Subtest: world-rpg allowed for project creation
+ok 36 - world-rpg allowed for project creation
+  ---
+  duration_ms: 0.0464
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle allowed for project creation
+ok 37 - mystery-puzzle allowed for project creation
+  ---
+  duration_ms: 0.0303
+  type: 'test'
+  ...
+# Subtest: tabletop allowed for project creation
+ok 38 - tabletop allowed for project creation
+  ---
+  duration_ms: 0.0287
+  type: 'test'
+  ...
+# Subtest: strategy-sim allowed for project creation
+ok 39 - strategy-sim allowed for project creation
+  ---
+  duration_ms: 0.0233
+  type: 'test'
+  ...
+# Subtest: murder-mystery allowed for project creation
+ok 40 - murder-mystery allowed for project creation
+  ---
+  duration_ms: 0.0237
+  type: 'test'
+  ...
+1..40
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 405.3136
+
+STDERR:

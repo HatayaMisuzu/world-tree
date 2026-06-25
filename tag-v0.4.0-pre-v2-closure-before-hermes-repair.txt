@@ -1,0 +1,16 @@
+tag v0.4.0-pre-v2-closure
+Tagger: 毛球 <maoqiu@world-tree.local>
+Date:   Wed Jun 24 20:38:30 2026 +0800
+
+World Tree v0.4.0 Pre-V2 Closure baseline
+
+commit 0ee1852feb9496755ecc27f722dbe672732c2d65
+Author: 毛球 <maoqiu@world-tree.local>
+Date:   Wed Jun 24 20:38:28 2026 +0800
+
+    docs(world-tree): seal v0.4.0 pre-v2 closure
+
+ docs/CURRENT_PROJECT_STATE.md               |  22 +++-
+ docs/INDEX.md                               |   1 +
+ docs/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md | 198 ++++++++++++++++++++++++++++
+ 3 files changed, 219 insertions(+), 2 deletions(-)

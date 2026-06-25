@@ -1,0 +1,90 @@
+PORT: 51904
+
+=== GET / ===
+STATUS: 200
+CONTENT_TYPE: text/html; charset=utf-8
+BODY:
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>World Tree 控制台</title>
+  <link rel="stylesheet" href="world-tree-console.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">WT</div>
+        <div>
+          <h1>World Tree</h1>
+          <p id="appVersion">叙事引擎 vunknown</p>
+        </div>
+      </div>
+      <nav id="primaryNav" class="primary-nav" aria-label="主导航"></nav>
+      <div class="sidebar-card">
+        <span class="label">当前世界</span>
+        <strong id="sideWorldName">未选择</strong>
+        <span id="sideWorldMeta">等待加载</span>
+      </div>
+    </aside>
+
+    <section class="app-main">
+      <header class="topbar">
+        <div>
+          <h2 id="viewTitle">工作台</h2>
+          <p id="contextLine">启动中...</p>
+        </div>
+        <div class="toolbar">
+          <span id="llmStatus" class="badge pending">未连接</span>
+          <button id="refreshBtn" class="ghost">刷新</button>
+          <button id="settingsBtn" class="ghost">设置</button>
+        </div>
+      </header>
+
+      <main id="main" class="main-content"></main>
+
+      <nav id="mobileNav" class="mobile-nav" aria-label="移动端导航"></nav>
+    </section>
+  </div>
+
+  <button id="debugToggle" class="debug-toggle" title="Ctrl+Shift+D 切换调试日志">Debug</button>
+  <div id="debugPanel" class="debug-panel">
+    <div class="debug-head">
+      <strong>引擎调试日志</strong>
+      <span>Ctrl+Shift+D</span>
+      <button class="small" data-action="refresh-debug">刷新</button>
+    </div>
+    <div id="debugLogContent"></div>
+  </div>
+
+  <div id="toastHost" class="toast-host"></div>
+  <script src="world-tree-console.js"></script>
+</body>
+</html>
+
+
+=== GET /api/health ===
+STATUS: 200
+CONTENT_TYPE: application/json; charset=utf-8
+BODY:
+{"status":"ok","version":"0.3.1","uptime":1,"llmConfigured":true,"dataWritable":true,"latestVersion":null}
+
+=== GET /api/health?detail=full&checkLlm=false ===
+STATUS: 200
+CONTENT_TYPE: application/json; charset=utf-8
+BODY:
+{"status":"ok","version":"0.3.1","latestVersion":null,"uptime":1,"llm":{"status":"configured","configured":true,"hasApiKey":true,"model":"missing-model","baseUrl":"http://127.0.0.1:19295/v1","detail":""},"data":{"root":"D:\\工作台\\world-tree-desktop\\audit\\pre-v2-full-project-audit\\REPORT_INPUTS\\runtime-probe-data","writable":true,"writableDetail":"","worldsCount":0,"totalTurns":0,"sizeBytes":0,"sizeTruncated":false,"entries":5},"debugMode":false}
+
+=== GET /api/status ===
+STATUS: 200
+CONTENT_TYPE: application/json; charset=utf-8
+BODY:
+{"version":"0.3.1","uptime":1,"profiles":1}
+
+=== GET /api/config ===
+STATUS: 200
+CONTENT_TYPE: application/json; charset=utf-8
+BODY:
+{"hermesBaseUrl":"http://127.0.0.1:8642","llmBaseUrl":"http://127.0.0.1:19295/v1","llmModel":"missing-model","llmTimeoutMs":60000,"connectionProfileId":"fake","lastModuleKey":"","moduleHistory":[],"theme":"dark","language":"zh-CN","firstRun":true}

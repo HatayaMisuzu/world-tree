@@ -1,0 +1,4 @@
+userData/config.json
+userData/connections.json
+userData/corrupt-files.jsonl
+userData/secrets.json

@@ -1,0 +1,14 @@
+command	exit_code	duration_ms
+node-user-data-isolation	0	2040
+node-security	0	5049
+npm-docs-check	0	1021
+npm-check	0	1021
+npm-test-unit	0	6050
+npm-test-integration	0	8070
+npm-test-workflows	0	4052
+npm-real-play-smoke	0	1021
+npm-asset-check	0	1035
+npm-interface-audit	1	1031
+npm-preflight	1	28218
+git-diff-check	0	1020
+npm-pack-dry-run	0	2025
