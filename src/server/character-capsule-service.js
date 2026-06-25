@@ -12,6 +12,12 @@ import {
   buildCharacterCapsuleSummary
 } from "../core/character/character-v2-capsule-creation.js";
 
+import {
+  buildCharacterV2RuntimeContext,
+  validateCharacterV2RuntimeContext,
+  summarizeCharacterV2RuntimeContext
+} from "../core/character/character-v2-runtime-context.js";
+
 const SAFE_AVATAR_MAX_CHARS = 700000; // roughly <= 512KB base64 plus header
 
 function ensureDir(dir) {
@@ -197,6 +203,39 @@ export function loadCharacterCapsuleSummary(charactersRoot, characterId) {
     avatar: manifest?.avatar ? { label: manifest.avatar.label, ref: manifest.avatar.ref, uiOnly: true } : null,
     summary: stripUnsafeUiSummary(uiSummary || { title: manifest?.displayName })
   };
+}
+
+export function loadCharacterCapsuleRuntimeContext(charactersRoot, characterId) {
+  const characterDir = resolveCharacterDir(charactersRoot, characterId);
+  const v2Dir = path.join(characterDir, "v2");
+  const manifest = readJson(path.join(v2Dir, "capsule.manifest.json"), null);
+  if (!manifest) return null;
+
+  const context = buildCharacterV2RuntimeContext({
+    manifest,
+    profile: readJson(path.join(v2Dir, "profile.wt-character.json"), null),
+    runtimeContract: readJson(path.join(v2Dir, "runtime-contract.json"), null),
+    cognitionBoundary: readJson(path.join(v2Dir, "cognition-boundary.json"), null),
+    performanceFingerprint: readJson(path.join(v2Dir, "performance-fingerprint.json"), null),
+    relationship: readJson(path.join(v2Dir, "relationship.seed.json"), null),
+    memorySeed: readJson(path.join(v2Dir, "memory.seed.json"), null),
+    uiSummary: readJson(path.join(v2Dir, "ui-summary.json"), null),
+    characterId
+  });
+
+  const validation = validateCharacterV2RuntimeContext(context);
+  if (!validation.ok) {
+    return {
+      available: false,
+      characterId,
+      displayName: manifest.displayName || characterId,
+      error: validation.errors.join("；"),
+      readOnly: true,
+      llmInjectionEnabled: false
+    };
+  }
+
+  return summarizeCharacterV2RuntimeContext(context);
 }
 
 export { SAFE_AVATAR_MAX_CHARS };

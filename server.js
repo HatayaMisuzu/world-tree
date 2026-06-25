@@ -2746,11 +2746,14 @@ async function handleAPI(req, res) {
       if (!card) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "没有找到这张角色卡。它可能已被删除或移动。");
       const parsed = parseCharacterCard(card);
       let v2Capsule = null;
+      let v2RuntimeContext = null;
       try {
-        const { loadCharacterCapsuleSummary } = await import("./src/server/character-capsule-service.js");
-        v2Capsule = loadCharacterCapsuleSummary(join(dataRoot(), "engine", "characters"), id);
+        const { loadCharacterCapsuleSummary, loadCharacterCapsuleRuntimeContext } = await import("./src/server/character-capsule-service.js");
+        const charactersRoot = join(dataRoot(), "engine", "characters");
+        v2Capsule = loadCharacterCapsuleSummary(charactersRoot, id);
+        v2RuntimeContext = loadCharacterCapsuleRuntimeContext(charactersRoot, id);
       } catch { /* V2 capsule unavailable; legacy-only */ }
-      return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}) });
+      return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}), ...(v2RuntimeContext ? { v2RuntimeContext } : {}) });
     }
     if (path === "/api/characters/delete" && method === "POST") {
       const body = await readBody(req);

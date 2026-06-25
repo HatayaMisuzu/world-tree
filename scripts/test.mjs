@@ -101,6 +101,8 @@ const CORE_FILES = [
   "tests/unit/character-v2-capsule-creation.test.js",
   "tests/unit/character-capsule-service.test.js",
   "tests/unit/character-v2-create-ui-state.test.js",
+  "src/core/character/character-v2-runtime-context.js",
+  "tests/unit/character-v2-runtime-context.test.js",
   "tests/unit/worldbook.test.js",
   "tests/unit/alchemy.test.js",
   "tests/unit/alchemy-preview-service.test.js",
