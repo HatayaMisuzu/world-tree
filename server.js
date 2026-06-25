@@ -2788,6 +2788,26 @@ async function handleAPI(req, res) {
       const { exportCharacterV2 } = await import("./src/server/character-v2-export-service.js");
       return jsonResponse(res, exportCharacterV2(join(dataRoot(), "engine", "characters"), body.characterId, body.format, body));
     }
+    if (path === "/api/characters/v2/candidates" && method === "GET") {
+      const body = { characterId: url.searchParams.get("characterId") || "" };
+      const { listCharacterV2Candidates } = await import("./src/server/character-v2-candidate-review-service.js");
+      return jsonResponse(res, await listCharacterV2Candidates(body, { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/characters/v2/candidates/review" && method === "POST") {
+      const body = await readBody(req);
+      const { reviewCharacterV2Candidate } = await import("./src/server/character-v2-candidate-review-service.js");
+      return jsonResponse(res, await reviewCharacterV2Candidate(body, { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/characters/v2/candidates/bulk-review" && method === "POST") {
+      const body = await readBody(req);
+      const { bulkReviewCharacterV2Candidates } = await import("./src/server/character-v2-candidate-review-service.js");
+      return jsonResponse(res, await bulkReviewCharacterV2Candidates(body, { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/characters/v2/candidates/undo" && method === "POST") {
+      const body = await readBody(req);
+      const { undoCharacterV2Decision } = await import("./src/server/character-v2-candidate-review-service.js");
+      return jsonResponse(res, await undoCharacterV2Decision(body, { dataRoot: dataRoot() }));
+    }
     if (path === "/api/characters/delete" && method === "POST") {
       const body = await readBody(req);
       const id = safeEntityId(body.id || "", "");
