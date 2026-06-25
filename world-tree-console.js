@@ -205,6 +205,7 @@ const AS = {
   progressIndex: -1,
   modePlay: null,
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
+  characterV2Create: { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false },
 };
 
 const C = {
@@ -784,6 +785,19 @@ function renderCharacters() {
       <div class="actions"><button class="primary" data-action="import-character-json">批量导入 JSON/PNG</button><input id="characterSearch" placeholder="搜索角色 / 标签" value="${U.esc(AS.characterQuery)}"></div>
       <p class="tiny muted">数据位置：<code>data/engine/characters</code></p>
       <div class="actions" style="margin-bottom:10px"><button class="small wt-secondary-button" type="button" data-character-v2-advanced-toggle="character-v2-advanced">高级设置</button></div>
+      <div class="panel character-v2-create-panel" style="margin-bottom:12px">
+        <div class="panel-head"><h3>创建 Text-first 角色</h3><span class="tiny muted">输入角色名和设定，World Tree 会整理为角色运行胶囊。高级设置默认隐藏。</span></div>
+        <input id="v2CreateName" placeholder="角色名（必填）" class="full-width" style="margin-bottom:8px" value="${U.esc(AS.characterV2Create.name)}">
+        <textarea id="v2CreateText" placeholder="角色设定（自由文本，如：普通日本学生，语气温和，有点嘴硬。）" style="min-height:80px">${U.esc(AS.characterV2Create.text)}</textarea>
+        ${AS.characterV2Create.preview ? `<div class="character-v2-create-summary" style="margin-top:8px;padding:8px;background:var(--surface-2);border-radius:8px"><strong>${U.esc(AS.characterV2Create.preview.title || "预览")}</strong><p class="tiny">${U.esc(AS.characterV2Create.preview.subtitle || "")}</p>${(AS.characterV2Create.preview.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}</div>` : ""}
+        ${AS.characterV2Create.error ? `<p class="tiny" style="color:var(--bad)">${U.esc(AS.characterV2Create.error)}</p>` : ""}
+        <div class="actions" style="margin-top:8px">
+          <button class="small primary" data-action="character-v2-preview">预览角色草案</button>
+          <button class="small" data-action="character-v2-confirm" ${!AS.characterV2Create.preview ? "disabled" : ""}>确认创建角色</button>
+          <button class="small" data-action="character-v2-advanced-toggle" type="button">${AS.characterV2Create.advancedOpen ? "隐藏高级设置" : "高级设置"}</button>
+        </div>
+        ${AS.characterV2Create.advancedOpen ? `<div class="character-v2-advanced-panel is-open" style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px"><p class="tiny muted"><strong>来源类型</strong>：manual（手动文本）</p><p class="tiny muted"><strong>运行契约</strong>：角色不自称 AI/模型，不讨论 prompt/token/API</p><p class="tiny muted"><strong>常识认知</strong>：熟悉日常概念（微信/手机等），专业/技术知识受限</p><p class="tiny muted"><strong>表现指纹</strong>：待后续编辑完善</p><p class="tiny muted"><strong>头像状态</strong>：UI-only，不参与角色理解</p></div>` : ""}
+      </div>
       <div class="module-grid">${list.length ? list.map(c => `<div class="module-card" data-character-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.name)}</strong>${C.badge(c.format || "native", "info")}</div><p class="tiny muted">${U.esc(U.compact(c.description || "无描述", 100))}</p><div class="chip-row">${(c.tags || []).slice(0, 6).map(t => `<span class="chip">${U.esc(t)}</span>`).join("") || `<span class="tiny muted">暂无标签</span>`}</div><div class="actions"><button class="small primary" data-action="rp-character">开始 RP</button><button class="small" data-action="preview-character">预览</button><button class="small" data-action="edit-character-meta">标签/说明</button><button class="small" data-action="backup-character">备份</button><button class="small danger" data-action="delete-character">删除</button></div></div>`).join("") : C.empty("暂无角色卡", "导入角色卡后会显示在这里。")}</div>
     </div>
     <aside class="panel">${AS.currentCharacterCard ? `<h3>角色预览</h3><pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>` : C.empty("角色预览", "选择一张角色卡查看详情。")}</aside>
@@ -1499,6 +1513,9 @@ async function handleAction(e, btn) {
     if (action === "rp-character") return rpCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
     if (action === "backup-character") return backupCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
     if (action === "delete-character") return deleteCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
+    if (action === "character-v2-preview") return characterV2Preview();
+    if (action === "character-v2-confirm") return characterV2Confirm();
+    if (action === "character-v2-advanced-toggle") { AS.characterV2Create.advancedOpen = !AS.characterV2Create.advancedOpen; return render(); }
     if (action === "load-worldbook") { await loadWorldbookIfPossible(); return render(); }
     if (action === "import-worldbook-json") return importWorldbookJson();
     if (action === "export-worldbook-json") return exportWorldbookJson();
@@ -2377,3 +2394,47 @@ document.addEventListener("keydown", e => {
 });
 
 init();
+
+async function characterV2Preview() {
+  const name = (U.qs("#v2CreateName")?.value || "").trim();
+  const text = (U.qs("#v2CreateText")?.value || "").trim();
+  AS.characterV2Create.name = name;
+  AS.characterV2Create.text = text;
+  if (!name && !text) { AS.characterV2Create.error = "请先输入角色名或角色设定。"; return render(); }
+  AS.characterV2Create.error = "";
+  AS.characterV2Create.busy = true;
+  render();
+  try {
+    const res = await API.importCharacter({ v2Capsule: true, confirmed: false, input: { name, text, sourceType: "manual" } });
+    if (res.status === "preview" && res.summary) {
+      AS.characterV2Create.preview = res.summary;
+      AS.characterV2Create.draft = res.draft;
+    } else {
+      AS.characterV2Create.error = res.errorMsg || "预览失败，请重试。";
+    }
+  } catch (err) {
+    AS.characterV2Create.error = "角色草案预览失败，请查看控制台或稍后重试。";
+  }
+  AS.characterV2Create.busy = false;
+  render();
+}
+
+async function characterV2Confirm() {
+  if (!AS.characterV2Create.draft) { AS.characterV2Create.error = "请先预览角色草案。"; return render(); }
+  AS.characterV2Create.busy = true;
+  render();
+  try {
+    const res = await API.importCharacter({ v2Capsule: true, confirmed: true, draft: AS.characterV2Create.draft });
+    if (res.status === "ok") {
+      AS.characters = await API.loadCharacters();
+      AS.characterV2Create = { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false };
+      createToast("角色创建成功！", "ok");
+    } else {
+      AS.characterV2Create.error = res.errorMsg || "角色草案保存失败，请查看控制台或稍后重试。";
+    }
+  } catch (err) {
+    AS.characterV2Create.error = "角色草案保存失败，请查看控制台或稍后重试。";
+  }
+  AS.characterV2Create.busy = false;
+  render();
+}
