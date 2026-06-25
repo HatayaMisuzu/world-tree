@@ -14,6 +14,7 @@ export function createCharacterV2LiveUiState() {
     reply: null,
     history: [],
     candidates: null,
+    candidateEnvelope: null,
     packetSummary: null,
     quality: null,
     advancedOpen: false,
@@ -56,4 +57,10 @@ export function completeCharacterV2LiveTurn(state, result = {}) {
 
 export function failCharacterV2LiveTurn(state, error) {
   return { ...state, busy: false, error: String(error?.message || error || "角色回复生成失败。") };
+}
+
+export function hasCharacterV2CandidatesToSave(state = {}) {
+  const e = state.candidateEnvelope;
+  if (!e) return false;
+  return (e.memoryCandidates?.length || 0) + (e.relationshipCandidates?.length || 0) + (e.qualityCandidates?.length || 0) > 0;
 }

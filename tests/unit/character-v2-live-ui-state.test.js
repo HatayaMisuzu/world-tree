@@ -7,7 +7,8 @@ import {
   appendCharacterV2LiveHistory,
   summarizeCharacterV2LiveCandidates,
   completeCharacterV2LiveTurn,
-  failCharacterV2LiveTurn
+  failCharacterV2LiveTurn,
+  hasCharacterV2CandidatesToSave
 } from "../../src/core/character/character-v2-live-ui-state.js";
 
 test("advanced hidden by default", () => {
@@ -57,4 +58,18 @@ test("fail clears busy and stores error", () => {
   state = failCharacterV2LiveTurn(state, new Error("崩溃了"));
   assert.equal(state.busy, false);
   assert.equal(state.error, "崩溃了");
+});
+
+test("candidateEnvelope stores raw candidates for save action", () => {
+  const state = createCharacterV2LiveUiState();
+  assert.equal(state.candidateEnvelope, null);
+});
+
+test("hasCharacterV2CandidatesToSave returns false without envelope", () => {
+  assert.equal(hasCharacterV2CandidatesToSave({}), false);
+});
+
+test("hasCharacterV2CandidatesToSave returns true when candidates exist", () => {
+  const state = { candidateEnvelope: { memoryCandidates: [{ id: "m1" }], relationshipCandidates: [], qualityCandidates: [] } };
+  assert.equal(hasCharacterV2CandidatesToSave(state), true);
 });
