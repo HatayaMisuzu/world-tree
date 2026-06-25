@@ -1,4 +1,4 @@
-# World Tree V1 功能清单
+# World Tree V2 功能清单
 
 ## 用户功能
 

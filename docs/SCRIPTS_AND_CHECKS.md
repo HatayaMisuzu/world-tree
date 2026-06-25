@@ -78,3 +78,5 @@
 All warnings are non-blocking (exit code 0).
 
 As of `v0.4.0-pre-v2-closure.1`, `npm run preflight` passed on `main` after blocker repair (all 19 sub-commands, integration 119/0, interface-audit 149/0/0).
+
+### V2 Gates: test:world-tree-v2-entries, test:single-player-scriptkill-v2, test:project-complete-audit

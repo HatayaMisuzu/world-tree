@@ -99,3 +99,6 @@ npm run preflight         # audit + check + unit + integration + interface
 5. **orphan-candidate 文件** 只能标注，不能删除。后续由人工确认是否归档。
 6. **修改 legacy bridge 前** 必须先跑 `npm run test:unit`、`npm run test:integration` 和 `npm run preflight`。
 7. 详细分类见 `docs/LEGACY_REDUNDANCY_AUDIT.md` 和 `docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md`。
+
+## V2 Boundaries
+single-player-scriptkill: 陌生AI玩家代理, DM手册, fullTruth 不暴露

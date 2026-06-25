@@ -1,7 +1,7 @@
 {
   "name": "world-tree",
-  "version": "0.4.0-pre-v2-closure.1",
-  "description": "World Tree — 本地优先的 AI 叙事引擎 Web 控制台",
+  "version": "0.4.1-v2-entry-closure.0",
+  "description": "World Tree \u2014 \u672c\u5730\u4f18\u5148\u7684 AI \u53d9\u4e8b\u5f15\u64ce Web \u63a7\u5236\u53f0",
   "type": "module",
   "main": "server.js",
   "bin": {
@@ -81,7 +81,8 @@
     "test:detective-v2-case-generator": "node --test tests/unit/detective-v2-case-generator.test.js",
     "test:detective-v2-full": "npm run test:detective-v2 && npm run test:detective-v2-case-generator",
     "legacy:check": "node scripts/check-legacy-status.mjs",
-    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run interface-audit"
+    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run test:world-tree-v2-entries && npm run test:single-player-scriptkill-v2 && npm run test:single-player-scriptkill-v2-audit && npm run test:project-complete-audit && npm run interface-audit",
+    "test:project-complete-audit": "node scripts/audit-world-tree-project-complete.mjs"
   },
   "keywords": [
     "world-tree",

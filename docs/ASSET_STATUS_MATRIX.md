@@ -91,3 +91,5 @@
 | test:unit | ✓ |
 | test:integration | ✓ |
 | interface-audit | ✓ |
+
+### V2: Tabletop V2 | Detective V2 | Character V2 | Single Player ScriptKill V2 (Sealed)

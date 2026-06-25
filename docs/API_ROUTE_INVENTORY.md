@@ -1,6 +1,6 @@
 # API Route Inventory — World Tree Pre-V2 Closure Baseline
 
-> This inventory reflects the current `server.js` (Post-Repair, head `a2a0b52`). It is not a future router design.
+> This inventory reflects the current `server.js` (Post-Repair, head 9b35bbf (V2 Closure)). It is not a future router design.
 > This inventory is **partial but source-grounded** — not every handler is fully categorized.
 
 ## Status
@@ -125,3 +125,5 @@ Do not split these routes into files until this inventory is complete enough to 
 ## Future Work
 
 Future route extraction may create route group files, but that is not implemented in Stage 6 Closure.
+
+### V2 Routes: /api/tabletop-v2/* /api/detective-v2/* /api/characters/v2/* /api/single-player-scriptkill-v2/*

@@ -265,7 +265,7 @@ const AS = {
   singlePlayerScriptKillV2: {
     scriptId: "", runId: "", importText: "", importPreview: null, playerRun: null,
     selectedRoleId: "", currentText: "", targetRoleId: "", locationId: "", clueId: "",
-    voteTargetRoleId: "", lastResult: null, error: "", busy: false, panelOpen: false,
+    voteTargetRoleId: "", nextPhaseId: "", lastResult: null, error: "", busy: false, panelOpen: false,
   },
   detectiveV2: { caseId: null, runId: null, importPreview: null, playerCase: null, playerRun: null, currentLocationId: "", currentCharacterId: "", lastInvestigation: null, lastInterview: null, notebookOpen: true, notebook: null, deductionDraft: {}, error: "", busy: false },
 };
@@ -358,7 +358,7 @@ const C = {
         </div>
         ${renderKernelPanel()}
         ${renderWorkflowPanel()}
-        ${renderModePlayPanel()}\n        ${renderSinglePlayerScriptKillV2Panel()}
+        ${renderModePlayPanel()}\n        ${shouldShowSinglePlayerScriptKillV2Panel() ? renderSinglePlayerScriptKillV2Panel() : ""}
       </section>
       ${renderStatusPanel()}
       ${renderDeveloperObservabilityDrawer()}
@@ -443,19 +443,26 @@ function renderProgressPanel() {
 }
 
 // ── Single Player ScriptKill V2 Panel ──
+function shouldShowSinglePlayerScriptKillV2Panel() {
+  const modeId = AS.selectedModule?.mode || AS.selectedModule?.type || "";
+  return AS.singlePlayerScriptKillV2?.panelOpen === true || modeId === "murder-mystery" || modeId === "single-player-scriptkill-v2";
+}
+
 function renderSinglePlayerScriptKillV2Panel() {
   const s = AS.singlePlayerScriptKillV2 || {};
   const run = s.playerRun || null;
   const roles = run?.packageView?.roleRoster || s.importPreview?.packageDraft?.roleBooks || [];
   const phase = run?.packageView?.phases?.find(p => p.phaseId === run.currentPhaseId) || null;
   const clues = run?.packageView?.publicClues || [];
+  const phases = run?.packageView?.phases || [];
   return `<section class="panel single-player-scriptkill-v2-panel" data-single-player-scriptkill-v2-panel>
     <div class="panel-head"><div><h2>单人剧本杀 V2</h2><p class="sub">承接已有剧本 · 单人真实玩家 + 陌生AI玩家代理 · 以剧本流程为准</p></div><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-list-runs">读取存档</button><button class="small" data-action="single-player-scriptkill-v2-load-run">加载Run</button></div></div>
     <div class="grid two">
       <section><h3>导入已有剧本</h3><textarea id="singlePlayerScriptKillV2ImportText" placeholder="粘贴你合法拥有的剧本杀资料">${U.esc(s.importText || "")}</textarea><label class="tiny"><input id="singlePlayerScriptKillV2Ownership" type="checkbox" checked> 我确认合法拥有，仅本地私用，不再分发</label><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-import-preview">预览/检查</button><button class="small primary" data-action="single-player-scriptkill-v2-import-commit">确认导入</button></div>${s.importPreview ? `<pre class="tiny">${U.esc(U.json(s.importPreview.validation || s.importPreview))}</pre>` : ""}</section>
       <section><h3>开局</h3><input id="singlePlayerScriptKillV2ScriptId" placeholder="scriptId" value="${U.esc(s.scriptId || "")}"><select id="singlePlayerScriptKillV2SelectedRole"><option value="">选择我的角色</option>${roles.map(r => `<option value="${U.esc(r.roleId)}" ${s.selectedRoleId === r.roleId ? "selected" : ""}>${U.esc(r.roleName || r.displayName || r.roleId)}</option>`).join("")}</select><div class="actions"><button class="small primary" data-action="single-player-scriptkill-v2-start">开始单人剧本杀</button><button class="small" data-action="single-player-scriptkill-v2-read-role-act">读本</button></div>${run ? `<p class="tiny muted">Run: ${U.esc(run.runId)} · 当前阶段：${U.esc(phase?.title || run.currentPhaseId || "未知")}</p>` : C.empty("尚未开局", "导入并选择角色后开始。")}</section>
     </div>
-    ${run ? `<div class="grid two"><section><h3>公聊 / 私聊</h3><textarea id="singlePlayerScriptKillV2CurrentText" placeholder="你要说什么？">${U.esc(s.currentText || "")}</textarea><select id="singlePlayerScriptKillV2TargetRole"><option value="">选择私聊对象</option>${(run.simulatedPlayers || []).map(p => `<option value="${U.esc(p.assignedRoleId)}" ${s.targetRoleId === p.assignedRoleId ? "selected" : ""}>${U.esc(p.roleName || p.displayName || p.assignedRoleId)}</option>`).join("")}</select><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-public-talk">公聊发言</button><button class="small" data-action="single-player-scriptkill-v2-private-chat">私聊</button></div></section><section><h3>搜证 / 投票 / 复盘</h3><input id="singlePlayerScriptKillV2LocationId" placeholder="locationId，可空" value="${U.esc(s.locationId || "")}"><select id="singlePlayerScriptKillV2ClueId"><option value="">选择线索</option>${clues.map(c => `<option value="${U.esc(c.clueId)}" ${s.clueId === c.clueId ? "selected" : ""}>${U.esc(c.title || c.clueId)}</option>`).join("")}</select><select id="singlePlayerScriptKillV2VoteTarget"><option value="">选择投票对象</option>${(run.simulatedPlayers || []).map(p => `<option value="${U.esc(p.assignedRoleId)}" ${s.voteTargetRoleId === p.assignedRoleId ? "selected" : ""}>${U.esc(p.roleName || p.displayName || p.assignedRoleId)}</option>`).join("")}</select><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-search">搜证</button><button class="small" data-action="single-player-scriptkill-v2-reveal-clue">公开线索</button><button class="small" data-action="single-player-scriptkill-v2-advance-phase">推进阶段</button><button class="small" data-action="single-player-scriptkill-v2-vote">投票</button><button class="small primary" data-action="single-player-scriptkill-v2-debrief">复盘</button><button class="small" data-action="single-player-scriptkill-v2-export-run">导出回放</button></div></section></div><section><h3>公聊记录</h3>${(run.publicBoard?.transcript || []).slice(-12).map(m => `<div class="item"><strong>${U.esc(m.speaker?.visibleName || m.speaker?.assignedRoleId || "角色")}</strong><p>${U.esc(m.text || "")}</p></div>`).join("") || C.empty("暂无发言")}</section>` : ""}
+    ${run ? `<div class="grid two"><section><h3>公聊 / 私聊</h3><textarea id="singlePlayerScriptKillV2CurrentText" placeholder="你要说什么？">${U.esc(s.currentText || "")}</textarea><select id="singlePlayerScriptKillV2TargetRole"><option value="">选择私聊对象</option>${(run.simulatedPlayers || []).map(p => `<option value="${U.esc(p.assignedRoleId)}" ${s.targetRoleId === p.assignedRoleId ? "selected" : ""}>${U.esc(p.roleName || p.displayName || p.assignedRoleId)}</option>`).join("")}</select><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-public-talk">公聊发言</button><button class="small" data-action="single-player-scriptkill-v2-private-chat">私聊</button></div></section><section><h3>搜证 / 投票 / 复盘</h3><input id="singlePlayerScriptKillV2LocationId" placeholder="locationId，可空" value="${U.esc(s.locationId || "")}"><select id="singlePlayerScriptKillV2ClueId"><option value="">选择线索</option>${clues.map(c => `<option value="${U.esc(c.clueId)}" ${s.clueId === c.clueId ? "selected" : ""}>${U.esc(c.title || c.clueId)}</option>`).join("")}</select><select id="singlePlayerScriptKillV2VoteTarget"><option value="">选择投票对象</option>${(run.simulatedPlayers || []).map(p => `<option value="${U.esc(p.assignedRoleId)}" ${s.voteTargetRoleId === p.assignedRoleId ? "selected" : ""}>${U.esc(p.roleName || p.displayName || p.assignedRoleId)}</option>`).join("")}</select><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-search">搜证</button><button class="small" data-action="single-player-scriptkill-v2-reveal-clue">公开线索</button><button class="small" <select id="singlePlayerScriptKillV2NextPhase"><option value="">自动/下一阶段</option>${phases.map(p => `<option value="${U.esc(p.phaseId)}" ${s.nextPhaseId === p.phaseId ? "selected" : ""}>${U.esc(p.title || p.phaseId)}</option>`).join("")}</select>
+          <button class="small" data-action="single-player-scriptkill-v2-advance-phase">推进阶段</button><button class="small" data-action="single-player-scriptkill-v2-vote">投票</button><button class="small primary" data-action="single-player-scriptkill-v2-debrief">复盘</button><button class="small" data-action="single-player-scriptkill-v2-export-run">导出回放</button></div></section></div><section><h3>公聊记录</h3>${(run.publicBoard?.transcript || []).slice(-12).map(m => `<div class="item"><strong>${U.esc(m.speaker?.visibleName || m.speaker?.assignedRoleId || "角色")}</strong><p>${U.esc(m.text || "")}</p></div>`).join("") || C.empty("暂无发言")}</section>` : ""}
     ${s.lastResult ? `<pre class="tiny">${U.esc(U.json(s.lastResult))}</pre>` : ""}${s.error ? C.notice(s.error, "error") : ""}
   </section>`;
 }
@@ -1617,6 +1624,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
   const locationEl = U.qs("#singlePlayerScriptKillV2LocationId");
   const clueEl = U.qs("#singlePlayerScriptKillV2ClueId");
   const voteEl = U.qs("#singlePlayerScriptKillV2VoteTarget");
+  const nextPhaseEl = U.qs("#singlePlayerScriptKillV2NextPhase");
 
   s.importText = textEl?.value || s.importText || "";
   s.scriptId = scriptIdEl?.value || s.scriptId || "";
@@ -1626,6 +1634,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
   s.locationId = locationEl?.value || "";
   s.clueId = clueEl?.value || "";
   s.voteTargetRoleId = voteEl?.value || "";
+  s.nextPhaseId = nextPhaseEl?.value || "";
 
   const ownershipDeclaration = { userConfirmedLegalAccess: ownershipEl?.checked !== false, localPrivateUseOnly: true, noRedistribution: true };
   const bodyBase = { runId: s.runId };
@@ -1657,7 +1666,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
       result = await API.singlePlayerScriptKillV2RevealClue({ ...bodyBase, clueId: s.clueId });
       s.playerRun = result.playerRun || s.playerRun;
     } else if (action === "single-player-scriptkill-v2-advance-phase") {
-      result = await API.singlePlayerScriptKillV2AdvancePhase(bodyBase);
+      result = await API.singlePlayerScriptKillV2AdvancePhase({ ...bodyBase, nextPhaseId: s.nextPhaseId || undefined });
       s.playerRun = result.playerRun || result.runState || s.playerRun;
       const loaded = await API.singlePlayerScriptKillV2LoadRun(bodyBase).catch(() => null);
       if (loaded?.playerRun) s.playerRun = loaded.playerRun;
@@ -1681,7 +1690,11 @@ async function handleSinglePlayerScriptKillV2Action(action) {
 
   const action = btn.dataset.action;
   try {
-    if (action && action.startsWith("single-player-scriptkill-v2-")) {
+    if (action === "single-player-scriptkill-v2-toggle-panel") {
+    AS.singlePlayerScriptKillV2.panelOpen = !AS.singlePlayerScriptKillV2.panelOpen;
+    return render();
+  }
+  if (action && action.startsWith("single-player-scriptkill-v2-")) {
     return handleSinglePlayerScriptKillV2Action(action);
   }
   if (action === "refresh-debug") return refreshDebugLogs();

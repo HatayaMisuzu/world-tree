@@ -685,3 +685,5 @@ creation-forge
 7. 所有正式状态写入继续走 proposal / branch / tracking。
 8. 所有 LLM 输出继续受 prompt contract / visibility / final guard 约束。
 ```
+
+### V2 Assets: ENTRY-TT-V2 ENTRY-DET-V2 ENTRY-CHAR-V2 ENTRY-SPSK-V2 (Sealed)

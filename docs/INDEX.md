@@ -120,3 +120,4 @@ Key entry points for the current baseline:
 - [archive/](archive/) — 历史设计/执行记录（含 P1 报告），不代表当前能力
 - [LEGACY_REDUNDANCY_AUDIT.md](LEGACY_REDUNDANCY_AUDIT.md) — Legacy 资产审计
 - [LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md](LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md) — 兼容与升级计划
+- [V2 Entry Completion Status](V2_ENTRY_COMPLETION_STATUS.md)

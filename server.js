@@ -100,7 +100,8 @@ const DEBUG_MAX = 200;
 // 异步检查 GitHub 最新版本（非阻塞）
 let latestVersion = null;
 
-if (process.env.WORLD_TREE_DISABLE_UPDATE_CHECK !== "1") {
+// Local-first default: no external network call unless explicitly enabled.
+if (process.env.WORLD_TREE_ENABLE_UPDATE_CHECK === "1") {
   (async () => {
     try {
       const resp = await fetch("https://api.github.com/repos/HatayaMisuzu/world-tree/releases/latest", {

@@ -33,7 +33,7 @@
 | Real Play Scenario Runner | COMPLETE | 6 个离线 scenarios；`npm run real-play:smoke` |
 | Mode Productization Slices | COMPLETE-PARTIAL | tabletop dice、mystery clue board、strategy resources 均可运行；不是完整 DND/推理引擎/4X |
 | Narrative Experience Slices | COMPLETE-PARTIAL | immersive proposal UI、fallback recap、goal tracker、rhythm tag；不等同长期记忆或 quest engine |
-| Universal Mode V2-ready Foundation | COMPLETE-PARTIAL | universal metadata/visibility/lifecycle/capability；8 模式 normalizer/fixture/test；不是完整 V2 系统 |
+| Universal Mode V2-ready Foundation | COMPLETE-PARTIAL | universal metadata/visibility/lifecycle/capability；8 模式 normalizer/fixture/test；V2 Entry Closure (sealed) 系统 |
 
 ## What Is Current
 
@@ -106,3 +106,7 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - No LLM adapter rewrite
 - Old tag `v0.4.0-pre-v2-closure` preserved as historical audit-invalidated marker
 - Trusted seal is `v0.4.0-pre-v2-closure.1` at `5cb48da`
+
+## V2 Entry Closure (基准提交 9b35bbf)
+
+四个 V2 入口已完成闭环。详见 V2_ENTRY_COMPLETION_STATUS.md。
