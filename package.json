@@ -63,7 +63,7 @@
     "test:entry-closures": "node scripts/audit-entry-closures.mjs",
     "test:world-tree-v2-entries": "npm run test:tabletop-v2-full && npm run test:detective-v2-full && npm run test:character-v2-long-term && npm run test:entry-closures && npm run test:final-v2-closures",
     "test:final-v2-closures": "node scripts/audit-world-tree-v2-final-closures.mjs",
-    "test:single-player-scriptkill-v2": "node --test tests/unit/single-player-scriptkill-v2-package.test.js tests/unit/single-player-scriptkill-v2-importer.test.js tests/unit/single-player-scriptkill-v2-runtime.test.js tests/unit/single-player-scriptkill-v2-knowledge-boundary.test.js",
+    "test:single-player-scriptkill-v2": "node --test tests/unit/single-player-scriptkill-v2-package.test.js tests/unit/single-player-scriptkill-v2-importer.test.js tests/unit/single-player-scriptkill-v2-runtime.test.js tests/unit/single-player-scriptkill-v2-knowledge-boundary.test.js tests/unit/single-player-scriptkill-v2-service-e2e.test.js",
     "test:single-player-scriptkill-v2-audit": "node scripts/audit-single-player-scriptkill-v2-closure.mjs",
     "test:tabletop-v2-foundation": "node --test tests/unit/tabletop-v2-dice-engine.test.js tests/unit/tabletop-v2-ruleset-profile.test.js tests/unit/tabletop-v2-adventure-module.test.js tests/unit/tabletop-v2-clock-engine.test.js",
     "test:tabletop-v2-runtime": "node --test tests/unit/tabletop-v2-turn-ruling.test.js tests/unit/tabletop-v2-save-branch.test.js tests/unit/tabletop-v2-ending-summary.test.js tests/unit/tabletop-v2-service.test.js",

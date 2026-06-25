@@ -1,6 +1,7 @@
 // Single Player ScriptKill V2 Service
 // Service for existing “单人剧本杀” entry V2. Not a new product entry.
 // Local-first persistence under engine/single-player-scriptkill-v2/.
+// FINAL CLOSURE FIX: mutating service calls persist both result.runState and result.state.
 
 import { existsSync, readFileSync, mkdirSync, writeFileSync, readdirSync } from "node:fs";
 import { join, sep } from "node:path";
@@ -12,10 +13,16 @@ import { readCurrentRoleAct, performPublicTalk, performPrivateChat, performSearc
 
 function ensureDir(dir) { if (!existsSync(dir)) mkdirSync(dir, { recursive: true }); }
 function readJson(path, fallback = null) { try { return JSON.parse(readFileSync(path, "utf-8")); } catch { return fallback; } }
-function writeJson(path, data) { ensureDir(path.split(sep).slice(0, -1).join(sep)); writeFileSync(path, JSON.stringify(data, null, 2)); }
+function writeJson(path, data) {
+  const parent = path.split(sep).slice(0, -1).join(sep);
+  if (parent) ensureDir(parent);
+  writeFileSync(path, JSON.stringify(data, null, 2), "utf-8");
+}
 
 function assertScriptKillV2Path(path) {
-  if (!String(path).includes(`${sep}single-player-scriptkill-v2${sep}`)) throw new Error(`Single Player ScriptKill V2 path escaped namespace: ${path}`);
+  if (!String(path).includes(`${sep}single-player-scriptkill-v2${sep}`)) {
+    throw new Error(`Single Player ScriptKill V2 path escaped namespace: ${path}`);
+  }
 }
 
 function rootDir(dataRoot) { return join(dataRoot, "engine", "single-player-scriptkill-v2"); }
@@ -28,8 +35,7 @@ function runPath(dataRoot, runId) { return join(runDir(dataRoot, runId), "run-st
 
 export async function previewSinglePlayerScriptKillV2Import(body = {}, deps = {}) {
   try {
-    const preview = buildSinglePlayerScriptKillImportPreview(body);
-    return preview;
+    return buildSinglePlayerScriptKillImportPreview(body);
   } catch (err) {
     return { status: "error", code: "SINGLE_PLAYER_SCRIPTKILL_IMPORT_PREVIEW_FAILED", errorMsg: err.message };
   }
@@ -60,7 +66,9 @@ export async function startSinglePlayerScriptKillV2(body = {}, deps = {}) {
     const pkg = readJson(packagePath(dataRoot, scriptId));
     if (!pkg) return { status: "error", code: "PACKAGE_NOT_FOUND" };
     const validation = validateSinglePlayerScriptKillPackage(pkg);
-    if (!validation.playable && body.forceStart !== true) return { status: "not_playable", validation, errorMsg: "剧本结构不完整，不能完整开局。" };
+    if (!validation.playable && body.forceStart !== true) {
+      return { status: "not_playable", validation, errorMsg: "剧本结构不完整，不能完整开局。" };
+    }
     const run = createSinglePlayerScriptKillRun(pkg, { realPlayerRoleId: body.realPlayerRoleId, runId: body.runId });
     const runValidation = validateSinglePlayerScriptKillRunState(run);
     if (!runValidation.ok) return { status: "error", code: "RUN_INVALID", validation: runValidation };
@@ -77,36 +85,89 @@ export async function startSinglePlayerScriptKillV2(body = {}, deps = {}) {
 export async function readSinglePlayerScriptKillV2RoleAct(body = {}, deps = {}) {
   return withRun(body, deps, (pkg, run) => readCurrentRoleAct(pkg, run, body.roleId));
 }
+
 export async function publicTalkSinglePlayerScriptKillV2(body = {}, deps = {}) {
-  return withRunMutating(body, deps, (pkg, run) => performPublicTalk({ packageData: pkg, runState: run, realPlayerText: body.text || body.realPlayerText, simulatedRoleIds: body.simulatedRoleIds || [] }));
+  return withRunMutating(body, deps, (pkg, run) => performPublicTalk({
+    packageData: pkg,
+    runState: run,
+    realPlayerText: body.text || body.realPlayerText,
+    simulatedRoleIds: body.simulatedRoleIds || [],
+  }));
 }
+
 export async function privateChatSinglePlayerScriptKillV2(body = {}, deps = {}) {
-  return withRunMutating(body, deps, (pkg, run) => performPrivateChat({ packageData: pkg, runState: run, targetRoleId: body.targetRoleId, text: body.text }));
+  return withRunMutating(body, deps, (pkg, run) => performPrivateChat({
+    packageData: pkg,
+    runState: run,
+    targetRoleId: body.targetRoleId,
+    text: body.text,
+  }));
 }
+
 export async function searchSinglePlayerScriptKillV2(body = {}, deps = {}) {
-  return withRunMutating(body, deps, (pkg, run) => performSearch({ packageData: pkg, runState: run, locationId: body.locationId, clueId: body.clueId, keepPrivate: body.keepPrivate !== false }));
+  return withRunMutating(body, deps, (pkg, run) => performSearch({
+    packageData: pkg,
+    runState: run,
+    locationId: body.locationId,
+    clueId: body.clueId,
+    keepPrivate: body.keepPrivate !== false,
+  }));
 }
+
 export async function revealClueSinglePlayerScriptKillV2(body = {}, deps = {}) {
-  return withRunMutating(body, deps, (pkg, run) => performRevealClue({ packageData: pkg, runState: run, clueId: body.clueId }));
+  return withRunMutating(body, deps, (pkg, run) => performRevealClue({
+    packageData: pkg,
+    runState: run,
+    clueId: body.clueId,
+  }));
 }
+
 export async function voteSinglePlayerScriptKillV2(body = {}, deps = {}) {
-  return withRunMutating(body, deps, (pkg, run) => performVote({ packageData: pkg, runState: run, targetRoleId: body.targetRoleId, reason: body.reason }));
+  return withRunMutating(body, deps, (pkg, run) => performVote({
+    packageData: pkg,
+    runState: run,
+    targetRoleId: body.targetRoleId,
+    reason: body.reason,
+  }));
 }
+
 export async function debriefSinglePlayerScriptKillV2(body = {}, deps = {}) {
   return withRun(body, deps, (pkg, run) => performDebrief({ packageData: pkg, runState: run }));
 }
+
 export async function advancePhaseSinglePlayerScriptKillV2(body = {}, deps = {}) {
-  return withRunMutating(body, deps, (pkg, run) => advanceSinglePlayerScriptKillPhase({ packageData: pkg, runState: run, nextPhaseId: body.nextPhaseId, reason: body.reason || "manual" }));
+  return withRunMutating(body, deps, (pkg, run) => {
+    const result = advanceSinglePlayerScriptKillPhase({
+      packageData: pkg,
+      runState: run,
+      nextPhaseId: body.nextPhaseId,
+      reason: body.reason || "manual",
+    });
+    return normalizeRunMutationResult(result);
+  });
 }
+
 export async function exportRunSinglePlayerScriptKillV2(body = {}, deps = {}) {
-  return withRun(body, deps, (pkg, run) => ({ status: "ok", export: { package: { scriptId: pkg.scriptId, title: pkg.title }, playerRun: stripSinglePlayerScriptKillRunForPlayer(pkg, run), exportedAt: new Date().toISOString() } }));
+  return withRun(body, deps, (pkg, run) => ({
+    status: "ok",
+    export: {
+      package: { scriptId: pkg.scriptId, title: pkg.title, entryDisplayName: "单人剧本杀" },
+      playerRun: stripSinglePlayerScriptKillRunForPlayer(pkg, run),
+      exportedAt: new Date().toISOString(),
+    },
+  }));
 }
 
 export async function listSinglePlayerScriptKillV2Runs(body = {}, deps = {}) {
-  const dataRoot = deps.dataRoot;
-  const dir = runsDir(dataRoot);
-  ensureDir(dir);
-  return { status: "ok", runs: readdirSync(dir).map(runId => ({ runId, path: runPath(dataRoot, runId) })) };
+  try {
+    const dataRoot = deps.dataRoot;
+    if (!dataRoot) return { status: "error", code: "DATA_ROOT_REQUIRED" };
+    const dir = runsDir(dataRoot);
+    ensureDir(dir);
+    return { status: "ok", runs: readdirSync(dir).map(runId => ({ runId, path: runPath(dataRoot, runId) })) };
+  } catch (err) {
+    return { status: "error", code: "SINGLE_PLAYER_SCRIPTKILL_LIST_RUNS_FAILED", errorMsg: err.message };
+  }
 }
 
 export async function loadSinglePlayerScriptKillV2Run(body = {}, deps = {}) {
@@ -121,16 +182,29 @@ async function withRun(body, deps, fn) {
     return { status: "error", code: "SINGLE_PLAYER_SCRIPTKILL_RUN_OP_FAILED", errorMsg: err.message };
   }
 }
+
 async function withRunMutating(body, deps, fn) {
   try {
     const { pkg, run, runFile } = loadPackageAndRun(body, deps);
-    const result = await fn(pkg, run);
-    if (result.runState) writeJson(runFile, result.runState);
+    const rawResult = await fn(pkg, run);
+    const result = normalizeRunMutationResult(rawResult);
+    if (result.runState) {
+      const validation = validateSinglePlayerScriptKillRunState(result.runState);
+      if (!validation.ok) return { status: "error", code: "RUN_MUTATION_INVALID", validation };
+      writeJson(runFile, result.runState);
+    }
     return result;
   } catch (err) {
     return { status: "error", code: "SINGLE_PLAYER_SCRIPTKILL_RUN_MUTATION_FAILED", errorMsg: err.message };
   }
 }
+
+function normalizeRunMutationResult(result = {}) {
+  if (result.runState) return result;
+  if (result.state) return { ...result, runState: result.state };
+  return result;
+}
+
 function loadPackageAndRun(body, deps) {
   const dataRoot = deps.dataRoot;
   const runId = body.runId;

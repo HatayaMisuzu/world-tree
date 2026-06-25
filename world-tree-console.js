@@ -262,6 +262,11 @@ const AS = {
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
   characterV2Create: { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false },
   tabletopV2: { runId: null, module: null, ruleset: null, lastRuling: null, ending: null },
+  singlePlayerScriptKillV2: {
+    scriptId: "", runId: "", importText: "", importPreview: null, playerRun: null,
+    selectedRoleId: "", currentText: "", targetRoleId: "", locationId: "", clueId: "",
+    voteTargetRoleId: "", lastResult: null, error: "", busy: false, panelOpen: false,
+  },
   detectiveV2: { caseId: null, runId: null, importPreview: null, playerCase: null, playerRun: null, currentLocationId: "", currentCharacterId: "", lastInvestigation: null, lastInterview: null, notebookOpen: true, notebook: null, deductionDraft: {}, error: "", busy: false },
 };
 
@@ -353,7 +358,7 @@ const C = {
         </div>
         ${renderKernelPanel()}
         ${renderWorkflowPanel()}
-        ${renderModePlayPanel()}
+        ${renderModePlayPanel()}\n        ${renderSinglePlayerScriptKillV2Panel()}
       </section>
       ${renderStatusPanel()}
       ${renderDeveloperObservabilityDrawer()}
@@ -434,6 +439,24 @@ function renderProgressPanel() {
     <div class="progress-track">${PROGRESS_STAGES.map((label, index) => `<span class="${index < AS.progressIndex ? "done" : index === AS.progressIndex ? "active" : ""}" title="${U.esc(label)}"></span>`).join("")}</div>
     <strong>${U.esc(PROGRESS_STAGES[AS.progressIndex] || PROGRESS_STAGES[0])}</strong>
     <span class="tiny muted">这是阶段状态提示，不代表流式输出。</span>
+  </section>`;
+}
+
+// ── Single Player ScriptKill V2 Panel ──
+function renderSinglePlayerScriptKillV2Panel() {
+  const s = AS.singlePlayerScriptKillV2 || {};
+  const run = s.playerRun || null;
+  const roles = run?.packageView?.roleRoster || s.importPreview?.packageDraft?.roleBooks || [];
+  const phase = run?.packageView?.phases?.find(p => p.phaseId === run.currentPhaseId) || null;
+  const clues = run?.packageView?.publicClues || [];
+  return `<section class="panel single-player-scriptkill-v2-panel" data-single-player-scriptkill-v2-panel>
+    <div class="panel-head"><div><h2>单人剧本杀 V2</h2><p class="sub">承接已有剧本 · 单人真实玩家 + 陌生AI玩家代理 · 以剧本流程为准</p></div><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-list-runs">读取存档</button><button class="small" data-action="single-player-scriptkill-v2-load-run">加载Run</button></div></div>
+    <div class="grid two">
+      <section><h3>导入已有剧本</h3><textarea id="singlePlayerScriptKillV2ImportText" placeholder="粘贴你合法拥有的剧本杀资料">${U.esc(s.importText || "")}</textarea><label class="tiny"><input id="singlePlayerScriptKillV2Ownership" type="checkbox" checked> 我确认合法拥有，仅本地私用，不再分发</label><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-import-preview">预览/检查</button><button class="small primary" data-action="single-player-scriptkill-v2-import-commit">确认导入</button></div>${s.importPreview ? `<pre class="tiny">${U.esc(U.json(s.importPreview.validation || s.importPreview))}</pre>` : ""}</section>
+      <section><h3>开局</h3><input id="singlePlayerScriptKillV2ScriptId" placeholder="scriptId" value="${U.esc(s.scriptId || "")}"><select id="singlePlayerScriptKillV2SelectedRole"><option value="">选择我的角色</option>${roles.map(r => `<option value="${U.esc(r.roleId)}" ${s.selectedRoleId === r.roleId ? "selected" : ""}>${U.esc(r.roleName || r.displayName || r.roleId)}</option>`).join("")}</select><div class="actions"><button class="small primary" data-action="single-player-scriptkill-v2-start">开始单人剧本杀</button><button class="small" data-action="single-player-scriptkill-v2-read-role-act">读本</button></div>${run ? `<p class="tiny muted">Run: ${U.esc(run.runId)} · 当前阶段：${U.esc(phase?.title || run.currentPhaseId || "未知")}</p>` : C.empty("尚未开局", "导入并选择角色后开始。")}</section>
+    </div>
+    ${run ? `<div class="grid two"><section><h3>公聊 / 私聊</h3><textarea id="singlePlayerScriptKillV2CurrentText" placeholder="你要说什么？">${U.esc(s.currentText || "")}</textarea><select id="singlePlayerScriptKillV2TargetRole"><option value="">选择私聊对象</option>${(run.simulatedPlayers || []).map(p => `<option value="${U.esc(p.assignedRoleId)}" ${s.targetRoleId === p.assignedRoleId ? "selected" : ""}>${U.esc(p.roleName || p.displayName || p.assignedRoleId)}</option>`).join("")}</select><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-public-talk">公聊发言</button><button class="small" data-action="single-player-scriptkill-v2-private-chat">私聊</button></div></section><section><h3>搜证 / 投票 / 复盘</h3><input id="singlePlayerScriptKillV2LocationId" placeholder="locationId，可空" value="${U.esc(s.locationId || "")}"><select id="singlePlayerScriptKillV2ClueId"><option value="">选择线索</option>${clues.map(c => `<option value="${U.esc(c.clueId)}" ${s.clueId === c.clueId ? "selected" : ""}>${U.esc(c.title || c.clueId)}</option>`).join("")}</select><select id="singlePlayerScriptKillV2VoteTarget"><option value="">选择投票对象</option>${(run.simulatedPlayers || []).map(p => `<option value="${U.esc(p.assignedRoleId)}" ${s.voteTargetRoleId === p.assignedRoleId ? "selected" : ""}>${U.esc(p.roleName || p.displayName || p.assignedRoleId)}</option>`).join("")}</select><div class="actions"><button class="small" data-action="single-player-scriptkill-v2-search">搜证</button><button class="small" data-action="single-player-scriptkill-v2-reveal-clue">公开线索</button><button class="small" data-action="single-player-scriptkill-v2-advance-phase">推进阶段</button><button class="small" data-action="single-player-scriptkill-v2-vote">投票</button><button class="small primary" data-action="single-player-scriptkill-v2-debrief">复盘</button><button class="small" data-action="single-player-scriptkill-v2-export-run">导出回放</button></div></section></div><section><h3>公聊记录</h3>${(run.publicBoard?.transcript || []).slice(-12).map(m => `<div class="item"><strong>${U.esc(m.speaker?.visibleName || m.speaker?.assignedRoleId || "角色")}</strong><p>${U.esc(m.text || "")}</p></div>`).join("") || C.empty("暂无发言")}</section>` : ""}
+    ${s.lastResult ? `<pre class="tiny">${U.esc(U.json(s.lastResult))}</pre>` : ""}${s.error ? C.notice(s.error, "error") : ""}
   </section>`;
 }
 
@@ -1582,9 +1605,86 @@ async function readDroppedTexts(dt) {
 
 async function handleAction(e, btn) {
   e.stopPropagation();
+// ── Single Player ScriptKill V2 UI handler ──
+async function handleSinglePlayerScriptKillV2Action(action) {
+  const s = AS.singlePlayerScriptKillV2;
+  const textEl = U.qs("#singlePlayerScriptKillV2ImportText");
+  const ownershipEl = U.qs("#singlePlayerScriptKillV2Ownership");
+  const scriptIdEl = U.qs("#singlePlayerScriptKillV2ScriptId");
+  const roleEl = U.qs("#singlePlayerScriptKillV2SelectedRole");
+  const currentTextEl = U.qs("#singlePlayerScriptKillV2CurrentText");
+  const targetRoleEl = U.qs("#singlePlayerScriptKillV2TargetRole");
+  const locationEl = U.qs("#singlePlayerScriptKillV2LocationId");
+  const clueEl = U.qs("#singlePlayerScriptKillV2ClueId");
+  const voteEl = U.qs("#singlePlayerScriptKillV2VoteTarget");
+
+  s.importText = textEl?.value || s.importText || "";
+  s.scriptId = scriptIdEl?.value || s.scriptId || "";
+  s.selectedRoleId = roleEl?.value || s.selectedRoleId || "";
+  s.currentText = currentTextEl?.value || "";
+  s.targetRoleId = targetRoleEl?.value || "";
+  s.locationId = locationEl?.value || "";
+  s.clueId = clueEl?.value || "";
+  s.voteTargetRoleId = voteEl?.value || "";
+
+  const ownershipDeclaration = { userConfirmedLegalAccess: ownershipEl?.checked !== false, localPrivateUseOnly: true, noRedistribution: true };
+  const bodyBase = { runId: s.runId };
+  try {
+    s.busy = true; s.error = ""; s.lastResult = null;
+    let result;
+    if (action === "single-player-scriptkill-v2-import-preview") {
+      result = await API.singlePlayerScriptKillV2ImportPreview({ text: s.importText, ownershipDeclaration });
+      s.importPreview = result;
+    } else if (action === "single-player-scriptkill-v2-import-commit") {
+      result = await API.singlePlayerScriptKillV2ImportCommit({ package: s.importPreview?.packageDraft, ownershipDeclaration });
+      s.scriptId = result.scriptId || s.scriptId;
+    } else if (action === "single-player-scriptkill-v2-start") {
+      result = await API.singlePlayerScriptKillV2Start({ scriptId: s.scriptId, realPlayerRoleId: s.selectedRoleId });
+      s.runId = result.runId || s.runId;
+      s.playerRun = result.playerRun || s.playerRun;
+    } else if (action === "single-player-scriptkill-v2-read-role-act") {
+      result = await API.singlePlayerScriptKillV2ReadRoleAct(bodyBase);
+    } else if (action === "single-player-scriptkill-v2-public-talk") {
+      result = await API.singlePlayerScriptKillV2PublicTalk({ ...bodyBase, text: s.currentText });
+      s.playerRun = result.playerRun || s.playerRun;
+    } else if (action === "single-player-scriptkill-v2-private-chat") {
+      result = await API.singlePlayerScriptKillV2PrivateChat({ ...bodyBase, targetRoleId: s.targetRoleId, text: s.currentText });
+      s.playerRun = result.playerRun || s.playerRun;
+    } else if (action === "single-player-scriptkill-v2-search") {
+      result = await API.singlePlayerScriptKillV2Search({ ...bodyBase, locationId: s.locationId, clueId: s.clueId, keepPrivate: true });
+      s.playerRun = result.playerRun || s.playerRun;
+    } else if (action === "single-player-scriptkill-v2-reveal-clue") {
+      result = await API.singlePlayerScriptKillV2RevealClue({ ...bodyBase, clueId: s.clueId });
+      s.playerRun = result.playerRun || s.playerRun;
+    } else if (action === "single-player-scriptkill-v2-advance-phase") {
+      result = await API.singlePlayerScriptKillV2AdvancePhase(bodyBase);
+      s.playerRun = result.playerRun || result.runState || s.playerRun;
+      const loaded = await API.singlePlayerScriptKillV2LoadRun(bodyBase).catch(() => null);
+      if (loaded?.playerRun) s.playerRun = loaded.playerRun;
+    } else if (action === "single-player-scriptkill-v2-vote") {
+      result = await API.singlePlayerScriptKillV2Vote({ ...bodyBase, targetRoleId: s.voteTargetRoleId, reason: "玩家投票" });
+      s.playerRun = result.playerRun || s.playerRun;
+    } else if (action === "single-player-scriptkill-v2-debrief") {
+      result = await API.singlePlayerScriptKillV2Debrief(bodyBase);
+    } else if (action === "single-player-scriptkill-v2-export-run") {
+      result = await API.singlePlayerScriptKillV2ExportRun(bodyBase);
+    } else if (action === "single-player-scriptkill-v2-load-run") {
+      result = await API.singlePlayerScriptKillV2LoadRun(bodyBase);
+      s.playerRun = result.playerRun || s.playerRun;
+    } else if (action === "single-player-scriptkill-v2-list-runs") {
+      result = await API.singlePlayerScriptKillV2Runs();
+    }
+    s.lastResult = result;
+  } catch (err) { s.error = err.message || String(err); }
+  finally { s.busy = false; render(); }
+}
+
   const action = btn.dataset.action;
   try {
-    if (action === "refresh-debug") return refreshDebugLogs();
+    if (action && action.startsWith("single-player-scriptkill-v2-")) {
+    return handleSinglePlayerScriptKillV2Action(action);
+  }
+  if (action === "refresh-debug") return refreshDebugLogs();
     if (action === "toggle-debug") return toggleDebugPanel();
     if (action === "close-drawer") { AS.activeDrawer = ""; return render(); }
     if (action === "drawer-worldbook") { AS.activeDrawer = "worldbook"; return render(); }
