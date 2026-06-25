@@ -52,6 +52,7 @@
     "docs:check": "node scripts/check-docs.mjs",
     "test:character-v2": "node --test tests/unit/character-v2-text-core.test.js",
     "test:character-v2-ui": "node --test tests/unit/character-v2-advanced-ui-gate.test.js",
+    "test:character-v2-capsule": "node --test tests/unit/character-v2-capsule-creation.test.js",
     "legacy:check": "node scripts/check-legacy-status.mjs",
     "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run interface-audit"
   },
