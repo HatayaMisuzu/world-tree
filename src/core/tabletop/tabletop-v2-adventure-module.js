@@ -69,6 +69,7 @@ function normalizeScene(scene = {}) {
     title: scene.title || "未命名场景",
     description: scene.description || "",
     isStarting: scene.isStarting || false,
+    isEnding: scene.isEnding || false,
     allowedActions: scene.allowedActions || [],
     transitions: scene.transitions || [],
     npcs: scene.npcs || [],

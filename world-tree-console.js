@@ -117,6 +117,13 @@ const API = {
   health() { return API.get("/api/health"); },
   workflowStatus() { return API.get("/api/workflow/status"); },
   workflowTypes() { return API.get("/api/workflow/types"); },
+  // Tabletop V2
+  tabletopV2ImportPreview(data) { return API.post("/api/tabletop-v2/import-preview", data); },
+  tabletopV2Start(data) { return API.post("/api/tabletop-v2/start", data); },
+  tabletopV2Turn(data) { return API.post("/api/tabletop-v2/turn", data); },
+  tabletopV2Save(data) { return API.post("/api/tabletop-v2/save", data); },
+  tabletopV2Branch(data) { return API.post("/api/tabletop-v2/branch", data); },
+  tabletopV2EndSummary(data) { return API.post("/api/tabletop-v2/end-summary", data); },
 };
 
 const PROGRESS_STAGES = [
@@ -212,6 +219,7 @@ const AS = {
   modePlay: null,
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
   characterV2Create: { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false },
+  tabletopV2: { runId: null, module: null, ruleset: null, lastRuling: null, ending: null },
 };
 
 const C = {
@@ -391,7 +399,24 @@ function renderModePlayPanel() {
   const play = AS.modePlay || AS.engineState?.realPlay || {};
   const sections = [];
   const dice = play.tabletop?.lastDiceResult;
-  if (modeId === "tabletop") sections.push(`<section><strong>骰子判定</strong>${dice ? `<p>${U.esc(dice.notation)} → [${(dice.rolls || []).map(U.esc).join(", ")}] = <strong>${U.esc(dice.total)}</strong></p>` : `<p class="tiny muted">输入 /roll 1d20+3 进行判定。</p>`}</section>`);
+  if (modeId === "tabletop") {
+    const tv2 = AS.tabletopV2 || {};
+    if (tv2.runId) {
+      // V2 运行时面板
+      sections.push(`<section><strong>🎲 Tabletop V2</strong>
+        <p class="tiny">规则集: ${U.esc(tv2.ruleset || "d20_fantasy")} · 模组: ${U.esc(tv2.module || "")}</p>
+        ${tv2.lastRuling ? `<div class="roll-card"><span>投骰: ${U.esc(tv2.lastRuling.expression || "—")}</span><strong>${U.esc(tv2.lastRuling.total)}</strong><span class="badge ${tv2.lastRuling.outcome === "success" || tv2.lastRuling.outcome === "critical_success" ? "ok" : tv2.lastRuling.outcome === "partial_success" ? "pending" : "warn"}">${U.esc(tv2.lastRuling.outcome || "—")}</span></div>` : ""}
+        ${tv2.lastRuling?.probabilityEstimate !== undefined ? `<p class="tiny muted">概率: ${Math.round(tv2.lastRuling.probabilityEstimate * 100)}%</p>` : ""}
+        <div class="actions" style="margin-top:6px">
+          <button data-action="tabletop-v2-save">💾 存档</button>
+          <button data-action="tabletop-v2-branch">🔀 分支</button>
+          <button data-action="tabletop-v2-end">📋 结局摘要</button>
+        </div>
+      </section>`);
+    } else {
+      sections.push(`<section><strong>骰子判定</strong>${dice ? `<p>${U.esc(dice.notation)} → [${(dice.rolls || []).map(U.esc).join(", ")}] = <strong>${U.esc(dice.total)}</strong></p>` : `<p class="tiny muted">输入 /roll 1d20+3 进行判定。</p>`}</section>`);
+    }
+  }
   const mystery = play.mystery?.discoveredClues ? play.mystery : play.mystery?.clueBoard;
   if (["mystery-puzzle", "murder-mystery"].includes(modeId)) sections.push(`<section><strong>线索卡与假设白板</strong><div class="play-card-grid">${(mystery?.discoveredClues || []).map(item => `<article><b>${U.esc(item.name)}</b><span>${U.esc(item.location || "已发现")}</span></article>`).join("") || `<span class="tiny muted">输入 /clue 线索名 记录已知线索。</span>`}</div>${(mystery?.hypotheses || []).length ? `<p class="tiny">假设：${mystery.hypotheses.map(item => U.esc(item.statement)).join(" · ")}</p>` : `<p class="tiny muted">输入 /hypothesis 假设内容 建立假设。</p>`}</section>`);
   const resources = play.strategy?.resources;

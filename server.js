@@ -2827,6 +2827,32 @@ async function handleAPI(req, res) {
       }
     }
 
+    // ── Tabletop V2 ──
+    if (path === "/api/tabletop-v2/import-preview" && method === "POST") {
+      const { previewTabletopV2Import } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await previewTabletopV2Import(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/start" && method === "POST") {
+      const { startTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await startTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/turn" && method === "POST") {
+      const { handleTabletopV2Turn } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await handleTabletopV2Turn(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/save" && method === "POST") {
+      const { saveTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await saveTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/branch" && method === "POST") {
+      const { branchTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await branchTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/end-summary" && method === "POST") {
+      const { endTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await endTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+
     // ── 世界书编辑与测试 ──
     if (path === "/api/worldbook" && method === "GET") return jsonResponse(res, await handleWorldbook({}, "GET", url));
     if (path === "/api/worldbook" && method === "POST") return jsonResponse(res, await handleWorldbook(await readBody(req), "POST", url));
