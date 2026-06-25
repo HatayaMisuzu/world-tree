@@ -385,3 +385,267 @@ function publicEndingInfo(endings = [], runState) {
     return false;
   });
 }
+
+// ── Import commit ──
+
+export async function commitTabletopV2Import(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot is required" };
+
+  try {
+    const { module } = body;
+    if (!module) return { status: "error", code: "NO_MODULE", errorMsg: "module is required" };
+
+    const normalized = normalizeAdventureModule(module);
+    const validation = validateAdventureModule(normalized);
+    if (!validation.valid) {
+      return { status: "error", code: "INVALID_MODULE", errorMsg: validation.errors.join("; ") };
+    }
+
+    // Persist committed module
+    const mDir = moduleDir(dataRoot, normalized.moduleId);
+    ensureDir(mDir);
+    writeFileSync(join(mDir, "module.json"), JSON.stringify(normalized, null, 2));
+
+    // Write metadata
+    writeFileSync(join(mDir, "import-meta.json"), JSON.stringify({
+      importedAt: new Date().toISOString(),
+      sourceType: normalized.sourceType || "external",
+      originalTitle: normalized.title,
+      moduleId: normalized.moduleId,
+    }, null, 2));
+
+    return {
+      status: "ok",
+      moduleId: normalized.moduleId,
+      title: normalized.title,
+      sceneCount: normalized.scenes?.length || 0,
+      characterCount: normalized.characters?.length || 0,
+      clockCount: normalized.clocks?.length || 0,
+    };
+  } catch (err) {
+    return { status: "error", code: "IMPORT_COMMIT_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── List runs ──
+
+export async function listTabletopV2Runs(deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot is required" };
+
+  try {
+    const rDir = runsDir(dataRoot);
+    if (!existsSync(rDir)) return { status: "ok", runs: [], total: 0 };
+
+    const { readdirSync } = await import("node:fs");
+    const entries = readdirSync(rDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => {
+        const statePath = join(rDir, e.name, "run-state.json");
+        if (!existsSync(statePath)) return null;
+        try {
+          const state = JSON.parse(readFileSync(statePath, "utf-8"));
+          return {
+            runId: state.runId || e.name,
+            moduleId: state.moduleId,
+            title: state.publicState?.sceneTitle || "",
+            turnIndex: state.turnIndex || 0,
+            createdAt: state.createdAt,
+            updatedAt: state.updatedAt,
+            ended: !!state.endingState,
+          };
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    return { status: "ok", runs: entries, total: entries.length };
+  } catch (err) {
+    return { status: "error", code: "LIST_RUNS_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Load run ──
+
+export async function loadTabletopV2Run(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot is required" };
+
+  try {
+    const { runId } = body;
+    if (!runId) return { status: "error", code: "NO_RUN_ID", errorMsg: "runId is required" };
+
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    if (!existsSync(statePath)) {
+      return { status: "error", code: "RUN_NOT_FOUND", errorMsg: `run ${runId} not found` };
+    }
+
+    const runState = JSON.parse(readFileSync(statePath, "utf-8"));
+
+    // Load module for additional context
+    const modulePath = join(moduleDir(dataRoot, runState.moduleId), "module.json");
+    const module = existsSync(modulePath) ? JSON.parse(readFileSync(modulePath, "utf-8")) : null;
+
+    return {
+      status: "ok",
+      run: stripHiddenState(runState),
+      module: module ? {
+        moduleId: module.moduleId,
+        title: module.title,
+        rulesetProfileId: module.rulesetProfileId,
+        sceneCount: module.scenes?.length || 0,
+      } : null,
+      saveSlots: runState.saveSlots || [],
+      branches: (runState.branches || []).map((b) => ({
+        branchId: b.branchId,
+        label: b.label,
+        status: b.status,
+      })),
+    };
+  } catch (err) {
+    return { status: "error", code: "LOAD_RUN_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Restore save ──
+
+export async function restoreTabletopV2Save(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot is required" };
+
+  try {
+    const { runId, saveId } = body;
+    if (!runId) return { status: "error", code: "NO_RUN_ID", errorMsg: "runId is required" };
+    if (!saveId) return { status: "error", code: "NO_SAVE_ID", errorMsg: "saveId is required" };
+
+    const savePath = join(savesDir(dataRoot, runId), `${saveId}.json`);
+    if (!existsSync(savePath)) {
+      return { status: "error", code: "SAVE_NOT_FOUND", errorMsg: `save ${saveId} not found` };
+    }
+
+    const saveSlot = JSON.parse(readFileSync(savePath, "utf-8"));
+    const restored = restoreSaveSlot(saveSlot);
+
+    // Load current run state to preserve moduleId/branchId etc.
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    const currentState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf-8")) : null;
+
+    const updatedState = {
+      ...currentState,
+      ...restored,
+      runId,
+      moduleId: currentState?.moduleId,
+      branchId: currentState?.branchId || `branch_restored_${Date.now()}`,
+      updatedAt: new Date().toISOString(),
+    };
+
+    writeFileSync(statePath, JSON.stringify(updatedState, null, 2));
+
+    return {
+      status: "ok",
+      run: stripHiddenState(updatedState),
+      restoredFromSaveId: saveId,
+      restoredTurnIndex: saveSlot.turnIndex,
+    };
+  } catch (err) {
+    return { status: "error", code: "RESTORE_SAVE_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Switch branch ──
+
+export async function switchTabletopV2Branch(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot is required" };
+
+  try {
+    const { runId, branchId } = body;
+    if (!runId) return { status: "error", code: "NO_RUN_ID", errorMsg: "runId is required" };
+    if (!branchId) return { status: "error", code: "NO_BRANCH_ID", errorMsg: "branchId is required" };
+
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    if (!existsSync(statePath)) {
+      return { status: "error", code: "RUN_NOT_FOUND", errorMsg: `run ${runId} not found` };
+    }
+
+    const runState = JSON.parse(readFileSync(statePath, "utf-8"));
+    const branch = (runState.branches || []).find((b) => b.branchId === branchId);
+    if (!branch) {
+      return { status: "error", code: "BRANCH_NOT_FOUND", errorMsg: `branch ${branchId} not found` };
+    }
+
+    // Update run state to reflect active branch switch
+    runState.activeBranchId = branchId;
+    runState.branchSwitchHistory = [
+      ...(runState.branchSwitchHistory || []),
+      { from: runState.branchId, to: branchId, at: new Date().toISOString() },
+    ];
+    runState.branchId = branchId;
+    runState.updatedAt = new Date().toISOString();
+
+    writeFileSync(statePath, JSON.stringify(runState, null, 2));
+
+    return {
+      status: "ok",
+      activeBranchId: branchId,
+      branchLabel: branch.label,
+      run: stripHiddenState(runState),
+    };
+  } catch (err) {
+    return { status: "error", code: "SWITCH_BRANCH_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Export run ──
+
+export async function exportTabletopV2Run(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot is required" };
+
+  try {
+    const { runId } = body;
+    if (!runId) return { status: "error", code: "NO_RUN_ID", errorMsg: "runId is required" };
+
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    if (!existsSync(statePath)) {
+      return { status: "error", code: "RUN_NOT_FOUND", errorMsg: `run ${runId} not found` };
+    }
+
+    const runState = JSON.parse(readFileSync(statePath, "utf-8"));
+    const modulePath = join(moduleDir(dataRoot, runState.moduleId), "module.json");
+    const module = existsSync(modulePath) ? JSON.parse(readFileSync(modulePath, "utf-8")) : null;
+
+    // Build public-facing export (no hiddenGmState)
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      runId: runState.runId,
+      moduleId: runState.moduleId,
+      moduleTitle: module?.title || "",
+      branchId: runState.branchId,
+      turnIndex: runState.turnIndex,
+      createdAt: runState.createdAt,
+      updatedAt: runState.updatedAt,
+      publicState: runState.publicState,
+      rollHistory: runState.rollHistory || [],
+      endingState: runState.endingState || null,
+      branches: (runState.branches || []).map((b) => ({
+        branchId: b.branchId,
+        label: b.label,
+        status: b.status,
+        divergenceTurnIndex: b.divergenceTurnIndex,
+      })),
+      saveSlots: (runState.saveSlots || []),
+      sceneHistory: runState.sceneHistory || [],
+    };
+
+    // Also write export to file for persistence
+    const exportPath = join(runDir(dataRoot, runId), `export-${Date.now()}.json`);
+    writeFileSync(exportPath, JSON.stringify(exportData, null, 2));
+
+    return { status: "ok", export: exportData, exportPath };
+  } catch (err) {
+    return { status: "error", code: "EXPORT_FAILED", errorMsg: err.message };
+  }
+}

@@ -2852,31 +2852,29 @@ async function handleAPI(req, res) {
       const { endTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
       return jsonResponse(res, await endTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
     }
-
-    // ── Tabletop V2 ──
-    if (path === "/api/tabletop-v2/import-preview" && method === "POST") {
-      const { previewTabletopV2Import } = await import("./src/server/tabletop-v2-service.js");
-      return jsonResponse(res, await previewTabletopV2Import(await readBody(req), { dataRoot: dataRoot() }));
+    if (path === "/api/tabletop-v2/import-commit" && method === "POST") {
+      const { commitTabletopV2Import } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await commitTabletopV2Import(await readBody(req), { dataRoot: dataRoot() }));
     }
-    if (path === "/api/tabletop-v2/start" && method === "POST") {
-      const { startTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
-      return jsonResponse(res, await startTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    if (path === "/api/tabletop-v2/runs" && method === "GET") {
+      const { listTabletopV2Runs } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await listTabletopV2Runs({ dataRoot: dataRoot() }));
     }
-    if (path === "/api/tabletop-v2/turn" && method === "POST") {
-      const { handleTabletopV2Turn } = await import("./src/server/tabletop-v2-service.js");
-      return jsonResponse(res, await handleTabletopV2Turn(await readBody(req), { dataRoot: dataRoot() }));
+    if (path === "/api/tabletop-v2/load-run" && method === "POST") {
+      const { loadTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await loadTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
     }
-    if (path === "/api/tabletop-v2/save" && method === "POST") {
-      const { saveTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
-      return jsonResponse(res, await saveTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    if (path === "/api/tabletop-v2/restore-save" && method === "POST") {
+      const { restoreTabletopV2Save } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await restoreTabletopV2Save(await readBody(req), { dataRoot: dataRoot() }));
     }
-    if (path === "/api/tabletop-v2/branch" && method === "POST") {
-      const { branchTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
-      return jsonResponse(res, await branchTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    if (path === "/api/tabletop-v2/switch-branch" && method === "POST") {
+      const { switchTabletopV2Branch } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await switchTabletopV2Branch(await readBody(req), { dataRoot: dataRoot() }));
     }
-    if (path === "/api/tabletop-v2/end-summary" && method === "POST") {
-      const { endTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
-      return jsonResponse(res, await endTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    if (path === "/api/tabletop-v2/export-run" && method === "POST") {
+      const { exportTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await exportTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
     }
 
     // ── Detective V2 ──

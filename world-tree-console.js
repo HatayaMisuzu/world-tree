@@ -417,14 +417,17 @@ function renderModePlayPanel() {
         </div>
       </section>`);
     } else {
-      // V2 导入/启动面板
-      sections.push(`<section><strong>🎲 Tabletop V2</strong>
-        <p class="tiny muted">粘贴模组 JSON 或自由文本开始冒险</p>
-        <textarea id="tabletopV2ImportText" rows="4" placeholder='${U.esc('{"title":"我的冒险","sourceType":"quick_start","playerBrief":{"premise":"..."}}')}' class="full-width" style="margin-bottom:6px;font-size:12px"></textarea>
+      // V2 导入面板（增强：支持预览展示 + 导入提交）
+      const preview = tv2.importPreview;
+      sections.push(`<section><strong>🎲 Tabletop V2 导入</strong>
+        <p class="tiny muted">粘贴模组 JSON、Markdown 或自由文本开始冒险</p>
+        <textarea id="tabletopV2ImportText" rows="5" placeholder='${U.esc('{\n  "title": "我的冒险",\n  "sourceType": "quick_start",\n  "playerBrief": { "premise": "..." }\n}')}' class="full-width" style="margin-bottom:6px;font-size:12px"></textarea>
         <div class="actions">
           <button data-action="tabletop-v2-preview-import">🔍 预览</button>
-          <button class="primary" data-action="tabletop-v2-start">▶ 开始冒险</button>
+          <button class="primary" data-action="tabletop-v2-start">▶ 快速开始</button>
+          <button data-action="tabletop-v2-import-commit">📥 导入并保存</button>
         </div>
+        ${preview ? `<div class="notice" style="margin-top:6px"><strong>${U.esc(preview.title || preview.moduleId || "预览")}</strong><br><span class="tiny">场景: ${preview.sceneCount||preview.sceneNames?.length||0} · 角色: ${preview.characterCount||preview.characterNames?.length||0} · 规则: ${U.esc(preview.rulesetProfileId||"")}</span></div>` : ""}
       </section>`);
     }
   }
@@ -1557,7 +1560,12 @@ async function handleAction(e, btn) {
     if (action === "tabletop-v2-save") return saveTabletopV2FromUI();
     if (action === "tabletop-v2-branch") return branchTabletopV2FromUI();
     if (action === "tabletop-v2-end") return endTabletopV2FromUI();
-    if (action === "tabletop-v2-clear") { AS.tabletopV2 = { runId: null, module: null, ruleset: null, lastRuling: null, ending: null }; return render(); }
+    if (action === "tabletop-v2-clear") { AS.tabletopV2 = { runId: null, module: null, ruleset: null, lastRuling: null, ending: null, endingAvailable: false, importText: "", importPreview: null, playerIntent: "", lastNarrative: "", currentScene: "", diceLog: [], publicClocks: [], resources: {}, inventory: [], questLog: [], visibleNpcs: [], saveSlots: [], branches: [], activeTab: "scene", busy: false, error: "" }; return render(); }
+    if (action === "tabletop-v2-tab") { AS.tabletopV2.activeTab = btn.dataset.tab || "scene"; return render(); }
+    if (action === "tabletop-v2-send-turn") return sendTabletopV2TurnFromInput();
+    if (action === "tabletop-v2-import-commit") return commitTabletopV2Import();
+    if (action === "tabletop-v2-export") return exportTabletopV2FromUI();
+    if (action === "tabletop-v2-load-save") return loadTabletopV2SaveFromUI(btn.dataset.saveId);
     if (action === "strategy-sim-start") return multiModeStart("strategy-sim", "#strategyTitle", "#strategyText");
     if (action === "murder-mystery-start") return multiModeStart("murder-mystery", "#murderTitle", "#murderText");
     if (action === "chat-send") return sendChat();
@@ -1770,6 +1778,14 @@ async function endTabletopV2FromUI() {
   render();
 }
 
+async function sendTabletopV2TurnFromInput() {
+  const input = document.getElementById("tabletopV2PlayerIntent");
+  const playerIntent = input?.value.trim();
+  if (!playerIntent) return createToast("请输入你的行动", "warn");
+  input.value = "";
+  return sendTabletopV2Turn(playerIntent);
+}
+
 async function sendTabletopV2Turn(playerIntent) {
   if (progressTimer) clearInterval(progressTimer);
   progressTimer = setInterval(() => {
@@ -1814,6 +1830,54 @@ async function sendTabletopV2Turn(playerIntent) {
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
   }
+}
+
+// ── Tabletop V2 additional UI handlers ──
+
+async function commitTabletopV2Import() {
+  const text = U.qs("#tabletopV2ImportText")?.value.trim();
+  if (!text) return createToast("请粘贴模组内容", "warn");
+  try {
+    AS.tabletopV2.busy = true; render();
+    let module;
+    try { module = JSON.parse(text); } catch { module = { title: "导入模组", sourceType: "external_text", playerBrief: { premise: text.slice(0, 500) } }; }
+    const res = await API.tabletopV2ImportCommit({ module });
+    if (res.status === "ok") {
+      createToast("模组已导入: " + res.title + " (" + res.sceneCount + " 场景)");
+      AS.tabletopV2.importPreview = res;
+    } else {
+      createToast(res.errorMsg || "导入失败", "warn");
+    }
+  } catch (e) { createToast(e.message, "warn"); }
+  finally { AS.tabletopV2.busy = false; render(); }
+}
+
+async function exportTabletopV2FromUI() {
+  if (!AS.tabletopV2.runId) return createToast("请先开始冒险", "warn");
+  try {
+    const res = await API.tabletopV2ExportRun({ runId: AS.tabletopV2.runId });
+    if (res.status === "ok") {
+      createToast("跑团记录已导出");
+      try { await navigator.clipboard.writeText(JSON.stringify(res.export, null, 2)); createToast("已复制到剪贴板"); } catch {}
+    } else {
+      createToast(res.errorMsg || "导出失败", "warn");
+    }
+  } catch (e) { createToast(e.message, "warn"); }
+}
+
+async function loadTabletopV2SaveFromUI(saveId) {
+  if (!AS.tabletopV2.runId || !saveId) return createToast("缺少存档信息", "warn");
+  try {
+    const res = await API.tabletopV2RestoreSave({ runId: AS.tabletopV2.runId, saveId });
+    if (res.status === "ok") {
+      AS.tabletopV2.lastNarrative = res.run?.publicState?.lastNarrative || "";
+      AS.tabletopV2.currentScene = res.run?.publicState?.sceneTitle || "";
+      createToast("已恢复存档 (回合 " + res.restoredTurnIndex + ")");
+    } else {
+      createToast(res.errorMsg || "加载失败", "warn");
+    }
+  } catch (e) { createToast(e.message, "warn"); }
+  render();
 }
 
 async function characterStartChat() {
