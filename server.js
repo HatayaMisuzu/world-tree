@@ -2853,6 +2853,66 @@ async function handleAPI(req, res) {
       return jsonResponse(res, await endTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
     }
 
+    // ── Tabletop V2 ──
+    if (path === "/api/tabletop-v2/import-preview" && method === "POST") {
+      const { previewTabletopV2Import } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await previewTabletopV2Import(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/start" && method === "POST") {
+      const { startTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await startTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/turn" && method === "POST") {
+      const { handleTabletopV2Turn } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await handleTabletopV2Turn(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/save" && method === "POST") {
+      const { saveTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await saveTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/branch" && method === "POST") {
+      const { branchTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await branchTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/tabletop-v2/end-summary" && method === "POST") {
+      const { endTabletopV2Run } = await import("./src/server/tabletop-v2-service.js");
+      return jsonResponse(res, await endTabletopV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+
+    // ── Detective V2 ──
+    if (path === "/api/detective-v2/import-preview" && method === "POST") {
+      const { previewDetectiveV2Import } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await previewDetectiveV2Import(await readBody(req)));
+    }
+    if (path === "/api/detective-v2/import-commit" && method === "POST") {
+      const { commitDetectiveV2Import } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await commitDetectiveV2Import(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/start" && method === "POST") {
+      const { startDetectiveV2Run } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await startDetectiveV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/investigate" && method === "POST") {
+      const { investigateDetectiveV2 } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await investigateDetectiveV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/interrogate" && method === "POST") {
+      const { interrogateDetectiveV2 } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await interrogateDetectiveV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/notebook/extract" && method === "POST") {
+      const { extractDetectiveV2Notebook } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await extractDetectiveV2Notebook(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/notebook/update" && method === "POST") {
+      const { updateDetectiveV2Notebook } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await updateDetectiveV2Notebook(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/deduction/submit" && method === "POST") {
+      const { submitDetectiveV2Deduction } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await submitDetectiveV2Deduction(await readBody(req), { dataRoot: dataRoot() }));
+    }
+
     // ── 世界书编辑与测试 ──
     if (path === "/api/worldbook" && method === "GET") return jsonResponse(res, await handleWorldbook({}, "GET", url));
     if (path === "/api/worldbook" && method === "POST") return jsonResponse(res, await handleWorldbook(await readBody(req), "POST", url));

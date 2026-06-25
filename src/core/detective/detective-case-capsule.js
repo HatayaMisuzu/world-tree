@@ -115,6 +115,12 @@ export function extractDetectivePlayerCaseView(caseCapsule = {}) {
     return publicLoc;
   });
 
+  // Strip hidden timeline info
+  if (safe.timeline) {
+    const { realTimeline, ...publicTimeline } = safe.timeline;
+    safe.timeline = publicTimeline;
+  }
+
   return safe;
 }
 

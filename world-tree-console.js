@@ -220,6 +220,7 @@ const AS = {
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
   characterV2Create: { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false },
   tabletopV2: { runId: null, module: null, ruleset: null, lastRuling: null, ending: null },
+  detectiveV2: { caseId: null, runId: null, importPreview: null, playerCase: null, playerRun: null, currentLocationId: "", currentCharacterId: "", lastInvestigation: null, lastInterview: null, notebookOpen: true, notebook: null, deductionDraft: {}, error: "", busy: false },
 };
 
 const C = {

@@ -102,6 +102,11 @@ const linkageContract = join(ROOT, "src/core/mode/mode-asset-linkage-contract.js
 if (existsSync(linkageContract)) combinedCode += "\n" + readFileSync(linkageContract, "utf-8");
 const saveBranch = join(ROOT, "src/core/tabletop/tabletop-v2-save-branch.js");
 if (existsSync(saveBranch)) combinedCode += "\n" + readFileSync(saveBranch, "utf-8");
+// Server-side files for route/namespace audit
+const serverJsCode = join(ROOT, "server.js");
+if (existsSync(serverJsCode)) combinedCode += "\n" + readFileSync(serverJsCode, "utf-8");
+const detectiveSvc = join(ROOT, "src/server/detective-v2-service.js");
+if (existsSync(detectiveSvc)) combinedCode += "\n" + readFileSync(detectiveSvc, "utf-8");
 
 // 检查 API 端点是否被 HTML 调用且响应字段被使用
 const apiContracts = [
@@ -315,6 +320,15 @@ if (combinedCode.includes("runtimeIsolation")) pass("运行时隔离元数据存
 else fail("运行时隔离元数据缺失");
 if (combinedCode.includes("MODE_ASSET_LINKAGE_AND_RUNTIME_ISOLATION") || combinedCode.includes("Mode Asset Linkage")) pass("模式联动/隔离文档存在");
 else fail("模式联动/隔离文档缺失");
+// Detective V2 runtime markers (check URL paths)
+for (const marker of ["/api/detective-v2/import-preview", "/api/detective-v2/start", "/api/detective-v2/investigate", "/api/detective-v2/interrogate", "/api/detective-v2/deduction/submit"]) {
+  if (combinedCode.includes(marker)) pass(`Detective V2 路由 “${marker}” 存在`);
+  else fail(`Detective V2 路由 “${marker}” 缺失`);
+}
+if (combinedCode.includes("detectiveV2")) pass("Detective V2 UI 状态存在");
+else fail("Detective V2 UI 状态缺失");
+if (combinedCode.includes("engine/detective-v2")) pass("Detective V2 引擎命名空间存在");
+else fail("Detective V2 引擎命名空间缺失");
 
 // ═══════════════════════════════════════════════════════════════
 //  结论
