@@ -52,8 +52,9 @@ export function normalizeAdventureModule(input = {}) {
     endingPolicy: input.endingPolicy || { type: "default", summaryTemplate: null },
     assetLinks: input.assetLinks || {},
     constraints: input.constraints || {
-      allowedActionTypes: input.constraints?.allowedActionTypes || ["explore", "social", "combat", "investigate", "use_skill"],
+      allowedActionTypes: input.constraints?.allowedActionTypes || ["explore", "social", "combat", "investigate", "use_skill", "stealth", "knowledge"],
       forbiddenActions: input.constraints?.forbiddenActions || [],
+      outOfScopePatterns: input.constraints?.outOfScopePatterns || [],
       sceneTransitions: input.constraints?.sceneTransitions || {},
     },
     // preserve unknown fields
@@ -71,9 +72,15 @@ function normalizeScene(scene = {}) {
     isStarting: scene.isStarting || false,
     isEnding: scene.isEnding || false,
     allowedActions: scene.allowedActions || [],
+    allowedActionTypes: scene.allowedActionTypes || [],
+    forbiddenActions: scene.forbiddenActions || [],
     transitions: scene.transitions || [],
+    allowedTransitions: scene.allowedTransitions || [],
     npcs: scene.npcs || [],
     clues: scene.clues || [],
+    requiredClues: scene.requiredClues || [],
+    requiredFlags: scene.requiredFlags || [],
+    lockedUntil: scene.lockedUntil || null,
     isHidden: scene.isHidden || false,
     gmNotes: scene.gmNotes || "",
   };
@@ -169,36 +176,138 @@ export function resolveCurrentScene(module = {}, runState = {}) {
 
 // ── Intent validation ──
 
-export function validatePlayerIntentAgainstBook({ module, scene, runState, intent }) {
+export function validatePlayerIntentAgainstBook({ module, scene, runState, intent, classification }) {
   if (!intent || typeof intent !== "string" || intent.trim().length === 0) {
-    return { allowed: false, reason: "empty intent", suggestion: null };
+    return { allowed: false, reason: "empty intent", suggestion: "请输入一个行动描述。", severity: "block", source: "system" };
   }
 
-  // Check scene constraints
-  if (scene) {
-    if (scene.allowedActions && scene.allowedActions.length > 0) {
-      // scene has explicit allowlist — intent classification deferred to turn ruling
-      // but we can do a basic check: if intent contains clearly forbidden keywords
-    }
-  }
-
-  // Check module-level constraints
-  const forbidden = module.constraints?.forbiddenActions || [];
+  const actionType = classification?.type || "explore";
   const lowerIntent = intent.toLowerCase();
-  for (const fb of forbidden) {
+
+  // 1. Module-level forbidden actions (exact text match)
+  const moduleForbidden = module.constraints?.forbiddenActions || [];
+  for (const fb of moduleForbidden) {
     if (lowerIntent.includes(fb.toLowerCase())) {
       return {
         allowed: false,
-        reason: `action forbidden by book: ${fb}`,
-        suggestion: `Book does not allow: ${fb}. Try a different approach.`,
+        reason: `模组禁止此行动: ${fb}`,
+        suggestion: `模组规则不允许: "${fb}"。请尝试其他行动方式。`,
+        severity: "block",
+        source: "module",
       };
     }
   }
 
-  // Check if intent goes beyond allowed action types / impossible in current scene
-  const allowed = module.constraints?.allowedActionTypes || ["explore", "social", "combat", "investigate", "use_skill"];
-  // We don't enforce this strictly here — turn ruling will classify
-  // But we flag if intent seems to violate the book's declared themes
+  // 2. Module-level out-of-scope patterns
+  const outOfScope = module.constraints?.outOfScopePatterns || [];
+  for (const pattern of outOfScope) {
+    try {
+      if (new RegExp(pattern, "i").test(intent)) {
+        return {
+          allowed: false,
+          reason: `行动超出模组范围: ${pattern}`,
+          suggestion: "该行动不在本模组支持范围内，请尝试有意义的冒险行动。",
+          severity: "block",
+          source: "module",
+        };
+      }
+    } catch { /* invalid regex, skip */ }
+  }
 
-  return { allowed: true, reason: null, suggestion: null };
+  // 3. Module-level allowed action types (enforce if non-empty)
+  const moduleAllowed = module.constraints?.allowedActionTypes || [];
+  if (moduleAllowed.length > 0 && !moduleAllowed.includes(actionType)) {
+    return {
+      allowed: false,
+      reason: `模组不允许 ${actionType} 类型的行动`,
+      suggestion: `当前模组允许的行动类型: ${moduleAllowed.join("、")}。请从这些类型中尝试。`,
+      severity: "block",
+      source: "module",
+    };
+  }
+
+  // 4. Scene-level constraints
+  if (scene) {
+    // 4a. Scene forbidden actions
+    const sceneForbidden = scene.forbiddenActions || [];
+    for (const fb of sceneForbidden) {
+      if (lowerIntent.includes(fb.toLowerCase())) {
+        return {
+          allowed: false,
+          reason: `当前场景禁止: ${fb}`,
+          suggestion: `在${scene.title}中不能执行"${fb}"。请尝试其他方式。`,
+          severity: "block",
+          source: "scene",
+        };
+      }
+    }
+
+    // 4b. Scene allowed action types (enforce if non-empty)
+    const sceneAllowed = scene.allowedActionTypes || scene.allowedActions || [];
+    const typeLabels = sceneAllowed.filter((a) => typeof a === "string");
+    if (typeLabels.length > 0 && !typeLabels.includes(actionType)) {
+      return {
+        allowed: false,
+        reason: `当前场景不允许 ${actionType} 类型的行动`,
+        suggestion: `在${scene.title}中可以尝试: ${typeLabels.join("、")}。`,
+        severity: "block",
+        source: "scene",
+      };
+    }
+
+    // 4c. Scene lock conditions
+    if (scene.lockedUntil && typeof scene.lockedUntil === "object") {
+      const flags = runState?.publicState?._flags || {};
+      for (const [key, value] of Object.entries(scene.lockedUntil)) {
+        if (flags[key] !== value) {
+          return {
+            allowed: false,
+            reason: `场景尚未解锁 (需要 ${key}=${value})`,
+            suggestion: "当前行动在此场景还不可用，请先探索其他路径。",
+            severity: "block",
+            source: "scene",
+          };
+        }
+      }
+    }
+
+    // 4d. Required clues/flags
+    const requiredClues = scene.requiredClues || [];
+    if (requiredClues.length > 0) {
+      const discoveredClues = runState?.publicState?._discoveredClues || [];
+      const missing = requiredClues.filter((c) => !discoveredClues.includes(c));
+      if (missing.length > 0) {
+        return {
+          allowed: false,
+          reason: `缺少关键线索: ${missing.join(", ")}`,
+          suggestion: "你需要先收集足够的信息才能在此场景推进。",
+          severity: "warn",
+          source: "scene",
+        };
+      }
+    }
+
+    // 4e. Allowed transitions (for movement actions)
+    if (actionType === "explore" && scene.allowedTransitions?.length > 0) {
+      const targetMatch = intent.match(/前往|进入|移动到|走到|去\s*(.+)/);
+      if (targetMatch) {
+        const target = targetMatch[1].trim();
+        const transition = scene.allowedTransitions.find(
+          (t) => t.toLowerCase().includes(target.toLowerCase()) || target.toLowerCase().includes(t.toLowerCase())
+        );
+        if (!transition) {
+          return {
+            allowed: false,
+            reason: `无法从${scene.title}前往该地点`,
+            suggestion: `从${scene.title}可以去: ${scene.allowedTransitions.join("、")}。`,
+            severity: "block",
+            source: "scene",
+          };
+        }
+      }
+    }
+  }
+
+  // 5. Default: allow
+  return { allowed: true, reason: null, suggestion: null, severity: "ok", source: "system" };
 }

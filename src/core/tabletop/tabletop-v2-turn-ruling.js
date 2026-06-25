@@ -270,6 +270,62 @@ export function buildGmNarrationPacket(ruling) {
   };
 }
 
+// ── Deterministic GM turn text (no LLM, no hidden GM leakage) ──
+
+export function buildDeterministicGmTurnText({ request, ruling, bookCheck, module, scene } = {}) {
+  const lines = [];
+
+  // Current situation
+  if (scene) {
+    lines.push(`【当前局面】${scene.title}: ${scene.description || ""}`);
+  }
+  if (module?.playerBrief?.objective) {
+    lines.push(`【目标】${module.playerBrief.objective}`);
+  }
+
+  // Book check (if blocked, explain why)
+  if (bookCheck && !bookCheck.allowed) {
+    lines.push(`【行动被阻止】${bookCheck.reason}`);
+    if (bookCheck.suggestion) lines.push(`【建议】${bookCheck.suggestion}`);
+    return lines.join("\n\n");
+  }
+
+  // Action ruling
+  if (ruling.noRoll) {
+    lines.push(`【行动裁定】${ruling.classification} — 无需投骰`);
+    lines.push(`【结果】行动成功。根据当前场景自然推进。`);
+  } else if (ruling.roll) {
+    const isPublic = ruling.roll.visibility !== "hidden";
+    lines.push(`【行动裁定】${ruling.classification} — ${isPublic ? `投骰: ${ruling.roll.expression} = ${ruling.roll.total} (${ruling.roll.outcome})` : "暗骰已记录"}`);
+    if (isPublic && ruling.roll.probabilityEstimate !== undefined) {
+      lines.push(`【概率】${Math.round(ruling.roll.probabilityEstimate * 100)}%`);
+    }
+    // Outcome description
+    const outcomeMap = {
+      critical_success: "大成功！行动完美达成，获得额外收益。",
+      success: "行动成功。",
+      partial_success: "部分成功，附带代价或限制。",
+      failure_forward: "行动失败，但剧情向前推进，局面发生变化。",
+      critical_failure: "大失败！遭遇严重挫折或意外。",
+    };
+    lines.push(`【结果】${outcomeMap[ruling.roll.outcome] || ruling.roll.outcome}`);
+  }
+
+  // Consequences
+  if (ruling.consequences?.length) {
+    lines.push(`【后果】${ruling.consequences.map((c) => c.description).join("；")}`);
+  }
+
+  // Action hints
+  if (scene?.allowedActionTypes?.length) {
+    lines.push(`【可行行动】${scene.allowedActionTypes.join("、")}`);
+  } else if (module?.constraints?.allowedActionTypes?.length) {
+    lines.push(`【可行行动】${module.constraints.allowedActionTypes.join("、")}`);
+  }
+
+  return lines.join("\n\n");
+}
+
 // ── Ruling validation ──
 
 export function validateRuling(ruling) {

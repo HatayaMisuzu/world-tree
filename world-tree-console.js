@@ -407,14 +407,24 @@ function renderModePlayPanel() {
         <p class="tiny">规则集: ${U.esc(tv2.ruleset || "d20_fantasy")} · 模组: ${U.esc(tv2.module || "")}</p>
         ${tv2.lastRuling ? `<div class="roll-card"><span>投骰: ${U.esc(tv2.lastRuling.expression || "—")}</span><strong>${U.esc(tv2.lastRuling.total)}</strong><span class="badge ${tv2.lastRuling.outcome === "success" || tv2.lastRuling.outcome === "critical_success" ? "ok" : tv2.lastRuling.outcome === "partial_success" ? "pending" : "warn"}">${U.esc(tv2.lastRuling.outcome || "—")}</span></div>` : ""}
         ${tv2.lastRuling?.probabilityEstimate !== undefined ? `<p class="tiny muted">概率: ${Math.round(tv2.lastRuling.probabilityEstimate * 100)}%</p>` : ""}
+        ${tv2.ending ? `<div class="notice ok">结局摘要已生成</div>` : ""}
         <div class="actions" style="margin-top:6px">
           <button data-action="tabletop-v2-save">💾 存档</button>
           <button data-action="tabletop-v2-branch">🔀 分支</button>
           <button data-action="tabletop-v2-end">📋 结局摘要</button>
+          <button data-action="tabletop-v2-clear">✕ 清除</button>
         </div>
       </section>`);
     } else {
-      sections.push(`<section><strong>骰子判定</strong>${dice ? `<p>${U.esc(dice.notation)} → [${(dice.rolls || []).map(U.esc).join(", ")}] = <strong>${U.esc(dice.total)}</strong></p>` : `<p class="tiny muted">输入 /roll 1d20+3 进行判定。</p>`}</section>`);
+      // V2 导入/启动面板
+      sections.push(`<section><strong>🎲 Tabletop V2</strong>
+        <p class="tiny muted">粘贴模组 JSON 或自由文本开始冒险</p>
+        <textarea id="tabletopV2ImportText" rows="4" placeholder='${U.esc('{"title":"我的冒险","sourceType":"quick_start","playerBrief":{"premise":"..."}}')}' class="full-width" style="margin-bottom:6px;font-size:12px"></textarea>
+        <div class="actions">
+          <button data-action="tabletop-v2-preview-import">🔍 预览</button>
+          <button class="primary" data-action="tabletop-v2-start">▶ 开始冒险</button>
+        </div>
+      </section>`);
     }
   }
   const mystery = play.mystery?.discoveredClues ? play.mystery : play.mystery?.clueBoard;
@@ -1540,6 +1550,13 @@ async function handleAction(e, btn) {
     if (action === "world-rpg-start") return multiModeStart("world-rpg", "#wrpgTitle", "#wrpgText");
     if (action === "mystery-puzzle-start") return multiModeStart("mystery-puzzle", "#mysteryTitle", "#mysteryText");
     if (action === "tabletop-start") return multiModeStart("tabletop", "#tabletopTitle", "#tabletopText");
+    // Tabletop V2
+    if (action === "tabletop-v2-preview-import") return previewTabletopV2Import();
+    if (action === "tabletop-v2-start") return startTabletopV2FromUI();
+    if (action === "tabletop-v2-save") return saveTabletopV2FromUI();
+    if (action === "tabletop-v2-branch") return branchTabletopV2FromUI();
+    if (action === "tabletop-v2-end") return endTabletopV2FromUI();
+    if (action === "tabletop-v2-clear") { AS.tabletopV2 = { runId: null, module: null, ruleset: null, lastRuling: null, ending: null }; return render(); }
     if (action === "strategy-sim-start") return multiModeStart("strategy-sim", "#strategyTitle", "#strategyText");
     if (action === "murder-mystery-start") return multiModeStart("murder-mystery", "#murderTitle", "#murderText");
     if (action === "chat-send") return sendChat();
@@ -1664,6 +1681,90 @@ async function quickStartChat() {
   AS.workbenchMode = "chat";
   AS.view = "workbench";
   createToast("已创建快速项目草稿");
+  render();
+}
+
+// ── Tabletop V2 UI handlers ──
+
+async function previewTabletopV2Import() {
+  const text = U.qs("#tabletopV2ImportText")?.value.trim();
+  if (!text) return createToast("请粘贴 Tabletop V2 模组 JSON 或文本", "warn");
+  try {
+    const data = JSON.parse(text);
+    AS.tabletopV2.importPreview = data;
+    createToast("导入预览已生成");
+  } catch {
+    AS.tabletopV2.importPreview = { title: "文本导入", playerBrief: { premise: text.slice(0, 200) } };
+  }
+  render();
+}
+
+async function startTabletopV2FromUI() {
+  const text = U.qs("#tabletopV2ImportText")?.value.trim();
+  if (!text && !AS.tabletopV2.importPreview) return createToast("请先粘贴模组内容并预览", "warn");
+  try {
+    AS.tabletopV2.busy = true; render();
+    let module;
+    try { module = JSON.parse(text); } catch { module = { title: "快速冒险", sourceType: "quick_start", playerBrief: { premise: text.slice(0, 500) } }; }
+    const res = await API.tabletopV2Start({ module, playerCharacter: null });
+    if (res.status === "ok") {
+      AS.tabletopV2.runId = res.run.runId;
+      AS.tabletopV2.module = res.run.publicState?.sceneTitle || res.moduleId;
+      AS.tabletopV2.ruleset = res.rulesetKind;
+      AS.tabletopV2.lastRuling = null;
+      AS.tabletopV2.error = "";
+      createToast("Tabletop V2 冒险已开始！");
+    } else {
+      AS.tabletopV2.error = res.errorMsg || "启动失败";
+      createToast(AS.tabletopV2.error, "warn");
+    }
+  } catch (e) {
+    AS.tabletopV2.error = e.message;
+    createToast(e.message, "warn");
+  } finally {
+    AS.tabletopV2.busy = false;
+    render();
+  }
+}
+
+async function saveTabletopV2FromUI() {
+  if (!AS.tabletopV2.runId) return createToast("请先开始一个 Tabletop V2 冒险", "warn");
+  try {
+    const res = await API.tabletopV2Save({ runId: AS.tabletopV2.runId, label: `手动存档 ${new Date().toLocaleTimeString()}` });
+    if (res.status === "ok") {
+      createToast(`存档已创建: ${res.label}`);
+    } else {
+      createToast(res.errorMsg || "存档失败", "warn");
+    }
+  } catch (e) { createToast(e.message, "warn"); }
+}
+
+async function branchTabletopV2FromUI() {
+  if (!AS.tabletopV2.runId) return createToast("请先开始一个 Tabletop V2 冒险", "warn");
+  try {
+    // Use latest save or create a quick save first
+    const saveRes = await API.tabletopV2Save({ runId: AS.tabletopV2.runId, label: `分支前存档 ${new Date().toLocaleTimeString()}` });
+    if (saveRes.status !== "ok") return createToast("请先存档再分支", "warn");
+    const res = await API.tabletopV2Branch({ runId: AS.tabletopV2.runId, saveId: saveRes.saveId, branchLabel: `分支 ${new Date().toLocaleTimeString()}` });
+    if (res.status === "ok") {
+      createToast(`分支已创建: ${res.label || res.branchId}`);
+    } else {
+      createToast(res.errorMsg || "分支失败", "warn");
+    }
+  } catch (e) { createToast(e.message, "warn"); }
+}
+
+async function endTabletopV2FromUI() {
+  if (!AS.tabletopV2.runId) return createToast("请先开始一个 Tabletop V2 冒险", "warn");
+  try {
+    const res = await API.tabletopV2EndSummary({ runId: AS.tabletopV2.runId });
+    if (res.status === "ok") {
+      AS.tabletopV2.ending = res.summary;
+      createToast("结局摘要已生成，请查看面板");
+    } else {
+      createToast(res.errorMsg || "生成结局失败", "warn");
+    }
+  } catch (e) { createToast(e.message, "warn"); }
   render();
 }
 

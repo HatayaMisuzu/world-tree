@@ -74,16 +74,16 @@ test("handleTabletopV2Turn: returns hidden roll without details for player", asy
     module: {
       title: "Hidden Roll Test",
       sourceType: "quick_start",
-      ruleset: { kind: "d20", rollVisibilityPolicy: { defaultVisibility: "public", hiddenActionTypes: ["stealth"] } },
+      ruleset: { kind: "d20", rollVisibilityPolicy: { defaultVisibility: "hidden", hiddenActionTypes: [] } },
     },
   }, deps);
   const result = await handleTabletopV2Turn({
     runId: start.run.runId,
-    playerIntent: "我潜行通过走廊",
+    playerIntent: "我搜索房间",
   }, deps);
   assert.equal(result.status, "ok");
   if (result.ruling.roll?.visibility === "hidden") {
-    assert.equal(result.ruling.roll.expression, "???");
+    assert.equal(result.ruling.roll.expression, "暗骰");
     assert.equal(result.ruling.roll.total, null);
   }
 });

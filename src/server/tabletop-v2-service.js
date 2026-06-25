@@ -4,10 +4,10 @@
 
 import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { normalizeAdventureModule, validateAdventureModule } from "../core/tabletop/tabletop-v2-adventure-module.js";
+import { normalizeAdventureModule, validateAdventureModule, validatePlayerIntentAgainstBook } from "../core/tabletop/tabletop-v2-adventure-module.js";
 import { normalizeRulesetProfile } from "../core/tabletop/tabletop-v2-ruleset-profile.js";
 import { createTabletopRun, createSaveSlot, restoreSaveSlot, forkBranchFromSave, recordTurn, validateRunState, stripHiddenState } from "../core/tabletop/tabletop-v2-save-branch.js";
-import { createRulingRequest, resolveRulingWithoutLlm, buildGmNarrationPacket } from "../core/tabletop/tabletop-v2-turn-ruling.js";
+import { createRulingRequest, resolveRulingWithoutLlm, buildGmNarrationPacket, buildDeterministicGmTurnText } from "../core/tabletop/tabletop-v2-turn-ruling.js";
 import { detectEndingAvailable, buildEndingSummary } from "../core/tabletop/tabletop-v2-ending-summary.js";
 
 // ── Paths ──
@@ -144,7 +144,7 @@ export async function handleTabletopV2Turn(body = {}, deps = {}) {
     }
     const module = JSON.parse(readFileSync(modulePath, "utf-8"));
 
-    // Create ruling request
+    // Create ruling request (classify first)
     const rulingRequest = createRulingRequest({
       module,
       runState,
@@ -156,17 +156,47 @@ export async function handleTabletopV2Turn(body = {}, deps = {}) {
       return { status: "error", code: "RULING_REQUEST_FAILED", errorMsg: rulingRequest.error };
     }
 
+    // Book validation (BEFORE dice/ruling)
+    const bookCheck = validatePlayerIntentAgainstBook({
+      module,
+      scene: rulingRequest.scene,
+      runState,
+      intent: playerIntent,
+      classification: rulingRequest.classification,
+    });
+
+    if (!bookCheck.allowed) {
+      // Blocked by book — no dice roll, return explanation
+      return {
+        status: "blocked_by_book",
+        code: bookCheck.severity === "warn" ? "ACTION_WARNED_BY_BOOK" : "ACTION_BLOCKED_BY_BOOK",
+        bookCheck: {
+          reason: bookCheck.reason,
+          suggestion: bookCheck.suggestion,
+          severity: bookCheck.severity,
+          source: bookCheck.source,
+        },
+        run: stripHiddenState(runState),
+      };
+    }
+
     // Resolve ruling (deterministic, no LLM)
     const ruling = resolveRulingWithoutLlm(rulingRequest);
 
-    // Build GM narration packet
-    const narrationPacket = buildGmNarrationPacket(ruling);
+    // Build deterministic GM turn text
+    const gmTurnText = buildDeterministicGmTurnText({
+      request: rulingRequest,
+      ruling,
+      bookCheck,
+      module,
+      scene: rulingRequest.scene,
+    });
 
     // Record turn
     const turnRecord = {
       roll: ruling.roll,
       publicStateUpdate: {
-        lastNarrative: "", // filled by LLM later
+        lastNarrative: gmTurnText,
       },
       reviewCandidates: ruling.consequences.some((c) => c.type === "setback" || c.type === "bonus")
         ? [{ type: "major_choice", description: `${ruling.classification}: ${ruling.roll?.outcome || "no roll"}` }]
@@ -184,24 +214,15 @@ export async function handleTabletopV2Turn(body = {}, deps = {}) {
     return {
       status: "ok",
       run: stripHiddenState(runState),
+      narrative: gmTurnText,
       ruling: {
         classification: ruling.classification,
         consequences: ruling.consequences,
-        roll: ruling.roll
-          ? ruling.roll.visibility === "public"
-            ? {
-                expression: ruling.roll.expression,
-                total: ruling.roll.total,
-                outcome: ruling.roll.outcome,
-                probabilityEstimate: ruling.roll.probabilityEstimate,
-              }
-            : { expression: "???", total: null, outcome: "???", visibility: "hidden" }
-          : null,
+        roll: publicRollInfo(ruling.roll),
         noRoll: ruling.noRoll,
       },
-      narrationPacket,
       endingAvailable: endingCheck.available,
-      endings: endingCheck.endings?.filter((e) => e.source !== "clock" || e.source === "book"),
+      endings: publicEndingInfo(endingCheck.endings || [], runState),
     };
   } catch (err) {
     return { status: "error", code: "TURN_FAILED", errorMsg: err.message };
@@ -319,4 +340,34 @@ export async function endTabletopV2Run(body = {}, deps = {}) {
   } catch (err) {
     return { status: "error", code: "END_FAILED", errorMsg: err.message };
   }
+}
+
+// ── Public response helpers ──
+
+function publicRollInfo(roll) {
+  if (!roll) return null;
+  if (roll.visibility === "hidden") {
+    return { expression: "暗骰", total: null, outcome: "暗骰已记录", visibility: "hidden" };
+  }
+  return {
+    expression: roll.expression,
+    total: roll.total,
+    outcome: roll.outcome,
+    probabilityEstimate: roll.probabilityEstimate,
+    visibility: "public",
+  };
+}
+
+function publicEndingInfo(endings = [], runState) {
+  if (!Array.isArray(endings)) return [];
+  return endings.filter((e) => {
+    // Book and scene endings are always public
+    if (e.source === "book" || e.source === "scene") return true;
+    // Clock endings: only if the clock is public
+    if (e.source === "clock") {
+      const clock = (runState?.publicState?.clocks || []).find((c) => c.id === e.endingId?.replace("clock_", ""));
+      return clock?.visibility === "public";
+    }
+    return false;
+  });
 }
