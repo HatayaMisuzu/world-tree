@@ -87,6 +87,10 @@ scripts/         脚本
 ```bash
 npm run test:unit         # 全量单元测试
 npm run test:integration  # 全量集成测试
+npm run test:world-tree-v2-entries           # V2 entry closure gates
+npm run test:single-player-scriptkill-v2     # Single Player ScriptKill V2
+npm run test:single-player-scriptkill-v2-audit
+npm run test:project-complete-audit          # 完整项目审计
 npm run preflight         # audit + check + unit + integration + interface
 ```
 

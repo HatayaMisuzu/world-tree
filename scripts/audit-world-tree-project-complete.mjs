@@ -133,21 +133,29 @@ for (const pattern of stalePatterns) {
 
 // Strong checks for CURRENT_PROJECT_STATE and INDEX
 check("CURRENT_PROJECT_STATE: Trusted Baseline is v0.4.1-v2-entry-closure.0", currentState.includes("v0.4.1-v2-entry-closure.0"));
-check("CURRENT_PROJECT_STATE: Main head is 10b0c2e", currentState.includes("10b0c2e"));
+check("CURRENT_PROJECT_STATE: Main head is 0e07938", currentState.includes("0e07938"));
 check("CURRENT_PROJECT_STATE: Status is V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI", currentState.includes("V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI"));
 check("docs/INDEX: Trusted Baseline is v0.4.1-v2-entry-closure.0", docsIndex.includes("v0.4.1-v2-entry-closure.0"));
-check("docs/INDEX: Main head is 10b0c2e", docsIndex.includes("10b0c2e"));
+check("docs/INDEX: Main head is 0e07938", docsIndex.includes("0e07938"));
 check("docs/INDEX: Character Capsule V2 not marked 未实现", !/Character Capsule V2.*未实现/.test(docsIndex));
 
-// Malformed HTML check
+// Malformed HTML checks
 check("world-tree-console.js: no malformed <button <select", !/<button[^>]*<select/.test(ui));
+check("world-tree-console.js: no <button><option pattern", !/<button[^>]*>\s*<option/.test(ui));
+check("world-tree-console.js: no <button> containing phases.map", !/<button[^>]*>\$\{phases\.map/.test(ui));
 
 check("V2 status doc exists", existsSync(join(root, "docs/V2_ENTRY_COMPLETION_STATUS.md")));
 check("V2 status doc covers all four V2 entries", includesAll(v2Status, ["Tabletop V2", "Detective V2", "Character V2", "Single Player ScriptKill V2"]));
-check("CURRENT_PROJECT_STATE names current V2 entry closure", currentState.includes("V2 Entry Closure") && currentState.includes("10b0c2e"));
+check("CURRENT_PROJECT_STATE names current V2 entry closure", currentState.includes("V2 Entry Closure") && currentState.includes("0e07938"));
 check("docs/INDEX links V2 status doc", docsIndex.includes("V2_ENTRY_COMPLETION_STATUS.md"));
 check("README reflects V2 entry closure", readme.includes("V2 Entry Closure") && includesAll(readme, ["Tabletop V2", "Detective V2", "Character V2", "单人剧本杀 V2"]));
 check("AI-GUIDE documents Single Player ScriptKill V2 boundary", includesAll(aiGuide, ["single-player-scriptkill", "陌生", "DM", "fullTruth"]));
+check("AI-GUIDE includes V2 entry closure test commands", includesAll(aiGuide, [
+  "test:world-tree-v2-entries",
+  "test:single-player-scriptkill-v2",
+  "test:single-player-scriptkill-v2-audit",
+  "test:project-complete-audit"
+]));
 check("SCRIPTS doc mentions V2 gates", includesAll(scriptsDoc, ["test:world-tree-v2-entries", "test:single-player-scriptkill-v2", "test:project-complete-audit"]));
 check("API route inventory includes V2 route groups", includesAll(apiInventory, ["/api/tabletop-v2", "/api/detective-v2", "/api/characters/v2", "/api/single-player-scriptkill-v2"]));
 check("Asset inventory includes V2 entries", includesAll(assetInventory, ["ENTRY-TT-V2", "ENTRY-DET-V2", "ENTRY-CHAR-V2", "ENTRY-SPSK-V2"]));

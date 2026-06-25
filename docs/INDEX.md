@@ -9,7 +9,7 @@
 ## Current Trusted Baseline
 
 - **Trusted tag**: `v0.4.1-v2-entry-closure.0`
-- **Main head**: `10b0c2e`
+- **Main head**: `0e07938`
 - **Status**: Trusted Pre-V2 Closure sealed
 - **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries
 - **Browser QA**: not run
