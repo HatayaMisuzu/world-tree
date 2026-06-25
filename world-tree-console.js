@@ -151,6 +151,21 @@ const API = {
   characterV2CandidateReview(data) { return API.post("/api/characters/v2/candidates/review", data); },
   characterV2CandidateBulkReview(data) { return API.post("/api/characters/v2/candidates/bulk-review", data); },
   characterV2CandidateUndo(data) { return API.post("/api/characters/v2/candidates/undo", data); },
+  // Single Player ScriptKill V2
+  singlePlayerScriptKillV2ImportPreview(data) { return API.post("/api/single-player-scriptkill-v2/import-preview", data); },
+  singlePlayerScriptKillV2ImportCommit(data) { return API.post("/api/single-player-scriptkill-v2/import-commit", data); },
+  singlePlayerScriptKillV2Start(data) { return API.post("/api/single-player-scriptkill-v2/start", data); },
+  singlePlayerScriptKillV2ReadRoleAct(data) { return API.post("/api/single-player-scriptkill-v2/read-role-act", data); },
+  singlePlayerScriptKillV2PublicTalk(data) { return API.post("/api/single-player-scriptkill-v2/public-talk", data); },
+  singlePlayerScriptKillV2PrivateChat(data) { return API.post("/api/single-player-scriptkill-v2/private-chat", data); },
+  singlePlayerScriptKillV2Search(data) { return API.post("/api/single-player-scriptkill-v2/search", data); },
+  singlePlayerScriptKillV2RevealClue(data) { return API.post("/api/single-player-scriptkill-v2/reveal-clue", data); },
+  singlePlayerScriptKillV2AdvancePhase(data) { return API.post("/api/single-player-scriptkill-v2/advance-phase", data); },
+  singlePlayerScriptKillV2Vote(data) { return API.post("/api/single-player-scriptkill-v2/vote", data); },
+  singlePlayerScriptKillV2Debrief(data) { return API.post("/api/single-player-scriptkill-v2/debrief", data); },
+  singlePlayerScriptKillV2ExportRun(data) { return API.post("/api/single-player-scriptkill-v2/export-run", data); },
+  singlePlayerScriptKillV2Runs() { return API.get("/api/single-player-scriptkill-v2/runs"); },
+  singlePlayerScriptKillV2LoadRun(data) { return API.post("/api/single-player-scriptkill-v2/load-run", data); },
 };
 
 const PROGRESS_STAGES = [

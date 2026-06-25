@@ -2959,6 +2959,64 @@ async function handleAPI(req, res) {
       return jsonResponse(res, await exportDetectiveV2GMPack(await readBody(req), { dataRoot: dataRoot() }));
     }
 
+    // ── Single Player ScriptKill V2 ──
+    if (path === "/api/single-player-scriptkill-v2/import-preview" && method === "POST") {
+      const { previewSinglePlayerScriptKillV2Import } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await previewSinglePlayerScriptKillV2Import(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/import-commit" && method === "POST") {
+      const { commitSinglePlayerScriptKillV2Import } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await commitSinglePlayerScriptKillV2Import(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/start" && method === "POST") {
+      const { startSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await startSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/read-role-act" && method === "POST") {
+      const { readSinglePlayerScriptKillV2RoleAct } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await readSinglePlayerScriptKillV2RoleAct(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/public-talk" && method === "POST") {
+      const { publicTalkSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await publicTalkSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/private-chat" && method === "POST") {
+      const { privateChatSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await privateChatSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/search" && method === "POST") {
+      const { searchSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await searchSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/reveal-clue" && method === "POST") {
+      const { revealClueSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await revealClueSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/advance-phase" && method === "POST") {
+      const { advancePhaseSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await advancePhaseSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/vote" && method === "POST") {
+      const { voteSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await voteSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/debrief" && method === "POST") {
+      const { debriefSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await debriefSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/export-run" && method === "POST") {
+      const { exportRunSinglePlayerScriptKillV2 } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await exportRunSinglePlayerScriptKillV2(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/runs" && method === "GET") {
+      const { listSinglePlayerScriptKillV2Runs } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await listSinglePlayerScriptKillV2Runs({ dataRoot: dataRoot() }));
+    }
+    if (path === "/api/single-player-scriptkill-v2/load-run" && method === "POST") {
+      const { loadSinglePlayerScriptKillV2Run } = await import("./src/server/single-player-scriptkill-v2-service.js");
+      return jsonResponse(res, await loadSinglePlayerScriptKillV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+
     // ── 世界书编辑与测试 ──
     if (path === "/api/worldbook" && method === "GET") return jsonResponse(res, await handleWorldbook({}, "GET", url));
     if (path === "/api/worldbook" && method === "POST") return jsonResponse(res, await handleWorldbook(await readBody(req), "POST", url));

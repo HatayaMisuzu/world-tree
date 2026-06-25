@@ -1,0 +1,69 @@
+{
+  "scriptId": "script_demo_clocktower",
+  "title": "钟楼雨夜",
+  "sourceType": "user_uploaded",
+  "ownershipDeclaration": {
+    "userConfirmedLegalAccess": true,
+    "localPrivateUseOnly": true,
+    "noRedistribution": true,
+    "sourceNote": "demo fixture"
+  },
+  "publicIntro": { "text": "雨夜，钟楼停在十点十七分。所有人都声称自己没有靠近钟楼。" },
+  "roleBooks": [
+    {
+      "roleId": "role_writer",
+      "roleName": "陈记者",
+      "publicIdentity": "外地来的记者",
+      "privateIdentity": "正在调查旧案",
+      "roleBookActs": [{ "actId": "act_writer_1", "title": "第一幕", "text": "你来到镇上调查十年前旧案。你知道钟楼记录和旧案有关。", "unlockPhaseId": "phase_reading" }],
+      "secrets": [{ "secretId": "secret_writer_old_case", "text": "你不是普通记者，你为了旧案而来。", "revealPolicy": "player_choice" }],
+      "personalGoals": [{ "missionId": "mission_writer_truth", "description": "查清钟楼记录的来源。" }]
+    },
+    {
+      "roleId": "role_doctor",
+      "roleName": "沈医生",
+      "publicIdentity": "镇上的医生",
+      "privateIdentity": "十年前病历参与者",
+      "roleBookActs": [{ "actId": "act_doctor_1", "title": "第一幕", "text": "你知道十年前病历曾被动过，但不想公开。", "unlockPhaseId": "phase_reading" }],
+      "secrets": [{ "secretId": "secret_medical_record", "text": "你参与过十年前病历的补写。", "revealPolicy": "evidence_pressure", "neverRevealBeforeDebrief": true }],
+      "roleSecretPolicy": { "mustConceal": ["secret_medical_record"], "mayRevealAfter": [{ "condition": "evidence_presented", "evidenceIds": ["clue_signature"] }], "neverRevealBeforeDebrief": ["final_truth"] },
+      "roleKnowledgeBoundary": { "knows": ["自己的行动线", "十年前病历部分信息"], "doesNotKnow": ["其他角色私本", "完整DM复盘"] }
+    },
+    {
+      "roleId": "role_owner",
+      "roleName": "林老板",
+      "publicIdentity": "旅馆老板",
+      "roleBookActs": [{ "actId": "act_owner_1", "title": "第一幕", "text": "你负责保管钟楼钥匙。", "unlockPhaseId": "phase_reading" }],
+      "secrets": [{ "secretId": "secret_key", "text": "备用钥匙曾经丢失半天。", "revealPolicy": "player_choice" }]
+    }
+  ],
+  "dmBook": {
+    "available": true,
+    "fullTruth": { "culpritRoleId": "role_doctor", "answer": "真正凶手利用病历旧案制造时间差。" },
+    "phaseScript": [
+      { "phaseId": "phase_reading", "dmLines": ["请阅读第一幕。"] },
+      { "phaseId": "phase_public", "dmLines": ["现在进入第一轮公聊。"] },
+      { "phaseId": "phase_search", "dmLines": ["现在进入搜证。"] },
+      { "phaseId": "phase_vote", "dmLines": ["请投票。"] },
+      { "phaseId": "phase_debrief", "dmLines": ["进入复盘。"] }
+    ],
+    "debriefScript": { "summary": "钟楼时间是误导，真正关键是病历签名与钥匙记录。" }
+  },
+  "clueCards": [
+    { "clueId": "clue_watch", "title": "停住的怀表", "visibleText": "怀表停在 22:17。", "sourceLocation": "钟楼", "phaseAvailable": "phase_search", "visibility": "private_to_finder", "dmMeaning": "时间被人为制造。", "spoilerLevel": "medium" },
+    { "clueId": "clue_signature", "title": "病历签名", "visibleText": "病历末页有沈医生的补签。", "sourceLocation": "诊所", "phaseAvailable": "phase_search", "visibility": "public", "dmMeaning": "沈医生和旧案有关。", "spoilerLevel": "high" }
+  ],
+  "phases": [
+    { "phaseId": "phase_reading", "title": "第一幕读本", "phaseType": "role_reading", "allowedActions": { "readRoleBook": true, "publicTalk": false, "privateTalk": false, "search": false, "revealClue": false, "vote": false, "debrief": false }, "unlocks": { "roleActIds": ["act_writer_1", "act_doctor_1", "act_owner_1"] }, "nextPhaseId": "phase_public" },
+    { "phaseId": "phase_public", "title": "第一轮公聊", "phaseType": "public_discussion", "allowedActions": { "readRoleBook": true, "publicTalk": true, "privateTalk": true, "search": false, "revealClue": false, "vote": false, "debrief": false }, "nextPhaseId": "phase_search" },
+    { "phaseId": "phase_search", "title": "第一轮搜证", "phaseType": "search", "allowedActions": { "readRoleBook": true, "publicTalk": true, "privateTalk": true, "search": true, "revealClue": true, "vote": false, "debrief": false }, "nextPhaseId": "phase_vote" },
+    { "phaseId": "phase_vote", "title": "最终投票", "phaseType": "vote", "allowedActions": { "readRoleBook": true, "publicTalk": true, "privateTalk": false, "search": false, "revealClue": true, "vote": true, "debrief": false }, "nextPhaseId": "phase_debrief" },
+    { "phaseId": "phase_debrief", "title": "DM复盘", "phaseType": "debrief", "allowedActions": { "readRoleBook": false, "publicTalk": false, "privateTalk": false, "search": false, "revealClue": false, "vote": false, "debrief": true } }
+  ],
+  "debrief": {
+    "available": true,
+    "summary": "真正关键是病历签名与钟楼时间差。",
+    "truthReview": { "culpritRoleId": "role_doctor" },
+    "roleEndings": [{ "roleId": "role_writer", "ending": "你完成了旧案调查。" }]
+  }
+}
