@@ -789,6 +789,7 @@ function renderCharacters() {
         <div class="panel-head"><h3>创建 Text-first 角色</h3><span class="tiny muted">输入角色名和设定，World Tree 会整理为角色运行胶囊。高级设置默认隐藏。</span></div>
         <input id="v2CreateName" placeholder="角色名（必填）" class="full-width" style="margin-bottom:8px" value="${U.esc(AS.characterV2Create.name)}">
         <textarea id="v2CreateText" placeholder="角色设定（自由文本，如：普通日本学生，语气温和，有点嘴硬。）" style="min-height:80px">${U.esc(AS.characterV2Create.text)}</textarea>
+        <div style="margin-top:8px"><input type="file" id="v2CreateAvatar" accept="image/png,image/jpeg,image/webp" style="display:none"><button class="small" data-action="character-v2-avatar-select" type="button">${AS.characterV2Create.avatar ? "更换头像" : "选择头像（可选）"}</button><span class="tiny muted" id="v2CreateAvatarLabel" style="margin-left:8px">${AS.characterV2Create.avatar ? U.esc(AS.characterV2Create.avatar.label || "已选择") : ""}</span></div>
         ${AS.characterV2Create.preview ? `<div class="character-v2-create-summary" style="margin-top:8px;padding:8px;background:var(--surface-2);border-radius:8px"><strong>${U.esc(AS.characterV2Create.preview.title || "预览")}</strong><p class="tiny">${U.esc(AS.characterV2Create.preview.subtitle || "")}</p>${(AS.characterV2Create.preview.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}</div>` : ""}
         ${AS.characterV2Create.error ? `<p class="tiny" style="color:var(--bad)">${U.esc(AS.characterV2Create.error)}</p>` : ""}
         <div class="actions" style="margin-top:8px">
@@ -1423,6 +1424,34 @@ function bindEvents() {
       btn.textContent = nextVisible ? "隐藏高级设置" : "高级设置";
     };
   });
+
+  const avatarInput = U.qs("#v2CreateAvatar");
+  if (avatarInput) {
+    avatarInput.onchange = () => {
+      const file = avatarInput.files?.[0];
+      if (!file) return;
+      if (file.size > 700000) { AS.characterV2Create.error = "头像文件过大，请换一张小图。"; return render(); }
+      const reader = new FileReader();
+      reader.onload = () => {
+        AS.characterV2Create.avatar = {
+          label: file.name || "手动头像",
+          mime: file.type || "",
+          dataUri: reader.result,
+          uiOnly: true,
+          participatesInPrompt: false,
+          participatesInCognition: false,
+          metadataParsed: false
+        };
+        AS.characterV2Create.error = "";
+        render();
+      };
+      reader.onerror = () => {
+        AS.characterV2Create.error = "头像读取失败，请换一张较小图片。";
+        render();
+      };
+      reader.readAsDataURL(file);
+    };
+  }
 }
 
 function bindDrop(dropSel, textSel, accept, directory) {
@@ -1516,6 +1545,7 @@ async function handleAction(e, btn) {
     if (action === "character-v2-preview") return characterV2Preview();
     if (action === "character-v2-confirm") return characterV2Confirm();
     if (action === "character-v2-advanced-toggle") { AS.characterV2Create.advancedOpen = !AS.characterV2Create.advancedOpen; return render(); }
+    if (action === "character-v2-avatar-select") { document.getElementById("v2CreateAvatar")?.click(); return; }
     if (action === "load-worldbook") { await loadWorldbookIfPossible(); return render(); }
     if (action === "import-worldbook-json") return importWorldbookJson();
     if (action === "export-worldbook-json") return exportWorldbookJson();
@@ -2405,7 +2435,7 @@ async function characterV2Preview() {
   AS.characterV2Create.busy = true;
   render();
   try {
-    const res = await API.importCharacter({ v2Capsule: true, confirmed: false, input: { name, text, sourceType: "manual" } });
+    const res = await API.importCharacter({ v2Capsule: true, confirmed: false, input: { name, text, sourceType: "manual", avatar: AS.characterV2Create.avatar } });
     if (res.status === "preview" && res.summary) {
       AS.characterV2Create.preview = res.summary;
       AS.characterV2Create.draft = res.draft;
