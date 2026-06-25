@@ -2910,6 +2910,34 @@ async function handleAPI(req, res) {
       const { submitDetectiveV2Deduction } = await import("./src/server/detective-v2-service.js");
       return jsonResponse(res, await submitDetectiveV2Deduction(await readBody(req), { dataRoot: dataRoot() }));
     }
+    if (path === "/api/detective-v2/generate-preview" && method === "POST") {
+      const { previewDetectiveV2Generate } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await previewDetectiveV2Generate(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/generate-commit" && method === "POST") {
+      const { commitDetectiveV2Generate } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await commitDetectiveV2Generate(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/quality-check" && method === "POST") {
+      const { checkDetectiveV2Quality } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await checkDetectiveV2Quality(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/review-case-quality" && method === "POST") {
+      const { reviewDetectiveV2Case } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await reviewDetectiveV2Case(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/export-run" && method === "POST") {
+      const { exportDetectiveV2Run } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await exportDetectiveV2Run(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/export-case-player-pack" && method === "POST") {
+      const { exportDetectiveV2PlayerPack } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await exportDetectiveV2PlayerPack(await readBody(req), { dataRoot: dataRoot() }));
+    }
+    if (path === "/api/detective-v2/export-case-gm-pack" && method === "POST") {
+      const { exportDetectiveV2GMPack } = await import("./src/server/detective-v2-service.js");
+      return jsonResponse(res, await exportDetectiveV2GMPack(await readBody(req), { dataRoot: dataRoot() }));
+    }
 
     // ── 世界书编辑与测试 ──
     if (path === "/api/worldbook" && method === "GET") return jsonResponse(res, await handleWorldbook({}, "GET", url));

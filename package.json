@@ -72,6 +72,8 @@
     "test:detective-v2-foundation": "node --test tests/unit/detective-v2-case-capsule.test.js tests/unit/detective-v2-truth-ledger.test.js tests/unit/detective-v2-evidence-registry.test.js tests/unit/detective-v2-testimony-registry.test.js tests/unit/detective-v2-player-notebook.test.js tests/unit/detective-v2-deduction-report.test.js tests/unit/detective-v2-case-generator-blueprint.test.js tests/unit/detective-v2-asset-links-isolation.test.js",
     "test:detective-v2-runtime": "node --test tests/unit/detective-v2-case-importer.test.js tests/unit/detective-v2-run-state.test.js tests/unit/detective-v2-runtime-engine.test.js tests/unit/detective-v2-service.test.js tests/unit/detective-v2-hidden-leak.test.js",
     "test:detective-v2": "npm run test:detective-v2-foundation && npm run test:detective-v2-runtime",
+    "test:detective-v2-case-generator": "node --test tests/unit/detective-v2-case-generator.test.js",
+    "test:detective-v2-full": "npm run test:detective-v2 && npm run test:detective-v2-case-generator",
     "legacy:check": "node scripts/check-legacy-status.mjs",
     "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run interface-audit"
   },

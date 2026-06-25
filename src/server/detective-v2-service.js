@@ -9,6 +9,10 @@ import { classifyDetectiveCaseInput, parseDetectiveCaseJson, createDetectiveCase
 import { createDetectiveRunState, stripDetectiveRunForPlayer, recordDetectiveDiscovery, recordDetectiveInterview, recordDetectiveNotebookChange, recordDetectiveDeduction, validateDetectiveRunState } from "../core/detective/detective-run-state.js";
 import { investigateDetectiveLocation, interrogateDetectiveCharacter, extractDetectiveNotebookEntry, updateDetectiveNotebook, submitDetectiveDeduction } from "../core/detective/detective-runtime-engine.js";
 import { assertDetectiveRuntimeIsolation } from "../core/detective/detective-asset-links.js";
+import { generateDetectiveCaseFromPremise, expandGeneratorBlueprintToPlayableCase } from "../core/detective/detective-case-generator.js";
+import { validatePlayableDetectiveCase, scoreDetectiveCaseQuality, detectDetectiveCaseSpeedrunRisks } from "../core/detective/detective-case-quality-validator.js";
+import { reviewDetectiveCase } from "../core/detective/detective-case-review.js";
+import { buildDetectiveCasePlayerPack, buildDetectiveCaseGMPack, buildDetectiveRunReport } from "../core/detective/detective-export-service.js";
 
 // ── Paths ──
 
@@ -248,5 +252,149 @@ export async function submitDetectiveV2Deduction(body = {}, deps = {}) {
     return { ...result, run: stripDetectiveRunForPlayer(runState) };
   } catch (err) {
     return { status: "error", code: "DEDUCTION_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Generate preview ──
+
+export async function previewDetectiveV2Generate(body = {}, deps = {}) {
+  try {
+    const { premise, genre } = body;
+    if (!premise) return { status: "error", code: "NO_PREMISE", errorMsg: "premise required" };
+    const result = generateDetectiveCaseFromPremise(premise, { genre });
+    if (result.status !== "ok") return result;
+    return {
+      status: "ok",
+      preview: {
+        caseId: result.draft.caseId,
+        title: result.draft.title,
+        genre: result.genre,
+        characterCount: result.characterCount,
+        locationCount: result.locationCount,
+      },
+      draft: result.draft,
+    };
+  } catch (err) {
+    return { status: "error", code: "GENERATE_PREVIEW_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Generate commit ──
+
+export async function commitDetectiveV2Generate(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot required" };
+  try {
+    const { premise, genre } = body;
+    const result = generateDetectiveCaseFromPremise(premise || "神秘案件", { genre });
+    if (result.status !== "ok") return result;
+
+    const caseDir = join(dataRoot, "engine", "detective-v2", "cases", result.draft.caseId);
+    ensureDir(caseDir);
+    writeFileSync(join(caseDir, "case-capsule.json"), JSON.stringify(result.draft, null, 2));
+
+    return { status: "ok", caseId: result.draft.caseId, title: result.draft.title };
+  } catch (err) {
+    return { status: "error", code: "GENERATE_COMMIT_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Quality check ──
+
+export async function checkDetectiveV2Quality(body = {}, deps = {}) {
+  try {
+    const { caseCapsule } = body;
+    if (!caseCapsule) return { status: "error", code: "NO_CASE", errorMsg: "caseCapsule required" };
+    const validation = validatePlayableDetectiveCase(caseCapsule);
+    const quality = scoreDetectiveCaseQuality(caseCapsule);
+    const risks = detectDetectiveCaseSpeedrunRisks(caseCapsule);
+    return { status: "ok", validation, quality, risks };
+  } catch (err) {
+    return { status: "error", code: "QUALITY_CHECK_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Review case ──
+
+export async function reviewDetectiveV2Case(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot required" };
+  try {
+    const { runId, deductionReport } = body;
+    if (!runId) return { status: "error", code: "NO_RUN_ID", errorMsg: "runId required" };
+
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    if (!existsSync(statePath)) return { status: "error", code: "RUN_NOT_FOUND" };
+
+    const runState = JSON.parse(readFileSync(statePath, "utf-8"));
+    const casePath = join(caseDir(dataRoot, runState.caseId), "case-capsule.json");
+    if (!existsSync(casePath)) return { status: "error", code: "CASE_NOT_FOUND" };
+    const caseCapsule = JSON.parse(readFileSync(casePath, "utf-8"));
+
+    const result = reviewDetectiveCase({ caseCapsule, runState, deductionReport });
+    return result;
+  } catch (err) {
+    return { status: "error", code: "REVIEW_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Export run ──
+
+export async function exportDetectiveV2Run(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT", errorMsg: "dataRoot required" };
+  try {
+    const { runId } = body;
+    if (!runId) return { status: "error", code: "NO_RUN_ID" };
+
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    if (!existsSync(statePath)) return { status: "error", code: "RUN_NOT_FOUND" };
+    const runState = JSON.parse(readFileSync(statePath, "utf-8"));
+    const casePath = join(caseDir(dataRoot, runState.caseId), "case-capsule.json");
+    const caseCapsule = existsSync(casePath) ? JSON.parse(readFileSync(casePath, "utf-8")) : null;
+
+    const report = buildDetectiveRunReport({ caseCapsule, runState });
+    return { status: "ok", report };
+  } catch (err) {
+    return { status: "error", code: "EXPORT_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Export player pack ──
+
+export async function exportDetectiveV2PlayerPack(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT" };
+  try {
+    const { runId } = body;
+    if (!runId) return { status: "error", code: "NO_RUN_ID" };
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    const runState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf-8")) : null;
+    const casePath = join(caseDir(dataRoot, runState?.caseId || body.caseId), "case-capsule.json");
+    const caseCapsule = existsSync(casePath) ? JSON.parse(readFileSync(casePath, "utf-8")) : null;
+
+    const pack = buildDetectiveCasePlayerPack({ caseCapsule, runState });
+    return { status: "ok", pack };
+  } catch (err) {
+    return { status: "error", code: "EXPORT_PLAYER_PACK_FAILED", errorMsg: err.message };
+  }
+}
+
+// ── Export GM pack ──
+
+export async function exportDetectiveV2GMPack(body = {}, deps = {}) {
+  const { dataRoot } = deps;
+  if (!dataRoot) return { status: "error", code: "NO_DATA_ROOT" };
+  try {
+    const { runId } = body;
+    const statePath = join(runDir(dataRoot, runId), "run-state.json");
+    const runState = existsSync(statePath) ? JSON.parse(readFileSync(statePath, "utf-8")) : null;
+    const casePath = join(caseDir(dataRoot, runState?.caseId || body.caseId), "case-capsule.json");
+    const caseCapsule = existsSync(casePath) ? JSON.parse(readFileSync(casePath, "utf-8")) : null;
+
+    const pack = buildDetectiveCaseGMPack({ caseCapsule, runState });
+    return { status: "ok", pack };
+  } catch (err) {
+    return { status: "error", code: "EXPORT_GM_PACK_FAILED", errorMsg: err.message };
   }
 }
