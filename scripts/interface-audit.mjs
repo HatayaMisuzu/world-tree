@@ -292,6 +292,15 @@ for (const marker of ["骰子判定", "线索卡与假设白板", "策略资源"
   if (combinedCode.includes(marker) || combinedCode.includes("🎲 Tabletop V2")) pass(`模式 UI 包含“${marker}”或 Tabletop V2`);
   else fail(`模式 UI 缺少“${marker}”`);
 }
+// Tabletop V2 UI action routing 完整性
+for (const action of ["tabletop-v2-preview-import", "tabletop-v2-start", "tabletop-v2-save", "tabletop-v2-branch", "tabletop-v2-end", "tabletop-v2-clear"]) {
+  if (combinedCode.includes(`data-action="${action}"`) || combinedCode.includes(`"${action}"`)) pass(`Tabletop V2 按钮 “${action}” 存在`);
+  else fail(`Tabletop V2 按钮 “${action}” 缺失`);
+}
+for (const name of ["sendTabletopV2Turn", "blocked_by_book", "API.tabletopV2Turn"]) {
+  if (combinedCode.includes(name)) pass(`Tabletop V2 路由函数/标记 “${name}” 存在`);
+  else fail(`Tabletop V2 路由函数/标记 “${name}” 缺失`);
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  结论

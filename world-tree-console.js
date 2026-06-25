@@ -1712,6 +1712,7 @@ async function startTabletopV2FromUI() {
       AS.tabletopV2.module = res.run.publicState?.sceneTitle || res.moduleId;
       AS.tabletopV2.ruleset = res.rulesetKind;
       AS.tabletopV2.lastRuling = null;
+      AS.tabletopV2.endingAvailable = false;
       AS.tabletopV2.error = "";
       createToast("Tabletop V2 冒险已开始！");
     } else {
@@ -1766,6 +1767,52 @@ async function endTabletopV2FromUI() {
     }
   } catch (e) { createToast(e.message, "warn"); }
   render();
+}
+
+async function sendTabletopV2Turn(playerIntent) {
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    if (!AS.busy) return;
+    AS.progressIndex = Math.min(3, AS.progressIndex + 1);
+    render();
+  }, 1400);
+  try {
+    const res = await API.tabletopV2Turn({
+      runId: AS.tabletopV2.runId,
+      playerIntent,
+    });
+    if (res.status === "ok") {
+      AS.tabletopV2.lastRuling = res.ruling?.roll || null;
+      AS.tabletopV2.endingAvailable = res.endingAvailable || false;
+      CH.add("assistant", res.narrative || "（Tabletop V2 无叙事返回）");
+      CH.persist();
+      render();
+      return;
+    }
+    if (res.status === "blocked_by_book") {
+      const text = [
+        "【行动被本子阻止】",
+        res.bookCheck?.reason || "该行动不符合当前本子或场景限制。",
+        res.bookCheck?.suggestion ? `【建议】${res.bookCheck.suggestion}` : "",
+      ].filter(Boolean).join("\n\n");
+      CH.add("assistant", text);
+      CH.persist();
+      render();
+      return;
+    }
+    CH.add("error", res.errorMsg || "Tabletop V2 回合失败");
+    CH.persist();
+    render();
+  } catch (err) {
+    CH.add("error", err.message || String(err));
+    CH.persist();
+    render();
+  } finally {
+    AS.busy = false;
+    AS.progressIndex = 4;
+    if (progressTimer) clearInterval(progressTimer);
+    progressTimer = null;
+  }
 }
 
 async function characterStartChat() {
@@ -1832,6 +1879,13 @@ async function sendChat() {
   AS.progressIndex = 0;
   const userMessage = CH.add("user", text);
   render();
+
+  // Tabletop V2: route active run turns to tabletop engine
+  const modeId = AS.selectedModule?.mode || AS.selectedModule?.type || "";
+  if (modeId === "tabletop" && AS.tabletopV2?.runId) {
+    return sendTabletopV2Turn(text);
+  }
+
   if (progressTimer) clearInterval(progressTimer);
   progressTimer = setInterval(() => {
     if (!AS.busy) return;
