@@ -52,6 +52,41 @@ test("previewTabletopV2Import: returns preview", async () => {
   assert.ok(result.preview.title);
 });
 
+test("previewTabletopV2Import: returns backend module draft for start and commit", async () => {
+  const result = await previewTabletopV2Import({
+    text: "# Drafted Module\n\n## 背景\nA locked tower\n\n## 场景\n- Gate\n- Library",
+  }, deps);
+  assert.equal(result.status, "ok");
+  assert.ok(result.moduleDraft);
+  assert.equal(result.moduleDraft.title, "Drafted Module");
+  assert.ok(Array.isArray(result.moduleDraft.scenes));
+  assert.ok(result.moduleDraft.scenes.length >= 1);
+  assert.equal(result.moduleDraft.sourceType, "external_text");
+});
+
+test("previewTabletopV2Import: module draft can start and run a turn", async () => {
+  ensureCleanRoot();
+  const preview = await previewTabletopV2Import({
+    text: "# Playable Draft\n\n## 背景\nA locked tower\n\n## 场景\n- Gate\n  A heavy gate blocks the path.",
+  }, deps);
+  assert.equal(preview.status, "ok");
+
+  const start = await startTabletopV2Run({
+    module: preview.moduleDraft,
+    playerCharacter: null,
+  }, deps);
+  assert.equal(start.status, "ok");
+  assert.ok(start.run.runId);
+
+  const turn = await handleTabletopV2Turn({
+    runId: start.run.runId,
+    playerIntent: "我检查大门",
+  }, deps);
+  assert.equal(turn.status, "ok");
+  assert.ok(turn.ruling);
+  assert.ok(turn.run.publicState);
+});
+
 // ── Turn ──
 
 test("handleTabletopV2Turn: processes intent with ruling", async () => {

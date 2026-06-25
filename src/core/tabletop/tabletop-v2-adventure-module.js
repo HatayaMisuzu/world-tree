@@ -122,7 +122,7 @@ export function validateAdventureModule(module = {}) {
   if (!Array.isArray(module.scenes)) errors.push("scenes must be an array");
   if (!Array.isArray(module.characters)) errors.push("characters must be an array");
   if (!module.playerBrief) errors.push("playerBrief is required");
-  const sourceTypes = ["imported_pdf", "markdown", "json", "quick_start", "world_tree_bundle", "existing_project_assets"];
+  const sourceTypes = ["imported_pdf", "markdown", "json", "quick_start", "external_text", "structured_json", "world_tree_bundle", "existing_project_assets"];
   if (!sourceTypes.includes(module.sourceType)) errors.push(`unknown sourceType: ${module.sourceType}`);
   return { valid: errors.length === 0, errors };
 }

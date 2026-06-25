@@ -122,6 +122,7 @@ export async function previewTabletopV2Import(body = {}, deps = {}) {
       const normalized = normalizeAdventureModule(module);
       return {
         status: "ok",
+        moduleDraft: normalized,
         preview: {
           title: normalized.title,
           sourceType: normalized.sourceType,
@@ -144,8 +145,11 @@ export async function previewTabletopV2Import(body = {}, deps = {}) {
     if (text && typeof text === "string") {
       const result = buildTabletopImportPreview(text, options || {});
       if (result.status === "error") return result;
+      const draftResult = createAdventureModuleDraftFromExternalText(text, options || {});
+      if (draftResult.error) return { status: "error", code: draftResult.error, errorMsg: draftResult.message || "无法创建模组草稿" };
       return {
         status: "ok",
+        moduleDraft: draftResult.draft,
         preview: {
           title: result.title,
           sourceType: result.type,

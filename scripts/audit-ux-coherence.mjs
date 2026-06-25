@@ -31,7 +31,8 @@ function functionBody(code, name) {
   const asyncStart = code.indexOf(`async function ${name}`);
   const idx = asyncStart >= 0 ? asyncStart : start;
   if (idx < 0) return "";
-  const brace = code.indexOf("{", idx);
+  const signatureEnd = code.indexOf(")", idx);
+  const brace = code.indexOf("{", signatureEnd >= 0 ? signatureEnd : idx);
   if (brace < 0) return "";
   let depth = 0;
   for (let i = brace; i < code.length; i += 1) {
@@ -46,6 +47,7 @@ console.log("\n🧭 UX Coherence Audit");
 
 const js = read("world-tree-console.js");
 const server = read("server.js");
+const tabletopService = read("src/server/tabletop-v2-service.js");
 const pkg = read("package.json");
 const stateDoc = read("docs/CURRENT_PROJECT_STATE.md");
 const aliasFile = read("src/core/features/feature-alias-registry.js");
@@ -75,12 +77,17 @@ const tabletopStart = functionBody(js, "startTabletopV2FromUI");
 const tabletopCommit = functionBody(js, "commitTabletopV2Import");
 expect(tabletopPreview.includes("API.tabletopV2ImportPreview"), "Tabletop V2 preview calls backend preview API", "Tabletop V2 preview still uses local/fake preview instead of backend API");
 expect(!/AS\.tabletopV2\.importPreview\s*=\s*\{\s*title:\s*["']文本导入/.test(tabletopPreview), "Tabletop V2 fake text preview removed", "Tabletop V2 still creates fake text preview in frontend");
-expect(tabletopStart.includes("AS.tabletopV2.importPreview") || tabletopStart.includes("previewId") || tabletopStart.includes("moduleDraft"), "Tabletop V2 start uses preview artifact or explicit module draft", "Tabletop V2 start does not use preview artifact");
+expect(tabletopStart.includes("moduleDraft"), "Tabletop V2 start consumes backend moduleDraft when available", "Tabletop V2 start does not consume backend moduleDraft");
 expect(tabletopCommit.includes("API.tabletopV2ImportCommit"), "Tabletop V2 commit calls backend commit API", "Tabletop V2 commit missing backend commit call");
+expect(tabletopCommit.includes("moduleDraft"), "Tabletop V2 commit consumes backend moduleDraft when available", "Tabletop V2 commit does not consume backend moduleDraft");
+expect(tabletopService.includes("moduleDraft") && tabletopService.includes("createAdventureModuleDraftFromExternalText"), "Tabletop V2 preview returns backend moduleDraft", "Tabletop V2 backend preview does not return a moduleDraft");
 
 console.log("\n3. Tabletop V2 response state sync");
 const tabletopTurn = functionBody(js, "sendTabletopV2Turn");
-for (const field of ["lastNarrative", "currentScene", "publicClocks", "resources", "questLog", "lastRuling", "endingAvailable"]) {
+const tabletopStateNormalizer = functionBody(js, "normalizeTabletopV2PublicState");
+expect(tabletopStart.includes("normalizeTabletopV2PublicState") && tabletopTurn.includes("normalizeTabletopV2PublicState"), "Tabletop V2 UI normalizes backend public state", "Tabletop V2 UI does not normalize backend public state");
+expect(tabletopStateNormalizer.includes("state.clocks") && tabletopStateNormalizer.includes("state.diceLogPublic"), "Tabletop V2 UI accepts backend clocks/diceLogPublic aliases", "Tabletop V2 UI does not accept backend clocks/diceLogPublic aliases");
+for (const field of ["lastNarrative", "currentScene", "publicClocks", "resources", "inventory", "questLog", "visibleNpcs", "diceLog", "lastRuling", "endingAvailable"]) {
   expect(tabletopTurn.includes(`AS.tabletopV2.${field}`) || tabletopTurn.includes(field), `Tabletop V2 turn syncs ${field}`, `Tabletop V2 turn does not sync ${field}`);
 }
 

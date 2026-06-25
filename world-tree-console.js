@@ -784,28 +784,28 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>预设/设定：粘贴设定，快速开始 AI 互动</h2><p class="sub">适合轻度用户、AI 设定爱好者和文字冒险玩家。你可以直接粘贴角色、世界观、开场剧情或规则片段，World Tree 会创建一个可继续、可审核、可导出的草稿世界。</p></div></div>
+        <div class="panel-head"><div><h2>快速设定 / Quick Setting：粘贴设定，快速开始 AI 互动</h2><p class="sub">适合轻度用户、AI 设定爱好者和文字冒险玩家。你可以直接粘贴角色、世界观、开场剧情或规则片段，World Tree 会创建一个可继续、可审核、可导出的草稿世界。</p></div></div>
         <div id="quickStartDrop" class="drop-zone"><strong>拖拽文件 / 文件夹到此处，或点击选择</strong><span>支持 .md .txt .json</span></div>
         <textarea id="quickStartText" placeholder="或在这里粘贴设定、片段、角色描述..."></textarea>
         <div class="actions"><button class="primary" data-action="quick-start-chat">创建预设/设定草稿并开始</button><span class="tiny muted">不需要先写完整世界书。后续可以把草稿整理成正式世界。</span></div>
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>世界冒险 / World RPG <span class="badge beta">Beta</span></h2><p class="sub">以 GM 方式在开放世界中冒险。粘贴世界设定或冒险背景。</p></div></div>
+        <div class="panel-head"><div><h2>世界书大世界 / World RPG <span class="badge beta">Beta</span></h2><p class="sub">以 GM 方式在开放世界中冒险。粘贴世界设定或冒险背景。</p></div></div>
         <input id="wrpgTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="wrpgText" placeholder="粘贴世界设定、冒险背景、初始场景。"></textarea>
         <div class="actions"><button class="primary" data-action="world-rpg-start">创建世界冒险</button><span class="tiny muted">最小闭环版本，任务/战斗/成长系统后续开放。</span></div>
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>解谜推理 / Mystery Puzzle <span class="badge exp">Experimental</span></h2><p class="sub">在谜题主持人的引导下探索线索、解开谜题。</p></div></div>
+        <div class="panel-head"><div><h2>解谜调查 / Mystery Puzzle <span class="badge exp">Experimental</span></h2><p class="sub">在谜题主持人的引导下探索线索、解开谜题。</p></div></div>
         <input id="mysteryTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="mysteryText" placeholder="粘贴谜题、悬疑场景、线索片段。"></textarea>
         <div class="actions"><button class="primary" data-action="mystery-puzzle-start">创建解谜项目</button><span class="tiny muted">已提供线索卡与假设白板薄切片；完整推理引擎未实现。</span></div>
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>跑团项目草稿 / Tabletop <span class="badge exp">Experimental</span></h2><p class="sub">创建普通 Tabletop 项目草稿并进入对话；结构化 Tabletop V2 导入会在加载 Tabletop 项目后显示。</p></div></div>
+        <div class="panel-head"><div><h2>桌面叙事 / Tabletop 项目草稿 <span class="badge exp">Experimental</span></h2><p class="sub">创建普通 Tabletop 项目草稿并进入对话；结构化 Tabletop V2 导入会在加载 Tabletop 项目后显示。</p></div></div>
         <input id="tabletopTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="tabletopText" placeholder="粘贴跑团背景、规则偏好、开场场景。"></textarea>
         <div class="actions"><button class="primary" data-action="tabletop-start">创建 Tabletop 草稿</button><span class="tiny muted">支持 /roll 骰子薄切片；不是完整 DND 规则系统，也不是 Tabletop V2 导入确认。</span></div>
@@ -819,7 +819,7 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>剧本杀 / Murder Mystery <span class="badge exp">Experimental</span></h2><p class="sub">在案件主持人引导下调查线索、推理真相。</p></div></div>
+        <div class="panel-head"><div><h2>单人剧本杀 / Murder Mystery <span class="badge exp">Experimental</span></h2><p class="sub">在案件主持人引导下调查线索、推理真相。</p></div></div>
         <input id="murderTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="murderText" placeholder="粘贴案件背景、角色、线索设定。"></textarea>
         <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><span class="tiny muted">真相锁继续生效，并提供玩家可见线索板薄切片。</span></div>
@@ -830,6 +830,11 @@ const Views = {
         <input id="charCardTitle" placeholder="角色名 / 项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="charCardText" placeholder="在这里粘贴人物卡内容..."></textarea>
         <div class="actions"><button class="primary" data-action="character-start-chat">创建人物卡并开始对话</button><span class="tiny muted">支持 SillyTavern v2/v3 JSON、纯文本角色描述。后续可在角色库中管理。</span></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><div><h2>炼金台 / Creation Forge</h2><p class="sub">把灵感、素材或片段整理成候选内容，进入审核队列后再决定是否采用。</p></div></div>
+        <div class="actions"><button class="primary" data-action="library-alchemy">打开炼金台</button><span class="tiny muted">candidate-only；不会自动写 canon，也不会新增产品入口。</span></div>
       </section>
 
       <section class="cols-2">
@@ -1368,8 +1373,13 @@ async function refreshObserve() {
   await Promise.all(jobs);
 }
 
+function supportsTurnState(module = AS.selectedModule) {
+  const id = String(module?.id || "");
+  return !!module && id && id !== "__quick__" && module.type !== "profile" && !id.startsWith("profile:");
+}
+
 async function loadLatestStatusFrame() {
-  if (!AS.selectedModule || AS.selectedModule.id === "__quick__") {
+  if (!supportsTurnState()) {
     AS.latestTurnFrame = null;
     AS.turnStateIndex = [];
     return;
@@ -1385,7 +1395,7 @@ async function loadLatestStatusFrame() {
 }
 
 async function selectTurnState(turnId, messageId = "") {
-  if (!turnId || !AS.selectedModule || AS.selectedModule.id === "__quick__") return;
+  if (!turnId || !supportsTurnState()) return;
   const result = await API.statusTurn(AS.selectedModule.id, turnId);
   if (!result.frame) return createToast("这一轮尚无可读取的状态帧", "warn");
   AS.selectedTurnId = turnId;
@@ -1944,6 +1954,20 @@ async function previewTabletopV2Import() {
   }
 }
 
+function normalizeTabletopV2PublicState(source = {}) {
+  const state = source.publicState || source.run?.publicState || source || {};
+  return {
+    sceneTitle: state.sceneTitle || state.currentScene || state.currentSceneTitle || "",
+    lastNarrative: state.lastNarrative || "",
+    publicClocks: state.publicClocks || state.clocks || [],
+    resources: state.resources || {},
+    inventory: state.inventory || [],
+    questLog: state.questLog || [],
+    visibleNpcs: state.visibleNpcs || state.npcs || [],
+    diceLog: state.diceLog || state.diceLogPublic || [],
+  };
+}
+
 async function startTabletopV2FromUI() {
   const text = U.qs("#tabletopV2ImportText")?.value.trim();
   if (!text && !AS.tabletopV2.importPreview) return createToast("请先粘贴模组内容并预览", "warn");
@@ -1956,19 +1980,20 @@ async function startTabletopV2FromUI() {
     const module = preview.moduleDraft || preview.module || buildTabletopV2ModuleDraftFromText(AS.tabletopV2.importText, preview);
     const res = await API.tabletopV2Start({ module, playerCharacter: null });
     if (res.status === "ok") {
+      const publicState = normalizeTabletopV2PublicState(res);
       AS.tabletopV2.runId = res.run.runId;
-      AS.tabletopV2.module = res.run.publicState?.sceneTitle || res.moduleId;
+      AS.tabletopV2.module = publicState.sceneTitle || res.moduleId;
       AS.tabletopV2.ruleset = res.rulesetKind;
       AS.tabletopV2.lastRuling = null;
       AS.tabletopV2.endingAvailable = false;
-      AS.tabletopV2.currentScene = res.run.publicState?.sceneTitle || "";
-      AS.tabletopV2.lastNarrative = res.run.publicState?.lastNarrative || "";
-      AS.tabletopV2.publicClocks = res.run.publicState?.publicClocks || [];
-      AS.tabletopV2.resources = res.run.publicState?.resources || {};
-      AS.tabletopV2.inventory = res.run.publicState?.inventory || [];
-      AS.tabletopV2.questLog = res.run.publicState?.questLog || [];
-      AS.tabletopV2.visibleNpcs = res.run.publicState?.visibleNpcs || [];
-      AS.tabletopV2.diceLog = res.run.publicState?.diceLog || [];
+      AS.tabletopV2.currentScene = publicState.sceneTitle;
+      AS.tabletopV2.lastNarrative = publicState.lastNarrative;
+      AS.tabletopV2.publicClocks = publicState.publicClocks;
+      AS.tabletopV2.resources = publicState.resources;
+      AS.tabletopV2.inventory = publicState.inventory;
+      AS.tabletopV2.questLog = publicState.questLog;
+      AS.tabletopV2.visibleNpcs = publicState.visibleNpcs;
+      AS.tabletopV2.diceLog = publicState.diceLog;
       AS.tabletopV2.error = "";
       createToast("Tabletop V2 冒险已开始！");
     } else {
@@ -2048,16 +2073,17 @@ async function sendTabletopV2Turn(playerIntent) {
       playerIntent,
     });
     if (res.status === "ok") {
+      const publicState = normalizeTabletopV2PublicState(res);
       AS.tabletopV2.lastRuling = res.ruling?.roll || null;
       AS.tabletopV2.endingAvailable = res.endingAvailable || false;
       AS.tabletopV2.lastNarrative = res.narrative || "";
-      AS.tabletopV2.currentScene = res.publicState?.sceneTitle || res.run?.publicState?.sceneTitle || AS.tabletopV2.currentScene || "";
-      AS.tabletopV2.publicClocks = res.publicState?.publicClocks || res.run?.publicState?.publicClocks || AS.tabletopV2.publicClocks || [];
-      AS.tabletopV2.resources = res.publicState?.resources || res.run?.publicState?.resources || AS.tabletopV2.resources || {};
-      AS.tabletopV2.inventory = res.publicState?.inventory || res.run?.publicState?.inventory || AS.tabletopV2.inventory || [];
-      AS.tabletopV2.questLog = res.publicState?.questLog || res.run?.publicState?.questLog || AS.tabletopV2.questLog || [];
-      AS.tabletopV2.visibleNpcs = res.publicState?.visibleNpcs || res.run?.publicState?.visibleNpcs || AS.tabletopV2.visibleNpcs || [];
-      AS.tabletopV2.diceLog = res.publicState?.diceLog || res.run?.publicState?.diceLog || AS.tabletopV2.diceLog || [];
+      AS.tabletopV2.currentScene = publicState.sceneTitle || AS.tabletopV2.currentScene || "";
+      AS.tabletopV2.publicClocks = publicState.publicClocks.length ? publicState.publicClocks : AS.tabletopV2.publicClocks || [];
+      AS.tabletopV2.resources = publicState.resources;
+      AS.tabletopV2.inventory = publicState.inventory.length ? publicState.inventory : AS.tabletopV2.inventory || [];
+      AS.tabletopV2.questLog = publicState.questLog.length ? publicState.questLog : AS.tabletopV2.questLog || [];
+      AS.tabletopV2.visibleNpcs = publicState.visibleNpcs.length ? publicState.visibleNpcs : AS.tabletopV2.visibleNpcs || [];
+      AS.tabletopV2.diceLog = publicState.diceLog.length ? publicState.diceLog : AS.tabletopV2.diceLog || [];
       CH.add("assistant", res.narrative || "（Tabletop V2 无叙事返回）");
       CH.persist();
       render();

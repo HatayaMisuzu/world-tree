@@ -69,6 +69,13 @@ test("validateAdventureModule: valid module passes", () => {
   assert.equal(result.valid, true);
 });
 
+test("validateAdventureModule: external import source types pass", () => {
+  const textImport = normalizeAdventureModule({ title: "Text Import", sourceType: "external_text" });
+  const jsonImport = normalizeAdventureModule({ title: "JSON Import", sourceType: "structured_json" });
+  assert.equal(validateAdventureModule(textImport).valid, true);
+  assert.equal(validateAdventureModule(jsonImport).valid, true);
+});
+
 test("validateAdventureModule: missing title fails", () => {
   const result = validateAdventureModule({ moduleId: "test" });
   assert.equal(result.valid, false);
