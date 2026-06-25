@@ -2760,14 +2760,33 @@ async function handleAPI(req, res) {
     if (path === "/api/characters/v2/turn" && method === "POST") {
       const body = await readBody(req);
       const charConfig = await loadConfig();
-      let charApiKey = "";
-      try { const s = await getSecrets(); charApiKey = s?.llm?.items?.[0]?.key || ""; } catch {}
+      const charApiKey = await getActiveLlmValue();
       const { handleCharacterV2LiveTurn } = await import("./src/server/character-v2-live-turn-service.js");
       return jsonResponse(res, await handleCharacterV2LiveTurn(body, {
         charactersRoot: join(dataRoot(), "engine", "characters"),
         config: charConfig,
         apiKey: charApiKey
       }));
+    }
+    if (path === "/api/characters/v2/candidates/save" && method === "POST") {
+      const body = await readBody(req);
+      const { saveCharacterV2CandidatesForReview } = await import("./src/server/character-v2-candidate-workbench-service.js");
+      return jsonResponse(res, saveCharacterV2CandidatesForReview(join(dataRoot(), "engine", "characters"), body.characterId, body.candidates || {}));
+    }
+    if (path === "/api/characters/v2/candidates/list" && method === "POST") {
+      const body = await readBody(req);
+      const { listCharacterV2CandidateReview } = await import("./src/server/character-v2-candidate-workbench-service.js");
+      return jsonResponse(res, listCharacterV2CandidateReview(join(dataRoot(), "engine", "characters"), body.characterId));
+    }
+    if (path === "/api/characters/v2/candidates/decision" && method === "POST") {
+      const body = await readBody(req);
+      const { decideCharacterV2Candidate } = await import("./src/server/character-v2-candidate-workbench-service.js");
+      return jsonResponse(res, decideCharacterV2Candidate(join(dataRoot(), "engine", "characters"), body.characterId, body.candidateId, body.decision));
+    }
+    if (path === "/api/characters/v2/export" && method === "POST") {
+      const body = await readBody(req);
+      const { exportCharacterV2 } = await import("./src/server/character-v2-export-service.js");
+      return jsonResponse(res, exportCharacterV2(join(dataRoot(), "engine", "characters"), body.characterId, body.format, body));
     }
     if (path === "/api/characters/delete" && method === "POST") {
       const body = await readBody(req);
