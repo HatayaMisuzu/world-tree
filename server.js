@@ -2757,6 +2757,18 @@ async function handleAPI(req, res) {
       } catch { /* V2 capsule unavailable; legacy-only */ }
       return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}), ...(v2RuntimeContext ? { v2RuntimeContext } : {}), ...(v2RuntimeMvp ? { v2RuntimeMvp } : {}) });
     }
+    if (path === "/api/characters/v2/turn" && method === "POST") {
+      const body = await readBody(req);
+      const charConfig = await loadConfig();
+      let charApiKey = "";
+      try { const s = await getSecrets(); charApiKey = s?.llm?.items?.[0]?.key || ""; } catch {}
+      const { handleCharacterV2LiveTurn } = await import("./src/server/character-v2-live-turn-service.js");
+      return jsonResponse(res, await handleCharacterV2LiveTurn(body, {
+        charactersRoot: join(dataRoot(), "engine", "characters"),
+        config: charConfig,
+        apiKey: charApiKey
+      }));
+    }
     if (path === "/api/characters/delete" && method === "POST") {
       const body = await readBody(req);
       const id = safeEntityId(body.id || "", "");
