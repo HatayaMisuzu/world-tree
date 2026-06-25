@@ -811,7 +811,7 @@ ${AS.currentV2RuntimeMvp?.available ? `<div class="character-v2-create-summary" 
     <aside class="panel">${AS.currentCharacterCard ? `<h3>角色预览</h3>${AS.currentV2Capsule ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>${U.esc(AS.currentV2Capsule.displayName || "角色胶囊")}</strong><p class="tiny">${U.esc(AS.currentV2Capsule.summary?.subtitle || "")}</p>${(AS.currentV2Capsule.summary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}${AS.currentV2Capsule.avatar ? `<p class="tiny muted">头像：UI-only 展示资产</p>` : ""}</div>` : ""}${AS.currentV2RuntimeMvp?.available ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>${U.esc(AS.currentV2RuntimeMvp.normalSummary?.title || "Runtime MVP")}</strong><p class="tiny">${U.esc(AS.currentV2RuntimeMvp.normalSummary?.subtitle || "")}</p>${(AS.currentV2RuntimeMvp.normalSummary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}${AS.currentV2RuntimeMvp.candidates ? `<p class="tiny muted">候选：记忆 ${AS.currentV2RuntimeMvp.candidates.memoryCount} · 关系 ${AS.currentV2RuntimeMvp.candidates.relationshipCount} · 质量 ${AS.currentV2RuntimeMvp.candidates.qualityCount}</p>` : ""}<div class="actions"><button class="small" data-action="character-v2-runtime-advanced" type="button">${AS.characterV2RuntimeAdvancedOpen ? "隐藏高级详情" : "高级详情"}</button></div>${AS.characterV2RuntimeAdvancedOpen ? `<div class="character-v2-advanced-panel is-open" style="margin-top:8px;padding:8px;border:1px solid var(--line);border-radius:8px"><p class="tiny muted"><strong>Prompt Preview</strong>：${AS.currentV2RuntimeMvp.promptPacketSummary?.blockCount || 0} blocks</p><p class="tiny muted"><strong>First-turn Template</strong>：${(AS.currentV2RuntimeMvp.firstTurnDraftTemplate?.template || []).length} lines</p><p class="tiny muted"><strong>Safety</strong>：previewOnly · readOnly · 未注入 LLM</p>${(AS.currentV2RuntimeMvp.advancedSummary?.errors || []).map(e => `<p class="tiny" style="color:var(--bad)">${U.esc(e)}</p>`).join("")}</div>` : ""}</div>` : ""}${AS.currentV2RuntimeContext?.available && !AS.currentV2RuntimeMvp?.available ? `<div class="character-v2-create-summary" style="margin-bottom:12px;padding:10px;background:var(--surface-2);border-radius:8px"><strong>运行上下文：已就绪</strong><p class="tiny muted">Read-only · 未注入 LLM</p>${(AS.currentV2RuntimeContext.normalSummary?.lines || []).map(l => `<p class="tiny muted">${U.esc(l)}</p>`).join("")}</div>` : ""}${AS.currentV2Capsule ? `<div class="actions" style="margin-bottom:8px"><button class="small" data-action="character-preview-raw-toggle" type="button">${AS.characterPreviewRawOpen ? "隐藏原始 JSON" : "显示原始 JSON"}</button></div>${AS.characterPreviewRawOpen ? `<pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>` : ""}` : `<pre>${U.esc(U.json(AS.currentCharacterCard))}</pre>`}` : C.empty("角色预览", "选择一张角色卡查看详情。")}</aside>
   </section>
   <section class="panel character-v2-advanced-panel" data-character-v2-advanced-panel="character-v2-advanced" hidden>
-    <div class="panel-head"><h3>高级设置</h3><span class="tiny muted">Character Capsule V2 — 未实现</span></div>
+    <div class="panel-head"><h3>高级设置</h3><span class="tiny muted">Character Capsule V2 — 已启用 Text-first Runtime</span></div>
     <p class="tiny muted">此处将展示完整字段编辑、表现指纹、记忆详细管理、关系详细管理、Lore 管理、CHARACTER.md 预览/导出、Prompt 预览、模块调用摘要、OOC/drift 分数、Dialogue regression、Token budget、来源映射等高级功能。当前这些模块尚未实现。</p>
   </section>`;
 }
@@ -1558,6 +1558,9 @@ async function handleAction(e, btn) {
     if (action === "character-v2-live-send") return sendCharacterV2LiveTurn(false);
     if (action === "character-v2-live-dry-run") return sendCharacterV2LiveTurn(true);
     if (action === "character-v2-live-advanced-toggle") { AS.characterV2Live.advancedOpen = !AS.characterV2Live.advancedOpen; return render(); }
+    if (action === "character-v2-candidates-save") return saveCharacterV2Candidates();
+    if (action === "character-v2-export-md") return exportCharacterV2File("character_md");
+    if (action === "character-v2-export-bundle") return exportCharacterV2File("export_bundle_json");
     if (action === "load-worldbook") { await loadWorldbookIfPossible(); return render(); }
     if (action === "import-worldbook-json") return importWorldbookJson();
     if (action === "export-worldbook-json") return exportWorldbookJson();
@@ -1905,7 +1908,7 @@ async function rpCharacter(id) {
       AS.currentV2Capsule = res.v2Capsule || null;
       AS.currentV2RuntimeMvp = res.v2RuntimeMvp || null;
       if (AS.currentV2RuntimeMvp?.available) {
-        createToast("V2 Runtime MVP 已就绪：Prompt Preview / 候选 Hooks 已准备（尚未注入 LLM）", "ok");
+        createToast("V2 Runtime 已就绪：可在 V2 角色回复面板中进行受控 Text-first 回复。", "ok");
       } else if (AS.currentV2RuntimeContext?.available) {
         createToast("V2 角色运行上下文已就绪（尚未注入 LLM）", "ok");
       }
@@ -2516,4 +2519,35 @@ async function sendCharacterV2LiveTurn(dryRun = false) {
   }
   AS.characterV2Live.busy = false;
   render();
+}
+
+async function saveCharacterV2Candidates() {
+  const characterId = AS.currentV2RuntimeMvp?.characterId || AS.currentV2Capsule?.characterId || "";
+  if (!characterId) return createToast("请先预览一个 V2 角色。", "warn");
+  try {
+    const res = await API.post("/api/characters/v2/candidates/save", { characterId, candidates: { memoryCandidates: [], relationshipCandidates: [], qualityCandidates: [] } });
+    createToast(res.saved > 0 ? "已保存候选到审核队列。" : "无可保存的候选。", "ok");
+  } catch (err) {
+    createToast("保存候选失败。", "warn");
+  }
+}
+
+async function exportCharacterV2File(format) {
+  const characterId = AS.currentV2RuntimeMvp?.characterId || AS.currentV2Capsule?.characterId || AS.currentCharacterCard?.id || "";
+  if (!characterId) return createToast("请先预览一个角色。", "warn");
+  try {
+    const res = await API.post("/api/characters/v2/export", { characterId, format });
+    if (res.status !== "ok") return createToast(res.errorMsg || "导出失败", "warn");
+    const ext = { character_md: "md", wt_profile_json: "json", runtime_summary_json: "json", export_bundle_json: "json" }[format] || "json";
+    const blob = new Blob([res.content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${characterId}.${format === "character_md" ? "CHARACTER.md" : format === "export_bundle_json" ? "world-tree-character-v2.bundle.json" : `${format}.${ext}`}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    createToast("导出完成", "ok");
+  } catch (err) {
+    createToast("导出失败：" + (err.message || ""), "warn");
+  }
 }

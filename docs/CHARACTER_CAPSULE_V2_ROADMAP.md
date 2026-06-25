@@ -1,6 +1,6 @@
 # Character Capsule V2 Roadmap — Text-first Execution Slices
 
-> Status: roadmap draft. Not implemented.
+> Status: **CLOSED / MVP COMPLETE** — Character Capsule V2 Text-first Runtime 已完成封版。
 
 ## Slice 1 — Design Seal
 

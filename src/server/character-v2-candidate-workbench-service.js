@@ -48,6 +48,13 @@ function normalizeCandidate(kind, c) {
   };
 }
 
+function normalizeDecision(decision) {
+  const value = String(decision || "").trim().toLowerCase();
+  if (value === "approve" || value === "approved") return "approved";
+  if (value === "reject" || value === "rejected") return "rejected";
+  return "";
+}
+
 export function saveCharacterV2CandidatesForReview(charactersRoot, characterId, candidatesEnvelope = {}) {
   const v2Dir = resolveV2Dir(charactersRoot, characterId);
   const reviewFile = path.join(v2Dir, CANDIDATE_REVIEW_FILE);
@@ -88,6 +95,9 @@ export function listCharacterV2CandidateReview(charactersRoot, characterId) {
 }
 
 export function decideCharacterV2Candidate(charactersRoot, characterId, candidateId, decision) {
+  const normalized = normalizeDecision(decision);
+  if (!normalized) return { ok: false, error: "无效候选决策" };
+
   const v2Dir = resolveV2Dir(charactersRoot, characterId);
   const reviewFile = path.join(v2Dir, CANDIDATE_REVIEW_FILE);
   const items = readJson(reviewFile, []);
@@ -95,12 +105,12 @@ export function decideCharacterV2Candidate(charactersRoot, characterId, candidat
   if (idx < 0) return { ok: false, error: "候选不存在" };
 
   const candidate = items[idx];
-  candidate.status = decision;
+  candidate.status = normalized;
   candidate.decidedAt = new Date().toISOString();
   items[idx] = candidate;
   writeJson(reviewFile, items);
 
-  if (decision === "approve") {
+  if (normalized === "approved") {
     const targetMap = {
       memory: path.join(v2Dir, MEMORY_CONFIRMED_FILE),
       relationship: path.join(v2Dir, RELATIONSHIP_CONFIRMED_FILE),
