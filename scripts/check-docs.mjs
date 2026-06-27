@@ -80,7 +80,7 @@ try {
 try {
   const modeRunner = readFileSync(resolve(BASE, "src/core/system/mode-runner.js"), "utf-8");
   // 检查：catch 块中是否有返回 ok:true 且 text 包含"完成"的情况（排除正常成功返回）
-  const hasOkFalseInCatch = modeRunner.includes('return { ok: false');
+  const hasOkFalseInCatch = /return\s*\{\s*ok:\s*false/s.test(modeRunner);
   check("mode-runner catch returns ok:false", "src/core/system/mode-runner.js",
     () => hasOkFalseInCatch,
     "mode-runner catch blocks must return ok:false, not success text");

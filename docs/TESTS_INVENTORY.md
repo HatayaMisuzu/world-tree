@@ -6,7 +6,7 @@
 
 | Script | Command | Purpose |
 |---|---|---|
-| `test` | `node scripts/test.mjs` | 主测试入口（usage unclear） |
+| `test` | `node --test` | Node.js 原生测试入口 |
 | `test:unit` | `node --test tests/unit/*.test.js` (35 files) | 全量单元测试 |
 | `test:integration` | `node --test tests/integration/*.test.js` | 全量集成测试 |
 | `test:p0` | `tests/unit/living-world-kernel-p0.test.js` | P0 活世界 Kernel (7 tests) |

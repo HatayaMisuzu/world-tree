@@ -67,7 +67,7 @@
 | Script | Purpose |
 |---|---|
 | `scripts/check.mjs` | Project syntax & structure check |
-| `scripts/test.mjs` | Main test entry (usage: `npm test`) |
+| `npm test` | Node.js native test runner (`node --test`) |
 | `scripts/audit.mjs` | Local project/release audit: version facts, key files, directory structure, open-source hygiene, and docs/version drift |
 | `scripts/interface-audit.mjs` | API + file I/O interface audit |
 | `scripts/check-docs.mjs` | Documentation completeness check (24 checks) |

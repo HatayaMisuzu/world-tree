@@ -71,7 +71,7 @@
 | # | Problem | Evidence | Severity |
 |---|---|---|---|
 | T1 | `scripts/` 目录有 10 个脚本，部分无文档说明（如 `generate-knowledge-cards.mjs`） | 仅 `SCRIPTS_AND_CHECKS.md` 列出了 5 个，实际有 10 个 | Low |
-| T2 | `scripts/test.mjs` 用途不明（`package.json` 中 `npm test` 指向它但所有特定测试都有独立命令） | `scripts/test.mjs` 存在 | Low |
+| T2 | `scripts/test.mjs` 旧入口已移除，`npm test` 指向 Node.js 原生测试入口 | Closed | Low |
 | T3 | V2-ready tests (67 items) 已计入 `test:unit` 但不单独有 npm script | `package.json` 无 `test:v2-ready` | Low |
 | T4 | Browser QA 未脚本化（仅手动 browser QA 验证） | docs 记录 | Medium |
 

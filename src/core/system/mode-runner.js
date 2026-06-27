@@ -26,69 +26,110 @@ function createModeRunError({ modeId, code, message, cause }) {
 }
 
 const RUNNERS = {
-  "world-rpg": async (p, i, o) => {
-    try {
-      const { runGrandWorldTurn } = await import("../grand-world/grand-world-mode-adapter.js");
-      const r = runGrandWorldTurn(p, i);
-      return { ok: true, text: r.packet?.worldContextPacket?.worldIdentity?.title || "大世界运行完成", proposals: r.packet?.proposals || [] };
-    } catch (err) {
-      return { ok: false, text: "", proposals: [], error: { code: "GRAND_WORLD_ADAPTER_FAILED", message: "大世界模式适配器加载失败", cause: err.message } };
+  "world-rpg": createTableDrivenRunner({
+    importPath: "../grand-world/grand-world-mode-adapter.js",
+    exportName: "runGrandWorldTurn",
+    adapterFailedCode: "GRAND_WORLD_ADAPTER_FAILED",
+    adapterFailedMessage: "大世界模式适配器加载失败",
+    run: ({ adapter, project, userInput }) => {
+      const result = adapter(project, userInput);
+      return {
+        text: result.packet?.worldContextPacket?.worldIdentity?.title || "大世界运行完成",
+        proposals: result.packet?.proposals || []
+      };
     }
-  },
-  "character": async (p, i, o) => {
-    try {
-      const { runCharacterTurn } = await import("../character/character-engine-adapter.js");
-      return { ok: true, text: "角色模式运行完成", proposals: [] };
-    } catch (err) {
-      return { ok: false, text: "", proposals: [], error: { code: "CHARACTER_ADAPTER_FAILED", message: "角色模式适配器加载失败", cause: err.message } };
+  }),
+  "character": createTableDrivenRunner({
+    importPath: "../character/character-engine-adapter.js",
+    exportName: "runCharacterTurn",
+    adapterFailedCode: "CHARACTER_ADAPTER_FAILED",
+    adapterFailedMessage: "角色模式适配器加载失败",
+    text: "角色模式运行完成"
+  }),
+  "tabletop": createTableDrivenRunner({
+    importPath: "../tabletop/tabletop-mode-adapter.js",
+    exportName: "runSoloTabletopNarrativeTurn",
+    adapterFailedCode: "TABLETOP_ADAPTER_FAILED",
+    adapterFailedMessage: "桌面叙事模式适配器加载失败",
+    text: "桌面叙事回合完成",
+    run: ({ adapter, project, userInput }) => {
+      const result = adapter(project, userInput);
+      return { proposals: result.packet?.proposals || [] };
     }
-  },
-  "tabletop": async (p, i, o) => {
-    try {
-      const { runSoloTabletopNarrativeTurn } = await import("../tabletop/tabletop-mode-adapter.js");
-      const r = runSoloTabletopNarrativeTurn(p, i);
-      return { ok: true, text: "桌面叙事回合完成", proposals: r.packet?.proposals || [] };
-    } catch (err) {
-      return { ok: false, text: "", proposals: [], error: { code: "TABLETOP_ADAPTER_FAILED", message: "桌面叙事模式适配器加载失败", cause: err.message } };
+  }),
+  "mystery-puzzle": createTableDrivenRunner({
+    importPath: "../mystery-puzzle/mystery-puzzle-mode-adapter.js",
+    exportName: "runSoloMysteryPuzzleTurn",
+    adapterFailedCode: "MYSTERY_PUZZLE_ADAPTER_FAILED",
+    adapterFailedMessage: "解谜调查模式适配器加载失败",
+    text: "解谜调查回合完成"
+  }),
+  "strategy-sim": createTableDrivenRunner({
+    importPath: "../strategy-sim/strategy-sim-mode-adapter.js",
+    exportName: "runSoloStrategySimTurn",
+    adapterFailedCode: "STRATEGY_SIM_ADAPTER_FAILED",
+    adapterFailedMessage: "策略模拟模式适配器加载失败",
+    text: "策略模拟回合完成"
+  }),
+  "murder-mystery": createTableDrivenRunner({
+    importPath: "../murder-mystery/murder-mystery-mode-adapter.js",
+    exportName: "runSoloMurderMysteryTurn",
+    adapterFailedCode: "MURDER_MYSTERY_ADAPTER_FAILED",
+    adapterFailedMessage: "单人剧本杀模式适配器加载失败",
+    text: "单人剧本杀回合完成"
+  }),
+  "creation-forge": createTableDrivenRunner({
+    importPath: "../creation-forge/creation-forge-mode-adapter.js",
+    exportName: "runCreationForgeTurn",
+    adapterFailedCode: "CREATION_FORGE_ADAPTER_FAILED",
+    adapterFailedMessage: "炼金台适配器加载失败",
+    text: "炼金台运行完成",
+    run: ({ adapter, project, userInput }) => {
+      const result = adapter(project, userInput);
+      return { proposals: result.packet?.proposals || [] };
     }
-  },
-  "mystery-puzzle": async (p, i, o) => {
-    try {
-      const { runSoloMysteryPuzzleTurn } = await import("../mystery-puzzle/mystery-puzzle-mode-adapter.js");
-      return { ok: true, text: "解谜调查回合完成", proposals: [] };
-    } catch (err) {
-      return { ok: false, text: "", proposals: [], error: { code: "MYSTERY_PUZZLE_ADAPTER_FAILED", message: "解谜调查模式适配器加载失败", cause: err.message } };
-    }
-  },
-  "strategy-sim": async (p, i, o) => {
-    try {
-      const { runSoloStrategySimTurn } = await import("../strategy-sim/strategy-sim-mode-adapter.js");
-      return { ok: true, text: "策略模拟回合完成", proposals: [] };
-    } catch (err) {
-      return { ok: false, text: "", proposals: [], error: { code: "STRATEGY_SIM_ADAPTER_FAILED", message: "策略模拟模式适配器加载失败", cause: err.message } };
-    }
-  },
-  "murder-mystery": async (p, i, o) => {
-    try {
-      const { runSoloMurderMysteryTurn } = await import("../murder-mystery/murder-mystery-mode-adapter.js");
-      return { ok: true, text: "单人剧本杀回合完成", proposals: [] };
-    } catch (err) {
-      return { ok: false, text: "", proposals: [], error: { code: "MURDER_MYSTERY_ADAPTER_FAILED", message: "单人剧本杀模式适配器加载失败", cause: err.message } };
-    }
-  },
-  "creation-forge": async (p, i, o) => {
-    try {
-      const { runCreationForgeTurn } = await import("../creation-forge/creation-forge-mode-adapter.js");
-      const r = runCreationForgeTurn(p, i);
-      return { ok: true, text: "炼金台运行完成", proposals: r.packet?.proposals || [] };
-    } catch (err) {
-      return { ok: false, text: "", proposals: [], error: { code: "CREATION_FORGE_ADAPTER_FAILED", message: "炼金台适配器加载失败", cause: err.message } };
-    }
-  },
-  "quick-setting": async (p, i, o) => {
-    return { ok: true, text: "快速设定运行完成", proposals: [] };
-  }
+  }),
+  "quick-setting": createTableDrivenRunner({
+    text: "快速设定运行完成"
+  })
 };
+
+function createTableDrivenRunner(spec) {
+  return async (project, userInput, options) => {
+    try {
+      const adapter = await loadRunnerAdapter(spec);
+      const result = spec.run
+        ? spec.run({ adapter, project, userInput, options })
+        : {};
+      return {
+        ok: true,
+        text: result.text || spec.text || "",
+        proposals: result.proposals || []
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        text: "",
+        proposals: [],
+        error: {
+          code: spec.adapterFailedCode || "MODE_ADAPTER_FAILED",
+          message: spec.adapterFailedMessage || "模式适配器加载失败",
+          cause: err.message
+        }
+      };
+    }
+  };
+}
+
+async function loadRunnerAdapter(spec) {
+  if (!spec.importPath) return null;
+  const mod = await import(spec.importPath);
+  const adapter = mod[spec.exportName];
+  if (typeof adapter !== "function") {
+    throw new Error(`Adapter export not found: ${spec.exportName}`);
+  }
+  return adapter;
+}
 
 export async function runWorldTreeModeTurn(project = {}, userInput = {}, options = {}) {
   const modeId = project.mode || options.modeId || "world-rpg";

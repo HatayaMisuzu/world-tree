@@ -93,7 +93,6 @@ console.log("\n🧹 开源卫生");
     "world-tree-console.css",
     "world-tree-console.js",
     "scripts/audit.mjs",
-    "scripts/test.mjs",
     "scripts/interface-audit.mjs",
     "src/core/world-engine.js",
     "src/core/engine/context-engine.js",

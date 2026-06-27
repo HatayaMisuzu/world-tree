@@ -29,7 +29,7 @@
   "scripts": {
     "start": "node server.js",
     "check": "node scripts/check.mjs",
-    "test": "node scripts/test.mjs",
+    "test": "node --test",
     "test:p0": "node --test tests/unit/living-world-kernel-p0.test.js",
     "test:p1": "node --test tests/unit/experience-stability-kernel-p1.test.js",
     "test:p2": "node --test tests/unit/long-play-kernel-p2.test.js",
