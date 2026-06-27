@@ -234,9 +234,6 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     files["runtime/world-proposals.jsonl"] = "";
     files["runtime/cache/worldbook/.gitkeep"] = "";
   }
-  if (mode === "mystery-puzzle") {
-    files["shared/mystery.json"] = { schemaVersion: 1, mode: "mystery-puzzle", status: "minimal", hostRole: "puzzle_host", currentPuzzleId: "opening", clues: [], knownFacts: [], solutionLock: { enabled: false, reason: "Truth lock deferred beyond P1." }, createdAt: now, updatedAt: now };
-  }
   if (mode === "tabletop") {
     files["shared/tabletop.json"] = { schemaVersion: 1, mode: "tabletop", status: "minimal", gmMode: true, ruleset: "freeform", currentSceneId: "opening", diceSystem: { enabled: false, reason: "Dice system deferred beyond P1." }, party: [], createdAt: now, updatedAt: now };
     files["runtime/tabletop-proposals.jsonl"] = "";

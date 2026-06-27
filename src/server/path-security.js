@@ -1,4 +1,5 @@
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
+import { pathWithinRoot as corePathWithinRoot } from "../core/system/path-boundary.js";
 
 const WINDOWS_DRIVE_RE = /^[a-zA-Z]:[\\/]/;
 const WINDOWS_DRIVE_SEGMENT_RE = /^[a-zA-Z]:/;
@@ -41,13 +42,7 @@ function pathError(message, label, value) {
   return err;
 }
 
-export function pathWithinRoot(rootPath, targetPath) {
-  if (!rootPath || !targetPath) return false;
-  const root = resolve(rootPath);
-  const target = resolve(targetPath);
-  const rel = relative(root, target);
-  return rel === "" || (!!rel && !rel.startsWith("..") && !isAbsolute(rel));
-}
+export const pathWithinRoot = corePathWithinRoot;
 
 export function resolveInsideRoot(rootPath, userPath) {
   const decoded = decodeMaybeEncodedPath(userPath).trim();

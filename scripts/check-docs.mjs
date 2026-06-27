@@ -57,9 +57,10 @@ try {
 try {
   const pkgJson = JSON.parse(readFileSync(resolve(BASE, "package.json"), "utf-8"));
   const testUnitCmd = pkgJson.scripts?.["test:unit"] || "";
+  const isGlob = testUnitCmd.includes("tests/unit/*.test.js");
   check("test:unit includes system-closure", "package.json",
-    () => testUnitCmd.includes("system-closure.test.js"),
-    "system-closure.test.js must be in test:unit");
+    () => testUnitCmd.includes("system-closure.test.js") || isGlob,
+    "system-closure.test.js must be covered by test:unit");
 } catch (err) {
   failures++;
   console.error(`FAIL: test:unit includes system-closure — ${err.message}`);

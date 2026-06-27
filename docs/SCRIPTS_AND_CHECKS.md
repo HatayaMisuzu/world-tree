@@ -12,46 +12,27 @@
 | `npm run check` | Project syntax & structure check |
 | `npm run docs:check` | Documentation completeness check |
 | `npm run asset:check` | Asset inventory validation |
-| `npm run test:unit` | All unit tests (416 tests) |
-| `npm run test:integration` | All integration tests (119 tests) |
+| `npm run test:unit` | All unit tests |
+| `npm run test:integration` | All integration tests |
 | `npm run test:workflows` | Workflow tests |
 | `npm run workflow:check` | Workflow structure validation |
 | `npm run real-play:smoke` | 6 offline scenario smoke tests |
-| `npm run interface-audit` | API + file I/O interface audit (149 checks) |
-| `npm run preflight` | Full pre-commit gate (19 sub-commands) |
+| `npm run audit` | Project/release audit (local, not `npm audit`) |
+| `npm run interface-audit` | API + file I/O interface audit |
+| `npm run preflight` | Full pre-commit gate |
+
+## Test Counts vs File Counts
+
+Test file counts and test case/pass counts are different. The output of `npm run test:unit` and `npm run test:integration` is the authoritative source for current test case/pass counts — do not hardcode numbers in this document that will go stale.
+
+- Unit files: `find tests/unit -maxdepth 1 -name '*.test.js'`
+- Integration files: `find tests/integration -maxdepth 1 -name '*.test.js'`
+- Unit case/pass counts: output of `npm run test:unit`
+- Integration case/pass counts: output of `npm run test:integration`
 
 ## Full Preflight Chain
 
-`npm run preflight` runs the following commands in order (from `package.json`):
-
-1. `npm run audit` — dependency security audit
-2. `npm run check` — project syntax & structure
-3. `npm run docs:check` — documentation completeness (24 checks)
-4. `npm run asset:check` — asset inventory validation
-5. `npm run test:p0` — P0 Living World Kernel (7 tests)
-6. `npm run test:p1` — P1 Experience Stability Kernel (8 tests)
-7. `npm run test:p2` — P2 Long Play Kernel (40 tests)
-8. `npm run test:kernel` — Kernel integration tests
-9. `npm run test:prompts` — Prompt orchestration tests (42 tests)
-10. `npm run test:legacy-mechanisms` — P3 M1-M11 tests (22 tests)
-11. `npm run test:assets` — Asset status matrix tests
-12. `npm run test:authority` — Authority policy tests
-13. `npm run test:legacy-modernization` — Legacy modernization tests
-14. `npm run test:workflow-readiness` — Workflow readiness tests
-15. `npm run workflow:check` — Workflow structure validation
-16. `npm run test:workflows` — Workflow unit + integration tests
-17. `npm run test:unit` — All unit tests (416 tests)
-18. `npm run test:integration` — All integration tests (119 tests)
-19. `npm run interface-audit` — Interface audit (149 checks)
-
-## Test Suite Summary
-
-| Suite | Tests | Command |
-|---|---|---|
-| Unit | 416 | `npm run test:unit` |
-| Integration | 119 | `npm run test:integration` |
-| Workflows | dynamic | `npm run test:workflows` |
-| **Total** | **619** | |
+`npm run preflight` runs the full preflight chain from `package.json`. The exact command list is defined by `package.json` — the count of sub-commands may change as scripts are added or reorganized.
 
 ## Scripts Directory
 
@@ -59,14 +40,15 @@
 |---|---|
 | `scripts/check.mjs` | Project syntax & structure check |
 | `scripts/test.mjs` | Main test entry (usage: `npm test`) |
-| `scripts/audit.mjs` | Dependency security audit |
-| `scripts/interface-audit.mjs` | API + file I/O interface audit (149 checks) |
-| `scripts/check-docs.mjs` | Documentation completeness check (24 checks) |
+| `scripts/audit.mjs` | Local project/release audit for version facts, key files, directory structure, open-source hygiene, and docs/version drift. It is not `npm audit` and does not perform dependency vulnerability scanning. |
+| `scripts/interface-audit.mjs` | API + file I/O interface audit |
+| `scripts/check-docs.mjs` | Documentation completeness check |
 | `scripts/validate-workflow-integration.mjs` | Workflow structure validation |
 | `scripts/validate-asset-inventory.mjs` | Asset inventory validation |
 | `scripts/check-legacy-status.mjs` | Legacy status check |
 | `scripts/real-play-scenarios.mjs` | Offline scenario runner (6 scenarios) |
 | `scripts/generate-knowledge-cards.mjs` | Knowledge card generation |
+| `scripts/verify-audit-reality.mjs` | Cross-platform audit reality checker |
 
 ## Known Non-blocking Warnings
 
@@ -77,6 +59,8 @@
 
 All warnings are non-blocking (exit code 0).
 
-As of `v0.4.0-pre-v2-closure.1`, `npm run preflight` passed on `main` after blocker repair (all 19 sub-commands, integration 119/0, interface-audit 149/0/0).
+## V2 Gates
 
-### V2 Gates: test:world-tree-v2-entries, test:single-player-scriptkill-v2, test:project-complete-audit
+- `npm run test:world-tree-v2-entries`
+- `npm run test:single-player-scriptkill-v2`
+- `npm run test:single-player-scriptkill-v2-audit`
