@@ -107,91 +107,14 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 
 ## Boundary
 
-Status: **AUDIT-INVALIDATED / REPAIR CANDIDATE**
+- This is not full V2
+- This does not implement complete mode-specific gameplay engines
+- No persistence format rewrite
+- No proposal/canon rewrite
+- No LLM adapter rewrite
+- Old tag `v0.4.0-pre-v2-closure` preserved as historical audit-invalidated marker
+- Trusted seal is `v0.4.1-v2-entry-closure.0` at `87472741c229afe2597a6229d98059b29d61913c`
 
-Stages 5-7 landed on `main`, but the full local audit at `0ee1852` invalidated the claimed final seal. The current repair candidate is `0.4.0-pre-v2-closure.1` on `codex/pre-v2-closure-blocker-repair` and requires re-audit before any trusted seal.
+## V2 Entry Closure (基准提交 9b35bbf)
 
-Scope: 8 stages of baseline inventory, documentation cleanup, legacy removal, warning reconciliation, asset integration gate, and mode-specific shared readback integration.
-
-| Stage | Summary | Commit |
-|---|---|---|
-| 5A | Baseline & Inventory | `0bd25f3` |
-| 5B | Safe Documentation Cleanup | `8e67179` |
-| 5C | Legacy Workflow Directory Removal | `4401594` |
-| 5D | Inventory Reconciliation & Warning Proof | `2089c81` |
-| 5E | Asset Inventory Warning Resolution | `8eb2547` |
-| 5F | Interface-Audit Proof & Closure Gates | `a8a67f7` |
-| 5G | Maintenance Entry & Asset Integration Gate | `e07d5aa` |
-| 5H | Mode-Specific Shared Readback | `349f99d` |
-| 5Z | Final Audit & Merge Readiness | `2ef932a` |
-
-Historical checks and current repair requirements:
-- `npm run asset:check`: 0 errors, 0 warnings
-- `npm run interface-audit`: 0 warnings (149 passes)
-- The prior integration/preflight claim is invalidated. The real failure was a reproducible request-body socket error, not an accepted flaky port race.
-- Repair completion requires full `npm run preflight` PASS and unchanged repository `userData/` hashes.
-- All 8 mode-specific shared seed files integrated into `moduleData.modeSpecific`
-- Maintenance entry: `docs/MAINTENANCE_ENTRY.md`
-- Asset Preservation & Integration Gate: `docs/PRE_V2_CLOSURE_GATES.md`
-- Mode-specific shared files read back into `moduleData.modeSpecific`
-- No assets deleted, detached, or downgraded
-
-Boundary:
-- This is not full V2.
-- This does not implement complete mode-specific gameplay engines.
-- Stage 5 closure is now landed on `main`; Stage 6 closure continues the Pre-V2 baseline on `main`.
-
-## Stage 6 Status
-
-Stage 6 has completed server runtime boundary extraction and architecture diagnostics closure.
-
-Completed:
-- `src/server/http-response.js`
-- `src/server/http-request.js`
-- `src/server/local-access.js`
-- `docs/ARCHITECTURE_MAP.md`
-- `docs/MAINTENANCE_GUIDE.md`
-- `docs/DEBUGGING_GUIDE.md`
-- `docs/API_ROUTE_INVENTORY.md`
-- `docs/MODE_BOUNDARY_MAP.md`
-
-Boundary:
-- Stage 6 does not implement full V2.
-- Stage 6 does not fully split API routes.
-- Stage 6 does not change persistence, proposal/canon, LLM adapter, or mode business behavior.
-
-## Stage 7 Status
-
-Stage 7 previously claimed a usable sealed baseline. The full local audit invalidated that seal evidence; the historical artifacts remain, but they are not current release proof.
-
-Completed:
-- `docs/USER_QUICKSTART.md`
-- `docs/LOCAL_LLM_SETUP.md`
-- `docs/PLAY_MODE_GUIDE.md`
-- `docs/NO_GATEWAY_RUNTIME_QA_REPORT.md`
-- `docs/PRE_V2_CLOSURE_REPORT.md`
-- README updated with current state
-
-Boundary:
-- Browser gateway QA was intentionally not used (gateway unstable).
-## Prior v0.4.0 Pre-V2 Closure Tag
-
-Status: **AUDIT-INVALIDATED AS TRUSTED FINAL SEAL**
-
-The tag `v0.4.0-pre-v2-closure` still exists at `0ee1852feb9496755ecc27f722dbe672732c2d65`. It was not moved or deleted. The full local audit found P0/P1 blockers, so the tag is a historical repository fact, not trusted final-seal proof.
-
-The repair candidate is not full V2 and is not a new seal. See `docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md` and `docs/PRE_V2_BLOCKER_REPAIR_REPORT.md`.
-
-Completed:
-- Stage 5: safety baseline, debt cleanup, warning reconciliation, asset protection and integration gate
-- Stage 6: server runtime boundary extraction, architecture map, maintenance/debugging guides, route/mode inventories
-- Stage 7: no-gateway runtime QA, user quickstart, LLM setup guide, play mode guide, final Pre-V2 Closure report
-
-Boundary:
-- No full V2 implementation.
-- No persistence format rewrite.
-- No proposal/canon rewrite.
-- No LLM adapter rewrite.
-- No mode engine rewrite.
-- No browser gateway QA claim.
-- No tag was moved/deleted and no new tag was created during blocker repair.
+四个 V2 入口已完成闭环。详见 V2_ENTRY_COMPLETION_STATUS.md。

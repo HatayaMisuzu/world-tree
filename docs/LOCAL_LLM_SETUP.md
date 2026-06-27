@@ -1,4 +1,4 @@
-# Local LLM Setup — World Tree v0.4.0-pre-v2-closure.1 Repair Candidate
+# Local LLM Setup — World Tree v0.4.0-pre-v2-closure.1
 
 > No real secrets are included in this document.
 
@@ -25,8 +25,6 @@ Typical local endpoint: `http://127.0.0.1:11434/v1` (Ollama with OpenAI-compatib
 
 - Never commit API keys to the repository.
 - API keys are stored in `userData/secrets.json`.
-- `userData/secrets.json` is ignored by Git but remains plaintext; never upload or paste it into reports.
-- Windows users should review the file ACL and restrict access to the intended account. A future OS-keychain integration is recommended.
 - The app masks secret values in API responses.
 
 ## Error Handling

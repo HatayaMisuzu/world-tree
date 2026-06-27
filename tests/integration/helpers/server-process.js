@@ -18,12 +18,6 @@ export function randomPort() {
 
 export async function startWorldTreeServer({ port = randomPort(), dataDir, userDataDir = join(dataDir, ".userData"), env = {} } = {}) {
   const root = resolve(".");
-  // Isolate userData: when dataDir is provided (test mode), auto-create a temp userData dir
-  let userDataDir = undefined;
-  if (dataDir) {
-    userDataDir = join(dataDir, "..", ".userData");
-    await mkdir(userDataDir, { recursive: true });
-  }
   const child = spawn(process.execPath, ["server.js"], {
     cwd: root,
     env: {

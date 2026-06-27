@@ -1,7 +1,6 @@
 # World Tree
 
-> **当前版本：v0.4.0-pre-v2-closure.1 repair candidate** — 不是完整 V2，也不是可信 final seal。
-> 旧 tag `v0.4.0-pre-v2-closure` 保留在原提交，但已被完整本地审计判定为不可信封版证明；本修复候选等待复审。
+> **当前版本：v0.4.1-v2-entry-closure.0 — V2 Entry Closure maintenance** — V2 Entry Closure (sealed)。
 > 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md)
 
 World Tree 让用户进入角色、世界、案件、局势和故事现场，进行持续的互动、探索、推理、扮演和体验。它也提供创作能力，但创作不是终点：创作角色，是为了互动；创作世界书，是为了探索；创作案件，是为了推理；创作项目包，是为了让体验能保存、继续和扩展。
@@ -234,8 +233,12 @@ world-tree/
 ├─ CHANGELOG.md
 ├─ AI-GUIDE.md
 │
-├─ world-tree-console.html/css/js
-│   └─ 根目录网页界面、样式和前端交互（无 `public/` 构建目录）
+├─ world-tree-console.html
+│   └─ 网页界面
+├─ world-tree-console.css
+│   └─ 样式
+├─ world-tree-console.js
+│   └─ 前端交互
 │
 ├─ server.js
 │   └─ 本地服务入口

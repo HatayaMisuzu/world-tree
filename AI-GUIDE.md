@@ -1,9 +1,9 @@
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: v0.4.0-pre-v2-closure.1 — Audit Blocker Repair Candidate
-> **先读 `docs/CURRENT_PROJECT_STATE.md`** 获取当前真相源。
-> Pre-V2 Closure 期间：任何清理/删除/迁移前先读 `docs/MAINTENANCE_ENTRY.md` 和 `docs/PRE_V2_CLOSURE_GATES.md`。Asset Preservation & Integration Gate 是强制门槛。
+> 最后更新: v0.4.1-v2-entry-closure.0 — V2 Entry Closure maintenance
+> **先读 `docs/CURRENT_PROJECT_STATE.md` + `docs/V2_ENTRY_COMPLETION_STATUS.md`** 获取当前真相源。
+> V2 Entry Closure maintenance rules：先读 `docs/MAINTENANCE_ENTRY.md` 和 `docs/PRE_V2_CLOSURE_GATES.md`。Asset Preservation & Integration Gate 是强制门槛。
 
 ## 不可违反的规则
 
@@ -51,7 +51,7 @@ src/core/
 ├── engine/       world-engine/context-engine/modules
 ├── data/         旧数据文件
 server.js
-world-tree-console.html/css/js  根目录 UI 前端
+world-tree-console.html/css/js  UI 前端
 tests/           单元测试 + 集成测试
 docs/            文档
 scripts/         脚本
