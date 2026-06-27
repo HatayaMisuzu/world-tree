@@ -14,8 +14,8 @@ import { resolve, relative, isAbsolute } from "node:path";
  */
 export function pathWithinRoot(rootPath, targetPath) {
   if (!rootPath || !targetPath) return false;
-  const root = resolve(rootPath);
-  const target = resolve(targetPath);
+  const root = resolve(String(rootPath).replaceAll("\\", "/"));
+  const target = resolve(String(targetPath).replaceAll("\\", "/"));
   const rel = relative(root, target);
   return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
