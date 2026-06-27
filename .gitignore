@@ -20,6 +20,7 @@ data/characters-archive/
 
 # Web 服务用户数据
 userData/
+audit/
 config.json
 secrets.json
 .env

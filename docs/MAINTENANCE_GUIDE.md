@@ -10,7 +10,7 @@ Before making changes, read these files in order:
 AI-GUIDE.md
 docs/MAINTENANCE_ENTRY.md
 docs/CURRENT_PROJECT_STATE.md
-docs/PRE_V2_CLOSURE_GATES.md
+docs/archive/stage-reports/PRE_V2_CLOSURE_GATES.md
 docs/ARCHITECTURE_MAP.md
 docs/API_ROUTE_INVENTORY.md
 docs/SCRIPTS_AND_CHECKS.md

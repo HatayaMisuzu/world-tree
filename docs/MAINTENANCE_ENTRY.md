@@ -8,7 +8,7 @@
 1. `AI-GUIDE.md`
 2. `docs/CURRENT_PROJECT_STATE.md`
 3. `docs/MAINTENANCE_ENTRY.md` (this file)
-4. `docs/PRE_V2_CLOSURE_GATES.md`
+4. `docs/archive/stage-reports/PRE_V2_CLOSURE_GATES.md`
 5. `docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md`
 6. `docs/ASSET_STATUS_MATRIX.md`
 7. `docs/LEGACY_REDUNDANCY_AUDIT.md`

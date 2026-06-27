@@ -11,6 +11,7 @@ import {
   pathWithinRoot,
   resolveInsideRoot
 } from "../../src/server/path-security.js";
+import { pathWithinRoot as corePathWithinRoot } from "../../src/core/system/path-boundary.js";
 
 async function withTempRoot(fn) {
   const root = await mkdtemp(join(tmpdir(), "world-tree-path-"));
@@ -46,6 +47,10 @@ test("resolveInsideRoot accepts safe mixed separators and keeps targets inside r
     assert.equal(relative(root, target).replace(/\\/g, "/"), "shared/worldbook.json");
     assert.equal(pathWithinRoot(root, target), true);
   });
+});
+
+test("server pathWithinRoot re-exports the shared core path boundary helper", () => {
+  assert.equal(pathWithinRoot, corePathWithinRoot);
 });
 
 test("resolveInsideRoot rejects unsafe path forms", async () => {

@@ -4,16 +4,11 @@
 
 import { buildLLMTaskPrompt, parseJsonLoose } from "../prompts/llm-task-gateway.js";
 import { sanitizeForLlm, sanitizeText, assertNoHiddenKeys } from "../prompts/prompt-hidden-sanitizer.js";
+import { getHiddenFieldsForMode } from "../system/hidden-field-registry.js";
 
-const DETECTIVE_FORBIDDEN_PUBLIC_KEYS = [
-  "truthLedger",
-  "hiddenMeaning",
-  "deceptionReason",
-  "isCulprit",
-  "hiddenNotes",
-  "solutionChain",
-  "realTimeline"
-];
+const DETECTIVE_FORBIDDEN_PUBLIC_KEYS = Array.from(
+  getHiddenFieldsForMode("detective-v2")
+);
 
 export function publicDetectivePayload(value = {}) {
   const sanitized = sanitizeForLlm(value);

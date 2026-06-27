@@ -2,12 +2,10 @@
 // 所有数据读写前执行统一校验
 
 import { OVERLAY_ROOT, OVERLAY_FILES } from "./overlay-store.js";
+import { isPathWithinRootStrict } from "../system/path-boundary.js";
 
 export function validatePathWithinRoot(rootPath, targetPath) {
-  if (!rootPath || !targetPath) return false;
-  const normalizedRoot = String(rootPath).replaceAll("\\", "/").replace(/\/+$/, "").toLowerCase();
-  const normalizedTarget = String(targetPath).replaceAll("\\", "/").toLowerCase();
-  return normalizedTarget === normalizedRoot || normalizedTarget.startsWith(`${normalizedRoot}/`);
+  return isPathWithinRootStrict(rootPath, targetPath);
 }
 
 export function isApprovedOverlayTarget(targetPath = "") {

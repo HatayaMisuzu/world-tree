@@ -29,7 +29,7 @@
 | Action | Migrated the single active test import to `src/core/workflows/`; removed `src/core/workflow/` |
 | Evidence | `src/core/workflow/` has 0 code/test references after Stage 5C; `p3-context-builder` and `buildP3MechanismContext` have 0 code/test references |
 | Safety | No production workflow logic changed; only test import migration + orphaned OLD directory deletion |
-| Report | `docs/STAGE_5C_SAFE_CODE_CLEANUP_REPORT.md` |
+| Report | `docs/archive/stage-reports/STAGE_5C_SAFE_CODE_CLEANUP_REPORT.md` |
 
 ### P1-2: `docs/SCRIPTS_AND_CHECKS.md` outdated — RESOLVED (Stage 5B)
 
@@ -82,7 +82,7 @@
 | `npm run asset:check` | 0 | **RESOLVED in Stage 5E** | P3 M1-M11 exact references added to asset inventory |
 | `npm run interface-audit` | 0 | **RESOLVED in Stage 5H** | Mode-specific shared seed files are now read back into `moduleData.modeSpecific`; interface-audit recognizes the dynamic contract readback |
 
-Asset warnings resolved by `docs/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md`. Interface warnings resolved by `docs/STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md`.
+Asset warnings resolved by `docs/archive/stage-reports/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md`. Interface warnings resolved by `docs/archive/stage-reports/STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md`.
 
 ## Non-Debt: Historical Records to Preserve
 
@@ -91,7 +91,7 @@ Asset warnings resolved by `docs/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.
 | Document | Why Preserve |
 |---|---|
 | `docs/REAL_PLAY_PRODUCTIZATION_REPORT.md` | Stage 0-3 完成报告，记录真实游玩链路建立过程 |
-| `docs/REAL_PLAY_PRODUCTIZATION_CLOSURE_REPORT.md` | Codex→Hermes 收尾闭环报告，记录测试覆盖和修复 |
+| `docs/archive/stage-reports/REAL_PLAY_PRODUCTIZATION_CLOSURE_REPORT.md` | Codex→Hermes 收尾闭环报告，记录测试覆盖和修复 |
 | `docs/V2_READY_FOUNDATION_REPORT.md` | Stage 4 完成报告，记录 V2-ready foundation 建立过程 |
 | `docs/FINAL_DOCUMENTATION_CLEANUP_REPORT.md` | 文档收口报告 |
 | `docs/archive/PRODUCT-PROPOSAL-v2.2.1.md` | 原始产品提案，历史参考价值 |

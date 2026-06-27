@@ -1,9 +1,0 @@
-design/ui-assets-bank/archive-library-bg-image2.png	2199691
-design/ui-assets-bank/dialogue-frame.png	2039147
-design/ui-assets-bank/dialogue-paper-bg-image2.png	2133622
-design/ui-assets-bank/menu-icons-set-image2.png	1366952
-design/ui-assets-bank/monitor-terminal-bg-image2.png	1757536
-design/ui-assets-bank/page-ornaments-image2.png	1231427
-design/ui-assets-bank/settings-root-bg-image2.png	1848931
-design/ui-assets-bank/world-tree-emblem-image2.png	1634718
-design/ui-assets-bank/world-tree-hero.png	2975121

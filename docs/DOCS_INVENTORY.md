@@ -59,11 +59,11 @@
 |---|---|---|
 | `ASSET_MATURATION_REPORT.md` | ✅ 当前 | Asset Maturation 报告 |
 | `REAL_PLAY_PRODUCTIZATION_REPORT.md` | ✅ v0.3.1 | Real Play 0-3 报告 |
-| `REAL_PLAY_PRODUCTIZATION_CLOSURE_REPORT.md` | ✅ 当前 | Real Play 收尾闭环报告 |
+| `archive/stage-reports/REAL_PLAY_PRODUCTIZATION_CLOSURE_REPORT.md` | ✅ 当前 | Real Play 收尾闭环报告 |
 | `V2_READY_FOUNDATION_REPORT.md` | ✅ 当前 | Stage 4 V2-ready Foundation 报告 |
 | `WORKFLOW_SERVICE_DEEPENING_REPORT.md` | ✅ 当前 | Service Deepening 报告 |
 | `FINAL_DOCUMENTATION_CLEANUP_REPORT.md` | ✅ 当前 | 文档清理收口报告 |
-| `PRE_V2_CLOSURE_BASELINE.md` | 🆕 Stage 5A | 本步新增 |
+| `archive/stage-reports/PRE_V2_CLOSURE_BASELINE.md` | 🆕 Stage 5A | 本步新增 |
 | `TECH_DEBT_INVENTORY.md` | 🆕 Stage 5A | 本步新增 |
 | `DOCS_INVENTORY.md` | 🆕 Stage 5A | 本步新增（即本文） |
 

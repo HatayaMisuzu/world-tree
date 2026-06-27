@@ -27,8 +27,8 @@ Key entry points for the current baseline:
 | Document | Purpose |
 |----------|---------|
 | [CURRENT_PROJECT_STATE.md](CURRENT_PROJECT_STATE.md) | Current project truth source |
-| [PRE_V2_CLOSURE_REPORT.md](PRE_V2_CLOSURE_REPORT.md) | Final Pre-V2 Closure report |
-| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | Release notes for repaired baseline |
+| [PRE_V2_CLOSURE_REPORT.md](archive/stage-reports/PRE_V2_CLOSURE_REPORT.md) | Final Pre-V2 Closure report |
+| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](archive/stage-reports/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | Release notes for repaired baseline |
 | [RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md](RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md) | Old tag invalidation (superseded) |
 | [NO_GATEWAY_RUNTIME_QA_REPORT.md](NO_GATEWAY_RUNTIME_QA_REPORT.md) | No-gateway runtime QA |
 | [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) | Scripts and checks reference |
@@ -95,33 +95,33 @@ Key entry points for the current baseline:
 
 | 文档 | 用途 |
 |------|------|
-| [PRE_V2_CLOSURE_BASELINE.md](PRE_V2_CLOSURE_BASELINE.md) | Pre-V2 Closure 基线快照 |
+| [PRE_V2_CLOSURE_BASELINE.md](archive/stage-reports/PRE_V2_CLOSURE_BASELINE.md) | Pre-V2 Closure 基线快照 |
 | [TECH_DEBT_INVENTORY.md](TECH_DEBT_INVENTORY.md) | 技术债清单（分类+证据） |
 | [DOCS_INVENTORY.md](DOCS_INVENTORY.md) | 文档真实结构盘点 |
 | [TESTS_INVENTORY.md](TESTS_INVENTORY.md) | 测试体系真实盘点 |
 | [ARCHITECTURE_REALITY_CHECK.md](ARCHITECTURE_REALITY_CHECK.md) | 当前真实架构地图 |
-| [STAGE_5B_SAFE_CLEANUP_REPORT.md](STAGE_5B_SAFE_CLEANUP_REPORT.md) | Stage 5B 安全文档清理与引用证明 |
-| [STAGE_5C_SAFE_CODE_CLEANUP_REPORT.md](STAGE_5C_SAFE_CODE_CLEANUP_REPORT.md) | Stage 5C workflow 旧目录安全收束报告 |
-| [STAGE_5D_WARNING_DEBT_REALITY_CHECK_REPORT.md](STAGE_5D_WARNING_DEBT_REALITY_CHECK_REPORT.md) | Stage 5D 清单对账与警告债真实定位 |
-| [STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md](STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md) | Stage 5E 资产清单 warning 收束报告 |
-| [STAGE_5F_INTERFACE_AUDIT_ARCHITECTURE_PROOF.md](STAGE_5F_INTERFACE_AUDIT_ARCHITECTURE_PROOF.md) | Stage 5F interface-audit 架构证明 |
-| [PRE_V2_CLOSURE_GATES.md](PRE_V2_CLOSURE_GATES.md) | Pre-V2 Closure 硬门槛规则 |
+| [STAGE_5B_SAFE_CLEANUP_REPORT.md](archive/stage-reports/STAGE_5B_SAFE_CLEANUP_REPORT.md) | Stage 5B 安全文档清理与引用证明 |
+| [STAGE_5C_SAFE_CODE_CLEANUP_REPORT.md](archive/stage-reports/STAGE_5C_SAFE_CODE_CLEANUP_REPORT.md) | Stage 5C workflow 旧目录安全收束报告 |
+| [STAGE_5D_WARNING_DEBT_REALITY_CHECK_REPORT.md](archive/stage-reports/STAGE_5D_WARNING_DEBT_REALITY_CHECK_REPORT.md) | Stage 5D 清单对账与警告债真实定位 |
+| [STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md](archive/stage-reports/STAGE_5E_ASSET_INVENTORY_RECONCILIATION_REPORT.md) | Stage 5E 资产清单 warning 收束报告 |
+| [STAGE_5F_INTERFACE_AUDIT_ARCHITECTURE_PROOF.md](archive/stage-reports/STAGE_5F_INTERFACE_AUDIT_ARCHITECTURE_PROOF.md) | Stage 5F interface-audit 架构证明 |
+| [PRE_V2_CLOSURE_GATES.md](archive/stage-reports/PRE_V2_CLOSURE_GATES.md) | Pre-V2 Closure 硬门槛规则 |
 | [MAINTENANCE_ENTRY.md](MAINTENANCE_ENTRY.md) | 维护入口：AI/人类维护前必须阅读 |
-| [STAGE_5G_ASSET_INTEGRATION_GATE_REPORT.md](STAGE_5G_ASSET_INTEGRATION_GATE_REPORT.md) | Stage 5G 资产接入门槛与 interface proof 纠偏 |
-| [STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md](STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md) | Stage 5H mode-specific 读回接入报告 |
-| [PRE_V2_CLOSURE_FINAL_REPORT.md](PRE_V2_CLOSURE_FINAL_REPORT.md) | Pre-V2 Closure 最终审计与合并准备报告 |
+| [STAGE_5G_ASSET_INTEGRATION_GATE_REPORT.md](archive/stage-reports/STAGE_5G_ASSET_INTEGRATION_GATE_REPORT.md) | Stage 5G 资产接入门槛与 interface proof 纠偏 |
+| [STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md](archive/stage-reports/STAGE_5H_MODE_SPECIFIC_READBACK_REPORT.md) | Stage 5H mode-specific 读回接入报告 |
+| [PRE_V2_CLOSURE_FINAL_REPORT.md](archive/stage-reports/PRE_V2_CLOSURE_FINAL_REPORT.md) | Pre-V2 Closure 最终审计与合并准备报告 |
 | [ARCHITECTURE_MAP.md](ARCHITECTURE_MAP.md) | Stage 6 架构当前地图 |
 | [MAINTENANCE_GUIDE.md](MAINTENANCE_GUIDE.md) | Stage 6 维护指南 |
 | [DEBUGGING_GUIDE.md](DEBUGGING_GUIDE.md) | Stage 6 调试指南 |
 | [API_ROUTE_INVENTORY.md](API_ROUTE_INVENTORY.md) | API Route 清单 |
 | [MODE_BOUNDARY_MAP.md](MODE_BOUNDARY_MAP.md) | Mode 边界与资产地图 |
-| [STAGE_6_ARCHITECTURE_DIAGNOSTICS_CLOSURE_REPORT.md](STAGE_6_ARCHITECTURE_DIAGNOSTICS_CLOSURE_REPORT.md) | Stage 6 架构诊断收口报告 |
+| [STAGE_6_ARCHITECTURE_DIAGNOSTICS_CLOSURE_REPORT.md](archive/stage-reports/STAGE_6_ARCHITECTURE_DIAGNOSTICS_CLOSURE_REPORT.md) | Stage 6 架构诊断收口报告 |
 | [USER_QUICKSTART.md](USER_QUICKSTART.md) | 用户快速开始指南 |
 | [LOCAL_LLM_SETUP.md](LOCAL_LLM_SETUP.md) | 本地/远程 LLM 设置指南 |
 | [PLAY_MODE_GUIDE.md](PLAY_MODE_GUIDE.md) | 游戏模式使用说明 |
 | [NO_GATEWAY_RUNTIME_QA_REPORT.md](NO_GATEWAY_RUNTIME_QA_REPORT.md) | 无网关 Runtime QA 报告 |
-| [PRE_V2_CLOSURE_REPORT.md](PRE_V2_CLOSURE_REPORT.md) | Pre-V2 Closure 最终报告 |
-| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | v0.4.0 Pre-V2 Closure Release Notes |
+| [PRE_V2_CLOSURE_REPORT.md](archive/stage-reports/PRE_V2_CLOSURE_REPORT.md) | Pre-V2 Closure 最终报告 |
+| [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](archive/stage-reports/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | v0.4.0 Pre-V2 Closure Release Notes |
 
 ## 历史与归档
 

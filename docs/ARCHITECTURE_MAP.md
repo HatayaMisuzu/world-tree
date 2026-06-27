@@ -85,7 +85,7 @@ Before changing this architecture, read:
 AI-GUIDE.md
 docs/MAINTENANCE_ENTRY.md
 docs/CURRENT_PROJECT_STATE.md
-docs/PRE_V2_CLOSURE_GATES.md
+docs/archive/stage-reports/PRE_V2_CLOSURE_GATES.md
 docs/API_ROUTE_INVENTORY.md
 docs/MODE_BOUNDARY_MAP.md
 ```
