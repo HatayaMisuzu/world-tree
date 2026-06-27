@@ -1,7 +1,0 @@
-COMMAND: git.exe diff --check
-EXIT_CODE: 0
-DURATION_MS: 1020
-
-STDOUT:
-
-STDERR:
