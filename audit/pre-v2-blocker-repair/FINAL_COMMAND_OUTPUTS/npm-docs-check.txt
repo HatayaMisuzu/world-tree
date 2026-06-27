@@ -1,0 +1,37 @@
+COMMAND: npm.cmd run docs:check
+EXIT_CODE: 0
+DURATION_MS: 1021
+
+STDOUT:
+
+> world-tree@0.4.0-pre-v2-closure.1 docs:check
+> node scripts/check-docs.mjs
+
+OK: README
+OK: CHANGELOG
+OK: AI-GUIDE
+OK: docs/INDEX
+OK: docs/PROJECT_OVERVIEW
+OK: docs/FEATURES
+OK: docs/ARCHITECTURE_V1
+OK: docs/API_REFERENCE
+OK: docs/SAVE_SYSTEM
+OK: docs/PROPOSAL
+OK: docs/SCRIPTS
+OK: docs/AI_AGENT_GUIDE
+OK: docs/STATUS
+OK: README mentions milestone
+OK: README mode table
+OK: CHANGELOG no ignored AI
+OK: AI-GUIDE updated
+OK: test:unit includes system-closure
+OK: mode-runner no modeMeaning guess
+OK: mode-runner catch returns ok:false
+OK: proposal-bus has real I/O
+OK: save-system has real write
+OK: route-index has real validation
+OK: isolation has deepFilter
+
+24 checks, 0 failures
+
+STDERR:

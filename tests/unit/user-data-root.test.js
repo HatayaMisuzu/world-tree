@@ -12,5 +12,7 @@ test("getUserDataRoot uses an absolute WORLD_TREE_USER_DATA_DIR override", () =>
 
 test("getUserDataRoot falls back to repository userData", () => {
   const result = getUserDataRoot({});
-  assert.equal(result.endsWith(join("world-tree-desktop", "userData")), true);
+  assert.equal(isAbsolute(result), true);
+  // 不硬编码目录名——CI 上 checkout 目录名可能与本地不同（如 world-tree vs world-tree-desktop）
+  assert.equal(result.endsWith("userData"), true);
 });

@@ -1,0 +1,20 @@
+COMMAND: npm.cmd run asset:check
+EXIT_CODE: 0
+DURATION_MS: 1025
+
+STDOUT:
+
+> world-tree@0.3.1 asset:check
+> node scripts/validate-asset-inventory.mjs
+
+✅ Checking mode-module-map module existence...
+✅ Building asset status registry...
+✅ Registry built: 76 assets
+✅ Prototype-hold: 22, Declared-hold: 6
+✅ P3 M1-M11: all present
+✅ Inventory file exists
+
+=== Result: 0 errors, 0 warnings ===
+STATUS: PASS
+
+STDERR:

@@ -1,0 +1,12 @@
+path	exists	files	dirs	bytes	review
+.git	yes	398	212	277561187	metadata-only
+node_modules	no	0	0	0	not-present
+dist	no	0	0	0	not-present
+build	no	0	0	0	not-present
+coverage	no	0	0	0	not-present
+.cache	no	0	0	0	not-present
+tmp	no	0	0	0	not-present
+temp	no	0	0	0	not-present
+logs	no	0	0	0	not-present
+userData	yes	4	1	1254	redacted-sensitive-review
+audit/pre-v2-full-project-audit	yes	44	9	508820	generated-audit-output

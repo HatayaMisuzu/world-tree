@@ -1,0 +1,8 @@
+tag v0.4.0-pre-v2-closure
+
+World Tree v0.4.0 Pre-V2 Closure baseline
+0ee1852 (HEAD -> codex/pre-v2-closure-blocker-repair, tag: v0.4.0-pre-v2-closure, origin/main, origin/HEAD, main) docs(world-tree): seal v0.4.0 pre-v2 closure
+ docs/CURRENT_PROJECT_STATE.md               |  22 +++-
+ docs/INDEX.md                               |   1 +
+ docs/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md | 198 ++++++++++++++++++++++++++++
+ 3 files changed, 219 insertions(+), 2 deletions(-)
