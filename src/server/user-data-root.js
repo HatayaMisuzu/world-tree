@@ -1,15 +1,14 @@
-import path from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url);
-const SERVER_DIR = path.dirname(__filename);
-const ROOT_DIR = path.resolve(SERVER_DIR, "../..");
+const SERVER_DIR = dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = resolve(SERVER_DIR, "../..");
 
 export function getUserDataRoot(env = process.env) {
-  const raw = env.WORLD_TREE_USER_DATA_DIR;
-  return raw ? path.resolve(raw) : path.join(ROOT_DIR, "userData");
+  const raw = String(env?.WORLD_TREE_USER_DATA_DIR || "").trim();
+  return raw ? resolve(raw) : join(ROOT_DIR, "userData");
 }
 
 export function userDataPath(...segments) {
-  return path.join(getUserDataRoot(), ...segments);
+  return join(getUserDataRoot(), ...segments);
 }

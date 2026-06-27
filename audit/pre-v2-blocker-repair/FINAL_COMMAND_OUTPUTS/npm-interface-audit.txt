@@ -1,0 +1,37 @@
+COMMAND: npm.cmd run interface-audit
+EXIT_CODE: 1
+DURATION_MS: 1031
+
+STDOUT:
+
+> world-tree@0.4.0-pre-v2-closure.1 interface-audit
+> node scripts/interface-audit.mjs
+
+
+📁 文件 IO 校准
+
+📝 overlay writeSet → 回读检查
+
+🔌 API 契约检查
+
+📋 JSONL 读写一致性
+
+🔄 engineState 传递链路
+
+⚡ 快速项目草稿
+
+🔑 密钥安全
+
+⚗️ 炼金预览边界
+
+🧭 机制与状态帧联动
+
+🎲 Real Play 可见挂载
+
+==================================================
+接口联动审计完成: 147 通过 / 0 警告 / 2 错误
+结论: 🔴 未通过 — 请修复错误后重新审计
+
+STDERR:
+  ❌ shared/creation_forge.json: 引擎读取但 createModule 不写入
+  ❌ shared/forge_blueprints.json: 引擎读取但 createModule 不写入

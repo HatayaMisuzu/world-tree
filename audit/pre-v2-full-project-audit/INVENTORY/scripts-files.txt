@@ -1,0 +1,10 @@
+scripts/audit.mjs
+scripts/check.mjs
+scripts/check-docs.mjs
+scripts/check-legacy-status.mjs
+scripts/generate-knowledge-cards.mjs
+scripts/interface-audit.mjs
+scripts/real-play-scenarios.mjs
+scripts/test.mjs
+scripts/validate-asset-inventory.mjs
+scripts/validate-workflow-integration.mjs

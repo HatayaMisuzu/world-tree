@@ -1,0 +1,2707 @@
+COMMAND: npm.cmd run test:unit
+EXIT_CODE: 0
+DURATION_MS: 4053
+
+STDOUT:
+
+> world-tree@0.3.1 test:unit
+> node --test tests/unit/direction-packet.test.js tests/unit/emotion-state.test.js tests/unit/output-parser.test.js tests/unit/guardian.test.js tests/unit/worldbook.test.js tests/unit/worldbook-runtime.test.js tests/unit/alchemy.test.js tests/unit/alchemy-preview-service.test.js tests/unit/mechanism-status.test.js tests/unit/overlay-store.test.js tests/unit/guardian-overlay.test.js tests/unit/llm.test.js tests/unit/path-security.test.js tests/unit/fs-utils.test.js tests/unit/module-service.test.js tests/unit/module-registry.test.js tests/unit/mode-module-map.test.js tests/unit/quick-setting-mode.test.js tests/unit/legacy-module-wrappers.test.js tests/unit/mode-runtime.test.js tests/unit/module-runtime-orchestrator.test.js tests/unit/mode-state-schema.test.js tests/unit/mode-project-factory.test.js tests/unit/character-mode.test.js tests/unit/multi-mode-entry.test.js tests/unit/mode-artifact-contract.test.js tests/unit/mode-capsule-registry.test.js tests/unit/character-v1-services.test.js tests/unit/character-module-integration.test.js tests/unit/worldbook-foundation.test.js tests/unit/grand-world-v1.test.js tests/unit/system-closure.test.js tests/unit/real-play-productization.test.js tests/unit/proposal-persistence-audit.test.js
+
+TAP version 13
+# Subtest: alchemy preview persists a scrubbed excerpt without enqueueing or touching formal data
+ok 1 - alchemy preview persists a scrubbed excerpt without enqueueing or touching formal data
+  ---
+  duration_ms: 26.5006
+  type: 'test'
+  ...
+# Subtest: alchemy preview rejects traversal ids and invalid refine requests
+ok 2 - alchemy preview rejects traversal ids and invalid refine requests
+  ---
+  duration_ms: 10.1148
+  type: 'test'
+  ...
+# Subtest: alchemy commit is explicit, selection-aware and single-use
+ok 3 - alchemy commit is explicit, selection-aware and single-use
+  ---
+  duration_ms: 38.542
+  type: 'test'
+  ...
+# Subtest: classifier parses plain JSON array strings
+ok 4 - classifier parses plain JSON array strings
+  ---
+  duration_ms: 2.7919
+  type: 'test'
+  ...
+# Subtest: classifier parses fenced JSON arrays
+ok 5 - classifier parses fenced JSON arrays
+  ---
+  duration_ms: 0.3045
+  type: 'test'
+  ...
+# Subtest: classifier parses JSON array embedded in explanatory text
+ok 6 - classifier parses JSON array embedded in explanatory text
+  ---
+  duration_ms: 0.1726
+  type: 'test'
+  ...
+# Subtest: classifier returns an empty array for empty or null responses without chunks
+ok 7 - classifier returns an empty array for empty or null responses without chunks
+  ---
+  duration_ms: 0.8061
+  type: 'test'
+  ...
+# Subtest: extractor parses plain JSON object strings
+ok 8 - extractor parses plain JSON object strings
+  ---
+  duration_ms: 0.4715
+  type: 'test'
+  ...
+# Subtest: extractor parses fenced JSON objects
+ok 9 - extractor parses fenced JSON objects
+  ---
+  duration_ms: 0.2235
+  type: 'test'
+  ...
+# Subtest: extractor parses JSON object embedded in explanatory text
+ok 10 - extractor parses JSON object embedded in explanatory text
+  ---
+  duration_ms: 0.2781
+  type: 'test'
+  ...
+# Subtest: extractor tolerates JSON arrays and empty responses
+ok 11 - extractor tolerates JSON arrays and empty responses
+  ---
+  duration_ms: 0.1423
+  type: 'test'
+  ...
+# Subtest: classify awaits string-returning llmCall and parses the result
+ok 12 - classify awaits string-returning llmCall and parses the result
+  ---
+  duration_ms: 0.9704
+  type: 'test'
+  ...
+# Subtest: extract awaits string-returning llmCall and parses the result
+ok 13 - extract awaits string-returning llmCall and parses the result
+  ---
+  duration_ms: 2.799
+  type: 'test'
+  ...
+# Subtest: object-returning llmCall does not silently parse as valid classifier output
+ok 14 - object-returning llmCall does not silently parse as valid classifier output
+  ---
+  duration_ms: 0.5212
+  type: 'test'
+  ...
+# Subtest: 1. character isModeVisible() = true
+ok 15 - 1. character isModeVisible() = true
+  ---
+  duration_ms: 1.2407
+  type: 'test'
+  ...
+# Subtest: 2. hidden modes remain invisible
+ok 16 - 2. hidden modes remain invisible
+  ---
+  duration_ms: 0.1799
+  type: 'test'
+  ...
+# Subtest: 3. DATA_MODES unchanged
+ok 17 - 3. DATA_MODES unchanged
+  ---
+  duration_ms: 2.3861
+  type: 'test'
+  ...
+# Subtest: 4. createModeProjectDraft('character') dataMode = character_card
+ok 18 - 4. createModeProjectDraft('character') dataMode = character_card
+  ---
+  duration_ms: 11.5395
+  type: 'test'
+  ...
+# Subtest: 5. character draft includes modeRuntimePacket
+ok 19 - 5. character draft includes modeRuntimePacket
+  ---
+  duration_ms: 2.3535
+  type: 'test'
+  ...
+# Subtest: 6. character draft includes moduleRuntimePacket
+ok 20 - 6. character draft includes moduleRuntimePacket
+  ---
+  duration_ms: 4.308
+  type: 'test'
+  ...
+# Subtest: 7. character draft includes modeStateEnvelope
+ok 21 - 7. character draft includes modeStateEnvelope
+  ---
+  duration_ms: 2.0379
+  type: 'test'
+  ...
+# Subtest: 8. createModeProjectFiles(character) generates shared/characters.json with primary
+ok 22 - 8. createModeProjectFiles(character) generates shared/characters.json with primary
+  ---
+  duration_ms: 2.9331
+  type: 'test'
+  ...
+# Subtest: 9. createProjectFromMode('world-rpg', persist=true) now allowed
+ok 23 - 9. createProjectFromMode('world-rpg', persist=true) now allowed
+  ---
+  duration_ms: 4.8574
+  type: 'test'
+  ...
+# Subtest: 10. createProjectFromMode('creation-forge', persist=true) still rejected
+ok 24 - 10. createProjectFromMode('creation-forge', persist=true) still rejected
+  ---
+  duration_ms: 4.4228
+  type: 'test'
+  ...
+# Subtest: 11. hidden modes still reject persist
+ok 25 - 11. hidden modes still reject persist
+  ---
+  duration_ms: 1.4884
+  type: 'test'
+  ...
+# Subtest: 12. character is allowed for project creation
+ok 26 - 12. character is allowed for project creation
+  ---
+  duration_ms: 0.1713
+  type: 'test'
+  ...
+# Subtest: 13. quick-setting remains visible
+ok 27 - 13. quick-setting remains visible
+  ---
+  duration_ms: 0.1074
+  type: 'test'
+  ...
+# Subtest: MODE_MODULE_MAP.character contains 7 required modules
+ok 28 - MODE_MODULE_MAP.character contains 7 required modules
+  ---
+  duration_ms: 1.3852
+  type: 'test'
+  ...
+# Subtest: createCharacterModuleRuntimeContext has safe defaults
+ok 29 - createCharacterModuleRuntimeContext has safe defaults
+  ---
+  duration_ms: 0.9007
+  type: 'test'
+  ...
+# Subtest: createCharacterModuleRuntimePacket returns packet with required check
+ok 30 - createCharacterModuleRuntimePacket returns packet with required check
+  ---
+  duration_ms: 11.0526
+  type: 'test'
+  ...
+# Subtest: sourceMap reports correct modeId and module count
+ok 31 - sourceMap reports correct modeId and module count
+  ---
+  duration_ms: 1.6535
+  type: 'test'
+  ...
+# Subtest: selectCharacterModulePromptBlocks respects max
+ok 32 - selectCharacterModulePromptBlocks respects max
+  ---
+  duration_ms: 2.3697
+  type: 'test'
+  ...
+# Subtest: debugSummary includes sourceMap and selected blocks
+ok 33 - debugSummary includes sourceMap and selected blocks
+  ---
+  duration_ms: 1.448
+  type: 'test'
+  ...
+# Subtest: validateCharacterModuleRuntimePacket passes for valid packet
+ok 34 - validateCharacterModuleRuntimePacket passes for valid packet
+  ---
+  duration_ms: 0.9063
+  type: 'test'
+  ...
+# Subtest: validateCharacterModuleRuntimePacket fails on missing modules
+ok 35 - validateCharacterModuleRuntimePacket fails on missing modules
+  ---
+  duration_ms: 0.1656
+  type: 'test'
+  ...
+# Subtest: context and prompt blocks are JSON-safe
+ok 36 - context and prompt blocks are JSON-safe
+  ---
+  duration_ms: 1.7507
+  type: 'test'
+  ...
+# Subtest: detect V2 JSON format
+ok 37 - detect V2 JSON format
+  ---
+  duration_ms: 1.5182
+  type: 'test'
+  ...
+# Subtest: detect V1 JSON format
+ok 38 - detect V1 JSON format
+  ---
+  duration_ms: 0.2229
+  type: 'test'
+  ...
+# Subtest: detect plain text
+ok 39 - detect plain text
+  ---
+  duration_ms: 0.1796
+  type: 'test'
+  ...
+# Subtest: detect CHARACTER.md
+ok 40 - detect CHARACTER.md
+  ---
+  duration_ms: 0.2244
+  type: 'test'
+  ...
+# Subtest: parse V2 JSON preserves extensions
+ok 41 - parse V2 JSON preserves extensions
+  ---
+  duration_ms: 0.721
+  type: 'test'
+  ...
+# Subtest: parse V1 JSON
+ok 42 - parse V1 JSON
+  ---
+  duration_ms: 0.2371
+  type: 'test'
+  ...
+# Subtest: parse CHARACTER.md
+ok 43 - parse CHARACTER.md
+  ---
+  duration_ms: 0.3677
+  type: 'test'
+  ...
+# Subtest: normalize preserves alternateGreetings as array
+ok 44 - normalize preserves alternateGreetings as array
+  ---
+  duration_ms: 0.2567
+  type: 'test'
+  ...
+# Subtest: validate warns on default name
+ok 45 - validate warns on default name
+  ---
+  duration_ms: 0.4988
+  type: 'test'
+  ...
+# Subtest: preserveRaw keeps raw text
+ok 46 - preserveRaw keeps raw text
+  ---
+  duration_ms: 1.3408
+  type: 'test'
+  ...
+# Subtest: summary reports format and name
+ok 47 - summary reports format and name
+  ---
+  duration_ms: 0.3425
+  type: 'test'
+  ...
+# Subtest: create profile with defaults
+ok 48 - create profile with defaults
+  ---
+  duration_ms: 1.7444
+  type: 'test'
+  ...
+# Subtest: normalize profile arrays
+ok 49 - normalize profile arrays
+  ---
+  duration_ms: 0.6172
+  type: 'test'
+  ...
+# Subtest: validate missing id
+ok 50 - validate missing id
+  ---
+  duration_ms: 0.2266
+  type: 'test'
+  ...
+# Subtest: merge patch updates name
+ok 51 - merge patch updates name
+  ---
+  duration_ms: 0.3462
+  type: 'test'
+  ...
+# Subtest: profile summary
+ok 52 - profile summary
+  ---
+  duration_ms: 0.2623
+  type: 'test'
+  ...
+# Subtest: profile files generates characters.json and profile
+ok 53 - profile files generates characters.json and profile
+  ---
+  duration_ms: 0.2116
+  type: 'test'
+  ...
+# Subtest: create lore from character book
+ok 54 - create lore from character book
+  ---
+  duration_ms: 0.1882
+  type: 'test'
+  ...
+# Subtest: select active lore entries by keyword
+ok 55 - select active lore entries by keyword
+  ---
+  duration_ms: 0.2173
+  type: 'test'
+  ...
+# Subtest: default persona has expected fields
+ok 56 - default persona has expected fields
+  ---
+  duration_ms: 0.1306
+  type: 'test'
+  ...
+# Subtest: getActivePersona returns default when empty
+ok 57 - getActivePersona returns default when empty
+  ---
+  duration_ms: 0.1682
+  type: 'test'
+  ...
+# Subtest: OOC detects AI self-reference
+ok 58 - OOC detects AI self-reference
+  ---
+  duration_ms: 0.4173
+  type: 'test'
+  ...
+# Subtest: OOC passes safe message
+ok 59 - OOC passes safe message
+  ---
+  duration_ms: 0.2247
+  type: 'test'
+  ...
+# Subtest: OOC detects forbidden drift phrase
+ok 60 - OOC detects forbidden drift phrase
+  ---
+  duration_ms: 0.1254
+  type: 'test'
+  ...
+# Subtest: export V2 JSON has correct spec
+ok 61 - export V2 JSON has correct spec
+  ---
+  duration_ms: 0.2125
+  type: 'test'
+  ...
+# Subtest: export WT profile preserves data
+ok 62 - export WT profile preserves data
+  ---
+  duration_ms: 0.1693
+  type: 'test'
+  ...
+# Subtest: direction-packet
+    # Subtest: createDirectionPacket
+        # Subtest: creates a valid packet with defaults
+        ok 1 - creates a valid packet with defaults
+          ---
+          duration_ms: 1.0625
+          type: 'test'
+          ...
+        # Subtest: creates character_card mode packet
+        ok 2 - creates character_card mode packet
+          ---
+          duration_ms: 0.1953
+          type: 'test'
+          ...
+        1..2
+    ok 1 - createDirectionPacket
+      ---
+      duration_ms: 2.068
+      type: 'suite'
+      ...
+    # Subtest: malformed packet defense
+        # Subtest: survives completely empty packet
+        ok 1 - survives completely empty packet
+          ---
+          duration_ms: 0.7568
+          type: 'test'
+          ...
+        # Subtest: survives missing directorDecision
+        ok 2 - survives missing directorDecision
+          ---
+          duration_ms: 0.244
+          type: 'test'
+          ...
+        # Subtest: survives missing contentPlan sub-arrays
+        ok 3 - survives missing contentPlan sub-arrays
+          ---
+          duration_ms: 0.1769
+          type: 'test'
+          ...
+        # Subtest: survives null/undefined packet
+        ok 4 - survives null/undefined packet
+          ---
+          duration_ms: 0.286
+          type: 'test'
+          ...
+        1..4
+    ok 2 - malformed packet defense
+      ---
+      duration_ms: 1.8225
+      type: 'suite'
+      ...
+    # Subtest: validateDirectionPacket
+        # Subtest: accepts valid packet
+        ok 1 - accepts valid packet
+          ---
+          duration_ms: 0.4554
+          type: 'test'
+          ...
+        # Subtest: rejects missing pacing
+        ok 2 - rejects missing pacing
+          ---
+          duration_ms: 0.1933
+          type: 'test'
+          ...
+        # Subtest: rejects missing pressure
+        ok 3 - rejects missing pressure
+          ---
+          duration_ms: 0.2693
+          type: 'test'
+          ...
+        1..3
+    ok 3 - validateDirectionPacket
+      ---
+      duration_ms: 1.3398
+      type: 'suite'
+      ...
+    # Subtest: normalizeDirectionPacket
+        # Subtest: fills missing defaults
+        ok 1 - fills missing defaults
+          ---
+          duration_ms: 1.1395
+          type: 'test'
+          ...
+        1..1
+    ok 4 - normalizeDirectionPacket
+      ---
+      duration_ms: 1.3399
+      type: 'suite'
+      ...
+    # Subtest: summarizeDirectionPacket
+        # Subtest: returns non-empty string for valid packet
+        ok 1 - returns non-empty string for valid packet
+          ---
+          duration_ms: 0.3052
+          type: 'test'
+          ...
+        1..1
+    ok 5 - summarizeDirectionPacket
+      ---
+      duration_ms: 0.3954
+      type: 'suite'
+      ...
+    # Subtest: formatDirectionPacket
+        # Subtest: formats packet for LLM injection
+        ok 1 - formats packet for LLM injection
+          ---
+          duration_ms: 0.2876
+          type: 'test'
+          ...
+        1..1
+    ok 6 - formatDirectionPacket
+      ---
+      duration_ms: 0.3612
+      type: 'suite'
+      ...
+    # Subtest: PACING_OPTIONS
+        # Subtest: includes common options
+        ok 1 - includes common options
+          ---
+          duration_ms: 0.1249
+          type: 'test'
+          ...
+        1..1
+    ok 7 - PACING_OPTIONS
+      ---
+      duration_ms: 0.2048
+      type: 'suite'
+      ...
+    # Subtest: EVENT_INTENSITY_OPTIONS
+        # Subtest: includes all levels
+        ok 1 - includes all levels
+          ---
+          duration_ms: 0.0998
+          type: 'test'
+          ...
+        1..1
+    ok 8 - EVENT_INTENSITY_OPTIONS
+      ---
+      duration_ms: 0.1519
+      type: 'suite'
+      ...
+    1..8
+ok 63 - direction-packet
+  ---
+  duration_ms: 8.7946
+  type: 'suite'
+  ...
+# Subtest: emotion-state
+    # Subtest: getDefaultEmotionState
+        # Subtest: returns neutral 5s
+        ok 1 - returns neutral 5s
+          ---
+          duration_ms: 0.8978
+          type: 'test'
+          ...
+        # Subtest: returns a new object each call
+        ok 2 - returns a new object each call
+          ---
+          duration_ms: 0.2117
+          type: 'test'
+          ...
+        1..2
+    ok 1 - getDefaultEmotionState
+      ---
+      duration_ms: 2.1749
+      type: 'suite'
+      ...
+    # Subtest: INITIAL_STATE
+        # Subtest: has all 4 dimensions
+        ok 1 - has all 4 dimensions
+          ---
+          duration_ms: 0.3751
+          type: 'test'
+          ...
+        # Subtest: all values are within 0-10
+        ok 2 - all values are within 0-10
+          ---
+          duration_ms: 0.2232
+          type: 'test'
+          ...
+        1..2
+    ok 2 - INITIAL_STATE
+      ---
+      duration_ms: 0.9498
+      type: 'suite'
+      ...
+    # Subtest: updateEmotionState
+        # Subtest: engagement rises on long input
+        ok 1 - engagement rises on long input
+          ---
+          duration_ms: 0.9148
+          type: 'test'
+          ...
+        # Subtest: tension decays toward neutral
+        ok 2 - tension decays toward neutral
+          ---
+          duration_ms: 0.4638
+          type: 'test'
+          ...
+        # Subtest: fatigue rises on fatigue keywords
+        ok 3 - fatigue rises on fatigue keywords
+          ---
+          duration_ms: 0.4904
+          type: 'test'
+          ...
+        # Subtest: curiosity rises on question input
+        ok 4 - curiosity rises on question input
+          ---
+          duration_ms: 0.2271
+          type: 'test'
+          ...
+        # Subtest: clamps values to 0-10 range
+        ok 5 - clamps values to 0-10 range
+          ---
+          duration_ms: 0.8528
+          type: 'test'
+          ...
+        1..5
+    ok 3 - updateEmotionState
+      ---
+      duration_ms: 3.5957
+      type: 'suite'
+      ...
+    # Subtest: getEmotionProfile
+        # Subtest: detects high engagement
+        ok 1 - detects high engagement
+          ---
+          duration_ms: 1.3847
+          type: 'test'
+          ...
+        # Subtest: detects fatigue
+        ok 2 - detects fatigue
+          ---
+          duration_ms: 0.283
+          type: 'test'
+          ...
+        # Subtest: returns advice array
+        ok 3 - returns advice array
+          ---
+          duration_ms: 0.523
+          type: 'test'
+          ...
+        1..3
+    ok 4 - getEmotionProfile
+      ---
+      duration_ms: 2.6177
+      type: 'suite'
+      ...
+    # Subtest: formatEmotionState
+        # Subtest: returns non-empty string
+        ok 1 - returns non-empty string
+          ---
+          duration_ms: 0.239
+          type: 'test'
+          ...
+        1..1
+    ok 5 - formatEmotionState
+      ---
+      duration_ms: 0.3354
+      type: 'suite'
+      ...
+    # Subtest: resetEmotionState
+        # Subtest: returns neutral 5s
+        ok 1 - returns neutral 5s
+          ---
+          duration_ms: 0.8967
+          type: 'test'
+          ...
+        1..1
+    ok 6 - resetEmotionState
+      ---
+      duration_ms: 0.9784
+      type: 'suite'
+      ...
+    1..6
+ok 64 - emotion-state
+  ---
+  duration_ms: 11.8145
+  type: 'suite'
+  ...
+# Subtest: fs utils read and write JSON with fallback behavior
+ok 65 - fs utils read and write JSON with fallback behavior
+  ---
+  duration_ms: 14.9794
+  type: 'test'
+  ...
+# Subtest: readJsonlTail returns only the requested tail records
+ok 66 - readJsonlTail returns only the requested tail records
+  ---
+  duration_ms: 410.5062
+  type: 'test'
+  ...
+# Subtest: calcDirectorySizeLimited reports truncation when entry budget is low
+ok 67 - calcDirectorySizeLimited reports truncation when entry budget is low
+  ---
+  duration_ms: 17.4858
+  type: 'test'
+  ...
+# Subtest: writeJson uses unique tmp name and does not leave .tmp residue
+ok 68 - writeJson uses unique tmp name and does not leave .tmp residue
+  ---
+  duration_ms: 8.4047
+  type: 'test'
+  ...
+# Subtest: writeJson cleans its tmp file when rename fails
+ok 69 - writeJson cleans its tmp file when rename fails
+  ---
+  duration_ms: 3.7138
+  type: 'test'
+  ...
+# Subtest: createGrandWorldModeContext uses modeMeaning grand_world
+ok 70 - createGrandWorldModeContext uses modeMeaning grand_world
+  ---
+  duration_ms: 11.9573
+  type: 'test'
+  ...
+# Subtest: createGrandWorldTurnPacket contains modeMeaning
+ok 71 - createGrandWorldTurnPacket contains modeMeaning
+  ---
+  duration_ms: 1.8492
+  type: 'test'
+  ...
+# Subtest: createGrandWorldPrompt forbids RPG mechanics
+ok 72 - createGrandWorldPrompt forbids RPG mechanics
+  ---
+  duration_ms: 1.5059
+  type: 'test'
+  ...
+# Subtest: runGrandWorldTurn returns ready status
+ok 73 - runGrandWorldTurn returns ready status
+  ---
+  duration_ms: 4.2929
+  type: 'test'
+  ...
+# Subtest: createGrandWorldModeSummary reports entry count
+ok 74 - createGrandWorldModeSummary reports entry count
+  ---
+  duration_ms: 1.7053
+  type: 'test'
+  ...
+# Subtest: classifyGrandWorldIntent detects explore
+ok 75 - classifyGrandWorldIntent detects explore
+  ---
+  duration_ms: 0.3195
+  type: 'test'
+  ...
+# Subtest: classifyGrandWorldIntent detects talk
+ok 76 - classifyGrandWorldIntent detects talk
+  ---
+  duration_ms: 0.288
+  type: 'test'
+  ...
+# Subtest: classifyGrandWorldIntent returns unknown for empty
+ok 77 - classifyGrandWorldIntent returns unknown for empty
+  ---
+  duration_ms: 0.2624
+  type: 'test'
+  ...
+# Subtest: planGrandWorldTurn returns intent and hooks
+ok 78 - planGrandWorldTurn returns intent and hooks
+  ---
+  duration_ms: 0.632
+  type: 'test'
+  ...
+# Subtest: createSceneTransitionProposal defaults to pending
+ok 79 - createSceneTransitionProposal defaults to pending
+  ---
+  duration_ms: 0.5918
+  type: 'test'
+  ...
+# Subtest: createTimelineAppendProposal status is pending
+ok 80 - createTimelineAppendProposal status is pending
+  ---
+  duration_ms: 0.2915
+  type: 'test'
+  ...
+# Subtest: createGrandWorldChangeProposals returns array
+ok 81 - createGrandWorldChangeProposals returns array
+  ---
+  duration_ms: 0.3286
+  type: 'test'
+  ...
+# Subtest: createWorldThread defaults to active lead
+ok 82 - createWorldThread defaults to active lead
+  ---
+  duration_ms: 0.501
+  type: 'test'
+  ...
+# Subtest: selectActiveWorldThreads filters by status
+ok 83 - selectActiveWorldThreads filters by status
+  ---
+  duration_ms: 0.4585
+  type: 'test'
+  ...
+# Subtest: isApprovedOverlayTarget accepts runtime overlay whitelist files
+ok 84 - isApprovedOverlayTarget accepts runtime overlay whitelist files
+  ---
+  duration_ms: 1.0082
+  type: 'test'
+  ...
+# Subtest: isApprovedOverlayTarget rejects shared and core json files
+ok 85 - isApprovedOverlayTarget rejects shared and core json files
+  ---
+  duration_ms: 0.3654
+  type: 'test'
+  ...
+# Subtest: runGuardian allows approved overlay target inside root
+ok 86 - runGuardian allows approved overlay target inside root
+  ---
+  duration_ms: 0.8312
+  type: 'test'
+  ...
+# Subtest: runGuardian rejects direct core json write target
+ok 87 - runGuardian rejects direct core json write target
+  ---
+  duration_ms: 0.4034
+  type: 'test'
+  ...
+# Subtest: guardian
+    # Subtest: validatePathWithinRoot
+        # Subtest: accepts path inside root
+        ok 1 - accepts path inside root
+          ---
+          duration_ms: 1.2145
+          type: 'test'
+          ...
+        # Subtest: accepts exact root match
+        ok 2 - accepts exact root match
+          ---
+          duration_ms: 0.2771
+          type: 'test'
+          ...
+        # Subtest: rejects path outside root
+        ok 3 - rejects path outside root
+          ---
+          duration_ms: 0.3155
+          type: 'test'
+          ...
+        # Subtest: normalizes backslashes
+        ok 4 - normalizes backslashes
+          ---
+          duration_ms: 0.1967
+          type: 'test'
+          ...
+        # Subtest: handles empty inputs
+        ok 5 - handles empty inputs
+          ---
+          duration_ms: 0.1864
+          type: 'test'
+          ...
+        1..5
+    ok 1 - validatePathWithinRoot
+      ---
+      duration_ms: 3.6605
+      type: 'suite'
+      ...
+    # Subtest: runGuardian
+        # Subtest: checks module loaded status
+        ok 1 - checks module loaded status
+          ---
+          duration_ms: 0.5725
+          type: 'test'
+          ...
+        # Subtest: passes with loaded module
+        ok 2 - passes with loaded module
+          ---
+          duration_ms: 0.2166
+          type: 'test'
+          ...
+        # Subtest: blocks continuation without loaded module
+        ok 3 - blocks continuation without loaded module
+          ---
+          duration_ms: 0.4126
+          type: 'test'
+          ...
+        1..3
+    ok 2 - runGuardian
+      ---
+      duration_ms: 1.5388
+      type: 'suite'
+      ...
+    # Subtest: validateNarrativeAgainstDirection
+        # Subtest: fails when mustInclude items are missing and reports the item
+        ok 1 - fails when mustInclude items are missing and reports the item
+          ---
+          duration_ms: 0.9404
+          type: 'test'
+          ...
+        # Subtest: does not duplicate mustInclude issues or double-penalize score
+        ok 2 - does not duplicate mustInclude issues or double-penalize score
+          ---
+          duration_ms: 0.5145
+          type: 'test'
+          ...
+        # Subtest: fails when mustNotInclude items appear and reports the item
+        ok 3 - fails when mustNotInclude items appear and reports the item
+          ---
+          duration_ms: 0.2507
+          type: 'test'
+          ...
+        # Subtest: flags missing response to player question
+        ok 4 - flags missing response to player question
+          ---
+          duration_ms: 0.3756
+          type: 'test'
+          ...
+        # Subtest: flags empty output
+        ok 5 - flags empty output
+          ---
+          duration_ms: 0.1173
+          type: 'test'
+          ...
+        # Subtest: passes good output
+        ok 6 - passes good output
+          ---
+          duration_ms: 0.3069
+          type: 'test'
+          ...
+        1..6
+    ok 3 - validateNarrativeAgainstDirection
+      ---
+      duration_ms: 3.6265
+      type: 'suite'
+      ...
+    1..3
+ok 88 - guardian
+  ---
+  duration_ms: 9.7463
+  type: 'suite'
+  ...
+# Subtest: wrapper registry exposes standardized legacy and P0 modules
+ok 89 - wrapper registry exposes standardized legacy and P0 modules
+  ---
+  duration_ms: 1.7517
+  type: 'test'
+  ...
+# Subtest: every P1 wrapper implements defensive context, prompt, and debug hooks
+ok 90 - every P1 wrapper implements defensive context, prompt, and debug hooks
+  ---
+  duration_ms: 9.3528
+  type: 'test'
+  ...
+# Subtest: wrapper prompts and debug summaries scrub local paths and secrets
+ok 91 - wrapper prompts and debug summaries scrub local paths and secrets
+  ---
+  duration_ms: 1.2823
+  type: 'test'
+  ...
+# Subtest: real legacy functions are reused through focused wrapper summaries
+ok 92 - real legacy functions are reused through focused wrapper summaries
+  ---
+  duration_ms: 4.564
+  type: 'test'
+  ...
+# Subtest: mode loader returns available wrappers without treating gaps as fatal
+ok 93 - mode loader returns available wrappers without treating gaps as fatal
+  ---
+  duration_ms: 2.2469
+  type: 'test'
+  ...
+# Subtest: module graph reports real wrapper availability, callable state, and hooks
+ok 94 - module graph reports real wrapper availability, callable state, and hooks
+  ---
+  duration_ms: 0.2799
+  type: 'test'
+  ...
+# Subtest: P1 manifest status and capabilities agree with wrapper existence
+ok 95 - P1 manifest status and capabilities agree with wrapper existence
+  ---
+  duration_ms: 0.3579
+  type: 'test'
+  ...
+# Subtest: API key host reuse uses a SHA-256 fingerprint and the actual target host
+ok 96 - API key host reuse uses a SHA-256 fingerprint and the actual target host
+  ---
+  duration_ms: 1.7299
+  type: 'test'
+  ...
+# Subtest: sendGameTurn passes an AbortSignal to legacy fetch calls
+ok 97 - sendGameTurn passes an AbortSignal to legacy fetch calls
+  ---
+  duration_ms: 1.7026
+  type: 'test'
+  ...
+# Subtest: alchemy mechanism extraction defaults input mechanisms to selected
+ok 98 - alchemy mechanism extraction defaults input mechanisms to selected
+  ---
+  duration_ms: 8.3314
+  type: 'test'
+  ...
+# Subtest: mechanism library ranks matching templates and creates library drafts
+ok 99 - mechanism library ranks matching templates and creates library drafts
+  ---
+  duration_ms: 2.0338
+  type: 'test'
+  ...
+# Subtest: mechanism scope defaults are save-scoped except custom and preserve edits
+ok 100 - mechanism scope defaults are save-scoped except custom and preserve edits
+  ---
+  duration_ms: 0.831
+  type: 'test'
+  ...
+# Subtest: commit mechanism drafts writes selected items only and strips secrets
+ok 101 - commit mechanism drafts writes selected items only and strips secrets
+  ---
+  duration_ms: 1.4917
+  type: 'test'
+  ...
+# Subtest: mechanism definition hashes and unchanged statistics are stable
+ok 102 - mechanism definition hashes and unchanged statistics are stable
+  ---
+  duration_ms: 0.7689
+  type: 'test'
+  ...
+# Subtest: TurnStateFrame merges previous, engine, confirmed sections, overlays and applied mechanisms
+ok 103 - TurnStateFrame merges previous, engine, confirmed sections, overlays and applied mechanisms
+  ---
+  duration_ms: 1.5415
+  type: 'test'
+  ...
+# Subtest: visual generation prefers stat bars and inventory grids
+ok 104 - visual generation prefers stat bars and inventory grids
+  ---
+  duration_ms: 8.0226
+  type: 'test'
+  ...
+# Subtest: TurnStateFrame persists an empty fallback shape
+ok 105 - TurnStateFrame persists an empty fallback shape
+  ---
+  duration_ms: 1.9674
+  type: 'test'
+  ...
+# Subtest: TurnStateFrame records confirmed numeric delta
+ok 106 - TurnStateFrame records confirmed numeric delta
+  ---
+  duration_ms: 0.7144
+  type: 'test'
+  ...
+# Subtest: persistTurn chains beforeState from the previous frame afterState
+ok 107 - persistTurn chains beforeState from the previous frame afterState
+  ---
+  duration_ms: 2.6315
+  type: 'test'
+  ...
+# Subtest: VisualPacket rejects unknown or executable card fields
+ok 108 - VisualPacket rejects unknown or executable card fields
+  ---
+  duration_ms: 0.3935
+  type: 'test'
+  ...
+# Subtest: TurnStateFrame strips secrets, proposals, sessions and local paths
+ok 109 - TurnStateFrame strips secrets, proposals, sessions and local paths
+  ---
+  duration_ms: 0.6676
+  type: 'test'
+  ...
+# Subtest: status renderers escape dynamic fields and candidate selection does not mutate frames
+ok 110 - status renderers escape dynamic fields and candidate selection does not mutate frames
+  ---
+  duration_ms: 1.3974
+  type: 'test'
+  ...
+# Subtest: mechanism draft editor is inline and validates numeric bounds
+ok 111 - mechanism draft editor is inline and validates numeric bounds
+  ---
+  duration_ms: 1.5396
+  type: 'test'
+  ...
+# Subtest: 1. listModeArtifactContracts includes all 7 consumer modes
+ok 112 - 1. listModeArtifactContracts includes all 7 consumer modes
+  ---
+  duration_ms: 1.9486
+  type: 'test'
+  ...
+# Subtest: 2. listModeArtifactContracts does not include creation-forge
+ok 113 - 2. listModeArtifactContracts does not include creation-forge
+  ---
+  duration_ms: 0.4251
+  type: 'test'
+  ...
+# Subtest: 3. isModeArtifactSupported('world-rpg') = true
+ok 114 - 3. isModeArtifactSupported('world-rpg') = true
+  ---
+  duration_ms: 0.4585
+  type: 'test'
+  ...
+# Subtest: 4. isModeArtifactSupported('creation-forge') = false
+ok 115 - 4. isModeArtifactSupported('creation-forge') = false
+  ---
+  duration_ms: 0.2203
+  type: 'test'
+  ...
+# Subtest: 5. getModeArtifactContract('world-rpg').sourceType = world_rpg_seed
+ok 116 - 5. getModeArtifactContract('world-rpg').sourceType = world_rpg_seed
+  ---
+  duration_ms: 0.4132
+  type: 'test'
+  ...
+# Subtest: 6. getModeArtifactContract('character').dataMode = character_card
+ok 117 - 6. getModeArtifactContract('character').dataMode = character_card
+  ---
+  duration_ms: 0.3419
+  type: 'test'
+  ...
+# Subtest: 7. getModeArtifactContract('murder-mystery').modeSpecificSharedFile = shared/murder_mystery.json
+ok 118 - 7. getModeArtifactContract('murder-mystery').modeSpecificSharedFile = shared/murder_mystery.json
+  ---
+  duration_ms: 0.6521
+  type: 'test'
+  ...
+# Subtest: 8. createDefaultModeArtifact('tabletop') generates targetMode/tabletop_seed/worldbook
+ok 119 - 8. createDefaultModeArtifact('tabletop') generates targetMode/tabletop_seed/worldbook
+  ---
+  duration_ms: 4.8789
+  type: 'test'
+  ...
+# Subtest: 9. normalizeModeArtifact supports content/seedText fallback
+ok 120 - 9. normalizeModeArtifact supports content/seedText fallback
+  ---
+  duration_ms: 0.555
+  type: 'test'
+  ...
+# Subtest: 10. validateModeArtifact fails when missing title
+ok 121 - 10. validateModeArtifact fails when missing title
+  ---
+  duration_ms: 0.6213
+  type: 'test'
+  ...
+# Subtest: 11. validateModeArtifact fails when missing sourceText
+ok 122 - 11. validateModeArtifact fails when missing sourceText
+  ---
+  duration_ms: 0.255
+  type: 'test'
+  ...
+# Subtest: 12. validateModeArtifact passes for valid minimal artifact
+ok 123 - 12. validateModeArtifact passes for valid minimal artifact
+  ---
+  duration_ms: 0.7885
+  type: 'test'
+  ...
+# Subtest: 13. validateModeArtifact warns on dataMode mismatch
+ok 124 - 13. validateModeArtifact warns on dataMode mismatch
+  ---
+  duration_ms: 0.1556
+  type: 'test'
+  ...
+# Subtest: 14. createModeArtifactSummary reports missingRequiredFields
+ok 125 - 14. createModeArtifactSummary reports missingRequiredFields
+  ---
+  duration_ms: 1.4549
+  type: 'test'
+  ...
+# Subtest: 15. createModeArtifactProjectInput('strategy-sim') returns mode/title/sourceText/sourceType/dataMode/worldSubType
+ok 126 - 15. createModeArtifactProjectInput('strategy-sim') returns mode/title/sourceText/sourceType/dataMode/worldSubType
+  ---
+  duration_ms: 0.2916
+  type: 'test'
+  ...
+# Subtest: 16. getModeArtifactContract for unknown mode returns null
+ok 127 - 16. getModeArtifactContract for unknown mode returns null
+  ---
+  duration_ms: 0.1406
+  type: 'test'
+  ...
+# Subtest: 16b. validateModeArtifact for unknown mode returns error
+ok 128 - 16b. validateModeArtifact for unknown mode returns error
+  ---
+  duration_ms: 0.1528
+  type: 'test'
+  ...
+# Subtest: 17. returned contract is immutable (deep clone)
+ok 129 - 17. returned contract is immutable (deep clone)
+  ---
+  duration_ms: 0.1348
+  type: 'test'
+  ...
+# Subtest: 18. each contract's requiredFiles includes runtime/state.json
+ok 130 - 18. each contract's requiredFiles includes runtime/state.json
+  ---
+  duration_ms: 0.2067
+  type: 'test'
+  ...
+# Subtest: 19. each consumer contract has modeSpecificSharedFile or null
+ok 131 - 19. each consumer contract has modeSpecificSharedFile or null
+  ---
+  duration_ms: 0.1861
+  type: 'test'
+  ...
+# Subtest: 20. deferredCapabilities is array for every contract
+ok 132 - 20. deferredCapabilities is array for every contract
+  ---
+  duration_ms: 0.1729
+  type: 'test'
+  ...
+# Subtest: 1. listModeCapsules() returns 8 capsules
+ok 133 - 1. listModeCapsules() returns 8 capsules
+  ---
+  duration_ms: 2.0963
+  type: 'test'
+  ...
+# Subtest: 2. listModeCapsules({role:'consumer'}) returns 7
+ok 134 - 2. listModeCapsules({role:'consumer'}) returns 7
+  ---
+  duration_ms: 0.3378
+  type: 'test'
+  ...
+# Subtest: 3. listModeCapsules({role:'producer'}) returns creation-forge
+ok 135 - 3. listModeCapsules({role:'producer'}) returns creation-forge
+  ---
+  duration_ms: 0.289
+  type: 'test'
+  ...
+# Subtest: 4. isModeConsumerCapsule('character') = true
+ok 136 - 4. isModeConsumerCapsule('character') = true
+  ---
+  duration_ms: 0.2115
+  type: 'test'
+  ...
+# Subtest: 5. isModeConsumerCapsule('creation-forge') = false
+ok 137 - 5. isModeConsumerCapsule('creation-forge') = false
+  ---
+  duration_ms: 0.1775
+  type: 'test'
+  ...
+# Subtest: 6. isModeProducerCapsule('creation-forge') = true
+ok 138 - 6. isModeProducerCapsule('creation-forge') = true
+  ---
+  duration_ms: 0.1921
+  type: 'test'
+  ...
+# Subtest: 7. getModeCacheNamespace('world-rpg') = runtime/cache/world-rpg
+ok 139 - 7. getModeCacheNamespace('world-rpg') = runtime/cache/world-rpg
+  ---
+  duration_ms: 0.1965
+  type: 'test'
+  ...
+# Subtest: 8. all consumer cache namespaces are unique
+ok 140 - 8. all consumer cache namespaces are unique
+  ---
+  duration_ms: 0.2116
+  type: 'test'
+  ...
+# Subtest: 9. all consumer prompt profile ids are unique
+ok 141 - 9. all consumer prompt profile ids are unique
+  ---
+  duration_ms: 0.505
+  type: 'test'
+  ...
+# Subtest: 10. all consumer engine adapter ids are unique
+ok 142 - 10. all consumer engine adapter ids are unique
+  ---
+  duration_ms: 0.5805
+  type: 'test'
+  ...
+# Subtest: 11. all consumer artifactContractIds exist in mode-artifact-contract
+ok 143 - 11. all consumer artifactContractIds exist in mode-artifact-contract
+  ---
+  duration_ms: 0.51
+  type: 'test'
+  ...
+# Subtest: 12. consumer capsule dataMode matches artifact contract
+ok 144 - 12. consumer capsule dataMode matches artifact contract
+  ---
+  duration_ms: 1.7291
+  type: 'test'
+  ...
+# Subtest: 13. consumer capsule worldSubType matches artifact contract
+ok 145 - 13. consumer capsule worldSubType matches artifact contract
+  ---
+  duration_ms: 0.3156
+  type: 'test'
+  ...
+# Subtest: 14. creation-forge artifactContractId = null
+ok 146 - 14. creation-forge artifactContractId = null
+  ---
+  duration_ms: 0.1271
+  type: 'test'
+  ...
+# Subtest: 14b. creation-forge producerTargets contains 6 modes
+ok 147 - 14b. creation-forge producerTargets contains 6 modes
+  ---
+  duration_ms: 0.1458
+  type: 'test'
+  ...
+# Subtest: 15. requiredFiles includes world.json for consumer modes
+ok 148 - 15. requiredFiles includes world.json for consumer modes
+  ---
+  duration_ms: 0.2235
+  type: 'test'
+  ...
+# Subtest: 16. validateAllModeCapsules().ok = true
+ok 149 - 16. validateAllModeCapsules().ok = true
+  ---
+  duration_ms: 0.4164
+  type: 'test'
+  ...
+# Subtest: 17. getModeCapsule('unknown') = null
+ok 150 - 17. getModeCapsule('unknown') = null
+  ---
+  duration_ms: 0.1184
+  type: 'test'
+  ...
+# Subtest: 18. returned capsule cannot pollute registry
+ok 151 - 18. returned capsule cannot pollute registry
+  ---
+  duration_ms: 0.1425
+  type: 'test'
+  ...
+# Subtest: 19. all consumer state namespaces are unique
+ok 152 - 19. all consumer state namespaces are unique
+  ---
+  duration_ms: 0.1625
+  type: 'test'
+  ...
+# Subtest: 20. createModeCapsuleSummary returns correct fields
+ok 153 - 20. createModeCapsuleSummary returns correct fields
+  ---
+  duration_ms: 0.2056
+  type: 'test'
+  ...
+# Subtest: all eight modes are declared and 7 of 8 are active/visible
+ok 154 - all eight modes are declared and 7 of 8 are active/visible
+  ---
+  duration_ms: 1.3302
+  type: 'test'
+  ...
+# Subtest: mode mappings contain their required capability modules
+ok 155 - mode mappings contain their required capability modules
+  ---
+  duration_ms: 0.2294
+  type: 'test'
+  ...
+# Subtest: loader returns graphs for planned and hidden modes
+ok 156 - loader returns graphs for planned and hidden modes
+  ---
+  duration_ms: 2.8379
+  type: 'test'
+  ...
+# Subtest: declared-only and prototype modules warn without invalidating the map
+ok 157 - declared-only and prototype modules warn without invalidating the map
+  ---
+  duration_ms: 0.5714
+  type: 'test'
+  ...
+# Subtest: 1. normalizeModeProjectInput('quick-setting', {}) has default title/sourceType
+ok 158 - 1. normalizeModeProjectInput('quick-setting', {}) has default title/sourceType
+  ---
+  duration_ms: 1.6931
+  type: 'test'
+  ...
+# Subtest: 2. createModeProjectDraft('quick-setting') returns mode quick-setting
+ok 159 - 2. createModeProjectDraft('quick-setting') returns mode quick-setting
+  ---
+  duration_ms: 6.2867
+  type: 'test'
+  ...
+# Subtest: 3. quick-setting draft includes modeRuntimePacket
+ok 160 - 3. quick-setting draft includes modeRuntimePacket
+  ---
+  duration_ms: 1.6076
+  type: 'test'
+  ...
+# Subtest: 4. quick-setting draft includes moduleRuntimePacket
+ok 161 - 4. quick-setting draft includes moduleRuntimePacket
+  ---
+  duration_ms: 1.4829
+  type: 'test'
+  ...
+# Subtest: 5. quick-setting draft includes modeStateEnvelope
+ok 162 - 5. quick-setting draft includes modeStateEnvelope
+  ---
+  duration_ms: 1.4017
+  type: 'test'
+  ...
+# Subtest: 6. quick-setting worldJsonDraft contains mode and modeMetadata
+ok 163 - 6. quick-setting worldJsonDraft contains mode and modeMetadata
+  ---
+  duration_ms: 1.7618
+  type: 'test'
+  ...
+# Subtest: 7. quick-setting runtimeStateDraft contains engineState / moduleGraph / wrapperGraph
+ok 164 - 7. quick-setting runtimeStateDraft contains engineState / moduleGraph / wrapperGraph
+  ---
+  duration_ms: 0.7475
+  type: 'test'
+  ...
+# Subtest: 8. createModeProjectFiles returns world.json, runtime/state.json, runtime/source.txt
+ok 165 - 8. createModeProjectFiles returns world.json, runtime/state.json, runtime/source.txt
+  ---
+  duration_ms: 0.7617
+  type: 'test'
+  ...
+# Subtest: 9. createModeProjectDraft('character') generates structural draft
+ok 166 - 9. createModeProjectDraft('character') generates structural draft
+  ---
+  duration_ms: 2.4968
+  type: 'test'
+  ...
+# Subtest: 10. character draft dataMode = character_card
+ok 167 - 10. character draft dataMode = character_card
+  ---
+  duration_ms: 2.5503
+  type: 'test'
+  ...
+# Subtest: 11. createProjectFromMode('character', ..., { persist: true }) now allowed (character is active)
+ok 168 - 11. createProjectFromMode('character', ..., { persist: true }) now allowed (character is active)
+  ---
+  duration_ms: 2.3551
+  type: 'test'
+  ...
+# Subtest: 12. hidden mode defaults to not creatable
+ok 169 - 12. hidden mode defaults to not creatable
+  ---
+  duration_ms: 0.1492
+  type: 'test'
+  ...
+# Subtest: 13. draft does not contain function objects
+ok 170 - 13. draft does not contain function objects
+  ---
+  duration_ms: 1.6338
+  type: 'test'
+  ...
+# Subtest: 14. draft does not contain local absolute paths
+ok 171 - 14. draft does not contain local absolute paths
+  ---
+  duration_ms: 1.235
+  type: 'test'
+  ...
+# Subtest: 15. createModeProjectSummary returns statistics
+ok 172 - 15. createModeProjectSummary returns statistics
+  ---
+  duration_ms: 0.5381
+  type: 'test'
+  ...
+# Subtest: 16. unknown mode throws explicit error
+ok 173 - 16. unknown mode throws explicit error
+  ---
+  duration_ms: 0.4634
+  type: 'test'
+  ...
+# Subtest: 1. createModeMetadata('quick-setting') returns mode quick-setting
+ok 174 - 1. createModeMetadata('quick-setting') returns mode quick-setting
+  ---
+  duration_ms: 3.9529
+  type: 'test'
+  ...
+# Subtest: 2. quick-setting metadata dataMode = preset
+ok 175 - 2. quick-setting metadata dataMode = preset
+  ---
+  duration_ms: 0.8314
+  type: 'test'
+  ...
+# Subtest: 3. quick-setting metadata worldSubType = classic
+ok 176 - 3. quick-setting metadata worldSubType = classic
+  ---
+  duration_ms: 0.6347
+  type: 'test'
+  ...
+# Subtest: 4. createModeInitialState('quick-setting') returns engineStatePatch
+ok 177 - 4. createModeInitialState('quick-setting') returns engineStatePatch
+  ---
+  duration_ms: 0.9835
+  type: 'test'
+  ...
+# Subtest: 5. createModeRuntimePacket('quick-setting') returns metadata / initialState / moduleGraph / wrapperGraph
+ok 178 - 5. createModeRuntimePacket('quick-setting') returns metadata / initialState / moduleGraph / wrapperGraph
+  ---
+  duration_ms: 0.5044
+  type: 'test'
+  ...
+# Subtest: 6. quick-setting wrapperGraph does not contain function objects
+ok 179 - 6. quick-setting wrapperGraph does not contain function objects
+  ---
+  duration_ms: 0.5153
+  type: 'test'
+  ...
+# Subtest: 7. createModeRuntimeSummary('quick-setting') returns moduleCount / wrapperCount
+ok 180 - 7. createModeRuntimeSummary('quick-setting') returns moduleCount / wrapperCount
+  ---
+  duration_ms: 0.4904
+  type: 'test'
+  ...
+# Subtest: 8. createModeRuntimePacket('character') generates a structural packet
+ok 181 - 8. createModeRuntimePacket('character') generates a structural packet
+  ---
+  duration_ms: 0.6692
+  type: 'test'
+  ...
+# Subtest: 9. character packet dataMode = character_card
+ok 182 - 9. character packet dataMode = character_card
+  ---
+  duration_ms: 1.4084
+  type: 'test'
+  ...
+# Subtest: 10. createModeRuntimePacket('world-rpg') generates a structural packet
+ok 183 - 10. createModeRuntimePacket('world-rpg') generates a structural packet
+  ---
+  duration_ms: 0.9388
+  type: 'test'
+  ...
+# Subtest: 11. world-rpg packet dataMode = worldbook
+ok 184 - 11. world-rpg packet dataMode = worldbook
+  ---
+  duration_ms: 0.6581
+  type: 'test'
+  ...
+# Subtest: 12. createModeRuntimePacket('creation-forge') generates a structural packet
+ok 185 - 12. createModeRuntimePacket('creation-forge') generates a structural packet
+  ---
+  duration_ms: 0.5983
+  type: 'test'
+  ...
+# Subtest: 13. hidden mode packet generates without changing visibility
+ok 186 - 13. hidden mode packet generates without changing visibility
+  ---
+  duration_ms: 0.4438
+  type: 'test'
+  ...
+# Subtest: 14. unknown mode throws explicit error
+ok 187 - 14. unknown mode throws explicit error
+  ---
+  duration_ms: 0.4986
+  type: 'test'
+  ...
+# Subtest: 15. quick-setting legacy helpers remain compatible with new runtime
+ok 188 - 15. quick-setting legacy helpers remain compatible with new runtime
+  ---
+  duration_ms: 0.8288
+  type: 'test'
+  ...
+# Subtest: 1. createModeStateEnvelope('quick-setting') has schemaVersion = 1
+ok 189 - 1. createModeStateEnvelope('quick-setting') has schemaVersion = 1
+  ---
+  duration_ms: 1.9903
+  type: 'test'
+  ...
+# Subtest: 2. quick-setting envelope.mode = quick-setting
+ok 190 - 2. quick-setting envelope.mode = quick-setting
+  ---
+  duration_ms: 0.2121
+  type: 'test'
+  ...
+# Subtest: 3. quick-setting runtimeFlags.visibleToUser = true
+ok 191 - 3. quick-setting runtimeFlags.visibleToUser = true
+  ---
+  duration_ms: 0.3107
+  type: 'test'
+  ...
+# Subtest: 4. createModeStateEnvelope('character') generates structural envelope
+ok 192 - 4. createModeStateEnvelope('character') generates structural envelope
+  ---
+  duration_ms: 0.3425
+  type: 'test'
+  ...
+# Subtest: 5. character runtimeFlags.visibleToUser = true (character is active)
+ok 193 - 5. character runtimeFlags.visibleToUser = true (character is active)
+  ---
+  duration_ms: 0.1914
+  type: 'test'
+  ...
+# Subtest: 6. createModeStateEnvelope('world-rpg') generates structural envelope
+ok 194 - 6. createModeStateEnvelope('world-rpg') generates structural envelope
+  ---
+  duration_ms: 0.2259
+  type: 'test'
+  ...
+# Subtest: 7. world-rpg moduleState has module keys
+ok 195 - 7. world-rpg moduleState has module keys
+  ---
+  duration_ms: 1.2011
+  type: 'test'
+  ...
+# Subtest: 8. hidden mode envelope generates but visibleToUser = false
+ok 196 - 8. hidden mode envelope generates but visibleToUser = false
+  ---
+  duration_ms: 0.2296
+  type: 'test'
+  ...
+# Subtest: 9. reviewPolicy.allowAutoApply = false for all modes
+ok 197 - 9. reviewPolicy.allowAutoApply = false for all modes
+  ---
+  duration_ms: 0.6547
+  type: 'test'
+  ...
+# Subtest: 10. reviewPolicy.requireUserConfirmation = true
+ok 198 - 10. reviewPolicy.requireUserConfirmation = true
+  ---
+  duration_ms: 0.5031
+  type: 'test'
+  ...
+# Subtest: 11. normalizeModeStateEnvelope fills missing fields from partial envelope
+ok 199 - 11. normalizeModeStateEnvelope fills missing fields from partial envelope
+  ---
+  duration_ms: 0.3639
+  type: 'test'
+  ...
+# Subtest: 12. validateModeStateEnvelope returns ok=true for valid envelope
+ok 200 - 12. validateModeStateEnvelope returns ok=true for valid envelope
+  ---
+  duration_ms: 0.2448
+  type: 'test'
+  ...
+# Subtest: 13. validateModeStateEnvelope returns ok=false for invalid envelope
+ok 201 - 13. validateModeStateEnvelope returns ok=false for invalid envelope
+  ---
+  duration_ms: 0.2266
+  type: 'test'
+  ...
+# Subtest: 14. unknown mode throws explicit error
+ok 202 - 14. unknown mode throws explicit error
+  ---
+  duration_ms: 0.4643
+  type: 'test'
+  ...
+# Subtest: 15. createModeStateSummary returns correct statistics
+ok 203 - 15. createModeStateSummary returns correct statistics
+  ---
+  duration_ms: 0.1596
+  type: 'test'
+  ...
+# Subtest: 16. envelope does not contain function objects
+ok 204 - 16. envelope does not contain function objects
+  ---
+  duration_ms: 0.3546
+  type: 'test'
+  ...
+# Subtest: 17. envelope does not contain local absolute paths
+ok 205 - 17. envelope does not contain local absolute paths
+  ---
+  duration_ms: 0.2886
+  type: 'test'
+  ...
+# Subtest: registry resolves standard and legacy module ids
+ok 206 - registry resolves standard and legacy module ids
+  ---
+  duration_ms: 1.2235
+  type: 'test'
+  ...
+# Subtest: dependency expansion is ordered, deduplicated, and missing-safe
+ok 207 - dependency expansion is ordered, deduplicated, and missing-safe
+  ---
+  duration_ms: 1.039
+  type: 'test'
+  ...
+# Subtest: module graph reports resolved and missing modules
+ok 208 - module graph reports resolved and missing modules
+  ---
+  duration_ms: 0.3975
+  type: 'test'
+  ...
+# Subtest: module statistics cover status, category, legacy, and callable counts
+ok 209 - module statistics cover status, category, legacy, and callable counts
+  ---
+  duration_ms: 0.4316
+  type: 'test'
+  ...
+# Subtest: every manifest entry satisfies the module contract
+ok 210 - every manifest entry satisfies the module contract
+  ---
+  duration_ms: 0.2777
+  type: 'test'
+  ...
+# Subtest: 1. createModuleRuntimeContext({}) does not throw and returns safe defaults
+ok 211 - 1. createModuleRuntimeContext({}) does not throw and returns safe defaults
+  ---
+  duration_ms: 1.2515
+  type: 'test'
+  ...
+# Subtest: 1b. createModuleRuntimeContext passes through provided values
+ok 212 - 1b. createModuleRuntimeContext passes through provided values
+  ---
+  duration_ms: 0.1358
+  type: 'test'
+  ...
+# Subtest: 2. runWrapperHook calls buildContext successfully
+ok 213 - 2. runWrapperHook calls buildContext successfully
+  ---
+  duration_ms: 0.6711
+  type: 'test'
+  ...
+# Subtest: 3. runWrapperHook returns skipped for missing hook
+ok 214 - 3. runWrapperHook returns skipped for missing hook
+  ---
+  duration_ms: 0.1177
+  type: 'test'
+  ...
+# Subtest: 4. runWrapperHook catches throwing wrapper without crashing
+ok 215 - 4. runWrapperHook catches throwing wrapper without crashing
+  ---
+  duration_ms: 0.2218
+  type: 'test'
+  ...
+# Subtest: 5. createModuleRuntimePacket('quick-setting') returns contextBlocks / promptBlocks / debugInfo
+ok 216 - 5. createModuleRuntimePacket('quick-setting') returns contextBlocks / promptBlocks / debugInfo
+  ---
+  duration_ms: 2.6632
+  type: 'test'
+  ...
+# Subtest: 6. quick-setting packet includes core.world_container wrapper
+ok 217 - 6. quick-setting packet includes core.world_container wrapper
+  ---
+  duration_ms: 0.6296
+  type: 'test'
+  ...
+# Subtest: 7. createModuleRuntimePacket('character') generates a structural packet
+ok 218 - 7. createModuleRuntimePacket('character') generates a structural packet
+  ---
+  duration_ms: 3.6541
+  type: 'test'
+  ...
+# Subtest: 8. character packet includes character.card_runtime wrapper
+ok 219 - 8. character packet includes character.card_runtime wrapper
+  ---
+  duration_ms: 0.9985
+  type: 'test'
+  ...
+# Subtest: 9. createModuleRuntimePacket('world-rpg') generates a structural packet
+ok 220 - 9. createModuleRuntimePacket('world-rpg') generates a structural packet
+  ---
+  duration_ms: 1.2657
+  type: 'test'
+  ...
+# Subtest: 10. missing wrappers are collected but not fatal
+ok 221 - 10. missing wrappers are collected but not fatal
+  ---
+  duration_ms: 0.7369
+  type: 'test'
+  ...
+# Subtest: 11. hidden mode generates packet without changing visibility
+ok 222 - 11. hidden mode generates packet without changing visibility
+  ---
+  duration_ms: 0.8296
+  type: 'test'
+  ...
+# Subtest: 12. promptBlocks are side-channel text only
+ok 223 - 12. promptBlocks are side-channel text only
+  ---
+  duration_ms: 0.4201
+  type: 'test'
+  ...
+# Subtest: 13. packet does not contain function objects
+ok 224 - 13. packet does not contain function objects
+  ---
+  duration_ms: 0.5743
+  type: 'test'
+  ...
+# Subtest: 14. packet does not contain local absolute paths
+ok 225 - 14. packet does not contain local absolute paths
+  ---
+  duration_ms: 1.4259
+  type: 'test'
+  ...
+# Subtest: 15. createModuleRuntimeSummary returns correct statistics
+ok 226 - 15. createModuleRuntimeSummary returns correct statistics
+  ---
+  duration_ms: 0.5641
+  type: 'test'
+  ...
+# Subtest: buildModuleModel reuses cache until a shared file mtime changes
+ok 227 - buildModuleModel reuses cache until a shared file mtime changes
+  ---
+  duration_ms: 76.3183
+  type: 'test'
+  ...
+# Subtest: world-rpg is visible and active
+ok 228 - world-rpg is visible and active
+  ---
+  duration_ms: 0.9531
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle is visible and active
+ok 229 - mystery-puzzle is visible and active
+  ---
+  duration_ms: 0.0983
+  type: 'test'
+  ...
+# Subtest: tabletop is visible and active
+ok 230 - tabletop is visible and active
+  ---
+  duration_ms: 0.0775
+  type: 'test'
+  ...
+# Subtest: strategy-sim is visible and active
+ok 231 - strategy-sim is visible and active
+  ---
+  duration_ms: 0.0599
+  type: 'test'
+  ...
+# Subtest: murder-mystery is visible and active
+ok 232 - murder-mystery is visible and active
+  ---
+  duration_ms: 0.1262
+  type: 'test'
+  ...
+# Subtest: creation-forge remains not visible and not persisted
+ok 233 - creation-forge remains not visible and not persisted
+  ---
+  duration_ms: 11.2553
+  type: 'test'
+  ...
+# Subtest: DATA_MODES unchanged
+ok 234 - DATA_MODES unchanged
+  ---
+  duration_ms: 2.9642
+  type: 'test'
+  ...
+# Subtest: world-rpg draft dataMode = worldbook
+ok 235 - world-rpg draft dataMode = worldbook
+  ---
+  duration_ms: 5.4417
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft dataMode = worldbook
+ok 236 - mystery-puzzle draft dataMode = worldbook
+  ---
+  duration_ms: 2.4346
+  type: 'test'
+  ...
+# Subtest: tabletop draft dataMode = worldbook
+ok 237 - tabletop draft dataMode = worldbook
+  ---
+  duration_ms: 2.4325
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft dataMode = worldbook
+ok 238 - strategy-sim draft dataMode = worldbook
+  ---
+  duration_ms: 2.1022
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft dataMode = worldbook
+ok 239 - murder-mystery draft dataMode = worldbook
+  ---
+  duration_ms: 0.8599
+  type: 'test'
+  ...
+# Subtest: world-rpg draft includes modeRuntimePacket
+ok 240 - world-rpg draft includes modeRuntimePacket
+  ---
+  duration_ms: 1.5267
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft includes modeRuntimePacket
+ok 241 - mystery-puzzle draft includes modeRuntimePacket
+  ---
+  duration_ms: 0.782
+  type: 'test'
+  ...
+# Subtest: tabletop draft includes modeRuntimePacket
+ok 242 - tabletop draft includes modeRuntimePacket
+  ---
+  duration_ms: 1.3591
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft includes modeRuntimePacket
+ok 243 - strategy-sim draft includes modeRuntimePacket
+  ---
+  duration_ms: 1.4278
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft includes modeRuntimePacket
+ok 244 - murder-mystery draft includes modeRuntimePacket
+  ---
+  duration_ms: 0.9882
+  type: 'test'
+  ...
+# Subtest: world-rpg draft includes moduleRuntimePacket
+ok 245 - world-rpg draft includes moduleRuntimePacket
+  ---
+  duration_ms: 1.0599
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft includes moduleRuntimePacket
+ok 246 - mystery-puzzle draft includes moduleRuntimePacket
+  ---
+  duration_ms: 0.9431
+  type: 'test'
+  ...
+# Subtest: tabletop draft includes moduleRuntimePacket
+ok 247 - tabletop draft includes moduleRuntimePacket
+  ---
+  duration_ms: 0.9583
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft includes moduleRuntimePacket
+ok 248 - strategy-sim draft includes moduleRuntimePacket
+  ---
+  duration_ms: 2.0861
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft includes moduleRuntimePacket
+ok 249 - murder-mystery draft includes moduleRuntimePacket
+  ---
+  duration_ms: 0.8416
+  type: 'test'
+  ...
+# Subtest: world-rpg draft includes modeStateEnvelope
+ok 250 - world-rpg draft includes modeStateEnvelope
+  ---
+  duration_ms: 0.9489
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle draft includes modeStateEnvelope
+ok 251 - mystery-puzzle draft includes modeStateEnvelope
+  ---
+  duration_ms: 1.717
+  type: 'test'
+  ...
+# Subtest: tabletop draft includes modeStateEnvelope
+ok 252 - tabletop draft includes modeStateEnvelope
+  ---
+  duration_ms: 1.0603
+  type: 'test'
+  ...
+# Subtest: strategy-sim draft includes modeStateEnvelope
+ok 253 - strategy-sim draft includes modeStateEnvelope
+  ---
+  duration_ms: 1.5384
+  type: 'test'
+  ...
+# Subtest: murder-mystery draft includes modeStateEnvelope
+ok 254 - murder-mystery draft includes modeStateEnvelope
+  ---
+  duration_ms: 0.641
+  type: 'test'
+  ...
+# Subtest: world-rpg files has shared/world_rpg.json
+ok 255 - world-rpg files has shared/world_rpg.json
+  ---
+  duration_ms: 1.254
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle files has shared/mystery.json
+ok 256 - mystery-puzzle files has shared/mystery.json
+  ---
+  duration_ms: 0.9518
+  type: 'test'
+  ...
+# Subtest: tabletop files has shared/tabletop.json
+ok 257 - tabletop files has shared/tabletop.json
+  ---
+  duration_ms: 1.0423
+  type: 'test'
+  ...
+# Subtest: strategy-sim files has shared/strategy.json
+ok 258 - strategy-sim files has shared/strategy.json
+  ---
+  duration_ms: 1.6041
+  type: 'test'
+  ...
+# Subtest: murder-mystery files has shared/murder_mystery.json
+ok 259 - murder-mystery files has shared/murder_mystery.json
+  ---
+  duration_ms: 0.661
+  type: 'test'
+  ...
+# Subtest: createProjectFromMode('creation-forge', persist=true) rejected
+ok 260 - createProjectFromMode('creation-forge', persist=true) rejected
+  ---
+  duration_ms: 0.7318
+  type: 'test'
+  ...
+# Subtest: quick-setting remains visible
+ok 261 - quick-setting remains visible
+  ---
+  duration_ms: 0.1669
+  type: 'test'
+  ...
+# Subtest: character remains visible
+ok 262 - character remains visible
+  ---
+  duration_ms: 0.1322
+  type: 'test'
+  ...
+# Subtest: world-rpg allowed for project creation
+ok 263 - world-rpg allowed for project creation
+  ---
+  duration_ms: 0.128
+  type: 'test'
+  ...
+# Subtest: mystery-puzzle allowed for project creation
+ok 264 - mystery-puzzle allowed for project creation
+  ---
+  duration_ms: 0.0856
+  type: 'test'
+  ...
+# Subtest: tabletop allowed for project creation
+ok 265 - tabletop allowed for project creation
+  ---
+  duration_ms: 0.0948
+  type: 'test'
+  ...
+# Subtest: strategy-sim allowed for project creation
+ok 266 - strategy-sim allowed for project creation
+  ---
+  duration_ms: 0.0895
+  type: 'test'
+  ...
+# Subtest: murder-mystery allowed for project creation
+ok 267 - murder-mystery allowed for project creation
+  ---
+  duration_ms: 0.0902
+  type: 'test'
+  ...
+# Subtest: output-parser
+    # Subtest: parseLooseYaml
+        # Subtest: parses simple key-value pairs
+        ok 1 - parses simple key-value pairs
+          ---
+          duration_ms: 1.3534
+          type: 'test'
+          ...
+        # Subtest: parses booleans
+        ok 2 - parses booleans
+          ---
+          duration_ms: 0.2181
+          type: 'test'
+          ...
+        # Subtest: parses list items
+        ok 3 - parses list items
+          ---
+          duration_ms: 1.4602
+          type: 'test'
+          ...
+        # Subtest: handles empty input
+        ok 4 - handles empty input
+          ---
+          duration_ms: 0.2092
+          type: 'test'
+          ...
+        1..4
+    ok 1 - parseLooseYaml
+      ---
+      duration_ms: 4.297
+      type: 'suite'
+      ...
+    # Subtest: parseMarkedOutput
+        # Subtest: extracts narrative before first marker
+        ok 1 - extracts narrative before first marker
+          ---
+          duration_ms: 0.3821
+          type: 'test'
+          ...
+        # Subtest: handles text with no markers
+        ok 2 - handles text with no markers
+          ---
+          duration_ms: 0.1738
+          type: 'test'
+          ...
+        # Subtest: extracts multiple sections
+        ok 3 - extracts multiple sections
+          ---
+          duration_ms: 0.1536
+          type: 'test'
+          ...
+        1..3
+    ok 2 - parseMarkedOutput
+      ---
+      duration_ms: 1.02
+      type: 'suite'
+      ...
+    # Subtest: extractVisibleNarrative
+        # Subtest: extracts 叙事 section content
+        ok 1 - extracts 叙事 section content
+          ---
+          duration_ms: 0.202
+          type: 'test'
+          ...
+        # Subtest: falls back to full text when no marker
+        ok 2 - falls back to full text when no marker
+          ---
+          duration_ms: 0.1845
+          type: 'test'
+          ...
+        1..2
+    ok 3 - extractVisibleNarrative
+      ---
+      duration_ms: 0.6404
+      type: 'suite'
+      ...
+    # Subtest: sectionsToOverlayPatch
+        # Subtest: maps sections to overlay fields
+        ok 1 - maps sections to overlay fields
+          ---
+          duration_ms: 1.1596
+          type: 'test'
+          ...
+        1..1
+    ok 4 - sectionsToOverlayPatch
+      ---
+      duration_ms: 1.2909
+      type: 'suite'
+      ...
+    # Subtest: parseStateSuggestions
+        # Subtest: extracts clues from raw data
+        ok 1 - extracts clues from raw data
+          ---
+          duration_ms: 0.1867
+          type: 'test'
+          ...
+        # Subtest: returns empty arrays for missing data
+        ok 2 - returns empty arrays for missing data
+          ---
+          duration_ms: 0.1245
+          type: 'test'
+          ...
+        1..2
+    ok 5 - parseStateSuggestions
+      ---
+      duration_ms: 1.058
+      type: 'suite'
+      ...
+    # Subtest: parseEmotionFeedback
+        # Subtest: extracts emotion deltas
+        ok 1 - extracts emotion deltas
+          ---
+          duration_ms: 0.1421
+          type: 'test'
+          ...
+        # Subtest: returns null for missing section
+        ok 2 - returns null for missing section
+          ---
+          duration_ms: 0.0552
+          type: 'test'
+          ...
+        1..2
+    ok 6 - parseEmotionFeedback
+      ---
+      duration_ms: 0.2511
+      type: 'suite'
+      ...
+    1..6
+ok 268 - output-parser
+  ---
+  duration_ms: 9.3705
+  type: 'suite'
+  ...
+# Subtest: unknown overlay file is manual even with policy:auto
+ok 269 - unknown overlay file is manual even with policy:auto
+  ---
+  duration_ms: 1.1774
+  type: 'test'
+  ...
+# Subtest: sensitive known overlay files require confirm even with policy:auto
+ok 270 - sensitive known overlay files require confirm even with policy:auto
+  ---
+  duration_ms: 0.2403
+  type: 'test'
+  ...
+# Subtest: safe overlay files remain auto by default
+ok 271 - safe overlay files remain auto by default
+  ---
+  duration_ms: 0.2363
+  type: 'test'
+  ...
+# Subtest: splitWriteSet sends unknown policy:auto operation to manual queue
+ok 272 - splitWriteSet sends unknown policy:auto operation to manual queue
+  ---
+  duration_ms: 0.9116
+  type: 'test'
+  ...
+# Subtest: decodeMaybeEncodedPath decodes traversal once or more without throwing on bad escapes
+ok 273 - decodeMaybeEncodedPath decodes traversal once or more without throwing on bad escapes
+  ---
+  duration_ms: 1.2068
+  type: 'test'
+  ...
+# Subtest: isUnsafePathSegment rejects empty, traversal, null byte, drive and overlong segments
+ok 274 - isUnsafePathSegment rejects empty, traversal, null byte, drive and overlong segments
+  ---
+  duration_ms: 0.2655
+  type: 'test'
+  ...
+# Subtest: resolveInsideRoot accepts safe mixed separators and keeps targets inside root
+ok 275 - resolveInsideRoot accepts safe mixed separators and keeps targets inside root
+  ---
+  duration_ms: 6.1005
+  type: 'test'
+  ...
+# Subtest: resolveInsideRoot rejects unsafe path forms
+ok 276 - resolveInsideRoot rejects unsafe path forms
+  ---
+  duration_ms: 2.0988
+  type: 'test'
+  ...
+# Subtest: assertPathInsideRoot throws coded errors for unsafe input
+ok 277 - assertPathInsideRoot throws coded errors for unsafe input
+  ---
+  duration_ms: 2.6421
+  type: 'test'
+  ...
+# Subtest: critical proposal queue survives the engine snapshot roundtrip
+ok 278 - critical proposal queue survives the engine snapshot roundtrip
+  ---
+  duration_ms: 2.4328
+  type: 'test'
+  ...
+# Subtest: quick-setting metadata uses the existing preset compatibility path
+ok 279 - quick-setting metadata uses the existing preset compatibility path
+  ---
+  duration_ms: 1.753
+  type: 'test'
+  ...
+# Subtest: quick-setting module graph resolves the declared core slice
+ok 280 - quick-setting module graph resolves the declared core slice
+  ---
+  duration_ms: 0.6828
+  type: 'test'
+  ...
+# Subtest: quick-setting input normalization handles empty and aliased fields
+ok 281 - quick-setting input normalization handles empty and aliased fields
+  ---
+  duration_ms: 0.196
+  type: 'test'
+  ...
+# Subtest: quick-setting initial state contains JSON-safe graph metadata
+ok 282 - quick-setting initial state contains JSON-safe graph metadata
+  ---
+  duration_ms: 0.5997
+  type: 'test'
+  ...
+# Subtest: quick-setting helper does not activate hidden modes
+ok 283 - quick-setting helper does not activate hidden modes
+  ---
+  duration_ms: 1.1462
+  type: 'test'
+  ...
+# Subtest: tabletop dice parses supported notation and rejects unsafe ranges
+ok 284 - tabletop dice parses supported notation and rejects unsafe ranges
+  ---
+  duration_ms: 2.3718
+  type: 'test'
+  ...
+# Subtest: tabletop dice reports totals and d20 critical outcomes deterministically
+ok 285 - tabletop dice reports totals and d20 critical outcomes deterministically
+  ---
+  duration_ms: 0.6161
+  type: 'test'
+  ...
+# Subtest: mystery clue board excludes hidden truth from player context
+ok 286 - mystery clue board excludes hidden truth from player context
+  ---
+  duration_ms: 0.5879
+  type: 'test'
+  ...
+# Subtest: strategy choices update bounded runtime resources without canon writes
+ok 287 - strategy choices update bounded runtime resources without canon writes
+  ---
+  duration_ms: 0.3662
+  type: 'test'
+  ...
+# Subtest: chapter recap has bounded deterministic fallback
+ok 288 - chapter recap has bounded deterministic fallback
+  ---
+  duration_ms: 0.5124
+  type: 'test'
+  ...
+# Subtest: quest tracker hides unrevealed storylines and keeps progress runtime-only
+ok 289 - quest tracker hides unrevealed storylines and keeps progress runtime-only
+  ---
+  duration_ms: 0.3829
+  type: 'test'
+  ...
+# Subtest: rhythm tags preserve existing pacing as an auxiliary valid tag
+ok 290 - rhythm tags preserve existing pacing as an auxiliary valid tag
+  ---
+  duration_ms: 0.2097
+  type: 'test'
+  ...
+# Subtest: real-play turn context wires mode slices into safe prompt and runtime state
+ok 291 - real-play turn context wires mode slices into safe prompt and runtime state
+  ---
+  duration_ms: 0.9249
+  type: 'test'
+  ...
+# Subtest: real-play state survives runtime reload roundtrip without writing shared canon
+ok 292 - real-play state survives runtime reload roundtrip without writing shared canon
+  ---
+  duration_ms: 1.8
+  type: 'test'
+  ...
+# Subtest: route index lists 8 routes
+ok 293 - route index lists 8 routes
+  ---
+  duration_ms: 1.0432
+  type: 'test'
+  ...
+# Subtest: get route for each mode
+ok 294 - get route for each mode
+  ---
+  duration_ms: 0.181
+  type: 'test'
+  ...
+# Subtest: each route has required fields
+ok 295 - each route has required fields
+  ---
+  duration_ms: 0.2056
+  type: 'test'
+  ...
+# Subtest: each route promptProfileId exists in registry
+ok 296 - each route promptProfileId exists in registry
+  ---
+  duration_ms: 0.1217
+  type: 'test'
+  ...
+# Subtest: route summary counts consumers and producers
+ok 297 - route summary counts consumers and producers
+  ---
+  duration_ms: 0.1274
+  type: 'test'
+  ...
+# Subtest: validateAllWorldTreeRoutes passes with valid routes
+ok 298 - validateAllWorldTreeRoutes passes with valid routes
+  ---
+  duration_ms: 0.241
+  type: 'test'
+  ...
+# Subtest: validateAllWorldTreeRoutes returns errors for invalid routes (mocked)
+ok 299 - validateAllWorldTreeRoutes returns errors for invalid routes (mocked)
+  ---
+  duration_ms: 0.0901
+  type: 'test'
+  ...
+# Subtest: prompt registry has 8 profiles
+ok 300 - prompt registry has 8 profiles
+  ---
+  duration_ms: 0.0976
+  type: 'test'
+  ...
+# Subtest: grand world profile forbids RPG terms
+ok 301 - grand world profile forbids RPG terms
+  ---
+  duration_ms: 0.2616
+  type: 'test'
+  ...
+# Subtest: murder mystery profile protects truth lock
+ok 302 - murder mystery profile protects truth lock
+  ---
+  duration_ms: 0.3115
+  type: 'test'
+  ...
+# Subtest: creation forge profile requires confirmation
+ok 303 - creation forge profile requires confirmation
+  ---
+  duration_ms: 0.1542
+  type: 'test'
+  ...
+# Subtest: buildModePrompt returns text
+ok 304 - buildModePrompt returns text
+  ---
+  duration_ms: 0.1146
+  type: 'test'
+  ...
+# Subtest: buildModePromptResult returns ok:false for missing profile
+ok 305 - buildModePromptResult returns ok:false for missing profile
+  ---
+  duration_ms: 0.16
+  type: 'test'
+  ...
+# Subtest: buildModePromptResult returns ok:true for valid profile
+ok 306 - buildModePromptResult returns ok:true for valid profile
+  ---
+  duration_ms: 2.3285
+  type: 'test'
+  ...
+# Subtest: create and validate mode input packet
+ok 307 - create and validate mode input packet
+  ---
+  duration_ms: 0.2227
+  type: 'test'
+  ...
+# Subtest: validate rejects missing modeId
+ok 308 - validate rejects missing modeId
+  ---
+  duration_ms: 0.0604
+  type: 'test'
+  ...
+# Subtest: output packet normalizes arrays
+ok 309 - output packet normalizes arrays
+  ---
+  duration_ms: 0.6836
+  type: 'test'
+  ...
+# Subtest: validate output packet
+ok 310 - validate output packet
+  ---
+  duration_ms: 0.1348
+  type: 'test'
+  ...
+# Subtest: isolation blocks cross-mode cache write
+ok 311 - isolation blocks cross-mode cache write
+  ---
+  duration_ms: 0.1328
+  type: 'test'
+  ...
+# Subtest: isolation allows own cache write
+ok 312 - isolation allows own cache write
+  ---
+  duration_ms: 0.1024
+  type: 'test'
+  ...
+# Subtest: filterContext removes hidden fields (shallow)
+ok 313 - filterContext removes hidden fields (shallow)
+  ---
+  duration_ms: 0.2083
+  type: 'test'
+  ...
+# Subtest: deepFilterHiddenFields removes nested hidden fields
+ok 314 - deepFilterHiddenFields removes nested hidden fields
+  ---
+  duration_ms: 0.2078
+  type: 'test'
+  ...
+# Subtest: applyProposalPatch replace
+ok 315 - applyProposalPatch replace
+  ---
+  duration_ms: 0.1525
+  type: 'test'
+  ...
+# Subtest: applyProposalPatch merge
+ok 316 - applyProposalPatch merge
+  ---
+  duration_ms: 0.0707
+  type: 'test'
+  ...
+# Subtest: applyProposalPatch append
+ok 317 - applyProposalPatch append
+  ---
+  duration_ms: 0.5379
+  type: 'test'
+  ...
+# Subtest: create pending proposal
+ok 318 - create pending proposal
+  ---
+  duration_ms: 0.1667
+  type: 'test'
+  ...
+# Subtest: validate proposal
+ok 319 - validate proposal
+  ---
+  duration_ms: 0.0916
+  type: 'test'
+  ...
+# Subtest: approveProposal real I/O reads proposal log and writes shared
+ok 320 - approveProposal real I/O reads proposal log and writes shared
+  ---
+  duration_ms: 22.6768
+  type: 'test'
+  ...
+# Subtest: rejectProposal real I/O does not modify shared
+ok 321 - rejectProposal real I/O does not modify shared
+  ---
+  duration_ms: 8.0842
+  type: 'test'
+  ...
+# Subtest: list pending proposals
+ok 322 - list pending proposals
+  ---
+  duration_ms: 0.2489
+  type: 'test'
+  ...
+# Subtest: writeModeTurnToSave real append to chat.jsonl
+ok 323 - writeModeTurnToSave real append to chat.jsonl
+  ---
+  duration_ms: 3.8051
+  type: 'test'
+  ...
+# Subtest: writeModeCache real write to runtime/cache
+ok 324 - writeModeCache real write to runtime/cache
+  ---
+  duration_ms: 5.6439
+  type: 'test'
+  ...
+# Subtest: writeModeCache rejects unsafe path
+ok 325 - writeModeCache rejects unsafe path
+  ---
+  duration_ms: 1.7466
+  type: 'test'
+  ...
+# Subtest: appendModeProposal real append to log
+ok 326 - appendModeProposal real append to log
+  ---
+  duration_ms: 3.6261
+  type: 'test'
+  ...
+# Subtest: create save snapshot
+ok 327 - create save snapshot
+  ---
+  duration_ms: 0.2876
+  type: 'test'
+  ...
+# Subtest: export save
+ok 328 - export save
+  ---
+  duration_ms: 0.1206
+  type: 'test'
+  ...
+# Subtest: mode runner works for character
+ok 329 - mode runner works for character
+  ---
+  duration_ms: 43.4233
+  type: 'test'
+  ...
+# Subtest: mode runner works for grand world
+ok 330 - mode runner works for grand world
+  ---
+  duration_ms: 15.6125
+  type: 'test'
+  ...
+# Subtest: mode runner works for tabletop
+ok 331 - mode runner works for tabletop
+  ---
+  duration_ms: 2.5973
+  type: 'test'
+  ...
+# Subtest: mode runner works for creation-forge
+ok 332 - mode runner works for creation-forge
+  ---
+  duration_ms: 4.3928
+  type: 'test'
+  ...
+# Subtest: mode runner rejects unknown mode
+ok 333 - mode runner rejects unknown mode
+  ---
+  duration_ms: 0.1271
+  type: 'test'
+  ...
+# Subtest: mode runner summary
+ok 334 - mode runner summary
+  ---
+  duration_ms: 0.0591
+  type: 'test'
+  ...
+# Subtest: validate mode turn result
+ok 335 - validate mode turn result
+  ---
+  duration_ms: 0.0583
+  type: 'test'
+  ...
+# Subtest: assertModeCanWrite blocks cross-mode cache write (strict)
+ok 336 - assertModeCanWrite blocks cross-mode cache write (strict)
+  ---
+  duration_ms: 0.0705
+  type: 'test'
+  ...
+# Subtest: assertModeCanWrite allows non-cache paths
+ok 337 - assertModeCanWrite allows non-cache paths
+  ---
+  duration_ms: 0.0335
+  type: 'test'
+  ...
+# Subtest: assertModeCanWrite respects allowedNamespaces option
+ok 338 - assertModeCanWrite respects allowedNamespaces option
+  ---
+  duration_ms: 0.0459
+  type: 'test'
+  ...
+# Subtest: writeModeCache blocks cross-mode cache write
+ok 339 - writeModeCache blocks cross-mode cache write
+  ---
+  duration_ms: 1.5279
+  type: 'test'
+  ...
+# Subtest: writeModeCache allows own cache write with isolation check
+ok 340 - writeModeCache allows own cache write with isolation check
+  ---
+  duration_ms: 5.6362
+  type: 'test'
+  ...
+# Subtest: approveProposal blocks non-shared targetFile
+ok 341 - approveProposal blocks non-shared targetFile
+  ---
+  duration_ms: 319.458
+  type: 'test'
+  ...
+# Subtest: approveProposal allows shared/ targetFile
+ok 342 - approveProposal allows shared/ targetFile
+  ---
+  duration_ms: 7.5119
+  type: 'test'
+  ...
+# Subtest: createWorldbook with defaults
+ok 343 - createWorldbook with defaults
+  ---
+  duration_ms: 2.3139
+  type: 'test'
+  ...
+# Subtest: createWorldbookEntry has correct defaults
+ok 344 - createWorldbookEntry has correct defaults
+  ---
+  duration_ms: 0.2113
+  type: 'test'
+  ...
+# Subtest: createDefaultScene has opening scene
+ok 345 - createDefaultScene has opening scene
+  ---
+  duration_ms: 0.1438
+  type: 'test'
+  ...
+# Subtest: createDefaultWorldState has empty flags
+ok 346 - createDefaultWorldState has empty flags
+  ---
+  duration_ms: 0.5919
+  type: 'test'
+  ...
+# Subtest: createTimelineEvent adds to timeline
+ok 347 - createTimelineEvent adds to timeline
+  ---
+  duration_ms: 0.2384
+  type: 'test'
+  ...
+# Subtest: normalizeWorldbook fills entries array
+ok 348 - normalizeWorldbook fills entries array
+  ---
+  duration_ms: 0.1402
+  type: 'test'
+  ...
+# Subtest: normalizeWorldbookEntry converts key string to array
+ok 349 - normalizeWorldbookEntry converts key string to array
+  ---
+  duration_ms: 0.2914
+  type: 'test'
+  ...
+# Subtest: validateWorldbook passes
+ok 350 - validateWorldbook passes
+  ---
+  duration_ms: 0.1599
+  type: 'test'
+  ...
+# Subtest: validateStateProposal rejects invalid status
+ok 351 - validateStateProposal rejects invalid status
+  ---
+  duration_ms: 0.3143
+  type: 'test'
+  ...
+# Subtest: matchWorldbookEntries by keyword
+ok 352 - matchWorldbookEntries by keyword
+  ---
+  duration_ms: 0.4019
+  type: 'test'
+  ...
+# Subtest: filterWorldbookEntriesByVisibility
+ok 353 - filterWorldbookEntriesByVisibility
+  ---
+  duration_ms: 0.1509
+  type: 'test'
+  ...
+# Subtest: activateWorldbookContext returns structured result
+ok 354 - activateWorldbookContext returns structured result
+  ---
+  duration_ms: 0.1978
+  type: 'test'
+  ...
+# Subtest: createWorldContextPacket
+ok 355 - createWorldContextPacket
+  ---
+  duration_ms: 0.2069
+  type: 'test'
+  ...
+# Subtest: createWorldContextSummary
+ok 356 - createWorldContextSummary
+  ---
+  duration_ms: 0.1037
+  type: 'test'
+  ...
+# Subtest: createWorldStateProposal defaults to pending
+ok 357 - createWorldStateProposal defaults to pending
+  ---
+  duration_ms: 0.0781
+  type: 'test'
+  ...
+# Subtest: applyApprovedWorldStateProposal only if approved
+ok 358 - applyApprovedWorldStateProposal only if approved
+  ---
+  duration_ms: 0.0933
+  type: 'test'
+  ...
+# Subtest: createWorldbookModuleRuntimePacket for world-rpg
+ok 359 - createWorldbookModuleRuntimePacket for world-rpg
+  ---
+  duration_ms: 5.2637
+  type: 'test'
+  ...
+# Subtest: createWorldbookModuleSourceMap
+ok 360 - createWorldbookModuleSourceMap
+  ---
+  duration_ms: 0.7512
+  type: 'test'
+  ...
+# Subtest: exportWorldbookJson preserves data
+ok 361 - exportWorldbookJson preserves data
+  ---
+  duration_ms: 0.1122
+  type: 'test'
+  ...
+# Subtest: worldbook runtime returns selected hits with reasons and budget diagnostics
+ok 362 - worldbook runtime returns selected hits with reasons and budget diagnostics
+  ---
+  duration_ms: 4.6438
+  type: 'test'
+  ...
+# Subtest: vector index handles Chinese bigrams through the same matcher
+ok 363 - vector index handles Chinese bigrams through the same matcher
+  ---
+  duration_ms: 0.5512
+  type: 'test'
+  ...
+# worldbook 测试: 25 项, 25 通过, 0 失败
+# Subtest: tests\\unit\\worldbook.test.js
+ok 34 - tests\\unit\\worldbook.test.js
+  ---
+  duration_ms: 1841.4279
+  type: 'test'
+  ...
+1..364
+# tests 416
+# suites 27
+# pass 416
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2854.1085
+
+STDERR:

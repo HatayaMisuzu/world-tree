@@ -75,7 +75,7 @@ test("forge run turn generates full packet", () => {
   assert.ok(r.packet.blueprint.blueprintId);
 });
 
-test("forge create via /api/modules/create is rejected with MODE_PROJECT_CREATION_DISABLED", async () => {
+test("deferred forge cannot create a normal persisted module", async () => {
   const dataDir = await createTempDataDir();
   const server = await startWorldTreeServer({ dataDir });
   try {
@@ -84,7 +84,6 @@ test("forge create via /api/modules/create is rejected with MODE_PROJECT_CREATIO
     });
     assert.equal(create.body.status, "error");
     assert.equal(create.body.code, "MODE_PROJECT_CREATION_DISABLED");
-    // Verify no directory was created
     const wd = join(dataDir, "engine", "worlds", "forge_test");
     assert.equal(existsSync(wd), false);
   } finally { await server.stop(); await removeTempDir(dataDir); }

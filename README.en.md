@@ -1,13 +1,13 @@
 # World Tree
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.4.1-v2-entry-closure.0-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.4.0--pre--v2--closure.1-orange.svg)
 
 World Tree is a local-first AI narrative engine with a browser-based web console. It runs as a plain Node.js HTTP server: no Electron, no build step, and no external runtime service beyond the LLM endpoint you configure.
 
-Current version: `v0.4.1-v2-entry-closure.0`.
+Current version: `v0.4.0-pre-v2-closure.1` repair candidate.
 
-`v0.4.1-v2-entry-closure.0` adds the Real Play Productization 0-3 thin slices on top of the local-first workbench foundation: offline smoke scenarios, visible workflow status, bounded mode play tools, and runtime/candidate-only narrative aids. Plugin ecosystem work, community marketplace features, and full V2 systems remain deferred.
+The existing `v0.4.0-pre-v2-closure` tag remains at its original commit, but a full local audit invalidated it as trusted final-seal evidence. This candidate repairs the audit blockers and still requires re-audit. Full V2 systems remain deferred.
 
 Chinese documentation: [README.md](README.md)
 
@@ -21,11 +21,11 @@ Chinese documentation: [README.md](README.md)
 - Future AI-driven text game players and builders, including AI text RPGs, mystery games, romance sims, world exploration, and tabletop-like experiences.
 - Developers and researchers exploring worldbooks, state machines, and LLM narrative pipelines.
 
-You do not need a complete worldbook to start. In v0.4.1-v2-entry-closure.0, you can paste material first, create a draft world, and later organize characters, worldbook entries, review records, and export packages.
+You do not need a complete worldbook to start. You can paste material first, create a draft world, and later organize characters, worldbook entries, review records, and export packages.
 
 This version does not bundle a complete example world. Example worlds are a separate follow-up project and will be added only after the worldbook content and content provenance are confirmed.
 
-> The plugin system is deferred and is not part of the v0.4.1-v2-entry-closure.0 product scope. Some internal scaffolding may remain in the repository, but the default UI should not expose plugin entry points, and users should not rely on plugin functionality in this version.
+> The plugin system is deferred and is not part of this repair candidate's public product scope. Some internal scaffolding may remain in the repository, but the default UI should not expose plugin entry points.
 
 ## Quickstart
 

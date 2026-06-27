@@ -16,7 +16,7 @@ export function randomPort() {
   return 3100 + Math.floor(Math.random() * 20000);
 }
 
-export async function startWorldTreeServer({ port = randomPort(), dataDir, env = {} } = {}) {
+export async function startWorldTreeServer({ port = randomPort(), dataDir, userDataDir = join(dataDir, ".userData"), env = {} } = {}) {
   const root = resolve(".");
   // Isolate userData: when dataDir is provided (test mode), auto-create a temp userData dir
   let userDataDir = undefined;
@@ -33,6 +33,7 @@ export async function startWorldTreeServer({ port = randomPort(), dataDir, env =
       WORLD_TREE_DATA_DIR: dataDir,
       WORLD_TREE_USER_DATA_DIR: userDataDir,
       WORLD_TREE_DISABLE_UPDATE_CHECK: "1",
+      NODE_ENV: "test",
       ...env
     },
     stdio: ["ignore", "pipe", "pipe"]
@@ -72,6 +73,8 @@ export async function startWorldTreeServer({ port = randomPort(), dataDir, env =
   return {
     port,
     baseUrl: `http://127.0.0.1:${port}`,
+    dataDir,
+    userDataDir,
     child,
     stdout: () => stdout,
     stderr: () => stderr,

@@ -1,19 +1,46 @@
-# Browser QA Report — NOT RUN (future only)
+# Browser QA Report — Future Validation Only
 
-> **Status: NOT RUN.** Browser gateway QA was intentionally not performed during Pre-V2 Closure because the gateway is unstable in the current environment. Runtime-only verification was used instead (see `docs/NO_GATEWAY_RUNTIME_QA_REPORT.md`). This template is preserved for future browser QA execution.
+## Status
 
-## Environment
+```text
+NOT RUN
+```
+
+Browser QA was not executed as part of the Pre-V2 blocker repair. This file is a future checklist, not PASS evidence. The repair uses No-Gateway HTTP probes and automated tests; a trusted seal still requires a separately authorized browser/visual QA run or an explicit risk acceptance.
+
+## Future Environment
 
 | Item | Value |
 |---|---|
-| OS | N/A |
-| Browser | N/A |
-| Node version | N/A |
-| Branch | N/A |
-| Commit | N/A |
-| Start command | N/A |
-| URL | N/A |
+| OS | NOT RUN |
+| Browser | NOT RUN |
+| Node version | NOT RUN |
+| Branch | `codex/pre-v2-closure-blocker-repair` candidate |
+| Commit | pending repair commit |
+| Start command | NOT RUN |
+| URL | NOT RUN |
 
-## Verdict
+## Future Flow Checklist
 
-**NOT RUN — future only.** All QA evidence for the current baseline is in `docs/NO_GATEWAY_RUNTIME_QA_REPORT.md`.
+| Flow | Result | Notes |
+|---|---|---|
+| Install dependencies | NOT RUN | |
+| Start server | NOT RUN | |
+| Open main page | NOT RUN | |
+| Console severe errors | NOT RUN | |
+| Quick-setting input | NOT RUN | |
+| Create/load project or world | NOT RUN | |
+| Select mode | NOT RUN | |
+| Run one play/action flow | NOT RUN | |
+| Candidate/proposal/status visible | NOT RUN | |
+| Save/persist | NOT RUN | |
+| Reload/continue | NOT RUN | |
+| Import/export | NOT RUN | |
+| LLM config/test | NOT RUN | |
+| LLM failure/fallback | NOT RUN | |
+
+## QA Conclusion
+
+```text
+NOT RUN / FUTURE VALIDATION ONLY
+```

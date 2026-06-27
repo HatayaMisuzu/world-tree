@@ -330,9 +330,7 @@ const PROFILES_DIR = () => join(ROOT, "defaults", "world-profiles");
 const EXAMPLES_DIR = () => join(ROOT, "defaults", "examples");
 const EXAMPLE_MANIFEST = () => join(EXAMPLES_DIR(), "manifest.json");
 const CONNECTIONS_PATH = () => userDataPath("connections.json");
-const REVIEW_QUEUE_PATH = () => DATA_ROOT_OVERRIDE
-  ? join(DATA_ROOT_OVERRIDE, "userData", "alchemy-review.json")
-  : userDataPath("alchemy-review.json");
+const REVIEW_QUEUE_PATH = () => userDataPath("alchemy-review.json");
 const PLUGINS_DIR = () => userDataPath("plugins");
 const TURN_DEBUG_DIR = (moduleId = "global") => userDataPath("turn-debug", slugName(moduleId, "global"));
 

@@ -20,21 +20,27 @@ function readText(file) {
   return readFileSync(join(ROOT, file), "utf-8");
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
 const version = pkg?.version;
+const SEMVER_CAPTURE = String.raw`(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)`;
 
 console.log(`\n📋 版本审计 (v${version})`);
 
-// 版本一致性
+// 版本一致性：版本缺失也必须失败，不能再把“未识别”当作通过。
 for (const [file, regex] of [
-  ["CHANGELOG.md", /^##\s+v?(\d+\.\d+\.\d+[\w\-.]*)/m],
-  ["README.md", /\*\*(?:Current version|当前版本|Package version)\*\*:\s*v(\d+\.\d+\.\d+[\w\-.]*)/],
+  ["CHANGELOG.md", new RegExp(`^##\\s+v?${SEMVER_CAPTURE}`, "m")],
+  ["README.md", new RegExp(`v${escapeRegExp(version)}`)],
+  ["README.en.md", new RegExp(`v${escapeRegExp(version)}`)],
 ]) {
   const content = readText(file);
   const m = content.match(regex);
-  if (m && m[1] === version) pass(`${file}: ${m[1]}`);
-  else if (file === "README.md" && !m) pass(`${file}: 版本号未显式展示（package.json 为真相源）`);
-  else fail(`${file}: 版本不匹配 (期望 ${version})`);
+  const observed = m?.[1] || (m ? version : "missing");
+  if (m && observed === version) pass(`${file}: ${version}`);
+  else fail(`${file}: 版本不匹配或缺失 (observed=${observed}, expected=${version})`);
 }
 
 // 引擎版本号与 package.json 对照
@@ -49,7 +55,7 @@ for (const [file, regex] of [
 // CHANGELOG 日期不能随版本推进而倒退；同日多版本允许。
 {
   const changelog = readText("CHANGELOG.md");
-  const entries = [...changelog.matchAll(/^##\s+v?(\d+\.\d+\.\d+[\w\-.]*)\s+.+?\((\d{4}-\d{2}-\d{2})\)/gm)]
+  const entries = [...changelog.matchAll(/^##\s+v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s+.+?\((\d{4}-\d{2}-\d{2})\)/gm)]
     .map((m) => ({ version: m[1], date: m[2] }));
   let ok = entries.length > 0;
   for (let i = 0; i < entries.length - 1; i++) {
@@ -219,6 +225,57 @@ console.log("\n🧹 开源卫生");
 
 console.log("\n📌 版本事实源");
 
+// app-manifest、当前状态与 release 文档必须与 package repair candidate 对齐。
+{
+  const manifest = JSON.parse(readText("app-manifest.json"));
+  if (manifest._version !== version) fail(`app-manifest.json _version=${manifest._version || "missing"}, 期望 ${version}`);
+  else pass(`app-manifest.json _version: ${version}`);
+
+  const currentState = readText("docs/CURRENT_PROJECT_STATE.md");
+  const closureReport = readText("docs/PRE_V2_CLOSURE_REPORT.md");
+  const releaseNotes = readText("docs/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md");
+  const invalidation = readText("docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md");
+  const combined = `${currentState}\n${closureReport}\n${releaseNotes}\n${invalidation}`;
+
+  if ([currentState, closureReport, releaseNotes].every((text) => text.includes(version))) pass("current release docs match package version");
+  else fail(`current release docs must all mention repair version ${version}`);
+
+  if (/SEALED-ON-MAIN|Pre-V2 Closure baseline:\s*SEALED/.test(combined)) fail("current release docs still claim a trusted seal");
+  else pass("current release docs do not claim a trusted seal");
+
+  if ([currentState, releaseNotes, invalidation].every((text) => /AUDIT-INVALIDATED/i.test(text))) pass("old seal tag is explicitly audit-invalidated");
+  else fail("old seal invalidation language is incomplete");
+
+  if (/character-project port race|known flaky|115\/116/.test(combined)) fail("current release docs contain stale flaky-test wording/count");
+  else pass("stale flaky-test explanation removed");
+}
+
+// Known current documentation links must resolve locally.
+{
+  const docs = [
+    "README.md",
+    "README.en.md",
+    "docs/INDEX.md",
+    "docs/CURRENT_PROJECT_STATE.md",
+    "docs/PRE_V2_CLOSURE_REPORT.md",
+    "docs/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md"
+  ];
+  const broken = [];
+  for (const file of docs) {
+    const content = readText(file);
+    for (const match of content.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+      const raw = match[1].trim().replace(/^<|>$/g, "");
+      if (!raw || /^(?:https?:|mailto:|#)/i.test(raw)) continue;
+      const target = decodeURIComponent(raw.split("#")[0]);
+      if (!target) continue;
+      const full = resolve(dirname(join(ROOT, file)), target);
+      if (!existsSync(full)) broken.push(`${file} -> ${target}`);
+    }
+  }
+  if (broken.length) fail(`current docs contain unresolved local links: ${broken.join(", ")}`);
+  else pass("current documentation local links resolve");
+}
+
 // package-lock.json 与 package.json 版本一致
 {
   const lockPath = join(ROOT, "package-lock.json");
@@ -242,7 +299,7 @@ console.log("\n📌 版本事实源");
 // AI-GUIDE.md 最后更新版本
 {
   const aiGuide = readText("AI-GUIDE.md");
-  const m = aiGuide.match(/最后更新:\s*v?(\d+\.\d+\.\d+[\w\-.]*)/);
+  const m = aiGuide.match(new RegExp(`最后更新:\\s*v?${SEMVER_CAPTURE}`));
   if (!m) fail("AI-GUIDE.md 缺少'最后更新'版本号");
   else if (m[1] !== version) fail(`AI-GUIDE.md 最后更新 v${m[1]}, 期望 v${version}`);
   else pass(`AI-GUIDE.md 最后更新: v${version}`);

@@ -1,0 +1,77 @@
+COMMAND: node --test tests/integration/security.test.js
+EXIT_CODE: 1
+
+STDOUT:
+TAP version 13
+# Subtest: security: rejects non-local Origin and allows localhost Origin
+ok 1 - security: rejects non-local Origin and allows localhost Origin
+  ---
+  duration_ms: 251.6884
+  type: 'test'
+  ...
+# Subtest: security: rate limit returns a readable 429 error
+ok 2 - security: rate limit returns a readable 429 error
+  ---
+  duration_ms: 502.7265
+  type: 'test'
+  ...
+# Subtest: security: body limit, invalid JSON, non-object JSON, and empty body are readable errors
+not ok 3 - security: body limit, invalid JSON, non-object JSON, and empty body are readable errors
+  ---
+  duration_ms: 217.1695
+  type: 'test'
+  location: 'D:\\工作台\\world-tree-desktop\\tests\\integration\\security.test.js:76:1'
+  failureType: 'testCodeFailure'
+  error: 'fetch failed'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    node:internal/deps/undici/undici:14976:13
+    async rawRequest (file:///D:/%E5%B7%A5%E4%BD%9C%E5%8F%B0/world-tree-desktop/tests/integration/security.test.js:25:20)
+    async withServer.env.WORLD_TREE_MAX_BODY_BYTES (file:///D:/%E5%B7%A5%E4%BD%9C%E5%8F%B0/world-tree-desktop/tests/integration/security.test.js:78:22)
+    async withServer (file:///D:/%E5%B7%A5%E4%BD%9C%E5%8F%B0/world-tree-desktop/tests/integration/security.test.js:17:5)
+    async TestContext.<anonymous> (file:///D:/%E5%B7%A5%E4%BD%9C%E5%8F%B0/world-tree-desktop/tests/integration/security.test.js:77:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: security: data import rejects traversal and encoded traversal keys
+ok 4 - security: data import rejects traversal and encoded traversal keys
+  ---
+  duration_ms: 224.3551
+  type: 'test'
+  ...
+# Subtest: security: /api/data/export excludes chat/memory/state by default
+ok 5 - security: /api/data/export excludes chat/memory/state by default
+  ---
+  duration_ms: 241.4319
+  type: 'test'
+  ...
+# Subtest: security: module load and character backup do not expose absolute paths
+ok 6 - security: module load and character backup do not expose absolute paths
+  ---
+  duration_ms: 245.4216
+  type: 'test'
+  ...
+# Subtest: security: deferred plugin API is gated unless explicitly enabled
+ok 7 - security: deferred plugin API is gated unless explicitly enabled
+  ---
+  duration_ms: 408.0727
+  type: 'test'
+  ...
+# Subtest: security: /api/status default omits dataRoot and memory
+ok 8 - security: /api/status default omits dataRoot and memory
+  ---
+  duration_ms: 226.7883
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3899.7749
+
+STDERR:

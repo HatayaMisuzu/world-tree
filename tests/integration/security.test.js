@@ -101,6 +101,16 @@ test("security: body limit, invalid JSON, non-object JSON, and empty body are re
     assert.equal(nonObject.status, 400);
     assertReadableError(nonObject, "INVALID_JSON_BODY");
 
+    for (const body of ["null", '"text"', "42"]) {
+      const scalar = await rawRequest(server, "/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body
+      });
+      assert.equal(scalar.status, 400);
+      assertReadableError(scalar, "INVALID_JSON_BODY");
+    }
+
     const empty = await rawRequest(server, "/api/modules/load", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

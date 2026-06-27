@@ -31,7 +31,7 @@ assets must not be deleted, detached, downgraded, or orphaned without approval
 | mystery-puzzle | mystery/puzzle shell | shared data, `mystery.json` | clues/candidates/proposals | high: hidden truth | mode-specific shared readback |
 | strategy-sim | strategy simulation shell | shared data, `strategy.json` | resource/state proposals | medium/high | strategy numeric/probability substrate |
 | murder-mystery | murder mystery shell | shared data, `murder_mystery.json` | clue/case proposals | high: culprit/answer lock | mode-specific shared readback |
-| creation-forge | creation/material design shell | `creation_forge.json`, `forge_blueprints.json` | material drafts, blueprints, proposals | medium | deferred producer / blueprint socket |
+| creation-forge | deferred creation/material producer; not a normal persisted module | forge intake, blueprints and candidate artifacts | material drafts, blueprints, proposals | medium | alchemy/workflow producer socket |
 
 ## Current Implemented Guarantee
 
@@ -43,6 +43,8 @@ moduleData.modeSpecific.sourceFiles
 ```
 
 This is a readback/integration socket, not full mode gameplay.
+
+`creation-forge` is the exception to normal mode persistence: it remains `PLANNED`, is not visible as a regular play mode, and `/api/modules/create` returns `MODE_PROJECT_CREATION_DISABLED`. Forge/alchemy workflows may still produce candidate blueprints for an explicitly confirmed downstream target.
 
 ## Per-Mode Future Documentation
 

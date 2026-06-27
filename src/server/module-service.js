@@ -7,7 +7,7 @@ import {
   createQuickSettingInitialState,
   normalizeQuickSettingInput
 } from "../core/modes/quick-setting.js";
-import { createModeProjectDraft } from "../core/modes/mode-project-factory.js";
+import { assertModeProjectCanBeCreated, createModeProjectDraft } from "../core/modes/mode-project-factory.js";
 import { getModeCapsule } from "../core/modes/mode-capsule-registry.js";
 
 export function normalizeModuleKey(value = "") {
@@ -139,8 +139,26 @@ export function createModuleService(deps) {
       return { status: "error", code: "MODE_PROJECT_CREATION_DISABLED", errorMsg: "creation-forge is a deferred producer / alchemy workflow and cannot be created as a normal persisted module via /api/modules/create." };
     }
     const { name, displayName, dataMode, subType, preset } = body || {};
+    if (body?.mode) {
+      try {
+        const permission = assertModeProjectCanBeCreated(body.mode);
+        if (!permission.allowed) {
+          return {
+            status: "error",
+            code: "MODE_PROJECT_CREATION_DISABLED",
+            errorMsg: permission.reason
+          };
+        }
+      } catch (err) {
+        return {
+          status: "error",
+          code: "MODE_UNKNOWN",
+          errorMsg: err?.message || "未知模式"
+        };
+      }
+    }
     const isCharacter = body?.mode === "character";
-    const isMultiMode = body?.mode === "world-rpg" || body?.mode === "mystery-puzzle" || body?.mode === "tabletop" || body?.mode === "strategy-sim" || body?.mode === "murder-mystery" || body?.mode === "creation-forge";
+    const isMultiMode = body?.mode === "world-rpg" || body?.mode === "mystery-puzzle" || body?.mode === "tabletop" || body?.mode === "strategy-sim" || body?.mode === "murder-mystery";
     const quickSetting = body?.mode === QUICK_SETTING_MODE_ID;
     const quickInput = quickSetting
       ? normalizeQuickSettingInput({ ...body, title: displayName || name })
@@ -306,13 +324,6 @@ export function createModuleService(deps) {
       await writeFile(join(worldDir, "runtime", "mystery-puzzle-proposals.jsonl"), "", "utf-8");
       const mpd = join(worldDir, "runtime", "cache", "mystery-puzzle"); if (!existsSync(mpd)) mkdirSync(mpd, { recursive: true });
     }
-    if (body?.mode === "creation-forge") {
-      await writeJson(join(worldDir, "shared", "creation_forge.json"), { schemaVersion: 1, mode: "creation-forge", status: "minimal", forgeType: "production", activeBlueprints: [], createdAt: now, updatedAt: now });
-      await writeJson(join(worldDir, "shared", "forge_blueprints.json"), { schemaVersion: 1, blueprints: [], updatedAt: now });
-      await writeFile(join(worldDir, "runtime", "creation-forge-proposals.jsonl"), "", "utf-8");
-      const cfd = join(worldDir, "runtime", "cache", "creation-forge"); if (!existsSync(cfd)) mkdirSync(cfd, { recursive: true });
-    }
-
     clearModuleCache(worldName);
     return { status: "ok", module: { id: worldName, name: worldName, displayName: worldData.displayName, type: "world", mode: worldData.mode || "", dataMode: worldData.dataMode, subType: worldData.subType, preset: worldData.preset, draft, sourceType, turnCount: 0 } };
   }

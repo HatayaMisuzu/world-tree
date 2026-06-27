@@ -1,0 +1,4 @@
+-rw-r--r-- 1 Lenovo 197121 288  6月 24 20:54 userData/config.json
+-rw-r--r-- 1 Lenovo 197121 667  6月 24 20:54 userData/connections.json
+-rw-r--r-- 1 Lenovo 197121 143  6月 21 12:32 userData/corrupt-files.jsonl
+-rw-r--r-- 1 Lenovo 197121 156  6月 24 20:54 userData/secrets.json

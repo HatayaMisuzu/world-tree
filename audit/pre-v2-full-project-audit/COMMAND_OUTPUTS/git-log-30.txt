@@ -1,0 +1,30 @@
+0ee1852 docs(world-tree): seal v0.4.0 pre-v2 closure
+0fcec22 docs(world-tree): complete stage 7 no-gateway usability closure
+b511731 docs(world-tree): finalize stage 6 closure metadata
+4839592 docs(world-tree): close stage 6 architecture diagnostics
+4136c92 docs: fix stale test counts in scripts-and-checks
+b0a9826 refactor(server): extract local access helpers
+fc344c6 refactor(server): extract http request body parser
+212b01f refactor(server): extract http response helpers
+16c4c99 docs(world-tree): finalize pre-v2 closure metadata
+2ef932a docs(world-tree): finalize pre-v2 closure
+349f99d feat(world-tree): read back mode-specific shared state
+e07d5aa docs(world-tree): add maintenance asset integration gate
+a8a67f7 docs(world-tree): prove interface audit warning debt
+8eb2547 docs(world-tree): reconcile asset inventory references
+2089c81 docs(world-tree): reconcile pre-v2 closure inventory
+4401594 refactor(world-tree): remove legacy workflow directory
+8e67179 docs(world-tree): clean pre-v2 documentation debt
+0bd25f3 docs(world-tree): add pre-v2 closure baseline inventory
+3076b2f feat(world-tree): universal mode v2-ready foundation
+0e18172 feat(world-tree): real play productization 0-3
+cce3509 docs: fix workflow endpoint typo in current project state
+59175a7 docs(world-tree): finalize documentation closure and roadmap candidates
+a3a9c39 docs(world-tree): finalize documentation map and audience split
+397e35c fix(world-tree): wire LLM adapter to server config + add console workflow panel
+7aea1dc fix(world-tree): wire server.js workflow HTTP endpoints + route errors from services
+84b4374 fix(world-tree): workflow-result-schema ok field — preserve explicit false from service errors
+6bfb302 feat(world-tree): WSD Service Deepening — character/mystery/strategy use real M4-M8, LLM adapter, server API, console adapter, E2E tests
+670bd39 docs: Real Workflow Integration Layer — architecture doc + final validation report
+79fa10f feat(world-tree): W1-W4 Workflow Services — creation, alchemy, play-turn, character, mystery, strategy, direction, observability
+5cac308 feat(world-tree): W0 Workflow Spine — types, result-schema, envelope, intent-router, authority-gate, output-router, observability, runner

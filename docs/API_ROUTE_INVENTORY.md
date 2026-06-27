@@ -1,7 +1,7 @@
 # API Route Inventory — World Tree Pre-V2 Closure Baseline
 
-> This inventory reflects the current `server.js` (Post-Repair, head 9b35bbf (V2 Closure)). It is not a future router design.
-> This inventory is **partial but source-grounded** — not every handler is fully categorized.
+> This inventory reflects `server.js` in the `0.4.0-pre-v2-closure.1` repair candidate. It is not a future router design.
+> Coverage: **84 method/path rows across 76 unique path patterns**, including the debug-only logs route. The inventory is source-grounded but route dispatch remains monolithic.
 
 ## Status
 
@@ -111,6 +111,7 @@
 | GET | `/api/health` | debug | — | — | no | yes | handler inline |
 | GET | `/api/plugins` | debug | plugins/ | — | no | yes | `handlePlugins` |
 | POST | `/api/plugins` | debug | — | plugins/ | no | yes | `handlePlugins` |
+| GET | `/api/debug/logs` | debug | in-memory debug buffer | — | no | yes | handler inline; requires `--debug` |
 
 ## Route Boundary Rule
 

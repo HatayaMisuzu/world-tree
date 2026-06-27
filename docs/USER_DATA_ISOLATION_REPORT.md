@@ -1,44 +1,46 @@
-# UserData Isolation Report
+# USER_DATA_ISOLATION_REPORT
 
-> **P0 Fix — World Tree Pre-V2 Blocker Repair**
+## Purpose
 
-## Problem
+Prove that test/integration/preflight commands no longer mutate real repo-root `userData/`.
 
-The integration test suite wrote into real `userData/config.json` and `userData/connections.json` because the server had no mechanism to redirect userData writes to a temp directory during tests.
+## Safety
 
-## Solution
+No secret values or machine-specific hashes are committed in this report. Exact hashes are retained only in ignored local audit files under `audit/pre-v2-blocker-repair/`.
 
-### 1. New module: `src/server/user-data-root.js`
+## Files Checked
 
-Provides `getUserDataRoot(env)` and `userDataPath(...segments)`:
-- Reads `WORLD_TREE_USER_DATA_DIR` env var for test isolation
-- Falls back to `ROOT/userData` in normal operation
+| File | Before hash | After hash | Changed? |
+|---|---|---|---|
+| `userData/config.json` | local audit record | local audit record | no after full sequence |
+| `userData/connections.json` | local audit record | local audit record | no after full sequence |
+| `userData/secrets.json` | local audit record | local audit record | no after full sequence |
+| `userData/corrupt-files.jsonl` | local audit record | local audit record | no after full sequence |
 
-### 2. Migrated all paths in `server.js`
+## Test UserData Root
 
-Replaced 8+ occurrences of `join(ROOT, "userData", ...)` with `userDataPath(...)` / `getUserDataRoot()`:
-- `configPath()`, `secretsPath()`
-- `CONNECTIONS_PATH()`, `REVIEW_QUEUE_PATH()`
-- `PLUGINS_DIR()`, `TURN_DEBUG_DIR()`
-- `plugins-state.json`, write-probe, ensureDir
+- `WORLD_TREE_USER_DATA_DIR`: implemented by `src/server/user-data-root.js`.
+- Temporary root: each integration server uses `<temporary dataDir>/.userData`.
+- Created files: config, connection and secret test writes are verified inside the temporary root.
 
-### 3. Updated test helper
+## Commands Run
 
-`tests/integration/helpers/server-process.js`: when `dataDir` is provided, auto-creates temp `.userData` directory and sets `WORLD_TREE_USER_DATA_DIR`.
+| Command | Result |
+|---|---|
+| `node --test tests/integration/user-data-isolation.test.js` | PASS |
+| `node --test tests/integration/connection-diagnostics.test.js` | PASS |
+| `npm run test:integration` | PASS — 117/117 |
+| `npm run preflight` | PASS |
 
-### 4. New isolation test
+## Previous Mutation Notice
 
-`tests/integration/user-data-isolation.test.js` verifies:
-- Real userData hashes unchanged after server start + API calls
-- Test writes go to temp directory, not real userData
+The full audit already observed that `userData/config.json` and `userData/connections.json` changed during audit commands. This report does not guess rollback values. A timestamped external backup of the current pre-repair state was created before further tests.
 
-## Verification
+## User Decision Needed
 
-| File | SHA256 (before) | SHA256 (after P0) | SHA256 (after full suite) |
-|------|----------------|-------------------|--------------------------|
-| config.json | `69174350...` | `69174350...` ✅ | `69174350...` ✅ |
-| connections.json | `45576cfd...` | `45576cfd...` ✅ | `45576cfd...` ✅ |
-| secrets.json | `85da36d8...` | `85da36d8...` ✅ | `85da36d8...` ✅ |
-| corrupt-files.jsonl | `57420519...` | `57420519...` ✅ | `57420519...` ✅ |
+- Restore older values from a user-selected backup, reconfigure manually, or accept the current local values.
+- The repair does not choose among those recovery options.
 
-All 4 files unchanged throughout repair and full test suite.
+## Conclusion
+
+The complete mandated validation sequence left all four real repository-root `userData/` files byte-for-byte unchanged from the timestamped pre-test backup. Test servers now isolate mutable state under their temporary data directories.

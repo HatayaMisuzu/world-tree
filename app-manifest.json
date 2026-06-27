@@ -1,6 +1,6 @@
 {
-  "_note": "v0.4.1-v2-entry-closure.0 — Pre-V2 Closure Blocker Repair。修复 userData 隔离、request-body 合同、creation-forge 权限，旧 seal 审计无效化。",
-  "_version": "0.4.1-v2-entry-closure.0",
+  "_note": "v0.4.0-pre-v2-closure.1 repair candidate。旧 v0.4.0-pre-v2-closure tag 已被审计判定为不可信 final seal，等待复审。",
+  "_version": "0.4.0-pre-v2-closure.1",
   "_updated": "2026-06-24",
   "assets": [],
   "archived_assets": [

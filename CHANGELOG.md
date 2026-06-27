@@ -7,19 +7,16 @@ V2 Entry Closure — 四个 V2 入口已完成闭环：Tabletop V2、Detective V
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。
 
-## 0.4.0-pre-v2-closure.1 / Pre-V2 Blocker Repair
+## 0.4.0-pre-v2-closure.1 / Audit Blocker Repair (2026-06-24)
 
 ### Fixed
-- **P0 userData isolation**: server now reads `WORLD_TREE_USER_DATA_DIR`; test helper auto-creates temp userData dir. Integration suite no longer pollutes real `userData/`.
-- **P1 request-body contract**: oversized/streaming body returns 413 JSON (no socket destroy); malformed JSON → 400 INVALID_JSON; non-object JSON → 400 INVALID_JSON_BODY.
-- **P1 creation-forge authority**: `/api/modules/create` rejects `mode=creation-forge` with `MODE_PROJECT_CREATION_DISABLED`.
-- **P1 version/release truth**: unified `package.json` / `app-manifest.json` / `README` / `AI-GUIDE` to `0.4.0-pre-v2-closure.1`.
-- **P2 truth/gates**: docs links, route inventory, stale QA report version, asset classification TODO.
+- 集成测试通过 `WORLD_TREE_USER_DATA_DIR` 使用临时用户数据根，不再改写仓库真实 `userData/`。
+- 超大请求返回结构化 JSON 413；数组、`null`、字符串和数字 JSON 返回 `INVALID_JSON_BODY`。
+- `creation-forge` 保持 deferred producer，`/api/modules/create` 不再持久化普通 forge 模组。
+- 统一 package/runtime/docs 为 repair candidate 版本，并明确旧 seal tag 保留但审计失效。
 
-### Notes
-- Old tag `v0.4.0-pre-v2-closure` exists and was NOT moved or deleted.
-- It is audit-invalidated as a trusted final seal — see `docs/RELEASE_SEAL_AUDIT_INVALIDATION_NOTE.md`.
-- No new tag was created. Full V2 was NOT implemented.
+### Status
+- 这是等待复审的修复候选，不是新 tag，不是可信 final seal，也不是完整 V2。
 
 ## 0.3.1 / Real Play Productization 0-3
 
