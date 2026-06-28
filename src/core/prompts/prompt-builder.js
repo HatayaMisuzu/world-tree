@@ -50,6 +50,9 @@ export function buildPromptOrchestrationPacket(input = {}) {
 
   // 3. Add extra blocks (e.g., kernel sidecar, worldbook context)
   const worldbookBlocks = worldbookContext ? worldbookContextToPromptBlocks(worldbookContext, { modeId, taskId, generationType }) : [];
+  for (const block of worldbookBlocks) {
+    logBlockActivation(log, block, `worldbook:${block.trigger?.contextPackId || block.id}`);
+  }
   const allBlocks = [...resolved, ...worldbookBlocks, ...extraBlocks.filter(Boolean)];
 
   // 4. Apply budget

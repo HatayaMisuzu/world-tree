@@ -10,7 +10,11 @@ export function appendWorldbookCandidate(ledger, candidate, options = {}) {
   if (!check.ok) return { ok: false, errors: check.errors, warnings: check.warnings, ledger: target };
   const n = check.normalized;
   const exists = target.candidates.find(x => x.candidateId === n.candidateId || (x.draftEntry.title === n.draftEntry.title && x.draftEntry.content === n.draftEntry.content));
-  if (exists) return { ok: true, deduped: true, candidate: exists, ledger: target };
+  if (exists) {
+    target.reviewLog.push(log("dedupe", exists, { duplicateOf: exists.candidateId }));
+    target.updatedAt = options.now || new Date().toISOString();
+    return { ok: true, deduped: true, candidate: exists, ledger: target };
+  }
   target.candidates.push(n);
   target.reviewLog.push(log("append", n));
   target.updatedAt = options.now || new Date().toISOString();

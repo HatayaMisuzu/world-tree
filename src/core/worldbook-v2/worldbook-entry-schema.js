@@ -30,8 +30,11 @@ export function normalizeWorldbookFilters(input = {}) {
 
 export function normalizeWorldbookEntry(input = {}, options = {}) {
   const id = String(input.entryId || input.id || input.uid || `wb_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
-  const keys = arr(input.keys || input.key || input.trigger || input.activationKeys);
-  const title = String(input.title || input.name || input.comment || keys[0] || id);
+  const rawKeys = arr(input.keys || input.key || input.trigger || input.activationKeys);
+  const regexFromKeys = rawKeys.filter(k => /^\/.*\/[a-z]*$/i.test(k));
+  const plainKeys = rawKeys.filter(k => !/^\/.*\/[a-z]*$/i.test(k));
+  const explicitRegex = arr(input.regexKeys || input.regex || input.regex_keys);
+  const title = String(input.title || input.name || input.comment || plainKeys[0] || id);
   const content = String(input.content || input.text || input.description || "");
   const probability = num(input.triggerProbability ?? input.probability ?? input.triggerProb ?? 1, 1);
   return Object.freeze({
@@ -40,8 +43,8 @@ export function normalizeWorldbookEntry(input = {}, options = {}) {
     entryType: WORLDBOOK_ENTRY_TYPES.includes(input.entryType || input.type) ? (input.entryType || input.type) : "note",
     title, content,
     summary: String(input.summary || ""),
-    keys,
-    regexKeys: arr(input.regexKeys || input.regex || input.regex_keys).concat(keys.filter(k => /^\/.*\/[a-z]*$/i.test(k))),
+    keys: plainKeys,
+    regexKeys: [...explicitRegex, ...regexFromKeys],
     filters: normalizeWorldbookFilters(input.filters || input),
     sourceRefs: arr(input.sourceRefs || input.sourceRef || input.sources || input.source),
     moduleRefs: arr(input.moduleRefs || input.sourceModule),
