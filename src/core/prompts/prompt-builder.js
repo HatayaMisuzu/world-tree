@@ -9,6 +9,7 @@ import {
 } from "./prompt-activation-log.js";
 import { deepFilterHiddenFields, buildVisibilityInstruction } from "./prompt-visibility-policy.js";
 import { sanitizeForLlm } from "./prompt-hidden-sanitizer.js";
+import { worldbookContextToPromptBlocks } from "../worldbook-v2/worldbook-prompt-adapter.js";
 
 /**
  * Build a complete prompt orchestration packet.
@@ -48,7 +49,8 @@ export function buildPromptOrchestrationPacket(input = {}) {
   }
 
   // 3. Add extra blocks (e.g., kernel sidecar, worldbook context)
-  const allBlocks = [...resolved, ...extraBlocks.filter(Boolean)];
+  const worldbookBlocks = worldbookContext ? worldbookContextToPromptBlocks(worldbookContext, { modeId, taskId, generationType }) : [];
+  const allBlocks = [...resolved, ...worldbookBlocks, ...extraBlocks.filter(Boolean)];
 
   // 4. Apply budget
   const budget = overrideBudget || getBudget(generationType);
