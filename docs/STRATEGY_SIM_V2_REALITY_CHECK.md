@@ -10,51 +10,35 @@ Strategy Sim V2 product closure is not complete. Missing product closure: produc
 
 # Strategy Sim V2 Reality Check
 
-状态：待 Hermes 执行后补充真实结果  
-范围：Strategy Sim V2 sealed spec runtime
+状态：EXECUTED · Strategy Sim V2 engineering foundation implemented and reviewed
 
-## 1. 当前仓库事实
+## 已验证真实文件
 
-执行时必须记录：
+- package.json: test:strategy-sim-v2 registered
+- src/core/strategy-sim/strategy-sim-spec.js
+- src/core/strategy-sim/strategy-sim-run-state.js
+- src/core/strategy-sim/strategy-probability-system.js
+- src/core/strategy-sim/strategy-numeric-system.js
+- src/core/strategy-sim/strategy-sim-public-view-scrubber.js
+- src/core/strategy-sim/strategy-sim-report-context.js
+- src/core/strategy-sim/strategy-sim-turn-engine.js
+- src/core/strategy-sim/strategy-sim-mode-adapter.js
+- tests/unit/strategy-sim-*.test.js
 
-- package version:
-- strategy-sim 当前入口:
-- existing numeric substrate:
-- existing probability substrate:
-- existing resource panel:
-- existing mode adapter:
-- existing tests:
-
-## 2. 已有能力
-
-- 已有 numeric/probability/resource-panel 等底座时，必须说明哪些保留、哪些扩展。
-- 没有的能力不得写成已完成。
-
-## 3. 本次新增能力
+## 本次新增/确认能力
 
 - sealed StrategySimSpec
 - StrategyRunState
 - seeded RNG + roll record
-- numeric safety extension
-- strict mixed turn pipeline
+- numeric safety
+- mixed turn pipeline
 - public view scrubber
 - report context builder
-- V2 mode adapter path
+- mode adapter V2 path (unsealed spec falls back to legacy, no auto-seal)
+- legacy fallback
 
-## 4. 本次明确未做
+## 测试结果
 
-- 快速开始
-- 预制模板
-- archetype library
-- 电竞经理/公司经营/足球经理等具体玩法
-- 运行时自动补全
-- 完整炼金台补全
-
-## 5. 验证结果
-
-执行后填写：
-
-- npm run test:strategy-sim-v2:
-- npm run docs:check:
-- npm run test:unit:
-- npm run test:world-tree-v2-entries:
+- npm run test:strategy-sim-v2: 39/39 PASS
+- npm run docs:check: 24/24 PASS
+- npm run test:world-tree-v2-entries: 30/30 PASS

@@ -17,7 +17,8 @@ Current status: Full V2 is not complete. Strategy Sim V2 and Worldbook V2 are en
 
 > 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt/LLM Routing Alignment COMPLETE · UX Entry Coherence COMPLETE · Feature Alias Registry COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL · Universal Mode V2-ready Foundation (Stage 4) COMPLETE-PARTIAL · Documentation Truth-Source Alignment COMPLETE
 >
-> **真相源优先级**：CURRENT_PROJECT_STATE > docs/INDEX > 活跃架构文档 > 历史报告 > archive
+> **真相源优先级**：
+> PROJECT_TRUTH_SOURCE > CURRENT_PROJECT_STATE > V2_ENGINEERING_CLOSURE_STATUS > V2_ENTRY_COMPLETION_STATUS > PLAY_MODE_GUIDE > README/AI-GUIDE/docs/INDEX > 活跃架构文档 > 历史报告/archive
 >
 > Full product-wide V2 is not complete.
 > V2 entry closure is engineering/service closure for selected entries.
@@ -29,7 +30,7 @@ Current status: Full V2 is not complete. Strategy Sim V2 and Worldbook V2 are en
 
 - **Trusted tag**: `v0.4.2-v2-engineering-foundation-truth.0`
 - **Current branch**: `main`
-- **Latest audited commit**: `44b53c8` plus validated UX alias repair patch in current HEAD
+- **Latest audited commit**: see current git HEAD / latest execution report. Do not rely on old commit IDs unless this file was updated in the same commit.
 - **Remote CI**: `UNKNOWN`
 - **Status**: V2 Entry Closure sealed; Prompt/LLM routing alignment and UX alias coherence added; pending remote CI
 - **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries

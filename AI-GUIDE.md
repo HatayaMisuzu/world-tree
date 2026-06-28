@@ -13,9 +13,14 @@ Do not infer product closure from engineering tests. Strategy Sim V2 and Worldbo
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: v0.4.2-v2-engineering-foundation-truth.0 — V2 Entry Closure maintenance
-> **先读 `docs/CURRENT_PROJECT_STATE.md` + `docs/V2_ENTRY_COMPLETION_STATUS.md`** 获取当前真相源。
-> V2 Entry Closure maintenance rules：先读 `docs/MAINTENANCE_ENTRY.md` 和 `docs/PRE_V2_CLOSURE_GATES.md`。Asset Preservation & Integration Gate 是强制门槛。
+> 最后更新: v0.4.2-v2-engineering-foundation-truth.0 — Truth-source alignment
+> **先读：**
+> 1. `docs/PROJECT_TRUTH_SOURCE.md`
+> 2. `docs/CURRENT_PROJECT_STATE.md`
+> 3. `docs/V2_ENGINEERING_CLOSURE_STATUS.md`
+> 4. `docs/V2_ENTRY_COMPLETION_STATUS.md`
+> 5. `docs/PLAY_MODE_GUIDE.md`
+> 6. `README.md` / `docs/INDEX.md`
 
 ## 不可违反的规则
 
@@ -40,7 +45,8 @@ src/core/
 ├── system/       路由索引、I/O包、隔离策略、提案总线、存档、运行器
 ├── prompts/      提示词注册表（8 份 profile）
 ├── character/    人物卡 parser/profile/prompt/lore/persona/OOC
-├── worldbook/    世界书 schema/normalizer/validator/context/proposal
+├── worldbook/    世界书 V1 schema/normalizer/validator
+├── worldbook-v2/ Worldbook V2 engineering foundation: entry/candidate/store/trigger/compiler/visibility/prompt/audit
 ├── grand-world/  大世界模式 adapter/turn planner/state/objectives
 ├── tabletop/     桌面叙事 (solo tabletop narrative)
 ├── mystery-puzzle/ 解谜调查
@@ -75,7 +81,7 @@ scripts/         脚本
 
 ## AI 修改流程
 
-1. 先读 docs/CURRENT_PROJECT_STATE.md + docs/V2_ENTRY_COMPLETION_STATUS.md + docs/PLAY_MODE_GUIDE.md。
+1. 先读 docs/PROJECT_TRUTH_SOURCE.md + docs/CURRENT_PROJECT_STATE.md + docs/V2_ENGINEERING_CLOSURE_STATUS.md + docs/V2_ENTRY_COMPLETION_STATUS.md + docs/PLAY_MODE_GUIDE.md。
 2. 读取 README.md、docs/INDEX.md。
 3. 检查相关 mode capsule 文档。
 4. 运行 `git status --short`。
@@ -102,13 +108,13 @@ scripts/         脚本
 ## 测试
 
 ```bash
-npm run test:unit         # 全量单元测试
-npm run test:integration  # 全量集成测试
-npm run test:world-tree-v2-entries           # V2 entry closure gates
-npm run test:single-player-scriptkill-v2     # Single Player ScriptKill V2
-npm run test:single-player-scriptkill-v2-audit
-npm run test:project-complete-audit          # 完整项目审计
-npm run preflight         # audit + check + unit + integration + interface
+npm run truth:check           # 真相源一致性
+npm run test:unit             # 全量单元测试
+npm run test:integration      # 全量集成测试
+npm run test:worldbook-v2     # Worldbook V2
+npm run test:strategy-sim-v2  # Strategy Sim V2
+npm run test:world-tree-v2-entries  # V2 entry closure gates
+npm run preflight             # audit + check + unit + integration + interface
 ```
 
 ## Legacy 文件处理规则
@@ -116,7 +122,7 @@ npm run preflight         # audit + check + unit + integration + interface
 1. **不要删除 legacy 文件。** 所有旧资产保留在当前目录结构中。
 2. **先查引用再判断。** 修改前搜索引用链（`search_files`），确认不会破坏运行。
 3. **active-compatibility 文件** 可以加注释和测试，但不要重写为主入口。
-4. **archived-design 文档** 不能作为当前真相源。当前能力以以下文档为准：`CURRENT_PROJECT_STATE.md`、`ARCHITECTURE_MAP.md`、`API_ROUTE_INVENTORY.md`、`MODE_BOUNDARY_MAP.md`、`PRE_V2_CLOSURE_REPORT.md`。`ARCHITECTURE_V1.md` 仅作为历史/V1 参考。
+4. **archived-design 文档** 不能作为当前真相源。当前能力以以下文档为准：`PROJECT_TRUTH_SOURCE.md`、`CURRENT_PROJECT_STATE.md`、`V2_ENGINEERING_CLOSURE_STATUS.md`、`V2_ENTRY_COMPLETION_STATUS.md`。`ARCHITECTURE_V1.md` 仅作为历史/V1 参考，`PRE_V2_CLOSURE_REPORT.md` 等归档报告不代表当前状态。
 5. **orphan-candidate 文件** 只能标注，不能删除。后续由人工确认是否归档。
 6. **修改 legacy bridge 前** 必须先跑 `npm run test:unit`、`npm run test:integration` 和 `npm run preflight`。
 7. 详细分类见 `docs/LEGACY_REDUNDANCY_AUDIT.md` 和 `docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md`。

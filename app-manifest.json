@@ -1,7 +1,7 @@
 {
-  "_note": "v0.4.2-v2-engineering-foundation-truth.0 — Pre-V2 Closure Blocker Repair。修复 userData 隔离、request-body 合同、creation-forge 权限，旧 seal 审计无效化。",
+  "_note": "v0.4.2-v2-engineering-foundation-truth.0 — Truth-source alignment after Strategy Sim V2 and Worldbook V2 engineering foundations. Full product-wide V2 and product closure remain incomplete.",
   "_version": "0.4.2-v2-engineering-foundation-truth.0",
-  "_updated": "2026-06-24",
+  "_updated": "2026-06-28",
   "assets": [],
   "archived_assets": [
     "src/ui/world-tree-hero.png (deprecated v2.0)",

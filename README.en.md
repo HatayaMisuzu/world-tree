@@ -11,6 +11,11 @@ Current version: `v0.4.2-v2-engineering-foundation-truth.0`.
 
 Chinese documentation: [README.md](README.md)
 
+> Current truth-source version: `0.4.2-v2-engineering-foundation-truth.0`.
+> Read first: `docs/PROJECT_TRUTH_SOURCE.md`, `docs/CURRENT_PROJECT_STATE.md`, `docs/V2_ENGINEERING_CLOSURE_STATUS.md`.
+> Full product-wide V2 and product-wide playable closure are not complete.
+> Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is incomplete.
+
 ## Who It's For
 
 - AI setting enthusiasts who want to organize characters, worlds, factions, locations, rules, relationships, and story material.
@@ -55,10 +60,10 @@ Default LLM settings:
 |---|---|
 | quick-setting | Usable thin loop |
 | character | Usable / Character V2 engineering slice |
-| world-rpg | Usable / Worldbook V2 incomplete |
+| world-rpg | Usable / Worldbook V2 engineering foundation complete; product closure incomplete |
 | tabletop | Experimental / Tabletop V2 service closure |
 | mystery-puzzle | Experimental / Detective V2 service closure |
-| strategy-sim | Minimal slice / Strategy V2 incomplete |
+| strategy-sim | Minimal slice / Strategy Sim V2 engineering foundation complete; product closure incomplete |
 | murder-mystery | Experimental / ScriptKill V2 service closure |
 | creation-forge | Producer tool (not a normal play entry) |
 

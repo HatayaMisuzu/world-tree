@@ -11,22 +11,23 @@
 - Added `npm run truth:check`.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
-﻿# World Tree · CHANGELOG
-## v0.4.2-v2-engineering-foundation-truth.0
+# World Tree · CHANGELOG
+## 0.4.2-v2-engineering-foundation-truth.0
 
-V2 Entry Closure — 四个 V2 入口已完成闭环：Tabletop V2、Detective V2、Character V2 长期系统、单人剧本杀 V2。
+### Truth-source alignment
 
-### Documentation Truth-Source Alignment
-
-- Aligned current documentation around `v0.4.2-v2-engineering-foundation-truth.0`.
-- Clarified that V2 Entry Closure is engineering/service closure, not Full V2 or product-wide playable closure.
-- Updated stale Pre-V2 play-mode wording in current-facing docs (PLAY_MODE_GUIDE, FEATURES, USER_QUICKSTART, README, etc.).
-- Recorded current gaps (Worldbook V2, Strategy V2, built-in examples, Browser QA) without defining future feature direction.
-- Updated mode statuses to reflect current implementation: usable / experimental / minimal slice / producer tool.
+- Unified current-facing docs around engineering foundation vs product closure terminology.
+- Recorded Strategy Sim V2 engineering foundation complete and product closure incomplete.
+- Recorded Worldbook V2 engineering foundation complete and product closure incomplete.
+- Preserved Tabletop/Detective/Character/ScriptKill as engineering/service closures, not full product/gameplay closures.
+- Added/updated truth-source files: PROJECT_TRUTH_SOURCE, CURRENT_PROJECT_STATE, V2_ENGINEERING_CLOSURE_STATUS, V2_ENTRY_COMPLETION_STATUS, STATUS_TERMINOLOGY, AGENT_STATUS_HANDOFF.
+- Added `npm run truth:check`.
+- Updated mode statuses to reflect current implementation.
+- No gameplay/product feature implementation in this truth-source sync.
 
 
 > 面向维护者、用户和 AI agent 的变更记录。
-> 当前能力以最新 Unreleased / V1 里程碑为准。
+> 当前版本以 PROJECT_TRUTH_SOURCE.md 和 CURRENT_PROJECT_STATE.md 为真相源。
 
 ## 0.4.0-pre-v2-closure.1 / Pre-V2 Blocker Repair
 

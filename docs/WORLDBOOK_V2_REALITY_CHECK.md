@@ -43,7 +43,7 @@ Worldbook V2 product closure is not complete. Missing product closure: product U
 - Context Compiler (slot budget, audience filtering, insertion order)
 - Visibility Guard (hiddenTruth/gm_only/system_only, no hidden leak)
 - Prompt Adapter (context pack → PromptBlocks, worldbook layer)
-- Module Adapters (module manifest + module-map integration)
+- Module Adapters (existing module output → Worldbook V2 entry/candidate mapping)
 - Usage Log (token budget tracking)
 - Runtime prepareWorldbookV2Injection
 

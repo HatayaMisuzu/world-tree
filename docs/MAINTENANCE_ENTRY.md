@@ -5,14 +5,20 @@
 
 ## 1. Mandatory Reading Order
 
-1. `AI-GUIDE.md`
+1. `docs/PROJECT_TRUTH_SOURCE.md`
 2. `docs/CURRENT_PROJECT_STATE.md`
-3. `docs/MAINTENANCE_ENTRY.md` (this file)
-4. `docs/PRE_V2_CLOSURE_GATES.md`
-5. `docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md`
-6. `docs/ASSET_STATUS_MATRIX.md`
-7. `docs/LEGACY_REDUNDANCY_AUDIT.md`
-8. `docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md`
+3. `docs/V2_ENGINEERING_CLOSURE_STATUS.md`
+4. `docs/V2_ENTRY_COMPLETION_STATUS.md`
+5. `AI-GUIDE.md`
+6. `docs/AI_AGENT_OPERATING_GUIDE.md`
+7. `docs/MAINTENANCE_ENTRY.md` (this file)
+8. `docs/WORLD_TREE_ASSET_FUNCTION_MECHANISM_INVENTORY.md`
+9. `docs/ASSET_STATUS_MATRIX.md`
+10. `docs/LEGACY_REDUNDANCY_AUDIT.md`
+11. `docs/LEGACY_COMPATIBILITY_AND_UPGRADE_PLAN.md`
+12. `docs/TECH_DEBT_INVENTORY.md`
+
+Pre-V2 Closure gates are historical unless referenced by current truth-source files.
 9. `docs/TECH_DEBT_INVENTORY.md`
 
 ## 2. Absolute Rule
