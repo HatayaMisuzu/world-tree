@@ -83,11 +83,12 @@ const SHARED_FILES = {
 };
 
 for (const [modeId, fileKey] of Object.entries(SHARED_FILES)) {
+  const expectedSchemaVersion = modeId === "strategy-sim" ? 2 : 1;
   test(`${modeId} files has ${fileKey}`, () => {
     const draft = createModeProjectDraft(modeId, { title: "test" });
     const files = createModeProjectFiles(draft);
     assert.ok(files[fileKey], `${fileKey} missing for ${modeId}`);
-    assert.equal(files[fileKey].schemaVersion, 1);
+    assert.equal(files[fileKey].schemaVersion, expectedSchemaVersion);
     assert.equal(files[fileKey].mode, modeId);
   });
 }
