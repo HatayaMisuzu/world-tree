@@ -240,8 +240,29 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     files["runtime/cache/tabletop/.gitkeep"] = "";
   }
   if (mode === "strategy-sim") {
-    files["shared/strategy.json"] = { schemaVersion: 1, mode: "strategy-sim", status: "minimal", simulationStyle: "narrative", turn: 0, factions: [], resources: {}, numericModel: { enabled: false, reason: "Numeric simulation deferred beyond P1." }, createdAt: now, updatedAt: now };
+    files["shared/strategy.json"] = {
+      schemaVersion: 2,
+      mode: "strategy-sim",
+      status: "minimal",
+      simulationStyle: "narrative",
+      turn: 0,
+      factions: [],
+      resources: {},
+      numericModel: {
+        enabled: false,
+        reason: "Legacy numeric simulation remains disabled until a sealed StrategySimSpec is provided."
+      },
+      strategyV2Runtime: {
+        enabled: false,
+        sealedSpecRequired: true,
+        reason: "Strategy Sim V2 runtime requires a sealed StrategySimSpec generated and confirmed before play."
+      },
+      strategySimSpec: null,
+      createdAt: now,
+      updatedAt: now
+    };
     files["runtime/strategy-sim-proposals.jsonl"] = "";
+    files["runtime/strategy-sim-turns.jsonl"] = "";
     files["runtime/cache/strategy-sim/.gitkeep"] = "";
   }
   if (mode === "murder-mystery") {
