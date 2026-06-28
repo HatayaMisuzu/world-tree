@@ -89,7 +89,9 @@ export function normalizeResourceDefinition(input = {}) {
     initial,
     safeRange: normalizeRange(input.safeRange, min, max),
     warningRange: normalizeRange(input.warningRange, min, max),
-    collapseRange: normalizeRange(input.collapseRange, min, max),
+    collapseRange: Array.isArray(input.collapseRange)
+      ? normalizeRange(input.collapseRange, min, max)
+      : [min, min],
     maxDeltaPerTurn: maxDelta,
     naturalDrift: toNumber(input.naturalDrift ?? input.decay, 0),
     recoveryActions: toArray(input.recoveryActions).map(String),

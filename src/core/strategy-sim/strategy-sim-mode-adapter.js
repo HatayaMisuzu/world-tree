@@ -15,15 +15,8 @@ function findStrategySimSpec(project = {}, options = {}) {
 
   if (!candidate) return null;
   if (isSealedStrategySimSpec(candidate)) return candidate;
-
-  // Runtime must not auto-complete or invent rules, but it may seal an already complete explicit spec
-  // passed by tests/tools. If validation fails, caller gets legacy fallback unless strictV2 is set.
-  try {
-    return sealStrategySimSpec(candidate, { sealedBy: "strategy-sim-mode-adapter" });
-  } catch {
-    if (options.strictV2) throw new Error("StrategySimSpec exists but is not valid/sealed");
-    return null;
-  }
+  if (options.strictV2) throw new Error("StrategySimSpec must be sealed before runtime. Use the alchemy platform to seal it before play.");
+  return null;
 }
 
 function findStrategyRunState(project = {}, options = {}, spec = null) {

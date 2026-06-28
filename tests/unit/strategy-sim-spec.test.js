@@ -56,3 +56,12 @@ test("sealStrategySimSpec creates immutable sealed spec", () => {
 test("assertSealedStrategySimSpec rejects unsealed spec", () => {
   assert.throws(() => assertSealedStrategySimSpec(normalizeStrategySimSpec(baseSpec())));
 });
+
+test("resource without collapseRange does not treat full range as collapse", () => {
+  const spec = normalizeStrategySimSpec({
+    specId: "x",
+    turnUnit: "turn",
+    resources: [{ id: "cash", initial: 50, min: 0, max: 100, visibility: "public" }]
+  });
+  assert.deepEqual(spec.resources[0].collapseRange, [0, 0]);
+});

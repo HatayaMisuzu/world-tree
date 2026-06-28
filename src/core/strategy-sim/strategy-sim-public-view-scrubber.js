@@ -63,7 +63,14 @@ export function scrubStrategyPublicView(spec, state, options = {}) {
     else omitted.push({ id, type: "variable", visibility: def.visibility || item.visibility || "secret" });
   }
 
-  const probabilityHints = (spec.probabilityRules || []).map((rule) => {
+  const probabilityHints = (spec.probabilityRules || [])
+    .filter((rule) => {
+      const visibility = normalizeVisibility(rule.visibility, "hidden");
+      if (visibility === "public" || visibility === "partial") return true;
+      if (visibility === "hidden") return rule.publicDisclosure?.canHint === true;
+      return false;
+    })
+    .map((rule) => {
     const visible = getPlayerVisibleProbability(rule, rule.visibility === "public" ? "exact" : rule.visibility);
     return {
       id: rule.id,
@@ -72,7 +79,7 @@ export function scrubStrategyPublicView(spec, state, options = {}) {
       display: visible.display,
       visible: visible.visible
     };
-  }).filter((item) => item.visibility !== "secret");
+  });
 
   return Object.freeze({
     schemaVersion: 1,

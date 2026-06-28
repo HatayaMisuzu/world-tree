@@ -68,3 +68,9 @@ test("mode adapter preserves legacy fallback without sealed spec", () => {
   assert.equal(result.status, "ready");
   assert.equal(result.packet.schemaVersion, 1);
 });
+
+test("mode adapter does not auto-seal unsealed spec", () => {
+  const unsealed = { mode: "strategy-sim", specId: "x", turnUnit: "turn" };
+  const result = runSoloStrategySimTurn({ strategySimSpec: unsealed }, { text: "x" });
+  assert.equal(result.packet.schemaVersion, 1);
+});
