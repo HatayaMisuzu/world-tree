@@ -5,7 +5,7 @@
 ## What This Is
 
 World Tree is a local-first browser console for AI-assisted world, character, workflow, and mode exploration.
-Current status: **v0.4.1-v2-entry-closure.0**. Full V2 is not complete. Several entries have engineering/service closure, while product-wide playable closure is still incomplete.
+Current status: **v0.4.2-v2-engineering-foundation-truth.0**. Full V2 is not complete. Several entries have engineering/service closure, while product-wide playable closure is still incomplete.
 
 ## Install
 
@@ -38,10 +38,10 @@ Then open: `http://localhost:3000`
 |---|---|
 | quick-setting | Rapid world concept testing (thin loop) |
 | character | Chat with characters; Character V2 long-term slice available |
-| world-rpg | Free-form world exploration; full Worldbook V2 incomplete |
+| world-rpg | Free-form world exploration; Worldbook V2 engineering foundation complete, product closure incomplete |
 | tabletop | Tabletop narrative with dice/clocks (experimental slice; service closure complete) |
 | mystery-puzzle | Hidden-truth mystery (experimental slice; Detective V2 service closure complete) |
-| strategy-sim | Strategy prototyping (minimal slice; Strategy V2 not complete) |
+| strategy-sim | Strategy prototyping (engineering foundation complete; product closure incomplete) |
 | murder-mystery | Murder mystery (experimental slice; ScriptKill V2 service closure complete) |
 | creation-forge | Material ingestion & review (producer tool, not a normal play entry) |
 

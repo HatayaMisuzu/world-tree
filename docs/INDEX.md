@@ -1,3 +1,18 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+## Current truth-source documents
+
+| Document | Role |
+|---|---|
+| [PROJECT_TRUTH_SOURCE.md](PROJECT_TRUTH_SOURCE.md) | Current truth-source index |
+| [CURRENT_PROJECT_STATE.md](CURRENT_PROJECT_STATE.md) | Current project state |
+| [V2_ENGINEERING_CLOSURE_STATUS.md](V2_ENGINEERING_CLOSURE_STATUS.md) | Engineering foundation/service closure status |
+| [V2_ENTRY_COMPLETION_STATUS.md](V2_ENTRY_COMPLETION_STATUS.md) | Entry-specific closure status |
+| [STATUS_TERMINOLOGY.md](STATUS_TERMINOLOGY.md) | Required status vocabulary |
+| [AGENT_STATUS_HANDOFF.md](AGENT_STATUS_HANDOFF.md) | Agent handoff summary |
+
+Current status: Full V2 is not complete. Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is not complete.
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 # World Tree 文档索引
 
 > 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt/LLM Routing Alignment COMPLETE · UX Entry Coherence COMPLETE · Feature Alias Registry COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL · Universal Mode V2-ready Foundation (Stage 4) COMPLETE-PARTIAL · Documentation Truth-Source Alignment COMPLETE
@@ -12,7 +27,7 @@
 
 ## Current Trusted Baseline
 
-- **Trusted tag**: `v0.4.1-v2-entry-closure.0`
+- **Trusted tag**: `v0.4.2-v2-engineering-foundation-truth.0`
 - **Current branch**: `main`
 - **Latest audited commit**: `44b53c8` plus validated UX alias repair patch in current HEAD
 - **Remote CI**: `UNKNOWN`

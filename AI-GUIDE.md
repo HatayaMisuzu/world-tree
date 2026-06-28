@@ -1,7 +1,19 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+## Current truth-source read order
+
+1. `docs/PROJECT_TRUTH_SOURCE.md`
+2. `docs/CURRENT_PROJECT_STATE.md`
+3. `docs/V2_ENGINEERING_CLOSURE_STATUS.md`
+4. `docs/V2_ENTRY_COMPLETION_STATUS.md`
+5. `docs/PLAY_MODE_GUIDE.md`
+
+Do not infer product closure from engineering tests. Strategy Sim V2 and Worldbook V2 are engineering foundation complete, not product closure complete.
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: v0.4.1-v2-entry-closure.0 — V2 Entry Closure maintenance
+> 最后更新: v0.4.2-v2-engineering-foundation-truth.0 — V2 Entry Closure maintenance
 > **先读 `docs/CURRENT_PROJECT_STATE.md` + `docs/V2_ENTRY_COMPLETION_STATUS.md`** 获取当前真相源。
 > V2 Entry Closure maintenance rules：先读 `docs/MAINTENANCE_ENTRY.md` 和 `docs/PRE_V2_CLOSURE_GATES.md`。Asset Preservation & Integration Gate 是强制门槛。
 

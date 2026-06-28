@@ -1,11 +1,24 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+## 0.4.2-v2-engineering-foundation-truth.0
+
+### Truth-source alignment
+
+- Unified current-facing docs around engineering foundation vs product closure terminology.
+- Recorded Strategy Sim V2 engineering foundation complete and product closure incomplete.
+- Recorded Worldbook V2 engineering foundation complete and product closure incomplete.
+- Preserved Tabletop/Detective/Character/ScriptKill as engineering/service closures, not full product/gameplay closures.
+- Added `docs/PROJECT_TRUTH_SOURCE.md`, `docs/V2_ENGINEERING_CLOSURE_STATUS.md`, `docs/STATUS_TERMINOLOGY.md`, and `docs/AGENT_STATUS_HANDOFF.md`.
+- Added `npm run truth:check`.
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 ﻿# World Tree · CHANGELOG
-## v0.4.1-v2-entry-closure.0
+## v0.4.2-v2-engineering-foundation-truth.0
 
 V2 Entry Closure — 四个 V2 入口已完成闭环：Tabletop V2、Detective V2、Character V2 长期系统、单人剧本杀 V2。
 
 ### Documentation Truth-Source Alignment
 
-- Aligned current documentation around `v0.4.1-v2-entry-closure.0`.
+- Aligned current documentation around `v0.4.2-v2-engineering-foundation-truth.0`.
 - Clarified that V2 Entry Closure is engineering/service closure, not Full V2 or product-wide playable closure.
 - Updated stale Pre-V2 play-mode wording in current-facing docs (PLAY_MODE_GUIDE, FEATURES, USER_QUICKSTART, README, etc.).
 - Recorded current gaps (Worldbook V2, Strategy V2, built-in examples, Browser QA) without defining future feature direction.

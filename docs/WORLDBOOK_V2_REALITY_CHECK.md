@@ -1,3 +1,13 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+## Current status summary
+
+Worldbook V2 engineering foundation is complete.
+
+Completed engineering foundation: entry schema, candidate ledger, canon store, trigger engine, context compiler, visibility guard, prompt adapter, prompt-builder hook, usage/activation log, module adapters, and runtime injection helper.
+
+Worldbook V2 product closure is not complete. Missing product closure: product UI editor, V2 server API, persistent V2 worldbook runtime service, complete review-facts/growth-tree V2 unification, product-grade import/export, and browser-proven first-run flow.
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 # Worldbook V2 Reality Check
 
 状态：EXECUTED · Hermes 执行完成  

@@ -132,7 +132,7 @@ for (const pattern of stalePatterns) {
 }
 
 // Strong checks for CURRENT_PROJECT_STATE and INDEX — no hash-specific checks
-check("CURRENT_PROJECT_STATE: Trusted Baseline is v0.4.1-v2-entry-closure.0", currentState.includes("v0.4.1-v2-entry-closure.0"));
+check("CURRENT_PROJECT_STATE: Trusted Baseline is v0.4.2-v2-engineering-foundation-truth.0", currentState.includes("v0.4.2-v2-engineering-foundation-truth.0"));
 check("CURRENT_PROJECT_STATE: no stale Main head field", !currentState.includes("Main head"));
 check("CURRENT_PROJECT_STATE: has Current branch", currentState.includes("Current branch"));
 check("CURRENT_PROJECT_STATE: has Latest audited commit", currentState.includes("Latest audited commit"));
@@ -140,7 +140,7 @@ check("CURRENT_PROJECT_STATE: has Remote CI", currentState.includes("Remote CI")
 check("CURRENT_PROJECT_STATE: Latest audited commit looks like a hash", /Latest audited commit.*[0-9a-f]{7,40}/i.test(currentState));
 check("CURRENT_PROJECT_STATE: Remote CI is UNKNOWN", /Remote CI.*UNKNOWN/i.test(currentState));
 check("CURRENT_PROJECT_STATE: Status is V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI", currentState.includes("V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI"));
-check("docs/INDEX: Trusted Baseline is v0.4.1-v2-entry-closure.0", docsIndex.includes("v0.4.1-v2-entry-closure.0"));
+check("docs/INDEX: Trusted Baseline is v0.4.2-v2-engineering-foundation-truth.0", docsIndex.includes("v0.4.2-v2-engineering-foundation-truth.0"));
 check("docs/INDEX: no stale Main head field", !docsIndex.includes("Main head"));
 check("docs/INDEX: has Current branch", docsIndex.includes("Current branch"));
 check("docs/INDEX: has Latest audited commit", docsIndex.includes("Latest audited commit"));

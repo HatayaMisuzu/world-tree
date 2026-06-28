@@ -1,3 +1,19 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+## Current truth-source alignment
+
+Version: `0.4.2-v2-engineering-foundation-truth.0`
+
+Current-facing docs must distinguish engineering foundation/service closure from product closure.
+
+Required current truth source files:
+
+- `docs/PROJECT_TRUTH_SOURCE.md`
+- `docs/CURRENT_PROJECT_STATE.md`
+- `docs/V2_ENGINEERING_CLOSURE_STATUS.md`
+- `docs/V2_ENTRY_COMPLETION_STATUS.md`
+- `docs/STATUS_TERMINOLOGY.md`
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 # 文档状态表
 
 ## 当前真相源

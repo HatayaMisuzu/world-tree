@@ -1,3 +1,13 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+## Current status summary
+
+Strategy Sim V2 engineering foundation is complete.
+
+Completed engineering foundation: sealed StrategySimSpec, StrategyRunState, seeded RNG + roll record, numeric safety, mixed turn pipeline, public view scrubber, report context, V2 mode adapter path, legacy fallback, and tests.
+
+Strategy Sim V2 product closure is not complete. Missing product closure: product UI, start/turn/save/export service API, persistent V2 run service, Creation Forge spec generation/confirmation/sealing product flow, archetypes, quick-start templates, and complete strategy gameplay.
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 # Strategy Sim V2 Reality Check
 
 状态：待 Hermes 执行后补充真实结果  

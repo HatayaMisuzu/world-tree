@@ -1,6 +1,18 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+> **Current truth-source version:** `0.4.2-v2-engineering-foundation-truth.0`
+>
+> Read first: `docs/PROJECT_TRUTH_SOURCE.md`, `docs/CURRENT_PROJECT_STATE.md`, `docs/V2_ENGINEERING_CLOSURE_STATUS.md`.
+>
+> Current distinction: selected V2 service closures and engineering foundations exist, but Full product-wide V2 and product-wide playable closure are not complete.
+>
+> Strategy Sim V2: engineering foundation complete / product closure incomplete.
+>
+> Worldbook V2: engineering foundation complete / product closure incomplete.
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 # World Tree
 
-> **当前版本：v0.4.1-v2-entry-closure.0 — V2 Entry Closure maintenance** — V2 Entry Closure (sealed)。
+> **当前版本：v0.4.2-v2-engineering-foundation-truth.0 — V2 Entry Closure maintenance** — V2 Entry Closure (sealed)。
 > 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md)
 
 World Tree 让用户进入角色、世界、案件、局势和故事现场，进行持续的互动、探索、推理、扮演和体验。它也提供创作能力，但创作不是终点：创作角色，是为了互动；创作世界书，是为了探索；创作案件，是为了推理；创作项目包，是为了让体验能保存、继续和扩展。
@@ -106,10 +118,10 @@ http://127.0.0.1:3000
 | --- | --- | --- |
 | 快速设定 | Usable thin loop | 把一句灵感、一段设定或一个世界观快速变成可继续体验的项目草稿 |
 | 人物卡 | Usable / V2 engineering slice | 创建并体验角色；部分 Character V2 长期候选机制已接入 |
-| 世界书大世界 | Usable / Worldbook V2 incomplete | 进入世界，基于世界书进行探索；完整 Worldbook V2 尚未完成 |
+| 世界书大世界 | Usable / Worldbook V2 engineering foundation complete / product closure incomplete | 进入世界，基于世界书进行探索；Worldbook V2 工程底座已完成，产品闭环尚未完成 |
 | 桌面叙事 | Experimental / Tabletop V2 service closure | 有 Tabletop V2 服务闭环和轻量跑团切片；不是完整 DND |
 | 解谜调查 | Experimental / Detective V2 service closure | 有线索、假说、隐藏真相边界和 Detective V2 服务能力；不是完整推理引擎 |
-| 策略模拟 | Minimal slice / Strategy V2 incomplete | 有资源与决策薄切片；完整 Strategy V2 尚未完成，不是完整 4X |
+| 策略模拟 | Minimal slice / Strategy Sim V2 engineering foundation complete / product closure incomplete | 有资源与决策薄切片；Strategy Sim V2 工程底座已完成，产品闭环尚未完成，不是完整 4X |
 | 单人剧本杀 | Experimental / ScriptKill V2 service closure | 有 Single Player ScriptKill V2 服务闭环；当前仍需要用户提供或后续注册内容包 |
 | 炼金台 | Producer tool | 把灵感整理成候选内容和审核项；不是普通游玩入口 |
 

@@ -1,90 +1,95 @@
-# World Tree V2 功能清单
+# World Tree Feature Status
 
-## 用户功能
+Version: `0.4.2-v2-engineering-foundation-truth.0`  
+Status: CURRENT  
+Audience: users, maintainers, AI agents.
 
-| 功能 | 当前状态 |
-| --- | --- |
-| 快速创建设定项目 | usable thin loop |
-| 人物卡创建/编辑/互动 | usable; Character V2 long-term slice exists |
-| 世界书大世界探索 | usable; full Worldbook V2 incomplete |
-| 桌面叙事（单人跑团） | experimental slice; Tabletop V2 service closure complete |
-| 解谜调查 | experimental slice; Detective V2 service closure complete |
-| 策略模拟 | minimal strategy slice; Strategy V2 incomplete |
-| 单人剧本杀 | experimental slice; Single Player ScriptKill V2 service closure complete |
-| 项目导出/导入 | active where implemented |
+This file describes current implemented capabilities and boundaries. It does not define future scope.
 
-## 创作功能
+## Canonical product entries
 
-| 功能 | 当前状态 |
-| --- | --- |
-| 炼金台（灵感→蓝图→资产→项目） | producer tool / candidate-only workflow |
-| 人物卡解析（plain/V1/V2/CHARACTER.md） | active |
-| 世界书条目管理 | active |
-| 提案审核 | active |
+World Tree has 8 canonical top-level product entries.
 
-## 模式入口
+| Entry | Current user status | Current engineering status | Product boundary |
+|---|---|---|---|
+| quick-setting | usable thin loop | setting intake / project draft | no full auto-complete world generation guarantee |
+| character | usable loop | Character V2 long-term engineering/service closure complete | full advanced editor not complete |
+| world-rpg / Worldbook V2 | usable worldbook exploration loop | Worldbook V2 engineering foundation complete | product editor/runtime closure not complete |
+| tabletop / Tabletop V2 | experimental playable slice | engineering/service closure complete | not full DND |
+| mystery-puzzle / Detective V2 | experimental playable slice | engineering/service closure complete | not full reasoning engine |
+| strategy-sim / Strategy Sim V2 | minimal strategy slice | engineering foundation complete | product closure not complete; not full 4X |
+| murder-mystery / ScriptKill V2 | experimental playable slice | engineering/service closure complete | bundled content/product closure not complete |
+| creation-forge | producer tool | alchemy/material/review workflow active | not a normal play entry |
 
-| 入口 | 当前能力边界 |
-| --- | --- |
-| quick-setting | 粘贴设定，快速创建草稿 |
-| character | 导入/编辑/互动/导出（不做多角色群聊、长期记忆） |
-| world-rpg | 世界书探索、上下文激活、提案（不做传统 RPG 系统） |
-| tabletop | 轻量检定、时钟、叙事（不做完整 DND） |
-| mystery-puzzle | 线索、假说、答案锁（不做复杂推理判定） |
-| strategy-sim | 阵营、资源、回合、外交（不做完整 4X；Strategy V2 incomplete） |
-| murder-mystery | 案件、嫌疑人、真相锁（不做多人派对） |
-| creation-forge | 灵感→蓝图→资产→项目（producer tool，不是普通游玩入口） |
+## Engineering foundations completed after V2 Entry Closure
 
-## 存档/导出
+### Worldbook V2
 
-| 功能 | 状态 |
-| --- | --- |
-| 项目文件夹结构 | active |
-| .worldtree 导出/导入 | active |
-| 提案日志 | active |
+Completed:
 
-## 开发/测试
+- WorldbookEntry schema
+- Candidate ledger
+- Canon store
+- Trigger engine
+- Context compiler
+- Visibility guard
+- Prompt adapter
+- Prompt Builder hook
+- Usage/activation log
+- Module adapters
+- Runtime injection helper
 
-| 功能 | 状态 |
-| --- | --- |
-| 单元测试覆盖 | active |
-| 集成测试覆盖 | active |
-| preflight 全量检查 | active |
-| 接口审计 | active |
-| 文档检查 | active |
+Not completed:
 
-## P0-P2 可用性状态
+- complete product UI editor
+- V2 server API
+- persistent V2 worldbook runtime service
+- full review/growth-tree V2 unification
+- product-grade import/export
+- browser-proven first-run flow
 
-| 能力 | 用户入口 | 实际边界 |
-| --- | --- | --- |
-| Living World / Stability sidecar | 每个真实 LLM turn、mode-runner debug | 预算化提示；不直接写 canon |
-| Branch runtime | 世界内核面板与 API | 单活动分支；无 merge |
-| Telemetry | 面板刷新与 latest/refresh API | 只输出低/中/高等枚举，不生成剧情 |
-| Auto-light | 面板单次预演 | 最多一个 beat；遇选择/隐藏信息/critical 即停止 |
-| Critical proposal / stop-loss | 面板二次确认、逆操作 | 逆操作仍是 pending proposal |
-| Processing candidates | 面板素材导入、候选投递 | 仅 Growth Tree/proposal queue，不直接写世界书 |
+### Strategy Sim V2
 
-## 工作流能力 (Current)
+Completed:
 
-| 工作流 | 用户入口 | 说明 |
-|--------|---------|------|
-| Creation Wizard | creation-forge → 创建世界 | M1 六阶段向导；初始化写入需用户确认 |
-| Alchemy Digest | creation-forge → 导入素材 | M2/M3 候选提取；不直接写 shared |
-| Play Turn | world-rpg/tabletop 对话 | LLM adapter + post-check；default candidate-only |
-| Character Chat | character 模式 | M4/M5 角色一致性与认知边界 |
-| Mystery Investigate | mystery/murder-mystery | M5/M7/M8 真相锁保护 |
-| Strategy Turn | strategy-sim | M6/M7/M8 阵营图与规则审查 |
-| Workflow Debug | 控制台 Workflow 面板 | /api/workflow/status；safe redacted summary |
+- sealed StrategySimSpec
+- StrategyRunState
+- seeded RNG and roll record
+- numeric safety
+- mixed turn pipeline
+- public view scrubber
+- report context
+- V2 mode adapter path
+- legacy fallback
 
-## Real Play Productization (Current)
+Not completed:
 
-| 能力 | 当前边界 |
-| --- | --- |
-| Real-play scenario runner | 6 个离线 scenarios；支持单场景与 JSON 输出 |
-| Workflow visible mount | chat surface 显示 layer、services、types、last run；desktop/mobile 已验证 |
-| LLM 等待阶段 | Director / direction / writer / Guardian 阶段提示；不是 SSE/streaming |
-| Tabletop `/roll` | `1d20`、`1d20+3`、`2d6`、`4d6-1`；结果进入 runtime/prompt，不写 canon |
-| Mystery board | 玩家已知线索与假设；hidden truth 深度过滤 |
-| Strategy resources | 粮草/军力/民心/外交与 4 个有界决策；runtime/candidate only |
-| Narrative review | accept/delay/reject 复用现有 proposal gate |
-| Recap / goals / rhythm | deterministic fallback recap、公开目标、辅助 rhythmTag；不是长期记忆或完整 quest engine |
+- complete product UI
+- V2 start/turn/save/export API
+- persistent run service
+- Creation Forge spec generation/confirmation/seal product flow
+- archetype library
+- quick-start templates
+- complete strategy gameplay
+
+## Shared project features
+
+| Capability | Status | Boundary |
+|---|---|---|
+| Proposal/review gate | active | major canon changes require approval |
+| Hidden truth protection | active | must not leak hiddenTruth/answerLock/truthLock/private/system_only |
+| Prompt orchestration | active | infrastructure, not product closure by itself |
+| Workflow layer | active | candidate-first; no direct canon writes unless approved |
+| Import/export | active where implemented | not universal product-grade compatibility for every V2 foundation |
+| Documentation truth source | active | current files override archive/historical reports |
+
+## Development / verification
+
+| Command | Purpose |
+|---|---|
+| `npm run truth:check` | current truth-source wording/version checks |
+| `npm run docs:check` | documentation checks |
+| `npm run asset:check` | asset inventory validation |
+| `npm run test:worldbook-v2` | Worldbook V2 engineering foundation tests |
+| `npm run test:strategy-sim-v2` | Strategy Sim V2 engineering foundation tests |
+| `npm run test:world-tree-v2-entries` | V2 entry closure tests |

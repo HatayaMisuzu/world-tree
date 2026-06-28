@@ -1,3 +1,17 @@
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
+## Current interpretation
+
+This inventory is a preservation ledger and evidence index. It is not by itself proof that a capability is implemented.
+
+Current status must be read from:
+
+1. `docs/PROJECT_TRUTH_SOURCE.md`
+2. `docs/CURRENT_PROJECT_STATE.md`
+3. `docs/V2_ENGINEERING_CLOSURE_STATUS.md`
+
+Worldbook V2 and Strategy Sim V2 engineering foundations are complete; their product closures are not complete.
+<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
+
 # World Tree Asset / Function / Mechanism Inventory
 
 > **文件用途**：这是 World Tree 的"资产、功能、机制防遗失清单"。  

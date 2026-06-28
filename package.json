@@ -1,6 +1,6 @@
 {
   "name": "world-tree",
-  "version": "0.4.1-v2-entry-closure.0",
+  "version": "0.4.2-v2-engineering-foundation-truth.0",
   "description": "World Tree — 本地优先的 AI 叙事引擎 Web 控制台",
   "type": "module",
   "main": "server.js",
@@ -88,7 +88,8 @@
     "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:feature-alias && npm run test:llm-routing && npm run ux:check && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run test:world-tree-v2-entries && npm run test:single-player-scriptkill-v2 && npm run test:single-player-scriptkill-v2-audit && npm run test:project-complete-audit && npm run interface-audit",
     "test:project-complete-audit": "node scripts/audit-world-tree-project-complete.mjs",
     "test:strategy-sim-v2": "node --test tests/unit/strategy-sim-spec.test.js tests/unit/strategy-sim-run-state.test.js tests/unit/strategy-sim-public-view-scrubber.test.js tests/unit/strategy-sim-turn-engine.test.js tests/unit/strategy-sim-probability-roll-record.test.js tests/unit/strategy-numeric-system.test.js tests/unit/strategy-probability-system.test.js tests/unit/strategy-v2-ready.test.js",
-    "test:worldbook-v2": "node --test tests/unit/worldbook-v2-*.test.js"
+    "test:worldbook-v2": "node --test tests/unit/worldbook-v2-*.test.js",
+    "truth:check": "node scripts/check-truth-source-sync.mjs"
   },
   "keywords": [
     "world-tree",
