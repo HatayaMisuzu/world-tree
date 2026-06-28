@@ -117,7 +117,8 @@ Key entry points for the current baseline:
 |------|------|
 | [PRE_V2_CLOSURE_BASELINE.md](archive/stage-reports/PRE_V2_CLOSURE_BASELINE.md) | Pre-V2 Closure 基线快照 |
 | [TECH_DEBT_INVENTORY.md](TECH_DEBT_INVENTORY.md) | 技术债清单（分类+证据） |
-| [DOCS_INVENTORY.md](DOCS_INVENTORY.md) | 文档真实结构盘点 |
+| [DOCS_INVENTORY.md](archive/stage-reports/DOCS_INVENTORY_STAGE_5A.md) | 文档盘点（Stage 5A 快照，已归档） |
+| [CURRENT_DOCUMENTATION_INVENTORY.md](CURRENT_DOCUMENTATION_INVENTORY.md) | 当前文档生命周期盘点 |
 | [TESTS_INVENTORY.md](TESTS_INVENTORY.md) | 测试体系真实盘点 |
 | [ARCHITECTURE_REALITY_CHECK.md](ARCHITECTURE_REALITY_CHECK.md) | 当前真实架构地图 |
 | [STAGE_5B_SAFE_CLEANUP_REPORT.md](archive/stage-reports/STAGE_5B_SAFE_CLEANUP_REPORT.md) | Stage 5B 安全文档清理与引用证明 |
