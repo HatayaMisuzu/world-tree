@@ -83,6 +83,8 @@ http://127.0.0.1:3000
 6. 保存项目，下次继续
 ```
 
+当前版本更接近 V2 entry closure / productization baseline：部分入口已有工程或服务闭环，但全面产品闭环尚未完成。没有内置内容包时，部分入口需要用户自行提供素材。
+
 如果你不知道从哪里开始，可以这样选：
 
 | 你想做什么 | 推荐入口 |
@@ -100,16 +102,16 @@ http://127.0.0.1:3000
 
 ## 功能入口
 
-| 入口 | 你能体验到什么 |
-| --- | --- |
-| 快速设定 | 把一句灵感、一段设定或一个世界观快速变成可继续体验的项目 |
-| 人物卡 | 创建并体验角色的性格、说话方式、关系变化和互动边界 |
-| 世界书大世界 | 进入一个世界，探索地点、事件、人物关系和世界变化 |
-| 桌面叙事 | 像单人跑团一样行动、判定、遭遇事件、推进剧情 |
-| 解谜调查 | 调查场景、收集线索、提出假说、逐步接近真相 |
-| 策略模拟 | 管理阵营、资源和局势，看选择如何影响世界 |
-| 单人剧本杀 | 面对案件、嫌疑人和证词，推理真相并复盘 |
-| 炼金台 | 把灵感生成角色、世界书、案件、模式项目或可复用资产 |
+| 入口 | 当前状态 | 你能体验到什么 |
+| --- | --- | --- |
+| 快速设定 | Usable thin loop | 把一句灵感、一段设定或一个世界观快速变成可继续体验的项目草稿 |
+| 人物卡 | Usable / V2 engineering slice | 创建并体验角色；部分 Character V2 长期候选机制已接入 |
+| 世界书大世界 | Usable / Worldbook V2 incomplete | 进入世界，基于世界书进行探索；完整 Worldbook V2 尚未完成 |
+| 桌面叙事 | Experimental / Tabletop V2 service closure | 有 Tabletop V2 服务闭环和轻量跑团切片；不是完整 DND |
+| 解谜调查 | Experimental / Detective V2 service closure | 有线索、假说、隐藏真相边界和 Detective V2 服务能力；不是完整推理引擎 |
+| 策略模拟 | Minimal slice / Strategy V2 incomplete | 有资源与决策薄切片；完整 Strategy V2 尚未完成，不是完整 4X |
+| 单人剧本杀 | Experimental / ScriptKill V2 service closure | 有 Single Player ScriptKill V2 服务闭环；当前仍需要用户提供或后续注册内容包 |
+| 炼金台 | Producer tool | 把灵感整理成候选内容和审核项；不是普通游玩入口 |
 
 说明：
 

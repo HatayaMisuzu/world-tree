@@ -1,8 +1,12 @@
 # World Tree 文档索引
 
-> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt/LLM Routing Alignment COMPLETE · UX Entry Coherence COMPLETE · Feature Alias Registry COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL · Universal Mode V2-ready Foundation (Stage 4) COMPLETE-PARTIAL
+> 当前里程碑状态：P0-P2 Kernel COMPLETE · Prompt/LLM Routing Alignment COMPLETE · UX Entry Coherence COMPLETE · Feature Alias Registry COMPLETE · P3 M1-M11 COMPLETE · Asset Maturation COMPLETE · Workflow Integration W0-W4 COMPLETE · Service Deepening + HTTP Wiring COMPLETE · Real Play Productization 0-3 COMPLETE-PARTIAL · Universal Mode V2-ready Foundation (Stage 4) COMPLETE-PARTIAL · Documentation Truth-Source Alignment COMPLETE
 >
 > **真相源优先级**：CURRENT_PROJECT_STATE > docs/INDEX > 活跃架构文档 > 历史报告 > archive
+>
+> Full product-wide V2 is not complete.
+> V2 entry closure is engineering/service closure for selected entries.
+> Product-wide playable closure is not complete.
 
 ---
 
@@ -118,7 +122,7 @@ Key entry points for the current baseline:
 | [STAGE_6_ARCHITECTURE_DIAGNOSTICS_CLOSURE_REPORT.md](archive/stage-reports/STAGE_6_ARCHITECTURE_DIAGNOSTICS_CLOSURE_REPORT.md) | Stage 6 架构诊断收口报告 |
 | [USER_QUICKSTART.md](USER_QUICKSTART.md) | 用户快速开始指南 |
 | [LOCAL_LLM_SETUP.md](LOCAL_LLM_SETUP.md) | 本地/远程 LLM 设置指南 |
-| [PLAY_MODE_GUIDE.md](PLAY_MODE_GUIDE.md) | 游戏模式使用说明 |
+| [PLAY_MODE_GUIDE.md](PLAY_MODE_GUIDE.md) | 当前模式状态与限制 |
 | [NO_GATEWAY_RUNTIME_QA_REPORT.md](NO_GATEWAY_RUNTIME_QA_REPORT.md) | 无网关 Runtime QA 报告 |
 | [PRE_V2_CLOSURE_REPORT.md](archive/stage-reports/PRE_V2_CLOSURE_REPORT.md) | Pre-V2 Closure 最终报告 |
 | [RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md](archive/stage-reports/RELEASE_NOTES_v0.4.0_PRE_V2_CLOSURE.md) | v0.4.0 Pre-V2 Closure Release Notes |

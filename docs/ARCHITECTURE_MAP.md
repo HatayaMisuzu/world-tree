@@ -1,13 +1,13 @@
-# Architecture Map — World Tree Pre-V2 Closure Baseline
+# Architecture Map — World Tree Current Baseline
 
-> Scope: current implemented architecture after Stage 5 Closure and Stage 6 server runtime boundary extraction.  
+> Scope: current implemented architecture.  
 > This document describes the current baseline. It must not describe future V2 plans as implemented systems.
 
 ## Status
 
 World Tree is currently a local-first Node HTTP application with a browser console UI.
 
-This is not full V2. It is the Pre-V2 Closure baseline.
+This is not full V2. It is the v0.4.1 V2 Entry Closure baseline.
 
 ## Top-Level Runtime
 

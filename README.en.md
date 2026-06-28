@@ -7,7 +7,7 @@ World Tree is a local-first AI narrative engine with a browser-based web console
 
 Current version: `v0.4.1-v2-entry-closure.0`.
 
-`v0.4.1-v2-entry-closure.0` adds the Real Play Productization 0-3 thin slices on top of the local-first workbench foundation: offline smoke scenarios, visible workflow status, bounded mode play tools, and runtime/candidate-only narrative aids. Plugin ecosystem work, community marketplace features, and full V2 systems remain deferred.
+**Full V2 is not complete.** V2 Entry Closure is engineering/service closure for selected entries, not product-wide playable closure. Several entries are experimental slices or service-level closures.
 
 Chinese documentation: [README.md](README.md)
 
@@ -48,6 +48,19 @@ Default LLM settings:
 - Base URL: `https://api.deepseek.com/v1`
 - Model: `deepseek-v4-flash`
 - Any OpenAI-compatible endpoint can be used, including local Ollama at `http://localhost:11434/v1`.
+
+## Entry Status
+
+| Entry | Current Status |
+|---|---|
+| quick-setting | Usable thin loop |
+| character | Usable / Character V2 engineering slice |
+| world-rpg | Usable / Worldbook V2 incomplete |
+| tabletop | Experimental / Tabletop V2 service closure |
+| mystery-puzzle | Experimental / Detective V2 service closure |
+| strategy-sim | Minimal slice / Strategy V2 incomplete |
+| murder-mystery | Experimental / ScriptKill V2 service closure |
+| creation-forge | Producer tool (not a normal play entry) |
 
 ## What It Does
 

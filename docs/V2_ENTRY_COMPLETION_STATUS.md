@@ -1,6 +1,8 @@
 # World Tree V2 Entry Completion Status
 
 > 当前 V2 入口闭环真相表。本文只描述现有功能入口深化，不代表新增顶层产品入口。
+> **This document records engineering/service entry closure. It does not claim Full V2, complete mode gameplay engines, or product-wide playable closure.**
+> Product-facing bundled content and first-run user paths are outside this status unless separately documented.
 
 审计基准：`main@9b35bbfd009c1e9acd90a7854cf877ead7d89450`  
 状态：`V2_ENTRY_CLOSURE_SOURCE_VERIFIED`  

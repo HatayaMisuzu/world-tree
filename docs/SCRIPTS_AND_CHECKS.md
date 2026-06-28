@@ -64,3 +64,4 @@ All warnings are non-blocking (exit code 0).
 - `npm run test:world-tree-v2-entries`
 - `npm run test:single-player-scriptkill-v2`
 - `npm run test:single-player-scriptkill-v2-audit`
+- `npm run test:project-complete-audit`

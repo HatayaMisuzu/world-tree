@@ -3,6 +3,14 @@
 
 V2 Entry Closure — 四个 V2 入口已完成闭环：Tabletop V2、Detective V2、Character V2 长期系统、单人剧本杀 V2。
 
+### Documentation Truth-Source Alignment
+
+- Aligned current documentation around `v0.4.1-v2-entry-closure.0`.
+- Clarified that V2 Entry Closure is engineering/service closure, not Full V2 or product-wide playable closure.
+- Updated stale Pre-V2 play-mode wording in current-facing docs (PLAY_MODE_GUIDE, FEATURES, USER_QUICKSTART, README, etc.).
+- Recorded current gaps (Worldbook V2, Strategy V2, built-in examples, Browser QA) without defining future feature direction.
+- Updated mode statuses to reflect current implementation: usable / experimental / minimal slice / producer tool.
+
 
 > 面向维护者、用户和 AI agent 的变更记录。
 > 当前能力以最新 Unreleased / V1 里程碑为准。

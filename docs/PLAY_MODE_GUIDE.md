@@ -1,76 +1,69 @@
-# Play Mode Guide — World Tree Pre-V2 Closure Baseline
+# Play Mode Guide — World Tree Current Baseline
 
-> This guide describes each mode's current state in the v0.4.0 Pre-V2 Closure baseline.  
+> This guide describes each mode's current state in the `v0.4.1-v2-entry-closure.0` baseline.
 > Statuses reflect what is implemented and testable, not future V2 plans.
+> "Playable" here means the current repository exposes a user-facing path or thin slice. It does not mean the mode is a complete commercial game system.
 
 ## Mode Summary
 
-| Mode | Status | API Route | Entry |
+| Mode | Current User Status | Current Engineering Status | Current Limit |
 |---|---|---|---|
-| quick-setting | ACTIVE-PARTIAL | Kernel projects | Paste raw setting text |
-| character | ACTIVE-PARTIAL | `/api/characters` | Character card panel |
-| world-rpg | ACTIVE-PARTIAL | `/api/projects/{id}` | Kernel + worldbook |
-| tabletop | V2-READY-SOCKET | `/api/modules/create` | Module factory |
-| mystery-puzzle | V2-READY-SOCKET | Kernel project | Hidden truth protected |
-| strategy-sim | V2-READY-SOCKET | Kernel project | Numeric/probability substrate |
-| murder-mystery | V2-READY-SOCKET | Kernel project | Hidden truth protected |
-| creation-forge | V2-READY-SOCKET | `/api/alchemy/*` | Deferred producer |
+| quick-setting | Usable thin loop | quick setting intake / project draft exists | Does not auto-complete full world state |
+| character | Usable character loop | Character V2 long-term engineering slice exists | Full Character Capsule V2 is not complete |
+| world-rpg | Usable worldbook exploration loop | worldbook runtime matching/injection exists | Full Worldbook V2 is not complete |
+| tabletop | Experimental playable slice | Tabletop V2 service closure complete | Not full DND / ruleset engine |
+| mystery-puzzle | Experimental playable slice | Detective V2 service closure exists as related service entry | Not full mystery reasoning engine |
+| strategy-sim | Minimal strategy slice | Runtime resource/decision panel exists | Strategy V2 is not complete; not full 4X |
+| murder-mystery | Experimental playable slice | Single Player ScriptKill V2 service closure complete | Requires user-provided or future bundled script package |
+| creation-forge | Producer tool | alchemy/material/review workflow exists | Not a normal play entry |
 
-## quick-setting (ACTIVE-PARTIAL)
+## quick-setting (Usable thin loop)
 
 - **Entry:** Console quick-setting panel or `/api/projects` kernel routes.
 - **Suitable for:** Rapid world concept testing.
 - **Limits:** Thin slice; does not auto-generate full world state.
-- **V2-ready:** Normalizer in `src/core/quick-setting/`.
 
-## character (ACTIVE-PARTIAL)
+## character (Usable / V2 engineering slice)
 
 - **Entry:** Character card panel or `/api/characters`.
-- **Suitable for:** Loading and chatting with pre-made character cards.
-- **Limits:** Import/export limited; no auto-generation.
-- **V2-ready:** `src/core/character/`.
+- **Suitable for:** Creating and chatting with characters; Character V2 long-term candidate mechanisms available.
+- **Limits:** Full Character Capsule V2 is not complete.
 
-## world-rpg (ACTIVE-PARTIAL)
+## world-rpg (Usable / Worldbook V2 incomplete)
 
 - **Entry:** Kernel project with mode `world-rpg`.
 - **Suitable for:** Free-form world exploration with worldbook.
-- **Limits:** Worldbook editing is basic.
-- **V2-ready:** `src/core/worldbook/`, `modeSpecificFile: world_rpg.json`.
+- **Limits:** Full Worldbook V2 is not complete; exact future scope is not defined in this document.
 
-## tabletop (V2-READY-SOCKET)
+## tabletop (Experimental / Tabletop V2 service closure)
 
 - **Entry:** Module factory via `/api/modules/create`.
-- **Suitable for:** Future tabletop-style campaign management.
-- **Limits:** Socket only — not a playable tabletop game.
-- **V2-ready:** `src/core/tabletop/`.
+- **Suitable for:** Solo tabletop-style narrative with dice, clocks, scenes.
+- **Limits:** Not a full DND or ruleset engine; current implementation is a service-level closure with playable thin slice.
 
-## mystery-puzzle (V2-READY-SOCKET)
+## mystery-puzzle (Experimental / Detective V2 service closure)
 
 - **Entry:** Kernel project with mode `mystery-puzzle`.
-- **Suitable for:** Mystery scenario with hidden truth protection.
-- **Limits:** Minimal scenario; hidden truth visibility gated.
-- **V2-ready:** `src/core/mystery-puzzle/`, hidden truth boundary enforced.
+- **Suitable for:** Mystery scenario with clues, hypotheses, and hidden truth protection.
+- **Limits:** Not a full mystery reasoning engine; current implementation is a service-level closure with playable slice.
 
-## strategy-sim (V2-READY-SOCKET)
+## strategy-sim (Minimal slice / Strategy V2 incomplete)
 
 - **Entry:** Kernel project with mode `strategy-sim`.
-- **Suitable for:** Strategy simulation prototyping.
-- **Limits:** Numeric/probability substrate only; no full game.
-- **V2-ready:** `src/core/strategy-sim/`.
+- **Suitable for:** Resource/decision prototyping with numeric/probability substrate.
+- **Limits:** Strategy V2 is not complete; current implementation is a minimal strategy resource/decision slice, not full 4X. Exact future scope is not defined in this document.
 
-## murder-mystery (V2-READY-SOCKET)
+## murder-mystery (Experimental / ScriptKill V2 service closure)
 
 - **Entry:** Kernel project with mode `murder-mystery`.
-- **Suitable for:** Murder mystery scenario with hidden truth.
-- **Limits:** Hidden truth protected but scenario minimal.
-- **V2-ready:** `src/core/murder-mystery/`.
+- **Suitable for:** Solo script-kill with suspects, clues, and truth lock.
+- **Limits:** Requires user-provided or future bundled script package; Single Player ScriptKill V2 service closure complete but product-facing bundled content is outside this scope unless separately documented.
 
-## creation-forge (V2-READY-SOCKET)
+## creation-forge (Producer tool)
 
 - **Entry:** Alchemy routes `/api/alchemy/*`.
-- **Suitable for:** Material ingestion, preview, review.
-- **Limits:** Deferred producer; not a full creation engine.
-- **V2-ready:** `src/core/creation-forge/`.
+- **Suitable for:** Material ingestion, preview, review, and blueprint creation.
+- **Limits:** Producer tool, not a normal play entry; candidate-only workflow.
 
 ## Hidden Truth / Answer Lock Protection
 

@@ -1,4 +1,4 @@
-# Local LLM Setup — World Tree v0.4.0-pre-v2-closure.1
+# Local LLM Setup — World Tree v0.4.1 V2 Entry Closure Baseline
 
 > No real secrets are included in this document.
 
@@ -14,7 +14,7 @@ LLM settings are configured via:
 | Field | Example |
 |---|---|
 | Base URL | `http://127.0.0.1:11434/v1` (local Ollama) or `https://api.deepseek.com/v1` |
-| Model | `deepseek-v4-flash` or your model name |
+| Model | Use a real model name supported by your provider. The current example config may contain `deepseek-v4-flash`; verify it against your provider's `/models` response before relying on it. |
 | API Key | Saved via Settings; never committed |
 
 ## Local Provider Example

@@ -14,10 +14,18 @@
 | **Status** | **V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI** |
 | **Current patch overlay** | LLM_ROUTING_ALIGNMENT_COMPLETE + UX_ENTRY_COHERENCE_COMPLETE + FEATURE_ALIAS_REGISTRY_COMPLETE |
 | **Old tag** `v0.4.0-pre-v2-closure` | Audit-invalidated historical marker at `0ee1852` |
-| **Full V2** | Full product-wide V2 not complete; four V2 entry closures complete |
-| **Browser QA** | Not run for this UX alias patch; covered by command audits, not visual browser proof |
+| **Full V2** | **Not complete.** Full product-wide V2 is not complete. |
+| **V2 Entry Closure** | Engineering/service-level closure for four selected entries. It is not Full V2 and not product-wide playable closure. |
+| **Product-wide playable closure** | **Not complete.** |
+| **Browser QA** | Not proven for the current baseline unless separately recorded. |
 | **Preflight** | PASS (includes V2 entry gates + project-complete-audit) |
 | **userData isolation** | PASS (real userData unchanged before/after full suite) |
+
+## Closure Definitions
+
+- **V2 Entry Closure**: Engineering/service-level closure for selected entries. It includes API, service namespace, persistence, tests, safety boundary, and import/start/export or equivalent service paths where implemented. It is not Full V2.
+- **Full V2**: Not complete.
+- **Product-wide Playable Closure**: Not complete. It still requires current-state UX alignment, bundled or user-provided content paths, and browser/user-flow proof.
 
 ## Status Table
 
@@ -60,7 +68,7 @@
 
 - WORKFLOW_INTEGRATION_REPORT — 已被 Service Deepening 替代
 - v0.3.0 审查建议 — 进入 ROADMAP_CANDIDATES，不代表当前能力
-- v0.4.0-pre-v2-closure (tag at `0ee1852`) — audit-invalidated; superseded by `v0.4.1-v2-entry-closure.0` at `87472741c229afe2597a6229d98059b29d61913c`
+- v0.4.0-pre-v2-closure (tag at `0ee1852`) — audit-invalidated; superseded by `v0.4.1-v2-entry-closure.0`
 
 ## Pre-V2 Closure — Stages Completed
 
@@ -87,9 +95,9 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - `npm run check`: PASS
 - `npm run docs:check`: 24/24
 - `npm run asset:check`: 0 errors, 0 warnings
-- `npm run interface-audit`: 149 passes, 0 warnings
-- `npm run test:unit`: 416 pass
-- `npm run test:integration`: 119 pass
+- `npm run interface-audit`: PASS
+- `npm run test:unit`: PASS (glob coverage; actual count in command output)
+- `npm run test:integration`: PASS
 - `npm run preflight`: PASS (includes V2 entry gates + project-complete-audit)
 - userData isolation verified: real `userData/` files unchanged before/after full test suite
 
@@ -98,11 +106,14 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - Tabletop 不是完整 DND；Mystery 不是完整推理引擎；Strategy 不是完整 4X
 - Chapter recap 以 deterministic fallback 为基线，LLM summary 不是已验证能力
 - 目标追踪是轻量 runtime UI，不是完整 quest engine
-- 完整 Worldbook V2 / Character Capsule V2 仍未实现
+- **Worldbook V2 is not complete.** Full Worldbook V2 is not complete.
+- **Strategy Sim V2 is not complete.** Current strategy-sim is a minimal resource/decision slice.
+- **Built-in example packs are not complete / not registered.** `defaults/examples/manifest.json` is empty.
+- **Character Capsule V2**: Full advanced editor is not complete.
 - `server.js` still owns route dispatch (monolithic if-chain)
 - `world-tree-console.js` is a monolithic ES module
-- Browser QA was not performed (gateway unstable)
-- UX alias repair is command-audited; browser visual QA remains not automated in this baseline
+- Browser QA is not proven for the current baseline unless separately recorded.
+- Remote CI remains UNKNOWN unless a real workflow run is referenced.
 - No TypeScript migration; no automated browser testing
 
 ## Boundary
@@ -113,8 +124,8 @@ P0/P1 blockers found in audit were repaired on `hermes/pre-v2-closure-blocker-re
 - No proposal/canon rewrite
 - No LLM adapter rewrite
 - Old tag `v0.4.0-pre-v2-closure` preserved as historical audit-invalidated marker
-- Trusted seal is `v0.4.1-v2-entry-closure.0` at `87472741c229afe2597a6229d98059b29d61913c`
+- Trusted seal is `v0.4.1-v2-entry-closure.0`
 
-## V2 Entry Closure (基准提交 9b35bbf)
+## V2 Entry Closure
 
-四个 V2 入口已完成闭环。详见 V2_ENTRY_COMPLETION_STATUS.md。
+四个 V2 入口已完成 engineering/service 闭环：Tabletop V2、Detective V2、Character V2 Long-term、Single Player ScriptKill V2。详见 V2_ENTRY_COMPLETION_STATUS.md。

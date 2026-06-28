@@ -2,38 +2,38 @@
 
 ## 用户功能
 
-| 功能 | 状态 |
+| 功能 | 当前状态 |
 | --- | --- |
-| 快速创建设定项目 | active |
-| 人物卡创建/编辑/互动 | active |
-| 世界书大世界探索 | active |
-| 桌面叙事（单人跑团） | active |
-| 解谜调查 | active |
-| 策略模拟 | active |
-| 单人剧本杀 | active |
-| 项目导出/导入 | active |
+| 快速创建设定项目 | usable thin loop |
+| 人物卡创建/编辑/互动 | usable; Character V2 long-term slice exists |
+| 世界书大世界探索 | usable; full Worldbook V2 incomplete |
+| 桌面叙事（单人跑团） | experimental slice; Tabletop V2 service closure complete |
+| 解谜调查 | experimental slice; Detective V2 service closure complete |
+| 策略模拟 | minimal strategy slice; Strategy V2 incomplete |
+| 单人剧本杀 | experimental slice; Single Player ScriptKill V2 service closure complete |
+| 项目导出/导入 | active where implemented |
 
 ## 创作功能
 
-| 功能 | 状态 |
+| 功能 | 当前状态 |
 | --- | --- |
-| 炼金台（灵感→蓝图→资产→项目） | active / conservative UI |
+| 炼金台（灵感→蓝图→资产→项目） | producer tool / candidate-only workflow |
 | 人物卡解析（plain/V1/V2/CHARACTER.md） | active |
 | 世界书条目管理 | active |
 | 提案审核 | active |
 
 ## 模式入口
 
-| 入口 | V1 能力边界 |
+| 入口 | 当前能力边界 |
 | --- | --- |
 | quick-setting | 粘贴设定，快速创建草稿 |
 | character | 导入/编辑/互动/导出（不做多角色群聊、长期记忆） |
 | world-rpg | 世界书探索、上下文激活、提案（不做传统 RPG 系统） |
 | tabletop | 轻量检定、时钟、叙事（不做完整 DND） |
 | mystery-puzzle | 线索、假说、答案锁（不做复杂推理判定） |
-| strategy-sim | 阵营、资源、回合、外交（不做完整 4X） |
+| strategy-sim | 阵营、资源、回合、外交（不做完整 4X；Strategy V2 incomplete） |
 | murder-mystery | 案件、嫌疑人、真相锁（不做多人派对） |
-| creation-forge | 灵感→蓝图→资产→项目（不做图片生成） |
+| creation-forge | 灵感→蓝图→资产→项目（producer tool，不是普通游玩入口） |
 
 ## 存档/导出
 

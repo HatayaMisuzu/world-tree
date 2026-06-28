@@ -16,6 +16,10 @@
 7. 不要全局开放隐藏原型。
 8. 不要破坏 quick-setting、character、worldbook、grand-world 等已完成入口。
 9. 修改前先跑相关测试，完成后跑 preflight。
+10. **不要从 V2 Entry Closure 推断 Full V2 已完成。**
+11. **不要从 service tests 推断 product-wide playable closure。**
+12. **不要将 creation-forge 当作普通游玩入口。**
+13. **不要在 current-state 文档中写入未来 spec。**
 
 ## 目录地图
 
@@ -59,15 +63,16 @@ scripts/         脚本
 
 ## AI 修改流程
 
-1. 读取 README.md、docs/INDEX.md、AI-GUIDE.md。
-2. 检查相关 mode capsule 文档。
-3. 运行 `git status --short`。
-4. 定位真实文件，不凭记忆改。
-5. 修改最小必要文件。
-6. 增加或更新测试。
-7. 运行目标测试。
-8. 运行 `npm run preflight`。
-9. 完成后报告新增文件、修改文件、测试结果、风险、未做事项。
+1. 先读 docs/CURRENT_PROJECT_STATE.md + docs/V2_ENTRY_COMPLETION_STATUS.md + docs/PLAY_MODE_GUIDE.md。
+2. 读取 README.md、docs/INDEX.md。
+3. 检查相关 mode capsule 文档。
+4. 运行 `git status --short`。
+5. 定位真实文件，不凭记忆改。
+6. 修改最小必要文件。
+7. 增加或更新测试。
+8. 运行目标测试。
+9. 运行 `npm run preflight`。
+10. 完成后报告新增文件、修改文件、测试结果、风险、未做事项。
 
 ## 模式边界
 

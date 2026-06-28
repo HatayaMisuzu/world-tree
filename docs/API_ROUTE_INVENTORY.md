@@ -1,11 +1,12 @@
-# API Route Inventory — World Tree Pre-V2 Closure Baseline
+# API Route Inventory — World Tree Current Baseline
 
-> This inventory reflects the current `server.js` (Post-Repair, head 9b35bbf (V2 Closure)). It is not a future router design.
+> This inventory reflects the current `server.js`. It is not a future router design.
 > This inventory is **partial but source-grounded** — not every handler is fully categorized.
+> This inventory includes current route groups and known V2 service route groups where documented. It is not a full router redesign.
 
 ## Status
 
-`server.js` still owns API route dispatch. Stage 6 did not split routes. Three infrastructure modules were extracted: `http-response.js`, `http-request.js`, `local-access.js`.
+`server.js` still owns API route dispatch. Three infrastructure modules were extracted: `http-response.js`, `http-request.js`, `local-access.js`.
 
 ## Route Groups
 
