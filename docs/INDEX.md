@@ -71,6 +71,8 @@ Key entry points for the current baseline:
 | [FEATURES.md](FEATURES.md) | 功能清单 |
 | [API_REFERENCE.md](API_REFERENCE.md) | API 文档 |
 | [API_ROUTE_INVENTORY.md](API_ROUTE_INVENTORY.md) | 当前真实 API 路由总表 |
+| [API_PRODUCT_CONTRACT.md](API_PRODUCT_CONTRACT.md) | 产品入口 API 合同草案 |
+| [API_ALCHEMY_CONTRACT.md](API_ALCHEMY_CONTRACT.md) | 炼金台 G1 API 合同 |
 | [SAVE_SYSTEM_AND_WORLD_PACK.md](SAVE_SYSTEM_AND_WORLD_PACK.md) | 存档与导入导出 |
 | [ROADMAP_CANDIDATES.md](ROADMAP_CANDIDATES.md) | 路线候选建议（不代表已实现） |
 
