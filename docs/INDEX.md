@@ -31,7 +31,7 @@ Productization Closure is in progress. Creation Forge / Alchemy G1 engineering l
 
 - **Trusted tag**: `v0.4.2-v2-engineering-foundation-truth.0`
 - **Current branch**: `main`
-- **Latest audited commit**: `a403bde` (productization closure matrix baseline; later commits supersede this field when updated together).
+- **Latest audited commit**: `dbb4634` (CI productization gates baseline; final report commit is listed in git history).
 - **Remote CI**: `UNKNOWN`
 - **Status**: V2 Entry Closure sealed; Prompt/LLM routing alignment and UX alias coherence added; pending remote CI
 - **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries
@@ -74,6 +74,9 @@ Key entry points for the current baseline:
 | [API_PRODUCT_CONTRACT.md](API_PRODUCT_CONTRACT.md) | 产品入口 API 合同草案 |
 | [API_ALCHEMY_CONTRACT.md](API_ALCHEMY_CONTRACT.md) | 炼金台 G1 API 合同 |
 | [SAVE_SYSTEM_AND_WORLD_PACK.md](SAVE_SYSTEM_AND_WORLD_PACK.md) | 存档与导入导出 |
+| [INSTALL_AND_FIRST_RUN.md](INSTALL_AND_FIRST_RUN.md) | 安装与首次运行 |
+| [RELEASE_READINESS.md](RELEASE_READINESS.md) | 发布准备状态 |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 常见问题排查 |
 | [ROADMAP_CANDIDATES.md](ROADMAP_CANDIDATES.md) | 路线候选建议（不代表已实现） |
 
 ## 给维护者（架构和工作流）
@@ -109,6 +112,8 @@ Key entry points for the current baseline:
 |------|------|
 | [Asset Maturation Report](ASSET_MATURATION_REPORT.md) | ✅ 当前 |
 | [Real Play Productization Report](REAL_PLAY_PRODUCTIZATION_REPORT.md) | ✅ v0.3.1 当前 |
+| [Productization Closure Report](reports/productization-closure-report.md) | PARTIAL: examples deferred, browser/manual smoke not run |
+| [Product Entry Closure Matrix](reports/product-entry-closure-matrix.md) | PARTIAL entry evidence matrix |
 | [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
 | [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |
 | [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) | 提示词与数据包 |

@@ -13,10 +13,11 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
 | Trusted Baseline | `v0.4.2-v2-engineering-foundation-truth.0` |
 | Current branch | `main` |
-| Latest audited commit | `a403bde` |
+| Latest audited commit | `dbb4634` |
 | V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI` |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
+| Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL |
 | Remote CI | UNKNOWN unless a concrete workflow run is referenced |
 | Browser QA | UNKNOWN unless separately recorded |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |

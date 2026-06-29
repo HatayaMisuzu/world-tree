@@ -1,0 +1,29 @@
+# Release Readiness
+
+Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
+
+## Current Readiness
+
+| Area | Status | Evidence |
+|---|---|---|
+| Install command | PASS | `npm install` |
+| Local start and health | PASS | isolated start smoke: `/api/health` returned `ok`, console returned HTTP 200 |
+| Local-only policy | COVERED BY TESTS | integration security tests |
+| Creation Forge G1 | AUTOMATED PASS | `npm run test:alchemy-closure` |
+| Worldbook V2 foundation | AUTOMATED PASS | `npm run test:worldbook-v2` |
+| Strategy Sim V2 foundation | AUTOMATED PASS | `npm run test:strategy-sim-v2` |
+| V2 entry service slices | AUTOMATED PASS | `npm run test:world-tree-v2-entries` |
+| Project audit | AUTOMATED PASS | `npm run test:project-complete-audit` |
+| First-run examples | DEFERRED | example content intentionally not added |
+| Browser/manual smoke | NOT RUN | manual smoke docs exist for Alchemy G1 |
+
+## Release Decision
+
+Do not publish npm, Docker, or GitHub Release from this state.
+
+This branch is suitable as a productization closure evidence branch with PARTIAL status. A release candidate needs:
+
+1. First-run examples restored and tested.
+2. Browser/manual smoke evidence for major entries.
+3. Final full validation after examples are restored.
+4. Explicit version decision.
