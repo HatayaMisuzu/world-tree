@@ -31,7 +31,7 @@ Productization Closure is in progress. Creation Forge / Alchemy G1 engineering l
 
 - **Trusted tag**: `v0.4.2-v2-engineering-foundation-truth.0`
 - **Current branch**: `main`
-- **Latest audited commit**: see current git HEAD / latest execution report. Do not rely on old commit IDs unless this file was updated in the same commit.
+- **Latest audited commit**: `a403bde` (productization closure matrix baseline; later commits supersede this field when updated together).
 - **Remote CI**: `UNKNOWN`
 - **Status**: V2 Entry Closure sealed; Prompt/LLM routing alignment and UX alias coherence added; pending remote CI
 - **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries

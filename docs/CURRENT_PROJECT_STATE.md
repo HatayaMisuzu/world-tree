@@ -11,7 +11,10 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Item | Value |
 |---|---|
 | Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
+| Trusted Baseline | `v0.4.2-v2-engineering-foundation-truth.0` |
 | Current branch | `main` |
+| Latest audited commit | `a403bde` |
+| V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI` |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
 | Remote CI | UNKNOWN unless a concrete workflow run is referenced |
@@ -25,6 +28,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - **Engineering/service closure complete**: service/API/persistence/import/export or equivalent runtime service slice exists and is tested.
 - **Product closure not complete**: complete first-run UI/user flow, bundled content, browser QA, service persistence/API, or product-grade editing/review experience is not fully proven.
 - **Full V2 not complete**: project-wide product-grade V2 is not complete.
+- **V2 Entry Closure**: selected V2 entry engineering/service slices are sealed for audit purposes, but this does not mean product-wide playable closure is complete.
 
 ## Current status table
 
