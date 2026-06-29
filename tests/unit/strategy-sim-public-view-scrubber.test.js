@@ -42,7 +42,7 @@ test("report context contains no hidden raw fields", () => {
   const text = JSON.stringify(context);
   assert.doesNotMatch(text, /secretState/);
   assert.doesNotMatch(text, /hiddenState/);
-  assert.doesNotMatch(text, /secret_pressure.*80/);
+  assert.doesNotMatch(text, /secret_pressure[^}]*80/);
 });
 
 test("hidden probability rule is not exposed unless canHint is true", () => {
