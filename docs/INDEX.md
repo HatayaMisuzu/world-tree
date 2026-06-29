@@ -11,7 +11,7 @@
 | [AGENT_STATUS_HANDOFF.md](AGENT_STATUS_HANDOFF.md) | Agent handoff summary |
 
 Current status: Full V2 is not complete. Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is not complete.
-Productization Closure is in progress. Creation Forge / Alchemy G1 engineering loop is implemented, but examples, product-wide CI/E2E gates, and manual/browser smoke evidence are not complete until recorded in closure reports.
+Productization Closure is in progress. Creation Forge / Alchemy G1 engineering loop is implemented. User-created content closure and blank template infrastructure are recorded as PASS; bundled story examples, tutorials/onboarding content, product-wide manual smoke, and release readiness remain deferred or incomplete until recorded in closure reports.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree 文档索引
@@ -112,7 +112,8 @@ Key entry points for the current baseline:
 |------|------|
 | [Asset Maturation Report](ASSET_MATURATION_REPORT.md) | ✅ 当前 |
 | [Real Play Productization Report](REAL_PLAY_PRODUCTIZATION_REPORT.md) | ✅ v0.3.1 当前 |
-| [Productization Closure Report](reports/productization-closure-report.md) | PARTIAL: examples deferred, browser/manual smoke not run |
+| [Productization Closure Report](reports/productization-closure-report.md) | PARTIAL: user-created content PASS, blank templates PASS, story examples/tutorials deferred |
+| [User-Created Content Closure Evidence](reports/user-created-content-closure-evidence.md) | PASS evidence for Flow A, Flow B, and browser smoke |
 | [Product Entry Closure Matrix](reports/product-entry-closure-matrix.md) | PARTIAL entry evidence matrix |
 | [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
 | [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |

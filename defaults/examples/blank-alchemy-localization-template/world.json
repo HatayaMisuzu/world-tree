@@ -1,0 +1,9 @@
+{
+  "name": "blank-alchemy-localization-template",
+  "displayName": "空白炼金本地化模板",
+  "dataMode": "worldbook",
+  "subType": "blank_alchemy_localization",
+  "preset": "blank",
+  "templateKind": "blank_template",
+  "contentPolicy": "blank_structure_only"
+}

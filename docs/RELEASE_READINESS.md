@@ -14,8 +14,10 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | Strategy Sim V2 foundation | AUTOMATED PASS | `npm run test:strategy-sim-v2` |
 | V2 entry service slices | AUTOMATED PASS | `npm run test:world-tree-v2-entries` |
 | Project audit | AUTOMATED PASS | `npm run test:project-complete-audit` |
-| First-run examples | DEFERRED | example content intentionally not added |
-| Browser/manual smoke | PARTIAL | automated homepage to Alchemy G1 entry smoke passed with clean console; full Flow A/B manual smoke not run |
+| User-created content closure | PASS | Flow A and Flow B evidence recorded in `docs/reports/user-created-content-closure-evidence.md` |
+| Blank template infrastructure | PASS | eight `blank_template` placeholders install and read back as empty structures |
+| Bundled story examples | DEFERRED | no story/example world/tutorial/onboarding demo content added |
+| Browser/manual smoke | PARTIAL | automated homepage to Alchemy G1 entry smoke passed with clean console; Flow A/B automated local evidence passed; full product-wide manual smoke not run |
 
 ## Release Decision
 
@@ -23,7 +25,7 @@ Do not publish npm, Docker, or GitHub Release from this state.
 
 This branch is suitable as a productization closure evidence branch with PARTIAL status. A release candidate needs:
 
-1. First-run examples restored and tested.
+1. Bundled story examples explicitly allowed, added, and tested.
 2. Full browser/manual smoke evidence for major entries.
 3. Final full validation after examples are restored.
 4. Explicit version decision.

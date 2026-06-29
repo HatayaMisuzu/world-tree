@@ -1,0 +1,9 @@
+{
+  "name": "blank-scriptkill-template",
+  "displayName": "空白剧本杀模板",
+  "dataMode": "worldbook",
+  "subType": "blank_scriptkill",
+  "preset": "blank",
+  "templateKind": "blank_template",
+  "contentPolicy": "blank_structure_only"
+}

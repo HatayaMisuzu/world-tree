@@ -18,6 +18,10 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
 | Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL |
+| User-created content closure | PASS |
+| Blank template infrastructure | PASS |
+| Bundled story examples | DEFERRED |
+| Tutorial / onboarding content | DEFERRED |
 | Remote CI | UNKNOWN unless a concrete workflow run is referenced |
 | Browser QA | UNKNOWN unless separately recorded |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
@@ -60,7 +64,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - Worldbook V2 engineering foundation is complete.
 - Strategy Sim V2 engineering foundation is complete.
 - Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
-- Productization Closure is in progress; examples, CI/E2E product gates, product-entry closure, and browser/manual smoke evidence are not complete until separately recorded.
+- Productization Closure is in progress; user-created content closure and blank template infrastructure are recorded as PASS, while bundled story examples, tutorials, onboarding demo content, product-wide manual smoke, and release readiness remain incomplete or deferred.
 - Product closure remains incomplete for Worldbook V2 and Strategy Sim V2.
 - Full product-wide V2 is not complete.
 
@@ -126,7 +130,7 @@ Product closure not complete:
 - `world-tree-console.js` remains monolithic.
 - No TypeScript migration.
 - No automated browser QA unless separately recorded.
-- First-run examples are currently incomplete if `defaults/examples/manifest.json` has no bundled examples.
+- `defaults/examples/manifest.json` currently contains blank structural placeholders only. They are install/readback test material and future replacement slots, not bundled story examples or tutorials.
 
 ## Required checks
 

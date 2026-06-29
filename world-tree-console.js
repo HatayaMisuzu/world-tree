@@ -871,8 +871,8 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>示例与模板</h2><p class="sub">当前开源包默认不携带原创素材；你后续放入 defaults/examples manifest 后可从这里安装。</p></div>${C.badge(AS.examples.length + " 个示例", "pending")}</div>
-        <div class="list">${AS.examples.length ? AS.examples.map(ex => `<div class="item" data-example-id="${U.esc(ex.id)}"><div class="item-head"><strong>${U.esc(ex.title || ex.name || ex.id)}</strong>${C.badge(ex.kind || "example", "info")}</div><span class="tiny muted">${U.esc(ex.description || "可安装为本地世界。")}</span><button class="small primary" data-action="install-example">安装示例</button></div>`).join("") : C.empty("暂无内置示例", "保持无授权素材策略，等待你后续提供素材。")}</div>
+        <div class="panel-head"><div><h2>空白模板</h2><p class="sub">当前开源包只携带空白结构占位符；不包含剧情、教程或 onboarding demo 内容。</p></div>${C.badge(AS.examples.length + " 个模板", "pending")}</div>
+        <div class="list">${AS.examples.length ? AS.examples.map(ex => `<div class="item" data-example-id="${U.esc(ex.id)}"><div class="item-head"><strong>${U.esc(ex.title || ex.name || ex.id)}</strong>${C.badge(ex.kind || "blank_template", "info")}</div><span class="tiny muted">${U.esc(ex.description || "可安装为空白本地结构。")}</span><button class="small primary" data-action="install-example">安装模板</button></div>`).join("") : C.empty("暂无内置模板", "保持无授权素材策略，等待你后续提供素材。")}</div>
       </section>
     </div>`;
   },

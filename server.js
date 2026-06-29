@@ -408,8 +408,14 @@ function publicExample(item) {
   return {
     id: item.id,
     type: item.type,
+    title: item.title || item.name || item.id,
     name: item.name || item.id,
     description: item.description || "",
+    kind: item.kind || "example",
+    contentPolicy: item.contentPolicy || "",
+    entrypoint: item.entrypoint || "",
+    files: Array.isArray(item.files) ? item.files : [],
+    expectedInstallResult: item.expectedInstallResult || null,
     tags: Array.isArray(item.tags) ? item.tags : [],
     dataMode: item.dataMode || (item.type === "character" ? "character_card" : "worldbook"),
     subType: item.subType || "classic"
@@ -706,6 +712,53 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
 //  LLM 对话
 // ═══════════════════════════════════════════════════════════════
 
+async function handleLocalChatFallback(body = {}, reason = "LLM_NOT_CONFIGURED") {
+  const { input, moduleKey, dataMode, engineState } = body || {};
+  if (!moduleKey || String(moduleKey).startsWith("__")) {
+    return { status: "error", code: reason, errorMsg: "未连接 AI 模型；请选择一个本地世界后再记录本地输入。" };
+  }
+  const model = await buildModuleModel(moduleKey);
+  const selected = model?.selected || {};
+  const now = new Date().toISOString();
+  const cleanInput = String(input || "").slice(0, 8000);
+  const narrative = [
+    "（本地占位回复）当前未连接 AI 模型，本次输入已记录到本地存档。",
+    "",
+    `已记录输入：${cleanInput.slice(0, 500)}`,
+    "",
+    "配置模型后可以继续进行正式 AI 互动。"
+  ].join("\n");
+  const nextState = {
+    ...(engineState || {}),
+    dataMode: dataMode || selected.dataMode || "worldbook",
+    localFallback: true,
+    fallbackReason: reason,
+    updatedAt: now
+  };
+  const parsedSections = {
+    "叙事": { _raw: narrative },
+    "状态": { scene: model?.moduleData?.runtime?.lastScene || "" }
+  };
+  const persistedIds = await persistTurn(moduleKey, cleanInput, {
+    narrative,
+    parsedSections,
+    engineState: nextState,
+    overlayPatch: null,
+    writeSet: []
+  }, nextState, null);
+  moduleService.clearModuleCache?.(moduleKey);
+  return {
+    status: "ok",
+    localFallback: true,
+    fallbackReason: reason,
+    narrative,
+    parsedSections,
+    engineState: nextState,
+    persistedIds,
+    turnCount: persistedIds?.turnCount || nextState.turnCount || null
+  };
+}
+
 async function handleLlmChat(body) {
   const { input, moduleKey, dataMode, engineState, messages } = body || {};
   if (!input) return { status: "error", errorMsg: "请输入内容后再发送" };
@@ -718,15 +771,16 @@ async function handleLlmChat(body) {
 
   const config = await loadConfig();
   const apiKey = await getActiveLlmValue();
-  if (!apiKey) return { status: "error", errorMsg: "未配置 API Key → 请在首页「LLM 配置」中设置密钥" };
-  if (!config.llmBaseUrl || !config.llmModel) return { status: "error", errorMsg: "未配置 LLM 地址和模型 → 请在首页「LLM 配置」中填写" };
+  if (process.env.WORLD_TREE_DISABLE_LLM === "1") return await handleLocalChatFallback(body, "LLM_DISABLED");
+  if (!apiKey) return await handleLocalChatFallback(body, "LLM_API_KEY_MISSING");
+  if (!config.llmBaseUrl || !config.llmModel) return await handleLocalChatFallback(body, "LLM_CONFIG_MISSING");
 
   // 懒加载引擎模块
   const { sendDualStageTurn, canUseDirectLlm } = await import("./src/adapters/llm.js");
   const { normalizeEngineState, DEFAULT_ENGINE_STATE } = await import("./src/core/engine/modules.js");
 
   if (!canUseDirectLlm(config, Boolean(apiKey))) {
-    return { status: "error", errorMsg: "LLM 配置不完整，请检查地址、模型和 API Key" };
+    return await handleLocalChatFallback(body, "LLM_CONFIG_INCOMPLETE");
   }
 
   // 构建 model 对象

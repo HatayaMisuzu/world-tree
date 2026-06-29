@@ -1,0 +1,9 @@
+{
+  "name": "blank-worldbook-template",
+  "displayName": "空白世界书模板",
+  "dataMode": "worldbook",
+  "subType": "blank_worldbook",
+  "preset": "blank",
+  "templateKind": "blank_template",
+  "contentPolicy": "blank_structure_only"
+}

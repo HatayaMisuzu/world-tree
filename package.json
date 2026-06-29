@@ -16,7 +16,7 @@
     "src/",
     "defaults/engine-profile/",
     "defaults/world-profiles/",
-    "defaults/examples/manifest.json",
+    "defaults/examples/",
     "README.md",
     "README.en.md",
     "SECURITY.md",

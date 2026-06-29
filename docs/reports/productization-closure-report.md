@@ -1,12 +1,20 @@
 # Productization Closure Report
 
-Date: 2026-06-29
+Date: 2026-06-30
 
 ## Final Status
 
 Productization Closure: PARTIAL
 
-Closure cannot be claimed complete because first-run example content is intentionally deferred and full product-entry manual smoke is not recorded for this pass.
+User-Created Content Closure: PASS
+
+Blank Template Infrastructure: PASS
+
+Bundled Story Examples: DEFERRED
+
+Tutorial / Onboarding Content: DEFERRED
+
+Closure cannot be claimed complete because bundled story examples, tutorial/onboarding content, full product-entry manual smoke, and product-wide release readiness remain deferred or incomplete.
 
 ## Branch And Commits
 
@@ -21,6 +29,7 @@ Commits:
 - `dbb4634` ci(productization): require closure gates
 - this report commit: docs(productization): publish partial closure report
 - next evidence commit: record browser smoke evidence and console-clean startup fix
+- current evidence commit: add blank template placeholders and user-created content closure evidence
 
 ## What Changed
 
@@ -35,13 +44,17 @@ Commits:
 - Added install, release-readiness, and troubleshooting docs.
 - Added an automated browser entry smoke pass for the homepage to Creation Forge / Alchemy G1 panel.
 - Fixed startup browser noise by probing the current app origin before the localhost fallback and by using an inline favicon.
+- Added eight blank template placeholders with `kind: blank_template` and `contentPolicy: blank_structure_only`.
+- Added install/readback tests for blank templates.
+- Added Flow A/Flow B user-created content closure tests and evidence.
+- Added local no-LLM chat fallback that persists first-turn input and clearly reports `localFallback: true`.
 
 ## Product Loops
 
 | Entry | Status | Evidence | Limitation |
 |---|---|---|---|
-| Quick Setting | PARTIAL | integration quick-setting tests; automated homepage smoke | full browser flow not run |
-| Creation Forge / Alchemy | AUTOMATED PASS / PRODUCT PARTIAL | `npm run test:alchemy-closure`; automated browser entry smoke | full Flow A/B and first real turn not recorded |
+| Quick Setting | PARTIAL | integration quick-setting tests; automated homepage smoke | full product-wide browser flow not run |
+| Creation Forge / Alchemy | USER-CREATED CONTENT PASS / PRODUCT PARTIAL | `npm run test:alchemy-closure`; automated browser entry smoke; `docs/reports/user-created-content-closure-evidence.md` | bundled story examples and tutorial/onboarding content deferred |
 | Worldbook | FOUNDATION PASS / PRODUCT PARTIAL | `npm run test:worldbook-v2` | product UI/API closure incomplete |
 | Character | SERVICE PASS / PRODUCT PARTIAL | `npm run test:world-tree-v2-entries` | advanced editor incomplete |
 | Strategy Sim | FOUNDATION PASS / PRODUCT PARTIAL | `npm run test:strategy-sim-v2` | product UI/API closure incomplete |
@@ -60,8 +73,8 @@ Commits:
 | `npm run test:alchemy-closure` | PASS, 26/26 |
 | `npm run test:worldbook-v2` | PASS, 17/17 |
 | `npm run test:strategy-sim-v2` | PASS, 39/39 |
-| `npm run test:unit` | PASS, 1110/1110 |
-| `npm run test:integration` | PASS, 121/121 |
+| `npm run test:unit` | PASS, 1113/1113 |
+| `npm run test:integration` | PASS, 123/123 |
 | `npm run test:world-tree-v2-entries` | PASS |
 | `npm run test:project-complete-audit` | PASS, 85/85 |
 | `npm run truth:check` | PASS |
@@ -69,11 +82,15 @@ Commits:
 | `npm install` | PASS |
 | isolated local start smoke | PASS, `/api/health` returned `ok`, console returned HTTP 200 |
 | automated browser entry smoke | PASS, homepage and Alchemy G1 panel loaded; console clean |
+| user-created content closure smoke | PASS, Flow A and Flow B completed with created module ids and readback evidence |
+| blank template install/readback smoke | PASS, eight `blank_template` placeholders list, install, and load |
+| `npm run test:worldbook-v2` | PASS, 17/17 |
+| `npm run test:strategy-sim-v2` | PASS, 39/39 |
 | `git diff --check` | PASS |
 
 ## Manual Smoke
 
-Manual smoke status: PARTIAL.
+Manual/browser smoke status: PARTIAL.
 
 Automated browser entry smoke passed on 2026-06-29 using an isolated local server and Playwright CLI:
 
@@ -82,13 +99,16 @@ Automated browser entry smoke passed on 2026-06-29 using an isolated local serve
 - The G1 panel exposed `生成创作地图`, `生成内容预览`, `生成本地文件夹草案`, and `确认交付`.
 - Browser snapshot reported no console errors or warnings.
 
-The complete manual Flow A/Flow B checklist remains NOT RUN.
+Flow A and Flow B automated local evidence passed and is recorded in `docs/reports/user-created-content-closure-evidence.md`.
+
+Full manual product-entry smoke across all entries remains NOT RUN.
 
 ## Known Limitations
 
-- First-run examples are deferred by current instruction.
-- `defaults/examples/manifest.json` remains empty.
-- Full Flow A/Flow B manual smoke and first-turn readback are not recorded.
+- Bundled story examples are deferred by current instruction.
+- Tutorial and onboarding demo content are deferred.
+- `defaults/examples/manifest.json` contains only blank structural placeholders, not story examples.
+- Full manual smoke across all product entries is not recorded.
 - Product-wide playable closure is not complete.
 - Full V2 is not complete.
 
@@ -100,10 +120,10 @@ Keep the current version line until examples and browser/manual smoke gates are 
 
 ## Next Exact Task
 
-When example work is allowed again:
+When bundled story example work is allowed:
 
-1. Add first-run example packs.
-2. Add examples manifest and install smoke tests.
-3. Run browser/manual smoke for Alchemy G1 and major entries.
+1. Replace or extend blank placeholders with approved first-run story/content packs.
+2. Add content-specific install smoke tests.
+3. Run browser/manual smoke for major entries.
 4. Rerun final validation.
 5. Update this report from PARTIAL to PASS only if all gates pass.

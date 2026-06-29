@@ -1,4 +1,225 @@
 {
   "version": 1,
-  "examples": []
+  "examples": [
+    {
+      "id": "blank-world-template",
+      "type": "world",
+      "title": "空白世界模板",
+      "name": "空白世界模板",
+      "description": "仅用于创建没有预设内容的 World Tree 世界结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "world_module",
+      "path": "blank-world-template",
+      "targetName": "blank-world-template",
+      "dataMode": "worldbook",
+      "subType": "blank_world",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    },
+    {
+      "id": "blank-worldbook-template",
+      "type": "world",
+      "title": "空白世界书模板",
+      "name": "空白世界书模板",
+      "description": "仅用于创建空世界书数据结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "worldbook",
+      "path": "blank-worldbook-template",
+      "targetName": "blank-worldbook-template",
+      "dataMode": "worldbook",
+      "subType": "blank_worldbook",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    },
+    {
+      "id": "blank-character-template",
+      "type": "world",
+      "title": "空白角色模板",
+      "name": "空白角色模板",
+      "description": "仅用于创建空角色数据结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "character",
+      "path": "blank-character-template",
+      "targetName": "blank-character-template",
+      "dataMode": "character_card",
+      "subType": "blank_character",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    },
+    {
+      "id": "blank-strategy-sim-template",
+      "type": "world",
+      "title": "空白策略模拟模板",
+      "name": "空白策略模拟模板",
+      "description": "仅用于创建空策略模拟数据结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "strategy_sim",
+      "path": "blank-strategy-sim-template",
+      "targetName": "blank-strategy-sim-template",
+      "dataMode": "worldbook",
+      "subType": "blank_strategy_sim",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "shared/strategy-sim/spec.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    },
+    {
+      "id": "blank-tabletop-template",
+      "type": "world",
+      "title": "空白跑团模板",
+      "name": "空白跑团模板",
+      "description": "仅用于创建空跑团数据结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "tabletop",
+      "path": "blank-tabletop-template",
+      "targetName": "blank-tabletop-template",
+      "dataMode": "worldbook",
+      "subType": "blank_tabletop",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "shared/tabletop/module.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    },
+    {
+      "id": "blank-detective-case-template",
+      "type": "world",
+      "title": "空白调查案件模板",
+      "name": "空白调查案件模板",
+      "description": "仅用于创建空调查案件数据结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "detective_case",
+      "path": "blank-detective-case-template",
+      "targetName": "blank-detective-case-template",
+      "dataMode": "worldbook",
+      "subType": "blank_detective_case",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "shared/detective/case.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    },
+    {
+      "id": "blank-scriptkill-template",
+      "type": "world",
+      "title": "空白剧本杀模板",
+      "name": "空白剧本杀模板",
+      "description": "仅用于创建空剧本杀数据结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "scriptkill",
+      "path": "blank-scriptkill-template",
+      "targetName": "blank-scriptkill-template",
+      "dataMode": "worldbook",
+      "subType": "blank_scriptkill",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "shared/scriptkill/package.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    },
+    {
+      "id": "blank-alchemy-localization-template",
+      "type": "world",
+      "title": "空白炼金本地化模板",
+      "name": "空白炼金本地化模板",
+      "description": "仅用于创建炼金本地化空文件夹结构。",
+      "kind": "blank_template",
+      "contentPolicy": "blank_structure_only",
+      "entrypoint": "alchemy_localization",
+      "path": "blank-alchemy-localization-template",
+      "targetName": "blank-alchemy-localization-template",
+      "dataMode": "worldbook",
+      "subType": "blank_alchemy_localization",
+      "preset": "blank",
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "runtime/state.json",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": false,
+        "containsTutorialContent": false
+      }
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+{
+  "name": "blank-strategy-sim-template",
+  "displayName": "空白策略模拟模板",
+  "dataMode": "worldbook",
+  "subType": "blank_strategy_sim",
+  "preset": "blank",
+  "templateKind": "blank_template",
+  "contentPolicy": "blank_structure_only"
+}

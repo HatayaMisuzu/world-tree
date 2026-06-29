@@ -1,0 +1,9 @@
+{
+  "name": "blank-detective-case-template",
+  "displayName": "空白调查案件模板",
+  "dataMode": "worldbook",
+  "subType": "blank_detective_case",
+  "preset": "blank",
+  "templateKind": "blank_template",
+  "contentPolicy": "blank_structure_only"
+}

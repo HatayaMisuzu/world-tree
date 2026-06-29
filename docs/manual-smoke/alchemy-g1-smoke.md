@@ -1,10 +1,12 @@
 # Alchemy G1 Manual Smoke
 
-Status: PARTIAL.
+Status: USER-CREATED CONTENT PASS / FULL MANUAL PRODUCT SMOKE PARTIAL.
 
 Automated browser entry smoke passed on 2026-06-29: the homepage loaded, `打开炼金台` opened the Alchemy G1 panel, the four G1 step buttons were visible, and the browser snapshot reported no console errors or warnings.
 
-Full Flow A and Flow B remain NOT RUN.
+Automated user-created content smoke passed on 2026-06-30: Flow A created `world:快速创世计划`, persisted first-turn input, and read back chat/runtime state; Flow B created `world:本地化导入计划` and read back localized worldbook structure.
+
+Bundled story examples, tutorials, and onboarding demo content remain DEFERRED.
 
 Use this checklist after starting the local app with `npm start`.
 
@@ -49,11 +51,11 @@ Use this checklist after starting the local app with `npm start`.
 | Check | Result | Notes |
 |---|---|---|
 | Browser loaded | PASS | Automated Playwright CLI smoke on isolated local server; homepage and G1 entry panel loaded with clean console. |
-| Flow A plan | TODO | TODO |
-| Flow A preview | TODO | TODO |
-| Flow A localize | TODO | TODO |
-| Flow A delivery | TODO | TODO |
-| Flow A first turn | TODO | TODO |
-| Flow B plan | TODO | TODO |
-| Flow B preview/localize | TODO | TODO |
-| Flow B delivery/readback | TODO | TODO |
+| Flow A plan | PASS | Plan type `quick_create`. |
+| Flow A preview | PASS | Preview mode `quick_create`. |
+| Flow A localize | PASS | Local folder draft produced required files. |
+| Flow A delivery | PASS | Created `world:快速创世计划`. |
+| Flow A first turn | PASS | `runtime/chat.jsonl` and `runtime/state.json` readback passed; local fallback was used because no LLM key was configured. |
+| Flow B plan | PASS | Plan type `localize_existing`. |
+| Flow B preview/localize | PASS | Preview mode `localize_existing`; local folder draft produced required files. |
+| Flow B delivery/readback | PASS | Created `world:本地化导入计划`; worldbook readback contained entries. |
