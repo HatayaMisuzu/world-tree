@@ -1,0 +1,57 @@
+{
+  "status": "PASS",
+  "mode": "browser entry plus API-assisted delivery/readback",
+  "dataDir": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-browser-user-content-CRCWzm",
+  "browserStepsRun": [
+    "homepage loaded",
+    "blank template area visible",
+    "Alchemy G1 panel visible",
+    "Flow A browser plan/preview/localize/deliver clicked",
+    "Flow B browser plan/preview/localize clicked"
+  ],
+  "apiAssistedSteps": [
+    "Flow A module id/path/readback captured through API",
+    "Flow A first-turn persistence verified through API",
+    "Flow B deliver/readback captured through API"
+  ],
+  "consoleEvents": [],
+  "flowA": {
+    "intakeType": "quick_create",
+    "previewMode": "quick_create",
+    "deliveryId": "delivery-1782756146915-w1asb",
+    "moduleKey": "world:快速创世计划-2",
+    "moduleId": "快速创世计划-2",
+    "worldPath": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-browser-user-content-CRCWzm\\engine\\worlds\\快速创世计划-2",
+    "readback": {
+      "moduleListed": true,
+      "moduleLoadStatus": "ok",
+      "worldbookEntries": 1,
+      "stateTurnCount": 1,
+      "stateLastInput": "我先检查随身丹炉和附近出口。",
+      "chat": {
+        "status": "ok",
+        "localFallback": true,
+        "fallbackReason": "LLM_DISABLED",
+        "userInputPersisted": true,
+        "assistantRows": 1
+      }
+    }
+  },
+  "flowB": {
+    "intakeType": "localize_existing",
+    "previewMode": "localize_existing",
+    "deliveryId": "delivery-1782756147911-62c0h",
+    "moduleKey": "world:本地化导入计划",
+    "moduleId": "本地化导入计划",
+    "worldPath": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-browser-user-content-CRCWzm\\engine\\worlds\\本地化导入计划",
+    "readback": {
+      "moduleListed": true,
+      "moduleLoadStatus": "ok",
+      "worldbookEntries": 1,
+      "stateTurnCount": 0,
+      "stateLastInput": "",
+      "chat": null
+    }
+  },
+  "generatedAt": "2026-06-29T18:02:27.960Z"
+}

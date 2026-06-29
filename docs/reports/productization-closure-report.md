@@ -4,21 +4,27 @@ Date: 2026-06-30
 
 ## Final Status
 
-Productization Closure: PARTIAL
+Productization Closure: PARTIAL by product decision
 
-User-Created Content Closure: PASS
+User-Created Content Product Closure: PASS
 
 Blank Template Infrastructure: PASS
 
-Bundled Story Examples: DEFERRED
+Bundled Story Examples: DEFERRED BY PRODUCT DECISION
 
-Tutorial / Onboarding Content: DEFERRED
+Tutorial / Onboarding Content: DEFERRED BY PRODUCT DECISION
+
+Real LLM Flow: BLOCKED unless credentials/config are explicitly supplied
 
 Closure cannot be claimed complete because bundled story examples, tutorial/onboarding content, full product-entry manual smoke, and product-wide release readiness remain deferred or incomplete.
 
 ## Branch And Commits
 
-Branch: `codex/productization-closure`
+Branch: `main`
+
+Originating branch: `codex/productization-closure`
+
+Latest productization merge commit: `ecd8658d088b41a4e4a0ec212bb7f274709707b9`
 
 Commits:
 
@@ -48,6 +54,7 @@ Commits:
 - Added install/readback tests for blank templates.
 - Added Flow A/Flow B user-created content closure tests and evidence.
 - Added local no-LLM chat fallback that persists first-turn input and clearly reports `localFallback: true`.
+- Added post-merge user-created content product closure evidence, browser/API hybrid smoke, and Real LLM BLOCKED report.
 
 ## Product Loops
 
@@ -102,6 +109,8 @@ Automated browser entry smoke passed on 2026-06-29 using an isolated local serve
 Flow A and Flow B automated local evidence passed and is recorded in `docs/reports/user-created-content-closure-evidence.md`.
 
 Full manual product-entry smoke across all entries remains NOT RUN.
+
+Real LLM smoke remains BLOCKED until real credentials/config are supplied. Local fallback evidence is not counted as Real LLM PASS.
 
 ## Known Limitations
 

@@ -8,6 +8,8 @@
 5. `docs/PLAY_MODE_GUIDE.md`
 
 Do not infer product closure from engineering tests. Strategy Sim V2 and Worldbook V2 are engineering foundation complete, not product closure complete.
+
+Current user-created content status: User-Created Content Product Closure is PASS for the recorded Alchemy G1 Flow A/B paths, Blank Template Infrastructure is PASS, Productization Closure remains PARTIAL by product decision, and v1.0.0 is NOT READY. Real LLM Flow is BLOCKED unless explicit credentials/config are supplied and a non-fallback smoke is recorded.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree — AI Agent Operating Guide

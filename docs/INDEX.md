@@ -11,7 +11,7 @@
 | [AGENT_STATUS_HANDOFF.md](AGENT_STATUS_HANDOFF.md) | Agent handoff summary |
 
 Current status: Full V2 is not complete. Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is not complete.
-Productization Closure is in progress. Creation Forge / Alchemy G1 engineering loop is implemented. User-created content closure and blank template infrastructure are recorded as PASS; bundled story examples, tutorials/onboarding content, product-wide manual smoke, and release readiness remain deferred or incomplete until recorded in closure reports.
+Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure and blank template infrastructure are recorded as PASS; bundled story examples, tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree 文档索引
@@ -31,11 +31,13 @@ Productization Closure is in progress. Creation Forge / Alchemy G1 engineering l
 
 - **Trusted tag**: `v0.4.2-v2-engineering-foundation-truth.0`
 - **Current branch**: `main`
-- **Latest audited commit**: `dbb4634` (CI productization gates baseline; final report commit is listed in git history).
-- **Remote CI**: `UNKNOWN`
-- **Status**: V2 Entry Closure sealed; Prompt/LLM routing alignment and UX alias coherence added; pending remote CI
+- **Latest audited commit**: `ecd8658d088b41a4e4a0ec212bb7f274709707b9`
+- **Latest productization merge commit**: `ecd8658d088b41a4e4a0ec212bb7f274709707b9`
+- **Remote CI**: `UNKNOWN` unless a concrete workflow run is referenced
+- **Productization merge CI**: PASS for merge commit `ecd8658d` in run `28389779734`
+- **Status**: User-Created Content Product Closure PASS; Productization Closure PARTIAL by product decision
 - **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries
-- **Browser QA**: not run for UX alias patch; command audits cover routing and coherence
+- **Browser QA**: user content browser smoke PASS; full product-wide browser QA NOT COMPLETE
 
 Product feature identity:
 
@@ -114,6 +116,9 @@ Key entry points for the current baseline:
 | [Real Play Productization Report](REAL_PLAY_PRODUCTIZATION_REPORT.md) | ✅ v0.3.1 当前 |
 | [Productization Closure Report](reports/productization-closure-report.md) | PARTIAL: user-created content PASS, blank templates PASS, story examples/tutorials deferred |
 | [User-Created Content Closure Evidence](reports/user-created-content-closure-evidence.md) | PASS evidence for Flow A, Flow B, and browser smoke |
+| [User-Created Content Product Closure Final](reports/user-created-content-product-closure-final.md) | PASS for user-created Flow A/B and blank templates; Real LLM BLOCKED; Productization Closure PARTIAL |
+| [User Content Browser Smoke](reports/user-content-browser-smoke.md) | PASS browser/API hybrid smoke for Alchemy G1 Flow A/B |
+| [User Content Real LLM Smoke](reports/user-content-real-llm-smoke.md) | BLOCKED unless real LLM credentials/config are supplied |
 | [Product Entry Closure Matrix](reports/product-entry-closure-matrix.md) | PARTIAL entry evidence matrix |
 | [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
 | [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |

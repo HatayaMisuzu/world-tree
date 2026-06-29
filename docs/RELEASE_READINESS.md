@@ -16,7 +16,10 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | Project audit | AUTOMATED PASS | `npm run test:project-complete-audit` |
 | User-created content closure | PASS | Flow A and Flow B evidence recorded in `docs/reports/user-created-content-closure-evidence.md` |
 | Blank template infrastructure | PASS | eight `blank_template` placeholders install and read back as empty structures |
-| Bundled story examples | DEFERRED | no story/example world/tutorial/onboarding demo content added |
+| User-Created Content Product Closure | PASS | Flow A/B API evidence and browser/API hybrid smoke recorded |
+| Blank Template Infrastructure | PASS | blank placeholders install/readback and guard tests recorded |
+| Real LLM Flow | BLOCKED | missing explicit credentials/config; local fallback is not counted as real LLM |
+| Bundled story examples | DEFERRED BY PRODUCT DECISION | no story/example world/tutorial/onboarding demo content added |
 | Browser/manual smoke | PARTIAL | automated homepage to Alchemy G1 entry smoke passed with clean console; Flow A/B automated local evidence passed; full product-wide manual smoke not run |
 
 ## Release Decision

@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "dataDir": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-user-content-api-VSPwYy",
+  "flowA": {
+    "label": "Flow A",
+    "selectedTargets": [
+      "world_module",
+      "worldbook",
+      "character",
+      "mechanism"
+    ],
+    "intakeType": "quick_create",
+    "previewMode": "quick_create",
+    "deliveryId": "delivery-1782756144056-oky19",
+    "moduleKey": "world:快速创世计划",
+    "moduleId": "快速创世计划",
+    "worldPath": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-user-content-api-VSPwYy\\engine\\worlds\\快速创世计划",
+    "requiredFilesPresent": {
+      "world.json": true,
+      "shared/worldbook.json": true,
+      "shared/characters.json": true,
+      "runtime/state.json": true,
+      "runtime/alchemy-deliveries.jsonl": true
+    },
+    "moduleListed": true,
+    "moduleLoadStatus": "ok",
+    "worldbookEntries": 1,
+    "chat": {
+      "status": "ok",
+      "localFallback": true,
+      "fallbackReason": "LLM_DISABLED",
+      "persistedTurnId": "turn-1",
+      "assistantRows": 1,
+      "userInputPersisted": true,
+      "turnCount": 1,
+      "lastInput": "我先检查随身丹炉和附近出口。"
+    }
+  },
+  "flowB": {
+    "label": "Flow B",
+    "selectedTargets": [
+      "world_module",
+      "worldbook"
+    ],
+    "intakeType": "localize_existing",
+    "previewMode": "localize_existing",
+    "deliveryId": "delivery-1782756144233-6r542",
+    "moduleKey": "world:本地化导入计划",
+    "moduleId": "本地化导入计划",
+    "worldPath": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-user-content-api-VSPwYy\\engine\\worlds\\本地化导入计划",
+    "requiredFilesPresent": {
+      "world.json": true,
+      "shared/worldbook.json": true,
+      "shared/characters.json": true,
+      "runtime/state.json": true,
+      "runtime/alchemy-deliveries.jsonl": true
+    },
+    "moduleListed": true,
+    "moduleLoadStatus": "ok",
+    "worldbookEntries": 1,
+    "chat": null
+  },
+  "generatedAt": "2026-06-29T18:02:24.305Z"
+}

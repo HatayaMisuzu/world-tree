@@ -25,11 +25,18 @@ Historical reports may describe past limitations or past completion claims. They
 |---|---|
 | Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
 | Branch | `main` |
+| Latest productization merge commit | `ecd8658d088b41a4e4a0ec212bb7f274709707b9` |
+| User-Created Content Product Closure | PASS |
+| Blank Template Infrastructure | PASS |
+| Productization Closure | PARTIAL by product decision |
+| Bundled Story Examples | DEFERRED BY PRODUCT DECISION |
+| Tutorial / Onboarding | DEFERRED BY PRODUCT DECISION |
+| v1.0.0 | NOT READY |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
-| Current documentation status | truth-source synchronization after Strategy Sim V2 and Worldbook V2 engineering foundations |
-| Remote CI | UNKNOWN unless a concrete workflow run is referenced |
-| Browser QA | UNKNOWN unless separately recorded |
+| Current documentation status | post-merge user-created content product closure alignment |
+| Remote CI | PASS for merge commit `ecd8658d` in run `28389779734` |
+| Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
 
 ## Current status summary
 
@@ -42,12 +49,17 @@ Historical reports may describe past limitations or past completion claims. They
 | Strategy Sim V2 | engineering foundation complete; product closure not complete |
 | Worldbook V2 | engineering foundation complete; product closure not complete |
 | Quick Setting | usable thin loop |
-| Creation Forge | producer tool; candidate/review workflow; not a normal play entry |
+| Creation Forge / Alchemy G1 | user-created content product closure PASS for Flow A/B; full productization remains PARTIAL |
 
 ## Required boundary statements
 
 - Full product-wide V2 is not complete.
 - Product-wide playable closure is not complete.
+- User-Created Content Product Closure is PASS for the recorded Flow A/Flow B paths.
+- Real LLM Flow is BLOCKED unless credentials/config are explicitly supplied and recorded.
+- Productization Closure remains PARTIAL by product decision.
+- v1.0.0 is NOT READY.
+- Bundled story examples, tutorial content, and onboarding demos are DEFERRED BY PRODUCT DECISION.
 - Engineering foundation complete does not imply product closure complete.
 - Engineering/service closure complete does not imply full gameplay engine complete.
 - Historical archive documents must not override current truth-source files.

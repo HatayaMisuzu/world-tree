@@ -13,17 +13,20 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
 | Trusted Baseline | `v0.4.2-v2-engineering-foundation-truth.0` |
 | Current branch | `main` |
-| Latest audited commit | `dbb4634` |
+| Latest audited commit | `ecd8658d088b41a4e4a0ec212bb7f274709707b9` |
+| Latest productization merge commit | `ecd8658d088b41a4e4a0ec212bb7f274709707b9` |
 | V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI` |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
-| Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL |
-| User-created content closure | PASS |
+| Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL by product decision |
+| User-Created Content Product Closure | PASS |
 | Blank template infrastructure | PASS |
-| Bundled story examples | DEFERRED |
-| Tutorial / onboarding content | DEFERRED |
+| Bundled story examples | DEFERRED BY PRODUCT DECISION |
+| Tutorial / onboarding content | DEFERRED BY PRODUCT DECISION |
+| Real LLM Flow | BLOCKED unless credentials/config are explicitly supplied |
 | Remote CI | UNKNOWN unless a concrete workflow run is referenced |
-| Browser QA | UNKNOWN unless separately recorded |
+| Productization merge CI | PASS for merge commit `ecd8658d` in run `28389779734` |
+| Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
 | Asset/function inventory role | preservation ledger / evidence index; not proof by itself |
 
@@ -64,7 +67,8 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - Worldbook V2 engineering foundation is complete.
 - Strategy Sim V2 engineering foundation is complete.
 - Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
-- Productization Closure is in progress; user-created content closure and blank template infrastructure are recorded as PASS, while bundled story examples, tutorials, onboarding demo content, product-wide manual smoke, and release readiness remain incomplete or deferred.
+- Productization Closure is PARTIAL by product decision; User-Created Content Product Closure and blank template infrastructure are recorded as PASS, while bundled story examples, tutorials, onboarding demo content, product-wide manual smoke, and release readiness remain incomplete or deferred.
+- Real LLM Flow is BLOCKED until real credentials/config are provided and a non-fallback smoke is recorded.
 - Product closure remains incomplete for Worldbook V2 and Strategy Sim V2.
 - Full product-wide V2 is not complete.
 

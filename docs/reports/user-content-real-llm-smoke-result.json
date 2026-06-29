@@ -1,0 +1,11 @@
+{
+  "status": "BLOCKED",
+  "reason": "WORLD_TREE_RUN_REAL_LLM_SMOKE is not set to 1",
+  "provider": {
+    "baseUrl": "",
+    "model": ""
+  },
+  "safetyScan": "Not run because real LLM credentials/config are unavailable.",
+  "note": "Real LLM Flow: BLOCKED - missing LLM credentials/config. Local fallback is not counted as real LLM evidence.",
+  "generatedAt": "2026-06-29T18:02:22.756Z"
+}

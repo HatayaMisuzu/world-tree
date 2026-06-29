@@ -1,10 +1,12 @@
-# User-Created Content Closure Evidence
+# User-Created Content Product Closure Evidence
 
 Date: 2026-06-30
 
 Status: PASS
 
 This report records the current closure evidence for user-provided content flows. It does not claim full Productization Closure, bundled story examples, tutorials, onboarding demos, or `v1.0.0` readiness.
+
+Post-merge final report: `docs/reports/user-created-content-product-closure-final.md`.
 
 ## Scope
 
@@ -98,8 +100,9 @@ These are structure placeholders only. They are not story examples, tutorials, o
 
 | Area | Status |
 |---|---|
-| User-Created Content Closure | PASS |
+| User-Created Content Product Closure | PASS |
 | Blank Template Infrastructure | PASS |
-| Bundled Story Examples | DEFERRED |
-| Tutorial / Onboarding Content | DEFERRED |
-| Productization Closure | PARTIAL |
+| Real LLM Flow | BLOCKED unless credentials/config are explicitly supplied |
+| Bundled Story Examples | DEFERRED BY PRODUCT DECISION |
+| Tutorial / Onboarding Content | DEFERRED BY PRODUCT DECISION |
+| Productization Closure | PARTIAL by product decision |

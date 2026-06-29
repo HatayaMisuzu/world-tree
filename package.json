@@ -90,6 +90,9 @@
     "test:strategy-sim-v2": "node --test tests/unit/strategy-sim-spec.test.js tests/unit/strategy-sim-run-state.test.js tests/unit/strategy-sim-public-view-scrubber.test.js tests/unit/strategy-sim-turn-engine.test.js tests/unit/strategy-sim-probability-roll-record.test.js tests/unit/strategy-numeric-system.test.js tests/unit/strategy-probability-system.test.js tests/unit/strategy-v2-ready.test.js",
     "test:worldbook-v2": "node --test tests/unit/worldbook-v2-*.test.js",
     "test:alchemy-closure": "node --test tests/unit/alchemy-capabilities.test.js tests/unit/alchemy-planner-service.test.js tests/unit/alchemy-generation-service.test.js tests/unit/alchemy-localizer-service.test.js tests/unit/alchemy-delivery-service.test.js tests/unit/alchemy-server-route-contract.test.js tests/unit/alchemy-console-g1-ui.test.js tests/integration/alchemy-engineering-closure.test.js",
+    "smoke:user-content-api": "node scripts/smoke-user-content-api.mjs",
+    "test:user-content-browser-smoke": "node scripts/run-user-content-browser-smoke.mjs",
+    "smoke:user-content-real-llm": "node scripts/smoke-user-content-real-llm.mjs",
     "truth:check": "node scripts/check-truth-source-sync.mjs"
   },
   "keywords": [
@@ -104,5 +107,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/HatayaMisuzu/world-tree.git"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
   }
 }
