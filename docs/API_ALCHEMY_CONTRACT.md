@@ -89,6 +89,42 @@ Error:
 }
 ```
 
+### POST /api/alchemy/generate-preview
+
+Input:
+
+```json
+{
+  "text": "用户灵感或完整设定",
+  "plan": {},
+  "selectedTargets": ["world_module", "worldbook"],
+  "userSupplement": "用户自由补充"
+}
+```
+
+Output:
+
+```json
+{
+  "status": "ok",
+  "previewVersion": "alchemy-quick-create-preview.v1",
+  "mode": "quick_create",
+  "title": "世界标题",
+  "playableWorld": {},
+  "worldbookEntries": [],
+  "characters": [],
+  "mechanismDrafts": [],
+  "deliveryPlan": []
+}
+```
+
+Rules:
+
+- LLM may recommend content.
+- User must choose delivery targets.
+- Preview does not write files.
+- Delivery requires `/api/alchemy/deliver` with `userConfirmed: true`.
+
 ## GET /api/alchemy/deliveries
 
 查看交付日志。  

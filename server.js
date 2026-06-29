@@ -40,6 +40,7 @@ import { getAlchemyCapabilities } from "./src/server/alchemy-capabilities.js";
 import { createAlchemyPlannerService } from "./src/server/alchemy-planner-service.js";
 import { createAlchemyLocalizerService } from "./src/server/alchemy-localizer-service.js";
 import { createAlchemyDeliveryService } from "./src/server/alchemy-delivery-service.js";
+import { createAlchemyGenerationService } from "./src/server/alchemy-generation-service.js";
 import {
   commitMechanismDrafts,
   extractMechanismDrafts,
@@ -892,6 +893,42 @@ function buildAlchemyLlmCall(config, apiKey) {
   };
 }
 
+function parseAlchemyLlmJson(raw) {
+  const text = String(raw || "").trim();
+  if (!text) throw new Error("LLM returned empty response");
+
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1]
+    || text.match(/\{[\s\S]*\}/)?.[0]
+    || text;
+
+  try {
+    return JSON.parse(candidate);
+  } catch (err) {
+    throw new Error(`LLM JSON parse failed: ${err.message}`);
+  }
+}
+
+async function runAlchemyLlmJson(prompt, options = {}) {
+  const config = await loadConfig();
+  const apiKey = await getActiveLlmValue();
+  const llmCall = buildAlchemyLlmCall(config, apiKey);
+  if (!llmCall) {
+    throw new Error("LLM connection is not configured");
+  }
+
+  const system = [
+    "你是 World Tree 的炼金台 JSON 生成器。",
+    "你必须只输出严格 JSON。",
+    "不要输出 Markdown。",
+    "不要输出解释文字。",
+    "不要输出 HTML/script/style/js。"
+  ].join("\n");
+
+  const raw = await llmCall(system, String(prompt || ""));
+  return parseAlchemyLlmJson(raw);
+}
+
 async function handleAlchemyImport(body) {
   const { text, moduleKey = "" } = body || {};
   if (!text) return { status: "error", errorMsg: "导入内容为空" };
@@ -978,9 +1015,12 @@ const alchemyPreviewService = createAlchemyPreviewService({
 // ── 炼金台 G1：Planner / Localizer / Delivery service ──
 const alchemyPlannerService = createAlchemyPlannerService({
   getCapabilities: getAlchemyCapabilities,
-  runLlmJson: async (_prompt) => {
-    throw new Error("runAlchemyLlmJson not wired — planner uses heuristic fallback");
-  }
+  runLlmJson: runAlchemyLlmJson
+});
+
+const alchemyGenerationService = createAlchemyGenerationService({
+  runLlmJson: runAlchemyLlmJson,
+  now: () => new Date()
 });
 
 const alchemyLocalizerService = createAlchemyLocalizerService({
@@ -1001,6 +1041,7 @@ const alchemyDeliveryService = createAlchemyDeliveryService({
   writeJson,
   writeFile,
   appendJsonl,
+  readJsonlTail,
   exists: existsSync,
   ensureDir,
   normalizeWorldbookEntry: normalizeWorldbookEntryForSave,
@@ -2763,6 +2804,7 @@ async function handleAPI(req, res) {
     // ── 炼金台 G1：新路由 ──
     if (path === "/api/alchemy/capabilities" && method === "GET") return jsonResponse(res, getAlchemyCapabilities());
     if (path === "/api/alchemy/plan" && method === "POST") return jsonResponse(res, await alchemyPlannerService.plan(await readBody(req)));
+    if (path === "/api/alchemy/generate-preview" && method === "POST") return jsonResponse(res, await alchemyGenerationService.generate(await readBody(req)));
     if (path === "/api/alchemy/localize" && method === "POST") {
       const body = await readBody(req);
       const preview = body.preview || body.editedPreview || {};

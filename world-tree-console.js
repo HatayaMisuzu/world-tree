@@ -85,6 +85,7 @@ const API = {
   alchemyReview(data) { return data ? API.post("/api/alchemy/review", data) : API.get("/api/alchemy/review"); },
   alchemyCapabilities() { return API.get("/api/alchemy/capabilities"); },
   alchemyPlan(data) { return API.post("/api/alchemy/plan", data); },
+  alchemyGeneratePreview(data) { return API.post("/api/alchemy/generate-preview", data); },
   alchemyLocalize(data) { return API.post("/api/alchemy/localize", data); },
   alchemyDeliver(data) { return API.post("/api/alchemy/deliver", data); },
   alchemyDeliveries(moduleKey = "") {
@@ -1051,6 +1052,118 @@ function renderWorldData() {
   </section>`;
 }
 
+
+function renderAlchemyG1Panel() {
+  const g1 = AS.alchemyG1 || {};
+  const caps = g1.capabilities || {};
+  const plan = g1.plan;
+  const preview = g1.preview;
+  const draft = g1.localFolderDraft;
+  const targets = caps.deliveryTargets || [
+    "world_module",
+    "worldbook",
+    "character",
+    "mechanism",
+    "strategy_sim_spec",
+    "tabletop_module",
+    "detective_case",
+    "scriptkill_case",
+    "candidate_only"
+  ];
+
+  const targetLabels = {
+    world_module: "可玩世界",
+    worldbook: "世界书",
+    character: "角色",
+    mechanism: "机制",
+    strategy_sim_spec: "策略模拟",
+    tabletop_module: "跑团模组",
+    detective_case: "推理案件",
+    scriptkill_case: "剧本杀案件",
+    candidate_only: "只保存候选"
+  };
+
+  const selected = new Set(g1.selectedTargets || []);
+  const entryMap = plan?.entrypointMap || [];
+
+  return `<section class="panel alchemy-g1-panel">
+    <div class="panel-head">
+      <div>
+        <h2>炼金台 G1：创作闭环</h2>
+        <p class="sub">输入简单灵感或完整设定；LLM 推荐功能入口和机制，但最终输出目标由你决定。</p>
+      </div>
+      ${g1.busy ? C.badge("处理中", "warn") : C.badge("G1", "ok")}
+    </div>
+
+    <div class="stack">
+      <label>
+        <span class="field-label">用户自由补充</span>
+        <textarea id="alchemyG1Supplement" maxlength="12000" placeholder="你可以补充偏好，例如：更像开放世界、不要战斗、重点做角色关系、策略玩法要简单。">${U.esc(g1.userSupplement || "")}</textarea>
+      </label>
+
+      <div class="actions">
+        <button class="primary" data-action="alchemy-g1-plan" ${g1.busy ? "disabled" : ""}>1. 生成创作地图</button>
+        <button data-action="alchemy-g1-generate-preview" ${!plan || !selected.size || g1.busy ? "disabled" : ""}>2. 生成内容预览</button>
+        <button data-action="alchemy-g1-localize" ${!preview || g1.busy ? "disabled" : ""}>3. 生成本地文件夹草案</button>
+        <button class="primary" data-action="alchemy-g1-deliver" ${!draft || !selected.size || g1.busy ? "disabled" : ""}>4. 确认交付</button>
+      </div>
+
+      ${g1.error ? C.notice(g1.error, "bad") : ""}
+
+      ${plan ? `<div class="alchemy-section">
+        <h3>创作地图</h3>
+        <div class="notice ok">${U.esc(plan.summary?.userIntent || plan.summary?.title || "已生成创作地图")}</div>
+        <div class="list">${entryMap.map(item => `<div class="item">
+          <div class="item-head">
+            <strong>${U.esc(item.entrypointId)}</strong>
+            ${C.badge(item.recommendation || "optional", item.recommendation === "strong" ? "ok" : item.recommendation === "not_recommended" ? "pending" : "info")}
+          </div>
+          <p class="tiny muted">${U.esc(item.reason || "")}</p>
+          ${item.llmDefault?.brief ? `<p class="tiny">默认方案：${U.esc(item.llmDefault.brief)}</p>` : ""}
+          ${(item.mechanismSuggestions || []).length ? `<div class="chip-row">${item.mechanismSuggestions.slice(0, 6).map(m => `<span class="chip">${U.esc(m.label || m.id)}</span>`).join("")}</div>` : ""}
+        </div>`).join("")}</div>
+      </div>` : C.empty("尚未生成创作地图", "先输入素材/灵感，然后点击生成创作地图。")}
+
+      <div class="alchemy-section">
+        <h3>选择最终输出目标</h3>
+        <div class="check-grid">
+          ${targets.map(target => `<label>
+            <input type="checkbox" data-alchemy-g1-target="${U.esc(target)}" ${selected.has(target) ? "checked" : ""}>
+            ${U.esc(targetLabels[target] || target)}
+          </label>`).join("")}
+        </div>
+        <p class="tiny muted">LLM 只能推荐；这里必须由用户选择。</p>
+      </div>
+
+      ${preview ? `<div class="alchemy-section">
+        <h3>内容预览</h3>
+        <pre>${U.esc(U.json({
+          title: preview.title,
+          mode: preview.mode,
+          worldbookEntries: preview.worldbookEntries?.length || 0,
+          characters: preview.characters?.length || 0,
+          mechanisms: preview.mechanismDrafts?.length || 0,
+          warnings: preview.warnings || []
+        }))}</pre>
+      </div>` : ""}
+
+      ${draft ? `<div class="alchemy-section">
+        <h3>本地文件夹草案</h3>
+        <pre>${U.esc(U.json(draft.summary || draft))}</pre>
+      </div>` : ""}
+
+      ${(g1.deliveries || []).length ? `<div class="alchemy-section">
+        <h3>最近交付</h3>
+        <div class="list">${g1.deliveries.slice(0, 5).map(item => `<div class="item">
+          <strong>${U.esc(item.deliveryId || "delivery")}</strong>
+          <span class="tiny muted">${U.esc(item.createdAt || "")}</span>
+          <pre>${U.esc(U.json(item.targetPaths || []))}</pre>
+        </div>`).join("")}</div>
+      </div>` : ""}
+    </div>
+  </section>`;
+}
+
 function renderAlchemy() {
   const modes = [
     ["import", "素材导入"], ["co_create", "协作创作"], ["polish", "整理润色"], ["structure", "结构预览"]
@@ -1061,6 +1174,7 @@ function renderAlchemy() {
   ];
   const busy = AS.alchemyPreviewBusy || AS.alchemyCommitBusy;
   return `<section class="alchemy-workbench">
+  ${renderAlchemyG1Panel()}
     <div class="alchemy-main grid"><div class="panel">
       <div class="panel-head"><div><h2>炼金台</h2><p class="sub">把灵感、片段和角色资料整理为可审核的世界数据。预览不会写入审核队列或正式世界。</p></div></div>
       <div class="stack">
@@ -1346,7 +1460,12 @@ function render() {
 async function loadViewData() {
   try {
     if (AS.view === "library" && AS.libraryTab === "characters") AS.characters = await API.loadCharacters();
-    if (AS.view === "library" && AS.libraryTab === "alchemy" && !AS.alchemyMechanismLibrary.length) await loadMechanismLibrary();
+    if (AS.view === "library" && AS.libraryTab === "alchemy") {
+      if (!AS.alchemyMechanismLibrary.length) await loadMechanismLibrary();
+      if (!AS.alchemyG1.capabilities) {
+        try { AS.alchemyG1.capabilities = await API.alchemyCapabilities(); } catch { /* non-blocking */ }
+      }
+    }
     if ((AS.view === "library" && AS.libraryTab === "worldbook") || AS.view === "workbench") await loadWorldbookIfPossible();
     if (AS.view === "library" && AS.libraryTab === "review") await loadReviewFacts();
     if (AS.view === "settings" && AS.settingsTab === "connections") AS.connections = await API.connections();
@@ -1601,7 +1720,17 @@ function bindEvents() {
   if (refineText) refineText.oninput = () => { AS.alchemyRefineText = refineText.value; };
   const mechanismQuery = U.qs("#mechanismLibraryQuery");
   if (mechanismQuery) mechanismQuery.oninput = () => { AS.alchemyMechanismQuery = mechanismQuery.value; };
-  U.qsa("[data-alchemy-select]").forEach(input => {
+    U.qsa("[data-alchemy-g1-target]").forEach(input => {
+    input.onchange = () => {
+      const target = input.dataset.alchemyG1Target;
+      const set = new Set(AS.alchemyG1.selectedTargets || []);
+      if (input.checked) set.add(target);
+      else set.delete(target);
+      AS.alchemyG1.selectedTargets = [...set];
+      render();
+    };
+  });
+U.qsa("[data-alchemy-select]").forEach(input => {
     input.onchange = () => {
       const id = input.dataset.alchemySelect;
       const item = AS.alchemyPreview?.items?.find(entry => entry.id === id);
@@ -1879,6 +2008,10 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "alchemy-ignore-item") return ignoreAlchemyItem(btn.closest("[data-alchemy-item-id]")?.dataset.alchemyItemId);
     if (action === "alchemy-refine") return refineAlchemyPreview();
     if (action === "alchemy-commit") return commitAlchemyPreview();
+    if (action === "alchemy-g1-plan") return alchemyG1Plan();
+    if (action === "alchemy-g1-generate-preview") return alchemyG1GeneratePreview();
+    if (action === "alchemy-g1-localize") return alchemyG1Localize();
+    if (action === "alchemy-g1-deliver") return alchemyG1Deliver();
     if (action === "alchemy-clear") return clearAlchemyPreview();
     if (action === "search-mechanism-library") return loadMechanismLibrary(AS.alchemyMechanismQuery);
     if (action === "select-mechanism-template") { AS.alchemyMechanismTemplateId = btn.closest("[data-template-id]")?.dataset.templateId || ""; return render(); }
@@ -2658,6 +2791,124 @@ async function commitMechanismDraftsToWorld() {
   const result = await API.mechanismCommit({ moduleKey, drafts: AS.alchemyMechanismDrafts });
   AS.alchemyMechanismCache = result.cache || null;
   createToast(`已提交 ${result.committed || 0} 项机制；跳过 ${result.skipped || 0} 项`);
+}
+
+
+async function alchemyG1Plan() {
+  AS.alchemyText = U.qs("#alchemyText")?.value || AS.alchemyText;
+  AS.alchemyG1.userSupplement = U.qs("#alchemyG1Supplement")?.value || AS.alchemyG1.userSupplement || "";
+  const text = AS.alchemyText.trim();
+  if (!text) return createToast("请先输入灵感或设定", "warn");
+
+  AS.alchemyG1.busy = true;
+  AS.alchemyG1.error = "";
+  render();
+  try {
+    const result = await API.alchemyPlan({
+      text,
+      userPreference: { userSupplement: AS.alchemyG1.userSupplement },
+      previousPlan: AS.alchemyG1.plan || null
+    });
+    if (result.status !== "ok") throw new Error(result.errorMsg || "创作地图生成失败");
+    AS.alchemyG1.plan = result;
+    const recommended = result.userDecisionNeeded?.recommendedTargets || [];
+    if (!AS.alchemyG1.selectedTargets?.length && recommended.length) {
+      AS.alchemyG1.selectedTargets = recommended.filter(Boolean);
+    }
+    createToast("创作地图已生成");
+  } catch (err) {
+    AS.alchemyG1.error = err.message || String(err);
+    createToast(AS.alchemyG1.error, "bad");
+  } finally {
+    AS.alchemyG1.busy = false;
+    render();
+  }
+}
+
+async function alchemyG1GeneratePreview() {
+  const text = (U.qs("#alchemyText")?.value || AS.alchemyText || "").trim();
+  AS.alchemyG1.userSupplement = U.qs("#alchemyG1Supplement")?.value || AS.alchemyG1.userSupplement || "";
+  const selectedTargets = AS.alchemyG1.selectedTargets || [];
+  if (!AS.alchemyG1.plan) return createToast("请先生成创作地图", "warn");
+  if (!selectedTargets.length) return createToast("请选择至少一个输出目标", "warn");
+
+  AS.alchemyG1.busy = true;
+  AS.alchemyG1.error = "";
+  render();
+  try {
+    const result = await API.alchemyGeneratePreview({
+      text,
+      plan: AS.alchemyG1.plan,
+      selectedTargets,
+      userSupplement: AS.alchemyG1.userSupplement
+    });
+    if (result.status !== "ok") throw new Error(result.errorMsg || "内容预览生成失败");
+    AS.alchemyG1.preview = result;
+    AS.alchemyG1.localFolderDraft = null;
+    createToast("内容预览已生成");
+  } catch (err) {
+    AS.alchemyG1.error = err.message || String(err);
+    createToast(AS.alchemyG1.error, "bad");
+  } finally {
+    AS.alchemyG1.busy = false;
+    render();
+  }
+}
+
+async function alchemyG1Localize() {
+  if (!AS.alchemyG1.preview) return createToast("请先生成内容预览", "warn");
+  AS.alchemyG1.busy = true;
+  AS.alchemyG1.error = "";
+  render();
+  try {
+    const result = await API.alchemyLocalize({
+      preview: AS.alchemyG1.preview,
+      selectedTargets: AS.alchemyG1.selectedTargets || []
+    });
+    if (result.status !== "ok") throw new Error(result.errorMsg || "本地文件夹草案生成失败");
+    AS.alchemyG1.localFolderDraft = result;
+    createToast("本地文件夹草案已生成");
+  } catch (err) {
+    AS.alchemyG1.error = err.message || String(err);
+    createToast(AS.alchemyG1.error, "bad");
+  } finally {
+    AS.alchemyG1.busy = false;
+    render();
+  }
+}
+
+async function alchemyG1Deliver() {
+  if (!AS.alchemyG1.preview || !AS.alchemyG1.localFolderDraft) return createToast("请先生成预览和本地草案", "warn");
+  const selectedTargets = AS.alchemyG1.selectedTargets || [];
+  if (!selectedTargets.length) return createToast("请选择至少一个输出目标", "warn");
+  if (!confirm("确认交付？这会把内容写入本地世界/数据入口。")) return;
+
+  AS.alchemyG1.busy = true;
+  AS.alchemyG1.error = "";
+  render();
+  try {
+    const result = await API.alchemyDeliver({
+      preview: AS.alchemyG1.preview,
+      localFolderDraft: AS.alchemyG1.localFolderDraft,
+      selectedTargets,
+      userConfirmed: true
+    });
+    if (result.status !== "ok") throw new Error(result.errorMsg || "交付失败");
+    const deliveries = await API.alchemyDeliveries(result.moduleKey || "");
+    AS.alchemyG1.deliveries = deliveries.deliveries || [];
+    await refreshModules();
+    if (result.moduleKey) {
+      await selectModule(result.moduleKey, "workbench");
+      AS.workbenchMode = "chat";
+    }
+    createToast("炼金台交付完成，可以开始游玩");
+  } catch (err) {
+    AS.alchemyG1.error = err.message || String(err);
+    createToast(AS.alchemyG1.error, "bad");
+  } finally {
+    AS.alchemyG1.busy = false;
+    render();
+  }
 }
 
 async function createAlchemyPreview() {

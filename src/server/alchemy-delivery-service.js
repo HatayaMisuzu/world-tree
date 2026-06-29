@@ -72,6 +72,7 @@ export function createAlchemyDeliveryService({
   writeJson,
   writeFile,
   appendJsonl,
+  readJsonlTail,
   exists,
   ensureDir,
   normalizeWorldbookEntry,
@@ -132,6 +133,19 @@ export function createAlchemyDeliveryService({
     const line = `${JSON.stringify(logRecord)}\n`;
     await writeTextFile(runtimeLog, line);
     await writeTextFile(globalLog, line);
+  }
+
+  async function readDeliveryLog(file, limit) {
+    if (!file) return [];
+    try {
+      if (typeof readJsonlTail === "function") {
+        const rows = await readJsonlTail(file, limit);
+        return arr(rows);
+      }
+    } catch {
+      // fall through
+    }
+    return [];
   }
 
   async function snapshot(worldDir, runtimeDir, label, payload) {
@@ -300,12 +314,9 @@ export function createAlchemyDeliveryService({
 
     let worldDir = worldDirFor(body.moduleKey, preview);
     let runtimeDir = runtimeDirFor(body.moduleKey, worldDir);
-    await callMaybe(ensureDir, runtimeDir);
-
-    const snapPath = await snapshot(worldDir, runtimeDir, "before", { selectedTargets, previewId: result.previewId });
-    result.snapshotPath = snapPath;
 
     if (selectedTargets.includes("candidate_only")) {
+      await callMaybe(ensureDir, runtimeDir);
       await appendLog(runtimeDir, { ...result, status: "candidate_only" });
       return { ...result, status: "ok", message: "已保存为候选，不写入正式入口。" };
     }
@@ -314,6 +325,18 @@ export function createAlchemyDeliveryService({
       const dirs = await deliverWorldModule(body, preview, result);
       worldDir = dirs.worldDir;
       runtimeDir = dirs.runtimeDir;
+      await callMaybe(ensureDir, runtimeDir);
+      result.snapshotPath = await snapshot(worldDir, runtimeDir, "initial-world-module", {
+        selectedTargets,
+        previewId: result.previewId,
+        note: "Snapshot captured after creating the new module folder, before secondary target merges."
+      });
+    } else {
+      await callMaybe(ensureDir, runtimeDir);
+      result.snapshotPath = await snapshot(worldDir, runtimeDir, "before", {
+        selectedTargets,
+        previewId: result.previewId
+      });
     }
 
     if (selectedTargets.includes("worldbook")) await deliverWorldbook(worldDir, preview, result);
@@ -329,10 +352,39 @@ export function createAlchemyDeliveryService({
   }
 
   async function listDeliveries(query = {}) {
+    const limit = Math.max(1, Math.min(200, Number(query.limit || 50)));
+    const moduleKey = String(query.moduleKey || "");
+    const files = [join(rootDir(), "alchemy-deliveries.jsonl")];
+
+    if (moduleKey) {
+      const worldDir = worldDirFor(moduleKey, {});
+      const runtimeDir = runtimeDirFor(moduleKey, worldDir);
+      files.push(join(runtimeDir, "alchemy-deliveries.jsonl"));
+    }
+
+    const rows = [];
+    for (const file of files) {
+      const items = await readDeliveryLog(file, limit);
+      for (const item of items) {
+        rows.push({ ...item, _logPath: file });
+      }
+    }
+
+    const unique = new Map();
+    for (const item of rows) {
+      const key = item.deliveryId || `${item.createdAt}:${item.previewId}:${item.sourceHash}`;
+      unique.set(key, item);
+    }
+
+    const deliveries = [...unique.values()]
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+      .slice(0, limit);
+
     return {
       status: "ok",
-      note: "Delivery log is stored as runtime/alchemy-deliveries.jsonl and global alchemy-deliveries.jsonl. Wire readFile dependency if UI needs full listing.",
-      moduleKey: query.moduleKey || ""
+      moduleKey,
+      deliveries,
+      count: deliveries.length
     };
   }
 

@@ -52,3 +52,17 @@
 - strategy spec 能生成并封印。
 - 交付有日志。
 - 所有链路有测试。
+
+## G1-Fix Closure Definition
+
+G1 is considered closed only when all of the following are true:
+
+1. `/api/alchemy/plan` uses the configured LLM when available, with heuristic fallback only as degradation.
+2. `/api/alchemy/generate-preview` turns a user idea or imported setting into a preview using the dedicated alchemy prompt templates.
+3. The user must choose delivery targets before preview generation and before delivery.
+4. `/api/alchemy/localize` converts the preview into a local installable folder draft.
+5. `/api/alchemy/deliver` refuses writes without `userConfirmed: true`.
+6. New `world_module` delivery does not create accidental `name-2` folders because of pre-snapshot directory creation.
+7. `/api/alchemy/deliveries` returns real delivery log records.
+8. The console exposes a minimal G1 UI without locking future UI redesigns.
+

@@ -291,7 +291,7 @@ export function createAlchemyPreviewService({
         userMustConfirmDelivery: true
       },
       summary: {
-        title: ({ import: "素材导入预览", co_create: "协作创作预览", polish: "整理润色预览", structure: "结构预览" }[mode]),
+        title: ({ import: "素材导入预览", co_create: "协作创作预览", polish: "整理润色预览", structure: "结构预览", quick_create: "快速创世预览", localize_existing: "本地化导入预览" }[mode] || "炼金预览"),
         description: scrubText(items.length ? `已生成 ${items.length} 个候选条目，确认后可加入审核队列。` : "未生成候选条目。"),
         counts: countItems(items)
       },
