@@ -3223,11 +3223,14 @@ function deriveLlmUiStatus(health = {}, config = {}, hasApiKey = false) {
 }
 
 async function init() {
-  for (const base of ["http://localhost:3000", window.location.origin]) {
+  const baseCandidates = [window.location.origin, "http://localhost:3000"];
+  for (const base of baseCandidates) {
     try {
       const res = await fetch(`${base}/api/status`);
       if (res.ok) { API.base = base; break; }
-    } catch (err) { console.warn("[init] API probe failed (non-fatal):", err?.message || "unknown error"); }
+    } catch (err) {
+      if (base === baseCandidates[baseCandidates.length - 1]) console.info("[init] API fallback unavailable:", err?.message || "unknown error");
+    }
   }
   try { Object.assign(AS.config, await API.loadConfig()); } catch (err) { console.warn("[init] config load failed (non-fatal):", err?.message || "unknown error"); }
   try {

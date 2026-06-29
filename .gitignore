@@ -50,3 +50,7 @@ src/v0-out.bak/
 # 日志
 *.log
 npm-debug.log*
+
+# 本地浏览器烟测产物
+.playwright-cli/
+output/playwright/

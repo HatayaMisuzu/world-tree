@@ -1,6 +1,10 @@
 # Alchemy G1 Manual Smoke
 
-Status: NOT RUN in browser yet.
+Status: PARTIAL.
+
+Automated browser entry smoke passed on 2026-06-29: the homepage loaded, `打开炼金台` opened the Alchemy G1 panel, the four G1 step buttons were visible, and the browser snapshot reported no console errors or warnings.
+
+Full Flow A and Flow B remain NOT RUN.
 
 Use this checklist after starting the local app with `npm start`.
 
@@ -44,7 +48,7 @@ Use this checklist after starting the local app with `npm start`.
 
 | Check | Result | Notes |
 |---|---|---|
-| Browser loaded | TODO | TODO |
+| Browser loaded | PASS | Automated Playwright CLI smoke on isolated local server; homepage and G1 entry panel loaded with clean console. |
 | Flow A plan | TODO | TODO |
 | Flow A preview | TODO | TODO |
 | Flow A localize | TODO | TODO |

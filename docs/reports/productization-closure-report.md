@@ -6,7 +6,7 @@ Date: 2026-06-29
 
 Productization Closure: PARTIAL
 
-Closure cannot be claimed complete because first-run example content is intentionally deferred and browser/manual smoke evidence is not recorded for this pass.
+Closure cannot be claimed complete because first-run example content is intentionally deferred and full product-entry manual smoke is not recorded for this pass.
 
 ## Branch And Commits
 
@@ -20,6 +20,7 @@ Commits:
 - `a403bde` docs(productization): record entry closure matrix
 - `dbb4634` ci(productization): require closure gates
 - this report commit: docs(productization): publish partial closure report
+- next evidence commit: record browser smoke evidence and console-clean startup fix
 
 ## What Changed
 
@@ -32,13 +33,15 @@ Commits:
 - Added product-entry closure matrix.
 - Added CI product gates without hidden failure behavior.
 - Added install, release-readiness, and troubleshooting docs.
+- Added an automated browser entry smoke pass for the homepage to Creation Forge / Alchemy G1 panel.
+- Fixed startup browser noise by probing the current app origin before the localhost fallback and by using an inline favicon.
 
 ## Product Loops
 
 | Entry | Status | Evidence | Limitation |
 |---|---|---|---|
-| Quick Setting | PARTIAL | integration quick-setting tests | browser smoke not run |
-| Creation Forge / Alchemy | AUTOMATED PASS / PRODUCT PARTIAL | `npm run test:alchemy-closure` | browser smoke and first real turn not recorded |
+| Quick Setting | PARTIAL | integration quick-setting tests; automated homepage smoke | full browser flow not run |
+| Creation Forge / Alchemy | AUTOMATED PASS / PRODUCT PARTIAL | `npm run test:alchemy-closure`; automated browser entry smoke | full Flow A/B and first real turn not recorded |
 | Worldbook | FOUNDATION PASS / PRODUCT PARTIAL | `npm run test:worldbook-v2` | product UI/API closure incomplete |
 | Character | SERVICE PASS / PRODUCT PARTIAL | `npm run test:world-tree-v2-entries` | advanced editor incomplete |
 | Strategy Sim | FOUNDATION PASS / PRODUCT PARTIAL | `npm run test:strategy-sim-v2` | product UI/API closure incomplete |
@@ -65,19 +68,27 @@ Commits:
 | `npm run docs:check` | PASS, 24/24 |
 | `npm install` | PASS |
 | isolated local start smoke | PASS, `/api/health` returned `ok`, console returned HTTP 200 |
+| automated browser entry smoke | PASS, homepage and Alchemy G1 panel loaded; console clean |
 | `git diff --check` | PASS |
 
 ## Manual Smoke
 
-Manual smoke status: NOT RUN.
+Manual smoke status: PARTIAL.
 
-`docs/manual-smoke/alchemy-g1-smoke.md` contains the Alchemy G1 checklist, but no browser run is claimed.
+Automated browser entry smoke passed on 2026-06-29 using an isolated local server and Playwright CLI:
+
+- Homepage loaded and exposed `World Tree`, `快速设定`, and `打开炼金台`.
+- Clicking `打开炼金台` opened the Alchemy G1 panel.
+- The G1 panel exposed `生成创作地图`, `生成内容预览`, `生成本地文件夹草案`, and `确认交付`.
+- Browser snapshot reported no console errors or warnings.
+
+The complete manual Flow A/Flow B checklist remains NOT RUN.
 
 ## Known Limitations
 
 - First-run examples are deferred by current instruction.
 - `defaults/examples/manifest.json` remains empty.
-- Browser/manual smoke is not recorded.
+- Full Flow A/Flow B manual smoke and first-turn readback are not recorded.
 - Product-wide playable closure is not complete.
 - Full V2 is not complete.
 

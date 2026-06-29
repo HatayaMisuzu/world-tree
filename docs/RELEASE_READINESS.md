@@ -15,7 +15,7 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | V2 entry service slices | AUTOMATED PASS | `npm run test:world-tree-v2-entries` |
 | Project audit | AUTOMATED PASS | `npm run test:project-complete-audit` |
 | First-run examples | DEFERRED | example content intentionally not added |
-| Browser/manual smoke | NOT RUN | manual smoke docs exist for Alchemy G1 |
+| Browser/manual smoke | PARTIAL | automated homepage to Alchemy G1 entry smoke passed with clean console; full Flow A/B manual smoke not run |
 
 ## Release Decision
 
@@ -24,6 +24,6 @@ Do not publish npm, Docker, or GitHub Release from this state.
 This branch is suitable as a productization closure evidence branch with PARTIAL status. A release candidate needs:
 
 1. First-run examples restored and tested.
-2. Browser/manual smoke evidence for major entries.
+2. Full browser/manual smoke evidence for major entries.
 3. Final full validation after examples are restored.
 4. Explicit version decision.
