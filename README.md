@@ -97,6 +97,8 @@ http://127.0.0.1:3000
 
 当前版本更接近 V2 entry closure / productization baseline：部分入口已有工程或服务闭环，但全面产品闭环尚未完成。没有内置内容包时，部分入口需要用户自行提供素材。
 
+Creation Forge / 炼金台 G1 的工程闭环已经接入：它可以生成创作地图、内容预览、本地文件夹草案，并在用户选择目标且确认后交付。Productization Closure 仍在进行中；内置示例、产品级 CI/E2E gates、完整入口闭环和人工/浏览器 smoke 证据需要以后续 closure 报告为准。
+
 如果你不知道从哪里开始，可以这样选：
 
 | 你想做什么 | 推荐入口 |

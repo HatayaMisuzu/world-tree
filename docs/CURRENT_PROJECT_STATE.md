@@ -43,7 +43,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | PRODUCT CLOSURE NOT COMPLETE | `test:strategy-sim-v2` |
 | Worldbook V2 | ENGINEERING FOUNDATION COMPLETE | PRODUCT CLOSURE NOT COMPLETE | `test:worldbook-v2` |
 | Quick Setting | USABLE THIN LOOP | PRODUCT CLOSURE PARTIAL | current project creation flow |
-| Creation Forge | PRODUCER WORKFLOW ACTIVE | NOT A NORMAL PLAY ENTRY | alchemy/material/review workflow |
+| Creation Forge | G1 ENGINEERING LOOP IMPLEMENTED | PRODUCT CLOSURE IN PROGRESS | `test:alchemy-closure`, `docs/reports/productization-reality-check.md` |
 
 ## What is current
 
@@ -54,6 +54,8 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - Hidden truth and private/system-only data must not enter player-visible outputs.
 - Worldbook V2 engineering foundation is complete.
 - Strategy Sim V2 engineering foundation is complete.
+- Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
+- Productization Closure is in progress; examples, CI/E2E product gates, product-entry closure, and browser/manual smoke evidence are not complete until separately recorded.
 - Product closure remains incomplete for Worldbook V2 and Strategy Sim V2.
 - Full product-wide V2 is not complete.
 
@@ -119,6 +121,7 @@ Product closure not complete:
 - `world-tree-console.js` remains monolithic.
 - No TypeScript migration.
 - No automated browser QA unless separately recorded.
+- First-run examples are currently incomplete if `defaults/examples/manifest.json` has no bundled examples.
 
 ## Required checks
 

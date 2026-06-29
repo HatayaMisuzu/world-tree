@@ -11,6 +11,7 @@
 | [AGENT_STATUS_HANDOFF.md](AGENT_STATUS_HANDOFF.md) | Agent handoff summary |
 
 Current status: Full V2 is not complete. Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is not complete.
+Productization Closure is in progress. Creation Forge / Alchemy G1 engineering loop is implemented, but examples, product-wide CI/E2E gates, and manual/browser smoke evidence are not complete until recorded in closure reports.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree 文档索引
@@ -56,6 +57,7 @@ Key entry points for the current baseline:
 | [ARCHITECTURE_MAP.md](ARCHITECTURE_MAP.md) | Architecture map |
 | [API_ROUTE_INVENTORY.md](API_ROUTE_INVENTORY.md) | API route inventory |
 | [MODE_BOUNDARY_MAP.md](MODE_BOUNDARY_MAP.md) | Mode boundary map |
+| [Productization Reality Check](reports/productization-reality-check.md) | R0 Productization Closure reality check |
 
 ---
 
