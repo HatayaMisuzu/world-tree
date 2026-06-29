@@ -83,6 +83,13 @@ const API = {
   alchemyRefine(data) { return API.post("/api/alchemy/refine", data); },
   alchemyCommit(data) { return API.post("/api/alchemy/commit", data); },
   alchemyReview(data) { return data ? API.post("/api/alchemy/review", data) : API.get("/api/alchemy/review"); },
+  alchemyCapabilities() { return API.get("/api/alchemy/capabilities"); },
+  alchemyPlan(data) { return API.post("/api/alchemy/plan", data); },
+  alchemyLocalize(data) { return API.post("/api/alchemy/localize", data); },
+  alchemyDeliver(data) { return API.post("/api/alchemy/deliver", data); },
+  alchemyDeliveries(moduleKey = "") {
+    return API.get(`/api/alchemy/deliveries?moduleKey=${encodeURIComponent(moduleKey || "")}`);
+  },
   mechanismDraft(data) { return API.post("/api/mechanisms/draft/from-alchemy", data); },
   mechanismLibrary({ query = "", moduleKey = "", previewId = "" } = {}) { return API.get(`/api/mechanisms/library?query=${encodeURIComponent(query)}&moduleKey=${encodeURIComponent(moduleKey)}&previewId=${encodeURIComponent(previewId)}`); },
   mechanismWorld(moduleKey) { return API.get(`/api/mechanisms/world?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
@@ -311,6 +318,17 @@ const AS = {
   alchemyEditingMechanismId: "",
   alchemyMechanismTemplateId: "",
   alchemyMechanismQuery: "",
+  alchemyG1: {
+    capabilities: null,
+    plan: null,
+    preview: null,
+    localFolderDraft: null,
+    selectedTargets: [],
+    userSupplement: "",
+    deliveries: [],
+    busy: false,
+    error: ""
+  },
   developerObservabilityOpen: false,
   developerObservabilityTab: "context",
   statusPanelVisible: true,

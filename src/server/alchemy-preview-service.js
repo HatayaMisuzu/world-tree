@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
 
-export const ALCHEMY_PREVIEW_MODES = new Set(["import", "co_create", "polish", "structure"]);
+export const ALCHEMY_PREVIEW_MODES = new Set(["import", "co_create", "polish", "structure", "quick_create", "localize_existing"]);
 export const ALCHEMY_REFINE_MODES = new Set(["co_create", "polish", "structure"]);
 export const ALCHEMY_PREVIEW_TARGETS = new Set([
-  "mixed", "worldbook", "character", "location", "faction", "rule", "plot", "opening", "world_draft"
+  "mixed", "worldbook", "character", "location", "faction", "rule", "plot", "opening", "world_draft",
+  "world_module", "strategy_sim_spec", "tabletop_module", "detective_case", "scriptkill_case", "candidate_only"
 ]);
 
 const PREVIEW_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -281,6 +282,14 @@ export function createAlchemyPreviewService({
       mode,
       target,
       ...(meta.previousPreviewId ? { previousPreviewId: meta.previousPreviewId } : {}),
+      creationMap: body.creationMap || body.plan || null,
+      selectedTargets: Array.isArray(body.selectedTargets) ? body.selectedTargets : [],
+      deliveryPlan: Array.isArray(body.deliveryPlan) ? body.deliveryPlan : [],
+      sourcePolicy: {
+        userSpecifiedPreserved: true,
+        llmSuggestedMarked: true,
+        userMustConfirmDelivery: true
+      },
       summary: {
         title: ({ import: "素材导入预览", co_create: "协作创作预览", polish: "整理润色预览", structure: "结构预览" }[mode]),
         description: scrubText(items.length ? `已生成 ${items.length} 个候选条目，确认后可加入审核队列。` : "未生成候选条目。"),

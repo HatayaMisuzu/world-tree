@@ -89,6 +89,7 @@
     "test:project-complete-audit": "node scripts/audit-world-tree-project-complete.mjs",
     "test:strategy-sim-v2": "node --test tests/unit/strategy-sim-spec.test.js tests/unit/strategy-sim-run-state.test.js tests/unit/strategy-sim-public-view-scrubber.test.js tests/unit/strategy-sim-turn-engine.test.js tests/unit/strategy-sim-probability-roll-record.test.js tests/unit/strategy-numeric-system.test.js tests/unit/strategy-probability-system.test.js tests/unit/strategy-v2-ready.test.js",
     "test:worldbook-v2": "node --test tests/unit/worldbook-v2-*.test.js",
+    "test:alchemy-closure": "node --test tests/unit/alchemy-capabilities.test.js tests/unit/alchemy-planner-service.test.js tests/unit/alchemy-localizer-service.test.js tests/unit/alchemy-delivery-service.test.js tests/integration/alchemy-engineering-closure.test.js",
     "truth:check": "node scripts/check-truth-source-sync.mjs"
   },
   "keywords": [

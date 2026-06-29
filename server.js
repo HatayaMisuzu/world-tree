@@ -36,11 +36,16 @@ import {
 } from "./src/server/local-access.js";
 import { guessTypeFromKeywords } from "./src/core/data/alchemy/types.js";
 import { AlchemyPreviewError, createAlchemyPreviewService } from "./src/server/alchemy-preview-service.js";
+import { getAlchemyCapabilities } from "./src/server/alchemy-capabilities.js";
+import { createAlchemyPlannerService } from "./src/server/alchemy-planner-service.js";
+import { createAlchemyLocalizerService } from "./src/server/alchemy-localizer-service.js";
+import { createAlchemyDeliveryService } from "./src/server/alchemy-delivery-service.js";
 import {
   commitMechanismDrafts,
   extractMechanismDrafts,
   listMechanismLibrary,
   MechanismValidationError,
+  normalizeMechanismDraft,
   scrubMechanismValue
 } from "./src/server/mechanism-service.js";
 import {
@@ -61,6 +66,7 @@ import {
   ingestProcessingMaterial, listProcessingCandidates, deliverProcessingById
 } from "./src/server/kernel-service.js";
 import { handleWorkflowApiRequest, getWorkflowTypesResponse, getWorkflowStatus } from "./src/core/workflows/adapters/server-workflow-adapter.js";
+import { normalizeStrategySimSpec, validateStrategySimSpec, sealStrategySimSpec } from "./src/core/strategy-sim/strategy-sim-spec.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -967,6 +973,45 @@ const alchemyPreviewService = createAlchemyPreviewService({
     return { ...result, phases: [...(collaborationPhase ? [collaborationPhase] : []), ...(result?.phases || [])], _llmUsed: Boolean(llmCall) };
   },
   enqueueReviewItems
+});
+
+// ── 炼金台 G1：Planner / Localizer / Delivery service ──
+const alchemyPlannerService = createAlchemyPlannerService({
+  getCapabilities: getAlchemyCapabilities,
+  runLlmJson: async (_prompt) => {
+    throw new Error("runAlchemyLlmJson not wired — planner uses heuristic fallback");
+  }
+});
+
+const alchemyLocalizerService = createAlchemyLocalizerService({
+  normalizeWorldbookEntry: normalizeWorldbookEntryForSave,
+  normalizeMechanismDraft,
+  normalizeStrategySimSpec,
+  sealStrategySimSpec,
+  safeEntityId,
+  now: () => new Date()
+});
+
+const alchemyDeliveryService = createAlchemyDeliveryService({
+  dataRoot,
+  worldsDir: WORLDS_DIR,
+  moduleRuntimeDir,
+  moduleWorldDir,
+  readJson: readJsonSync,
+  writeJson,
+  writeFile,
+  appendJsonl,
+  exists: existsSync,
+  ensureDir,
+  normalizeWorldbookEntry: normalizeWorldbookEntryForSave,
+  normalizeMechanismDraft,
+  commitMechanismDrafts,
+  normalizeStrategySimSpec,
+  validateStrategySimSpec,
+  sealStrategySimSpec,
+  buildInstallableFolderDraft: alchemyLocalizerService.buildInstallableFolderDraft,
+  safeEntityId,
+  now: () => new Date()
 });
 
 async function handleAlchemyPreviewAction(action, body) {
@@ -2715,6 +2760,20 @@ async function handleAPI(req, res) {
     if (path === "/api/alchemy/digest" && method === "POST") return jsonResponse(res, await handleAlchemyDigest(await readBody(req)));
     if (path === "/api/alchemy/review" && method === "GET") return jsonResponse(res, await handleAlchemyReview({}, "GET"));
     if (path === "/api/alchemy/review" && method === "POST") return jsonResponse(res, await handleAlchemyReview(await readBody(req), "POST"));
+    // ── 炼金台 G1：新路由 ──
+    if (path === "/api/alchemy/capabilities" && method === "GET") return jsonResponse(res, getAlchemyCapabilities());
+    if (path === "/api/alchemy/plan" && method === "POST") return jsonResponse(res, await alchemyPlannerService.plan(await readBody(req)));
+    if (path === "/api/alchemy/localize" && method === "POST") {
+      const body = await readBody(req);
+      const preview = body.preview || body.editedPreview || {};
+      return jsonResponse(res, alchemyLocalizerService.buildInstallableFolderDraft(preview, {
+        selectedTargets: body.selectedTargets || []
+      }));
+    }
+    if (path === "/api/alchemy/deliver" && method === "POST") return jsonResponse(res, await alchemyDeliveryService.deliver(await readBody(req)));
+    if (path === "/api/alchemy/deliveries" && method === "GET") return jsonResponse(res, await alchemyDeliveryService.listDeliveries({
+      moduleKey: url.searchParams.get("moduleKey") || ""
+    }));
     if (path === "/api/mechanisms/draft/from-alchemy" && method === "POST") return jsonResponse(res, await handleMechanismDraftFromAlchemy(await readBody(req)));
     if (path === "/api/mechanisms/library" && method === "GET") return jsonResponse(res, await handleMechanismLibrary(url));
     if (path === "/api/mechanisms/world" && method === "GET") return jsonResponse(res, await handleMechanismWorld(url));
