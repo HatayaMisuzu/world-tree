@@ -96,3 +96,24 @@ test("world_module delivery creates local world folder and logs", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("world_module delivery does not pre-create folder and rename to suffix", async () => {
+  const root = await mkdtemp(join(tmpdir(), "alchemy-delivery-"));
+  try {
+    const service = createAlchemyDeliveryService(deps(root));
+    const result = await service.deliver({
+      preview,
+      previewId: "preview-1",
+      selectedTargets: ["world_module"],
+      userConfirmed: true
+    });
+
+    assert.equal(result.status, "ok");
+    const worldPath = result.targetPaths.find((item) => item.target === "world_module").path;
+    assert.ok(worldPath.endsWith("cyber-xianxia"), `expected path to end with cyber-xianxia, got ${worldPath}`);
+    assert.ok(!worldPath.endsWith("cyber-xianxia-2"), `path should not have -2 suffix: ${worldPath}`);
+    assert.ok(existsSync(join(worldPath, "world.json")));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
