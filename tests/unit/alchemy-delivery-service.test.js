@@ -113,6 +113,8 @@ test("world_module delivery does not pre-create folder and rename to suffix", as
     assert.ok(worldPath.endsWith("cyber-xianxia"), `expected path to end with cyber-xianxia, got ${worldPath}`);
     assert.ok(!worldPath.endsWith("cyber-xianxia-2"), `path should not have -2 suffix: ${worldPath}`);
     assert.ok(existsSync(join(worldPath, "world.json")));
+    assert.ok(result.snapshotPath.startsWith(join(worldPath, "runtime", "snapshots")));
+    assert.ok(existsSync(result.snapshotPath));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

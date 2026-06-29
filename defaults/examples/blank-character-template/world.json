@@ -1,0 +1,9 @@
+{
+  "name": "blank-character-template",
+  "displayName": "空白角色模板",
+  "dataMode": "character_card",
+  "subType": "blank_character",
+  "preset": "blank",
+  "templateKind": "blank_template",
+  "contentPolicy": "blank_structure_only"
+}

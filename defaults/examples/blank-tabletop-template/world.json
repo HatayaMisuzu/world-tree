@@ -1,0 +1,9 @@
+{
+  "name": "blank-tabletop-template",
+  "displayName": "空白跑团模板",
+  "dataMode": "worldbook",
+  "subType": "blank_tabletop",
+  "preset": "blank",
+  "templateKind": "blank_template",
+  "contentPolicy": "blank_structure_only"
+}

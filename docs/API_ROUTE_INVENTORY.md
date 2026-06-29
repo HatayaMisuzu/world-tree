@@ -72,6 +72,12 @@
 | POST | `/api/alchemy/digest` | alchemy | — | — | no | yes | `handleAlchemyDigest` |
 | GET | `/api/alchemy/review` | alchemy | review queue | — | no | yes | `handleAlchemyReview` |
 | POST | `/api/alchemy/review` | alchemy | review queue | review queue | no | yes | `handleAlchemyReview` |
+| GET | `/api/alchemy/capabilities` | alchemy G1 | capabilities | — | no | yes | `getAlchemyCapabilities` |
+| POST | `/api/alchemy/plan` | alchemy G1 | user input, LLM config | — | no | yes | `alchemyPlannerService.plan` |
+| POST | `/api/alchemy/generate-preview` | alchemy G1 | plan, selected targets, LLM config | — | no | yes | `alchemyGenerationService.generate` |
+| POST | `/api/alchemy/localize` | alchemy G1 | preview, selected targets | — | no | yes | `alchemyLocalizerService.buildInstallableFolderDraft` |
+| POST | `/api/alchemy/deliver` | alchemy G1 | preview, local folder draft, selected targets | engine/worlds/, delivery log | no | yes | `alchemyDeliveryService.deliver` |
+| GET | `/api/alchemy/deliveries` | alchemy G1 | delivery log | — | no | yes | `alchemyDeliveryService.listDeliveries` |
 | POST | `/api/mechanisms/draft/from-alchemy` | alchemy | alchemy previews | mechanism drafts | no | yes | `handleMechanismDraftFromAlchemy` |
 | GET | `/api/mechanisms/library` | alchemy | mechanism library | — | no | yes | `handleMechanismLibrary` |
 | GET | `/api/mechanisms/world` | alchemy | mechanism world | — | no | yes | `handleMechanismWorld` |

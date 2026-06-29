@@ -21,5 +21,11 @@ jobs:
       - run: npm test
       - run: npm run test:unit
       - run: npm run test:integration
+      - run: npm run test:alchemy-closure
+      - run: npm run test:worldbook-v2
+      - run: npm run test:strategy-sim-v2
+      - run: npm run test:world-tree-v2-entries
+      - run: npm run test:project-complete-audit
+      - run: npm run truth:check
       - run: npm run audit
       - run: npm run interface-audit

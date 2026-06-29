@@ -11,9 +11,17 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Item | Value |
 |---|---|
 | Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
+| Trusted Baseline | `v0.4.2-v2-engineering-foundation-truth.0` |
 | Current branch | `main` |
+| Latest audited commit | `dbb4634` |
+| V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI` |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
+| Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL |
+| User-created content closure | PASS |
+| Blank template infrastructure | PASS |
+| Bundled story examples | DEFERRED |
+| Tutorial / onboarding content | DEFERRED |
 | Remote CI | UNKNOWN unless a concrete workflow run is referenced |
 | Browser QA | UNKNOWN unless separately recorded |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
@@ -25,6 +33,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - **Engineering/service closure complete**: service/API/persistence/import/export or equivalent runtime service slice exists and is tested.
 - **Product closure not complete**: complete first-run UI/user flow, bundled content, browser QA, service persistence/API, or product-grade editing/review experience is not fully proven.
 - **Full V2 not complete**: project-wide product-grade V2 is not complete.
+- **V2 Entry Closure**: selected V2 entry engineering/service slices are sealed for audit purposes, but this does not mean product-wide playable closure is complete.
 
 ## Current status table
 
@@ -43,7 +52,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | PRODUCT CLOSURE NOT COMPLETE | `test:strategy-sim-v2` |
 | Worldbook V2 | ENGINEERING FOUNDATION COMPLETE | PRODUCT CLOSURE NOT COMPLETE | `test:worldbook-v2` |
 | Quick Setting | USABLE THIN LOOP | PRODUCT CLOSURE PARTIAL | current project creation flow |
-| Creation Forge | PRODUCER WORKFLOW ACTIVE | NOT A NORMAL PLAY ENTRY | alchemy/material/review workflow |
+| Creation Forge | G1 ENGINEERING LOOP IMPLEMENTED | PRODUCT CLOSURE IN PROGRESS | `test:alchemy-closure`, `docs/reports/productization-reality-check.md` |
 
 ## What is current
 
@@ -54,6 +63,8 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - Hidden truth and private/system-only data must not enter player-visible outputs.
 - Worldbook V2 engineering foundation is complete.
 - Strategy Sim V2 engineering foundation is complete.
+- Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
+- Productization Closure is in progress; user-created content closure and blank template infrastructure are recorded as PASS, while bundled story examples, tutorials, onboarding demo content, product-wide manual smoke, and release readiness remain incomplete or deferred.
 - Product closure remains incomplete for Worldbook V2 and Strategy Sim V2.
 - Full product-wide V2 is not complete.
 
@@ -119,6 +130,7 @@ Product closure not complete:
 - `world-tree-console.js` remains monolithic.
 - No TypeScript migration.
 - No automated browser QA unless separately recorded.
+- `defaults/examples/manifest.json` currently contains blank structural placeholders only. They are install/readback test material and future replacement slots, not bundled story examples or tutorials.
 
 ## Required checks
 

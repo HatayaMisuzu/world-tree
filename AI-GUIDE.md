@@ -114,6 +114,9 @@ npm run test:integration      # 全量集成测试
 npm run test:worldbook-v2     # Worldbook V2
 npm run test:strategy-sim-v2  # Strategy Sim V2
 npm run test:world-tree-v2-entries  # V2 entry closure gates
+npm run test:single-player-scriptkill-v2  # Single Player ScriptKill V2 service gate
+npm run test:single-player-scriptkill-v2-audit  # Single Player ScriptKill V2 audit gate
+npm run test:project-complete-audit  # V2 entry closure project audit
 npm run preflight             # audit + check + unit + integration + interface
 ```
 

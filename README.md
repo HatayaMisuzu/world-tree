@@ -13,6 +13,7 @@
 # World Tree
 
 > **当前版本：v0.4.2-v2-engineering-foundation-truth.0 — Truth-source alignment after Strategy Sim V2 and Worldbook V2 engineering foundations.**
+> V2 Entry Closure baseline covers Tabletop V2, Detective V2, Character V2, and 单人剧本杀 V2 service/engineering slices; it does not mean full product-wide playable closure.
 > 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md)
 
 World Tree 让用户进入角色、世界、案件、局势和故事现场，进行持续的互动、探索、推理、扮演和体验。它也提供创作能力，但创作不是终点：创作角色，是为了互动；创作世界书，是为了探索；创作案件，是为了推理；创作项目包，是为了让体验能保存、继续和扩展。
@@ -96,6 +97,10 @@ http://127.0.0.1:3000
 ```
 
 当前版本更接近 V2 entry closure / productization baseline：部分入口已有工程或服务闭环，但全面产品闭环尚未完成。没有内置内容包时，部分入口需要用户自行提供素材。
+
+Creation Forge / 炼金台 G1 的工程闭环已经接入：它可以生成创作地图、内容预览、本地文件夹草案，并在用户选择目标且确认后交付。当前 productization closure evidence 已记录用户自带内容 Flow A/Flow B PASS，以及空白结构模板 PASS。
+
+当前 Productization Closure 报告见 `docs/reports/productization-closure-report.md`，状态仍为 PARTIAL：当前只提供空白模板占位符，不包含剧情示例世界、教程或 onboarding demo 内容，也不声明 `v1.0.0` ready。
 
 如果你不知道从哪里开始，可以这样选：
 
