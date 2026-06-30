@@ -105,6 +105,11 @@ const API = {
   loadWorldbook(moduleKey) { return API.get(`/api/worldbook?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   saveWorldbook(data) { return API.post("/api/worldbook", data); },
   testWorldbook(data) { return API.post("/api/worldbook/test", data); },
+  worldbookV2Load(moduleKey) { return API.get(`/api/worldbook-v2/load?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+  worldbookV2CreateCandidate(data) { return API.post("/api/worldbook-v2/candidates/create", data); },
+  worldbookV2CandidateDecision(data) { return API.post("/api/worldbook-v2/candidates/decision", data); },
+  worldbookV2InjectPreview(data) { return API.post("/api/worldbook-v2/inject-preview", data); },
+  worldbookV2Export(data) { return API.post("/api/worldbook-v2/export", data); },
   connections(data) { return data ? API.post("/api/connections", data) : API.get("/api/connections"); },
   turnDebug(moduleKey) { return API.get(`/api/turn/debug?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
   statusLatest(moduleKey, saveId = "main") { return API.get(`/api/status/turn/latest?moduleKey=${encodeURIComponent(moduleKey || "")}&saveId=${encodeURIComponent(saveId)}`); },
@@ -138,6 +143,14 @@ const API = {
   tabletopV2RestoreSave(data) { return API.post("/api/tabletop-v2/restore-save", data); },
   tabletopV2SwitchBranch(data) { return API.post("/api/tabletop-v2/switch-branch", data); },
   tabletopV2ExportRun(data) { return API.post("/api/tabletop-v2/export-run", data); },
+  // Strategy Sim V2
+  strategySimV2Validate(data) { return API.post("/api/strategy-sim-v2/spec/validate", data); },
+  strategySimV2Seal(data) { return API.post("/api/strategy-sim-v2/spec/seal", data); },
+  strategySimV2Start(data) { return API.post("/api/strategy-sim-v2/start", data); },
+  strategySimV2Turn(data) { return API.post("/api/strategy-sim-v2/turn", data); },
+  strategySimV2Save(data) { return API.post("/api/strategy-sim-v2/save", data); },
+  strategySimV2LoadRun(data) { return API.post("/api/strategy-sim-v2/load-run", data); },
+  strategySimV2ExportRun(data) { return API.post("/api/strategy-sim-v2/export-run", data); },
   // Detective V2
   detectiveV2ImportPreview(data) { return API.post("/api/detective-v2/import-preview", data); },
   detectiveV2ImportCommit(data) { return API.post("/api/detective-v2/import-commit", data); },
@@ -252,6 +265,40 @@ function buildTabletopV2ModuleDraftFromText(text = "", preview = {}) {
   };
 }
 
+function parseJsonObjectInput(text = "", fallback = {}) {
+  const raw = String(text || "").trim();
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function buildWorldbookV2EntryFromText(text = "") {
+  const parsed = parseJsonObjectInput(text, null);
+  if (parsed) return parsed;
+  const lines = String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  return {
+    title: lines[0] || "未命名世界书条目",
+    keys: lines[1] ? lines[1].split(/[,，、]/).map(item => item.trim()).filter(Boolean) : [],
+    content: lines.slice(2).join("\n") || lines[0] || "",
+    visibility: "public"
+  };
+}
+
+function strategySimV2DefaultSpec() {
+  return {
+    specId: "ui_strategy_spec",
+    title: "UI Strategy Spec",
+    resources: [{ id: "supply", label: "Supply", min: 0, max: 10, initial: 5, visibility: "public", maxDeltaPerTurn: 2 }],
+    mechanisms: [{ id: "ration", label: "Ration", triggerTags: ["ration"], effects: [{ targetType: "resource", targetId: "supply", delta: -1, reason: "spent supply" }] }],
+    probabilityRules: [{ id: "scout", label: "Scout", triggerTags: ["scout"], baseChance: 0.5, visibility: "partial" }],
+    balanceProfile: { rngSeed: "ui-seed" }
+  };
+}
+
 const AS = {
   view: "workbench",
   workbenchMode: "overview",
@@ -348,13 +395,15 @@ const AS = {
   modePlay: null,
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
   characterV2Create: { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false },
+  worldbookV2: { entryText: "", input: "", loaded: null, candidate: null, preview: null, exportResult: null, lastResult: null, error: "", busy: false },
+  strategySimV2: { specText: "", runId: "", actionText: "", sealedSpec: null, publicView: null, lastResult: null, error: "", busy: false },
   tabletopV2: { runId: null, module: null, ruleset: null, lastRuling: null, ending: null },
   singlePlayerScriptKillV2: {
     scriptId: "", runId: "", importText: "", importPreview: null, playerRun: null,
     selectedRoleId: "", currentText: "", targetRoleId: "", locationId: "", clueId: "",
     voteTargetRoleId: "", nextPhaseId: "", lastResult: null, error: "", busy: false, panelOpen: false,
   },
-  detectiveV2: { caseId: null, runId: null, importPreview: null, playerCase: null, playerRun: null, currentLocationId: "", currentCharacterId: "", lastInvestigation: null, lastInterview: null, notebookOpen: true, notebook: null, deductionDraft: {}, error: "", busy: false },
+  detectiveV2: { caseId: null, runId: null, importText: "", importPreview: null, playerCase: null, playerRun: null, currentLocationId: "", currentCharacterId: "", currentEvidenceId: "", question: "", notebookEntryId: "", notebookSummary: "", deductionCulpritId: "", deductionMethod: "", lastInvestigation: null, lastInterview: null, notebookOpen: true, notebook: null, deductionDraft: {}, lastResult: null, exportResult: null, error: "", busy: false },
 };
 
 const C = {
@@ -530,6 +579,60 @@ function renderProgressPanel() {
   </section>`;
 }
 
+function renderWorldbookV2Panel() {
+  const s = AS.worldbookV2 || {};
+  const moduleKey = AS.selectedModule?.id || "";
+  const candidates = s.loaded?.candidates || [];
+  return `<section class="panel worldbook-v2-panel">
+    <div class="panel-head"><div><h2>Worldbook V2</h2><p class="sub">候选条目 · 显式采纳 · 玩家可见注入预览</p></div><div class="actions"><button class="small" data-action="worldbook-v2-load">读取V2</button><button class="small" data-action="worldbook-v2-export">导出V2</button></div></div>
+    ${moduleKey ? "" : C.notice("请先选择或创建一个世界项目。", "warn")}
+    <div class="grid two">
+      <section><h3>候选条目</h3><textarea id="worldbookV2EntryText" placeholder='{"title":"Public Gate","keys":["gate"],"content":"Player-visible fact.","visibility":"public"}'>${U.esc(s.entryText || "")}</textarea><div class="actions"><button class="small primary" data-action="worldbook-v2-create-candidate">创建候选</button><button class="small" data-action="worldbook-v2-adopt-candidate" ${s.candidate?.candidateId || candidates.length ? "" : "disabled"}>采纳最新候选</button></div></section>
+      <section><h3>注入预览</h3><textarea id="worldbookV2Input" placeholder="输入玩家行动或场景文本">${U.esc(s.input || "")}</textarea><div class="actions"><button class="small primary" data-action="worldbook-v2-inject-preview">预览注入</button></div></section>
+    </div>
+    <div class="grid two">
+      <section><h3>当前状态</h3><pre class="tiny">${U.esc(U.json({ entries: s.loaded?.entries || [], candidates: candidates.slice(-5) }))}</pre></section>
+      <section><h3>最近结果</h3>${s.error ? C.notice(s.error, "error") : ""}<pre class="tiny">${U.esc(U.json(s.lastResult || s.preview || s.exportResult || null))}</pre></section>
+    </div>
+  </section>`;
+}
+
+function renderStrategySimV2Panel() {
+  const s = AS.strategySimV2 || {};
+  const specText = s.specText || U.json(strategySimV2DefaultSpec());
+  return `<section class="panel strategy-sim-v2-panel">
+    <div class="panel-head"><div><h2>Strategy Sim V2</h2><p class="sub">Spec 校验/封存 · Run · Turn · Save · Export</p></div><div class="actions"><button class="small" data-action="strategy-sim-v2-load-run">读取Run</button><button class="small" data-action="strategy-sim-v2-export-run">导出Run</button></div></div>
+    <div class="grid two">
+      <section><h3>Spec</h3><textarea id="strategySimV2SpecText">${U.esc(specText)}</textarea><div class="actions"><button class="small" data-action="strategy-sim-v2-validate">校验</button><button class="small" data-action="strategy-sim-v2-seal">封存</button><button class="small primary" data-action="strategy-sim-v2-start">开始Run</button></div></section>
+      <section><h3>行动</h3><input id="strategySimV2RunId" placeholder="runId" value="${U.esc(s.runId || "")}"><textarea id="strategySimV2ActionText" placeholder="ration and scout">${U.esc(s.actionText || "")}</textarea><div class="actions"><button class="small primary" data-action="strategy-sim-v2-turn">执行回合</button><button class="small" data-action="strategy-sim-v2-save">保存</button></div></section>
+    </div>
+    <div class="grid two">
+      <section><h3>Public View</h3><pre class="tiny">${U.esc(U.json(s.publicView || null))}</pre></section>
+      <section><h3>最近结果</h3>${s.error ? C.notice(s.error, "error") : ""}<pre class="tiny">${U.esc(U.json(s.lastResult || null))}</pre></section>
+    </div>
+  </section>`;
+}
+
+function renderDetectiveV2Panel() {
+  const s = AS.detectiveV2 || {};
+  const run = s.playerRun || {};
+  const locations = run.caseView?.locations || s.playerCase?.locations || [];
+  const characters = run.caseView?.characters || s.playerCase?.characters || [];
+  const evidence = run.discoveredEvidenceIds || run.evidenceIds || s.lastInvestigation?.newEvidenceIds || [];
+  const evidenceOptions = s.playerCase?.evidence || s.importPreview?.playerCaseView?.evidence || [];
+  return `<section class="panel detective-v2-panel">
+    <div class="panel-head"><div><h2>Detective V2</h2><p class="sub">案件导入 · 调查/询问 · 笔记 · 推理 · 导出</p></div><div class="actions"><button class="small" data-action="detective-v2-export-run">导出Run</button><button class="small" data-action="detective-v2-export-player-pack">玩家包</button></div></div>
+    <div class="grid two">
+      <section><h3>案件</h3><textarea id="detectiveV2ImportText" placeholder='{"title":"Case","locations":[...],"evidence":[...],"characters":[...],"truthLedger":{...}}'>${U.esc(s.importText || "")}</textarea><div class="actions"><button class="small" data-action="detective-v2-import-preview">预览案件</button><button class="small" data-action="detective-v2-import-commit">确认导入</button><button class="small primary" data-action="detective-v2-start">开始调查</button></div><p class="tiny muted">caseId: ${U.esc(s.caseId || "")} · runId: ${U.esc(s.runId || "")}</p></section>
+      <section><h3>调查 / 询问</h3><select id="detectiveV2LocationId"><option value="">选择地点</option>${locations.map(item => `<option value="${U.esc(item.locationId || item.id)}" ${s.currentLocationId === (item.locationId || item.id) ? "selected" : ""}>${U.esc(item.name || item.title || item.locationId || item.id)}</option>`).join("")}</select><select id="detectiveV2CharacterId"><option value="">选择角色</option>${characters.map(item => `<option value="${U.esc(item.characterId || item.id)}" ${s.currentCharacterId === (item.characterId || item.id) ? "selected" : ""}>${U.esc(item.name || item.characterId || item.id)}</option>`).join("")}</select><textarea id="detectiveV2Question" placeholder="询问问题">${U.esc(s.question || "")}</textarea><div class="actions"><button class="small primary" data-action="detective-v2-investigate">调查地点</button><button class="small" data-action="detective-v2-interrogate">询问角色</button></div></section>
+    </div>
+    <div class="grid two">
+      <section><h3>笔记 / 推理</h3><input id="detectiveV2EvidenceId" placeholder="evidenceId" value="${U.esc(s.currentEvidenceId || evidence[0] || "")}">${evidenceOptions.length ? `<select id="detectiveV2EvidenceSelect"><option value="">选择线索</option>${evidenceOptions.map(item => `<option value="${U.esc(item.evidenceId || item.id)}" ${s.currentEvidenceId === (item.evidenceId || item.id) ? "selected" : ""}>${U.esc(item.name || item.title || item.evidenceId || item.id)}</option>`).join("")}</select>` : ""}<input id="detectiveV2NotebookEntryId" placeholder="notebook entryId" value="${U.esc(s.notebookEntryId || "")}"><textarea id="detectiveV2NotebookSummary" placeholder="笔记摘要">${U.esc(s.notebookSummary || "")}</textarea><input id="detectiveV2DeductionCulpritId" placeholder="culpritId" value="${U.esc(s.deductionCulpritId || "")}"><input id="detectiveV2DeductionMethod" placeholder="method" value="${U.esc(s.deductionMethod || "")}"><div class="actions"><button class="small" data-action="detective-v2-notebook-extract" ${s.runId ? "" : "disabled"}>摘录线索</button><button class="small" data-action="detective-v2-notebook-update">更新笔记</button><button class="small primary" data-action="detective-v2-deduction-submit">提交推理</button></div></section>
+      <section><h3>最近结果</h3>${s.error ? C.notice(s.error, "error") : ""}<pre class="tiny">${U.esc(U.json(s.lastResult || s.exportResult || null))}</pre></section>
+    </div>
+  </section>`;
+}
+
 // ── Single Player ScriptKill V2 Panel ──
 function shouldShowSinglePlayerScriptKillV2Panel() {
   const modeId = AS.selectedModule?.mode || AS.selectedModule?.type || "";
@@ -573,6 +676,7 @@ function renderModePlayPanel() {
           <button data-action="tabletop-v2-save">💾 存档</button>
           <button data-action="tabletop-v2-branch">🔀 分支</button>
           <button data-action="tabletop-v2-end">📋 结局摘要</button>
+          <button data-action="tabletop-v2-export">导出</button>
           <button data-action="tabletop-v2-clear">✕ 清除</button>
         </div>
       </section>`);
@@ -592,9 +696,15 @@ function renderModePlayPanel() {
     }
   }
   const mystery = play.mystery?.discoveredClues ? play.mystery : play.mystery?.clueBoard;
-  if (["mystery-puzzle", "murder-mystery"].includes(modeId)) sections.push(`<section><strong>线索卡与假设白板</strong><div class="play-card-grid">${(mystery?.discoveredClues || []).map(item => `<article><b>${U.esc(item.name)}</b><span>${U.esc(item.location || "已发现")}</span></article>`).join("") || `<span class="tiny muted">输入 /clue 线索名 记录已知线索。</span>`}</div>${(mystery?.hypotheses || []).length ? `<p class="tiny">假设：${mystery.hypotheses.map(item => U.esc(item.statement)).join(" · ")}</p>` : `<p class="tiny muted">输入 /hypothesis 假设内容 建立假设。</p>`}</section>`);
+  if (["mystery-puzzle", "murder-mystery"].includes(modeId)) {
+    sections.push(`<section><strong>线索卡与假设白板</strong><div class="play-card-grid">${(mystery?.discoveredClues || []).map(item => `<article><b>${U.esc(item.name)}</b><span>${U.esc(item.location || "已发现")}</span></article>`).join("") || `<span class="tiny muted">输入 /clue 线索名 记录已知线索。</span>`}</div>${(mystery?.hypotheses || []).length ? `<p class="tiny">假设：${mystery.hypotheses.map(item => U.esc(item.statement)).join(" · ")}</p>` : `<p class="tiny muted">输入 /hypothesis 假设内容 建立假设。</p>`}</section>`);
+    sections.push(renderDetectiveV2Panel());
+  }
   const resources = play.strategy?.resources;
-  if (modeId === "strategy-sim") sections.push(`<section><strong>策略资源</strong><div class="resource-grid">${Object.entries(resources || {}).map(([key, item]) => `<article><span>${U.esc(item.label || key)}</span><b>${U.esc(item.value)} / ${U.esc(item.max)}</b><div class="meter-track"><div class="meter-fill" style="width:${Math.max(0, Math.min(100, Number(item.value || 0)))}%"></div></div></article>`).join("") || `<span class="tiny muted">资源状态将在第一轮载入。</span>`}</div><p class="tiny muted">可用：/invest_military · /expand_trade · /fortify_defense · /diplomacy_focus</p></section>`);
+  if (modeId === "strategy-sim") {
+    sections.push(`<section><strong>策略资源</strong><div class="resource-grid">${Object.entries(resources || {}).map(([key, item]) => `<article><span>${U.esc(item.label || key)}</span><b>${U.esc(item.value)} / ${U.esc(item.max)}</b><div class="meter-track"><div class="meter-fill" style="width:${Math.max(0, Math.min(100, Number(item.value || 0)))}%"></div></div></article>`).join("") || `<span class="tiny muted">资源状态将在第一轮载入。</span>`}</div><p class="tiny muted">可用：/invest_military · /expand_trade · /fortify_defense · /diplomacy_focus</p></section>`);
+    sections.push(renderStrategySimV2Panel());
+  }
   const narrative = play.narrative;
   if (narrative?.rhythmTag || narrative?.goals?.activeQuests?.length || narrative?.latestRecap) sections.push(`<section><strong>旅程</strong><p class="tiny">节奏：${U.esc(narrative.rhythmTag || "breath")}</p>${narrative.latestRecap ? `<p>${U.esc(narrative.latestRecap.summary)}</p>` : ""}${(narrative.goals?.activeQuests || []).map(item => `<p class="tiny">目标：${U.esc(item.name)} · ${U.esc(item.progress)}%</p>`).join("")}</section>`);
   return sections.length ? `<details class="kernel-panel mode-play-panel" open><summary><strong>真实游玩状态</strong><span class="tiny muted">runtime / candidate only</span></summary><div class="kernel-grid">${sections.join("")}</div></details>` : "";
@@ -841,7 +951,7 @@ const Views = {
         <div class="panel-head"><div><h2>单人剧本杀 / Murder Mystery <span class="badge exp">Experimental</span></h2><p class="sub">在案件主持人引导下调查线索、推理真相。</p></div></div>
         <input id="murderTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="murderText" placeholder="粘贴案件背景、角色、线索设定。"></textarea>
-        <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><span class="tiny muted">真相锁继续生效，并提供玩家可见线索板薄切片。</span></div>
+        <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><button class="small" data-action="single-player-scriptkill-v2-toggle-panel">打开单人剧本杀 V2</button><span class="tiny muted">真相锁继续生效，并提供玩家可见线索板薄切片。</span></div>
       </section>
 
       <section class="panel">
@@ -1034,7 +1144,7 @@ function renderWorldbook() {
       <button class="primary" data-action="test-worldbook">测试触发</button>
       <div class="list" style="margin-top:10px">${AS.worldbookTest?.hits?.length ? AS.worldbookTest.hits.map(h => `<div class="item"><strong>${U.esc(h.title || h.keys?.[0] || "命中条目")}</strong><span class="tiny muted">${U.esc(h.reason || "")}</span><pre>${U.esc(h.content || "")}</pre></div>`).join("") : C.empty("等待测试", "命中条目会显示排序原因。")}</div>
     </aside>
-  </section>`;
+  </section>${renderWorldbookV2Panel()}`;
 }
 
 function renderWorldData() {
@@ -1838,6 +1948,150 @@ async function readDroppedTexts(dt) {
 
 async function handleAction(e, btn) {
   e.stopPropagation();
+// ── V2 product UI handlers ──
+async function handleWorldbookV2Action(action) {
+  const s = AS.worldbookV2;
+  const moduleKey = AS.selectedModule?.id || "";
+  if (!moduleKey) return createToast("请先选择世界", "warn");
+  s.entryText = U.qs("#worldbookV2EntryText")?.value || s.entryText || "";
+  s.input = U.qs("#worldbookV2Input")?.value || s.input || "";
+  try {
+    s.busy = true; s.error = ""; s.lastResult = null;
+    let result;
+    if (action === "worldbook-v2-load") {
+      result = await API.worldbookV2Load(moduleKey);
+      s.loaded = result;
+    } else if (action === "worldbook-v2-create-candidate") {
+      const entry = buildWorldbookV2EntryFromText(s.entryText);
+      result = await API.worldbookV2CreateCandidate({ moduleKey, entry });
+      s.candidate = result.candidate || null;
+      s.loaded = await API.worldbookV2Load(moduleKey).catch(() => s.loaded);
+    } else if (action === "worldbook-v2-adopt-candidate") {
+      const latest = s.candidate || (s.loaded?.candidates || []).slice().reverse().find(item => item.status === "pending") || (s.loaded?.candidates || []).slice(-1)[0];
+      if (!latest?.candidateId) return createToast("没有可采纳的候选条目", "warn");
+      result = await API.worldbookV2CandidateDecision({ moduleKey, candidateId: latest.candidateId, decision: "adopt" });
+      s.loaded = await API.worldbookV2Load(moduleKey).catch(() => s.loaded);
+    } else if (action === "worldbook-v2-inject-preview") {
+      result = await API.worldbookV2InjectPreview({ moduleKey, userInput: s.input });
+      s.preview = result;
+    } else if (action === "worldbook-v2-export") {
+      result = await API.worldbookV2Export({ moduleKey });
+      s.exportResult = result;
+    }
+    s.lastResult = result;
+  } catch (err) {
+    s.error = err.message || String(err);
+  } finally {
+    s.busy = false;
+    render();
+  }
+}
+
+async function handleStrategySimV2Action(action) {
+  const s = AS.strategySimV2;
+  s.specText = U.qs("#strategySimV2SpecText")?.value || s.specText || U.json(strategySimV2DefaultSpec());
+  s.runId = U.qs("#strategySimV2RunId")?.value || s.runId || "";
+  s.actionText = U.qs("#strategySimV2ActionText")?.value || s.actionText || "";
+  const spec = parseJsonObjectInput(s.specText, strategySimV2DefaultSpec());
+  try {
+    s.busy = true; s.error = ""; s.lastResult = null;
+    let result;
+    if (action === "strategy-sim-v2-validate") {
+      result = await API.strategySimV2Validate({ spec });
+    } else if (action === "strategy-sim-v2-seal") {
+      result = await API.strategySimV2Seal({ spec });
+      if (result.status === "ok") s.sealedSpec = result.spec;
+    } else if (action === "strategy-sim-v2-start") {
+      const sealedSpec = s.sealedSpec || (await API.strategySimV2Seal({ spec })).spec;
+      const runId = s.runId || `strategy-ui-${Date.now()}`;
+      result = await API.strategySimV2Start({ runId, sealedSpec });
+      s.runId = result.runId || runId;
+      s.publicView = result.publicView || s.publicView;
+    } else if (action === "strategy-sim-v2-turn") {
+      result = await API.strategySimV2Turn({ runId: s.runId, action: s.actionText });
+      s.publicView = result.publicView || s.publicView;
+    } else if (action === "strategy-sim-v2-save") {
+      result = await API.strategySimV2Save({ runId: s.runId });
+    } else if (action === "strategy-sim-v2-load-run") {
+      result = await API.strategySimV2LoadRun({ runId: s.runId });
+      s.publicView = result.publicView || s.publicView;
+    } else if (action === "strategy-sim-v2-export-run") {
+      result = await API.strategySimV2ExportRun({ runId: s.runId });
+    }
+    s.lastResult = result;
+  } catch (err) {
+    s.error = err.message || String(err);
+  } finally {
+    s.busy = false;
+    render();
+  }
+}
+
+async function handleDetectiveV2Action(action) {
+  const s = AS.detectiveV2;
+  s.importText = U.qs("#detectiveV2ImportText")?.value || s.importText || "";
+  s.currentLocationId = U.qs("#detectiveV2LocationId")?.value || s.currentLocationId || "";
+  s.currentCharacterId = U.qs("#detectiveV2CharacterId")?.value || s.currentCharacterId || "";
+  s.currentEvidenceId = U.qs("#detectiveV2EvidenceSelect")?.value || U.qs("#detectiveV2EvidenceId")?.value || s.currentEvidenceId || "";
+  s.question = U.qs("#detectiveV2Question")?.value || s.question || "";
+  s.notebookEntryId = U.qs("#detectiveV2NotebookEntryId")?.value || s.notebookEntryId || "";
+  s.notebookSummary = U.qs("#detectiveV2NotebookSummary")?.value || s.notebookSummary || "";
+  s.deductionCulpritId = U.qs("#detectiveV2DeductionCulpritId")?.value || s.deductionCulpritId || "";
+  s.deductionMethod = U.qs("#detectiveV2DeductionMethod")?.value || s.deductionMethod || "";
+  try {
+    s.busy = true; s.error = ""; s.lastResult = null;
+    let result;
+    if (action === "detective-v2-import-preview") {
+      result = await API.detectiveV2ImportPreview({ text: s.importText });
+      s.importPreview = result;
+      s.playerCase = result.playerCaseView || result.preview || s.playerCase;
+    } else if (action === "detective-v2-import-commit") {
+      result = await API.detectiveV2ImportCommit({ text: s.importText });
+      s.caseId = result.caseId || s.caseId;
+      s.playerCase = result.case || s.playerCase;
+    } else if (action === "detective-v2-start") {
+      result = await API.detectiveV2Start({ caseId: s.caseId });
+      s.runId = result.run?.runId || s.runId;
+      s.playerRun = result.run || s.playerRun;
+      s.playerCase = result.case || s.playerCase;
+    } else if (action === "detective-v2-investigate") {
+      result = await API.detectiveV2Investigate({ runId: s.runId, locationId: s.currentLocationId });
+      s.lastInvestigation = result;
+      s.playerRun = result.run || s.playerRun;
+    } else if (action === "detective-v2-interrogate") {
+      result = await API.detectiveV2Interrogate({ runId: s.runId, characterId: s.currentCharacterId, question: s.question });
+      s.lastInterview = result;
+      s.playerRun = result.run || s.playerRun;
+    } else if (action === "detective-v2-notebook-extract") {
+      const evidenceId = s.currentEvidenceId || (s.playerRun?.discoveredEvidenceIds || s.lastInvestigation?.newEvidenceIds || [])[0];
+      if (!evidenceId) return createToast("请先调查并发现线索", "warn");
+      result = await API.detectiveV2NotebookExtract({ runId: s.runId, selection: { sourceType: "evidence", sourceId: evidenceId } });
+      s.notebookEntryId = result.entry?.noteId || s.notebookEntryId;
+      s.notebook = result.notebook || s.notebook;
+      s.playerRun = result.run || s.playerRun;
+    } else if (action === "detective-v2-notebook-update") {
+      result = await API.detectiveV2NotebookUpdate({ runId: s.runId, entryId: s.notebookEntryId, patch: { summary: s.notebookSummary } });
+      s.notebook = result.notebook || s.notebook;
+      s.playerRun = result.run || s.playerRun;
+    } else if (action === "detective-v2-deduction-submit") {
+      result = await API.detectiveV2DeductionSubmit({ runId: s.runId, report: { culpritId: s.deductionCulpritId, method: s.deductionMethod } });
+      s.playerRun = result.run || s.playerRun;
+    } else if (action === "detective-v2-export-run") {
+      result = await API.detectiveV2ExportRun({ runId: s.runId });
+      s.exportResult = result;
+    } else if (action === "detective-v2-export-player-pack") {
+      result = await API.detectiveV2ExportPlayerPack({ runId: s.runId });
+      s.exportResult = result;
+    }
+    s.lastResult = result;
+  } catch (err) {
+    s.error = err.message || String(err);
+  } finally {
+    s.busy = false;
+    render();
+  }
+}
+
 // ── Single Player ScriptKill V2 UI handler ──
 async function handleSinglePlayerScriptKillV2Action(action) {
   const s = AS.singlePlayerScriptKillV2;
@@ -1918,7 +2172,18 @@ async function handleSinglePlayerScriptKillV2Action(action) {
   try {
     if (action === "single-player-scriptkill-v2-toggle-panel") {
     AS.singlePlayerScriptKillV2.panelOpen = !AS.singlePlayerScriptKillV2.panelOpen;
+    AS.view = "workbench";
+    AS.workbenchMode = "chat";
     return render();
+  }
+  if (action && action.startsWith("worldbook-v2-")) {
+    return handleWorldbookV2Action(action);
+  }
+  if (action && action.startsWith("strategy-sim-v2-")) {
+    return handleStrategySimV2Action(action);
+  }
+  if (action && action.startsWith("detective-v2-")) {
+    return handleDetectiveV2Action(action);
   }
   if (action && action.startsWith("single-player-scriptkill-v2-")) {
     return handleSinglePlayerScriptKillV2Action(action);
