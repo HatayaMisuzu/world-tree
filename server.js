@@ -68,6 +68,7 @@ import {
 } from "./src/server/kernel-service.js";
 import { handleWorkflowApiRequest, getWorkflowTypesResponse, getWorkflowStatus } from "./src/core/workflows/adapters/server-workflow-adapter.js";
 import { normalizeStrategySimSpec, validateStrategySimSpec, sealStrategySimSpec } from "./src/core/strategy-sim/strategy-sim-spec.js";
+import { handleV2ProductPlayableRoute } from "./src/server/v2-product-playable-routes.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -2756,6 +2757,17 @@ async function handleAPI(req, res) {
   }
 
   try {
+    const handledV2ProductRoute = await handleV2ProductPlayableRoute({
+      path,
+      method,
+      url,
+      readBody: () => readBody(req),
+      jsonResponse: (payload) => jsonResponse(res, payload),
+      jsonError: (...args) => jsonError(res, ...args),
+      deps: { dataRoot, loadConfig, getActiveLlmValue, moduleWorldDir, pathWithinRoot, safeEntityId }
+    });
+    if (handledV2ProductRoute !== false) return handledV2ProductRoute;
+
     // ── 配置 ──
     if (path === "/api/config" && method === "GET") return jsonResponse(res, await loadConfig());
     if (path === "/api/config" && method === "POST") return jsonResponse(res, await saveConfig(await readBody(req)));
