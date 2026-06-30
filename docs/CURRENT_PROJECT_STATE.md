@@ -18,6 +18,9 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI` |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
+| Global product closure | PRODUCT CLOSURE NOT COMPLETE |
+| Selected V2 product-playable loops | PASS for user-provided/structural paths |
+| Full-function LLM prompt entry audit | PASS for local prompt contract coverage; live LLM behavior remains BLOCKED without credentials |
 | Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL by product decision |
 | User-Created Content Product Closure | PASS |
 | Blank template infrastructure | PASS |
@@ -48,12 +51,12 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Prompt Orchestration Layer v1 | COMPLETE | Prompt infrastructure | `test:prompts` |
 | P3 M1-M11 Legacy Mechanism Kernel | COMPLETE | Module layer, not product entries | `test:legacy-mechanisms` |
 | Workflow Integration W0-W4 | COMPLETE | Workflow layer | `test:workflows`, `workflow:check` |
-| Tabletop V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | PRODUCT CLOSURE PARTIAL | `test:tabletop-v2-full` |
-| Detective V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | PRODUCT CLOSURE PARTIAL | `test:detective-v2-full` |
+| Tabletop V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED STRUCTURAL PRODUCT LOOP PASS | `test:tabletop-v2-full`, `test:v2-product-playable` |
+| Detective V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED CASE LOOP PASS | `test:detective-v2-full`, `test:v2-product-playable` |
 | Character V2 Long-term | ENGINEERING/SERVICE CLOSURE COMPLETE | PRODUCT CLOSURE PARTIAL | `test:character-v2-long-term` |
-| Single Player ScriptKill V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | PRODUCT CLOSURE PARTIAL | `test:single-player-scriptkill-v2`, audit |
-| Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | PRODUCT CLOSURE NOT COMPLETE | `test:strategy-sim-v2` |
-| Worldbook V2 | ENGINEERING FOUNDATION COMPLETE | PRODUCT CLOSURE NOT COMPLETE | `test:worldbook-v2` |
+| Single Player ScriptKill V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED PACKAGE LOOP PASS | `test:single-player-scriptkill-v2`, `test:v2-product-playable` |
+| Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | USER-PROVIDED SPEC PRODUCT LOOP PASS | `test:strategy-sim-v2`, `test:strategy-sim-v2-product` |
+| Worldbook V2 | ENGINEERING FOUNDATION COMPLETE | USER-PROVIDED/STRUCTURAL PRODUCT LOOP PASS | `test:worldbook-v2`, `test:worldbook-v2-product` |
 | Quick Setting | USABLE THIN LOOP | PRODUCT CLOSURE PARTIAL | current project creation flow |
 | Creation Forge | G1 ENGINEERING LOOP IMPLEMENTED | PRODUCT CLOSURE IN PROGRESS | `test:alchemy-closure`, `docs/reports/productization-reality-check.md` |
 
@@ -69,7 +72,9 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
 - Productization Closure is PARTIAL by product decision; User-Created Content Product Closure and blank template infrastructure are recorded as PASS, while bundled story examples, tutorials, onboarding demo content, product-wide manual smoke, and release readiness remain incomplete or deferred.
 - Real LLM Flow is BLOCKED until real credentials/config are provided and a non-fallback smoke is recorded.
-- Product closure remains incomplete for Worldbook V2 and Strategy Sim V2.
+- Selected V2 product-playable closure is improved for user-provided/structural content across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill.
+- Full product-wide playable closure remains incomplete.
+- Full-function LLM prompt entry audit covers local prompt contracts for all 8 product entries; live LLM behavior remains blocked without credentials/config.
 - Full product-wide V2 is not complete.
 
 ## Entry-specific current facts

@@ -34,6 +34,8 @@ Historical reports may describe past limitations or past completion claims. They
 | v1.0.0 | NOT READY |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
+| Selected V2 product-playable loops | PASS for user-provided/structural paths |
+| Full-function LLM prompt entry audit | PASS for local prompt contract coverage; live LLM behavior remains BLOCKED without credentials |
 | Current documentation status | post-merge user-created content product closure alignment |
 | Remote CI | PASS for merge commit `ecd8658d` in run `28389779734` |
 | Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
@@ -42,12 +44,12 @@ Historical reports may describe past limitations or past completion claims. They
 
 | Area | Current status |
 |---|---|
-| Tabletop V2 | engineering/service closure complete; product/gameplay closure partial |
-| Detective V2 | engineering/service closure complete; product/gameplay closure partial |
+| Tabletop V2 | selected structural product loop PASS; full gameplay closure partial |
+| Detective V2 | selected user-provided case product loop PASS; full reasoning-engine closure partial |
 | Character V2 long-term | engineering/service closure complete; advanced product editor not complete |
-| Single Player ScriptKill V2 | engineering/service closure complete; bundled content/product closure not complete |
-| Strategy Sim V2 | engineering foundation complete; product closure not complete |
-| Worldbook V2 | engineering foundation complete; product closure not complete |
+| Single Player ScriptKill V2 | selected user-provided package product loop PASS; bundled content deferred |
+| Strategy Sim V2 | user-provided StrategySimSpec product loop PASS; complete strategy gameplay not complete |
+| Worldbook V2 | user-provided/structural Worldbook V2 product loop PASS; full editor UX not complete |
 | Quick Setting | usable thin loop |
 | Creation Forge / Alchemy G1 | user-created content product closure PASS for Flow A/B; full productization remains PARTIAL |
 
@@ -58,6 +60,8 @@ Historical reports may describe past limitations or past completion claims. They
 - User-Created Content Product Closure is PASS for the recorded Flow A/Flow B paths.
 - Real LLM Flow is BLOCKED unless credentials/config are explicitly supplied and recorded.
 - Productization Closure remains PARTIAL by product decision.
+- Selected V2 product-playable loops are PASS only for the recorded user-provided/structural API paths.
+- Full-function LLM prompt entry audit is PASS for local contract coverage, not a live LLM behavior PASS.
 - v1.0.0 is NOT READY.
 - Bundled story examples, tutorial content, and onboarding demos are DEFERRED BY PRODUCT DECISION.
 - Engineering foundation complete does not imply product closure complete.
@@ -83,13 +87,11 @@ Current completed engineering foundation includes:
 - legacy fallback when no sealed spec exists
 - registered test script `test:strategy-sim-v2`
 
-Current missing product closure includes:
+Current remaining product closure limitations include:
 
 - product UI
-- V2 server API
-- persisted run service
-- Creation Forge spec generation/confirmation/sealing user flow
 - archetype/quick-start templates
+- Creation Forge spec generation/confirmation/sealing user flow
 - complete strategy gameplay
 
 ### Worldbook V2
@@ -109,13 +111,11 @@ Current completed engineering foundation includes:
 - `prepareWorldbookV2Injection`
 - registered test script `test:worldbook-v2`
 
-Current missing product closure includes:
+Current remaining product closure limitations include:
 
-- product UI editor
-- V2 server API
-- persistent V2 worldbook runtime storage
+- full product UI editor
 - complete review-facts/growth-tree unification
-- product-grade import/export
+- broader product-grade import/export UX
 - browser-proven first-run user flow
 
 ## Must-run truth checks

@@ -97,6 +97,21 @@
 | GET | `/api/worldbook` | worldbook | engine/worlds/ | — | no | yes | `handleWorldbook` |
 | POST | `/api/worldbook` | worldbook | — | engine/worlds/ | no | yes | `handleWorldbook` |
 | POST | `/api/worldbook/test` | worldbook | — | — | no | yes | `handleWorldbookTest` |
+| GET | `/api/worldbook-v2/load` | worldbook-v2 product | selected world shared/runtime | — | no | yes | `v2-product-playable-routes -> worldbook-v2-product-service` |
+| POST | `/api/worldbook-v2/save` | worldbook-v2 product | request entries | `shared/worldbook.json` | yes | yes | `v2-product-playable-routes -> worldbook-v2-product-service` |
+| POST | `/api/worldbook-v2/candidates/create` | worldbook-v2 product | candidate payload | `runtime/worldbook-v2/candidates.jsonl` | yes | yes | `v2-product-playable-routes -> worldbook-v2-product-service` |
+| GET | `/api/worldbook-v2/candidates` | worldbook-v2 product | `runtime/worldbook-v2/candidates.jsonl` | — | no | yes | `v2-product-playable-routes -> worldbook-v2-product-service` |
+| POST | `/api/worldbook-v2/candidates/decision` | worldbook-v2 product | candidates ledger | decision ledger, canon only on adopt | yes | yes | `v2-product-playable-routes -> worldbook-v2-product-service` |
+| POST | `/api/worldbook-v2/inject-preview` | worldbook-v2 product | canon worldbook | `runtime/worldbook-v2/usage-log.jsonl` | no | yes | `v2-product-playable-routes -> worldbook-v2-product-service` |
+| POST | `/api/worldbook-v2/export` | worldbook-v2 product | canon/candidates | — | no | yes | `v2-product-playable-routes -> worldbook-v2-product-service` |
+| POST | `/api/strategy-sim-v2/spec/validate` | strategy-sim-v2 product | StrategySimSpec | — | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
+| POST | `/api/strategy-sim-v2/spec/seal` | strategy-sim-v2 product | StrategySimSpec | — | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
+| POST | `/api/strategy-sim-v2/start` | strategy-sim-v2 product | sealed spec | `engine/runs/strategy-sim-v2/<runId>/` | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
+| POST | `/api/strategy-sim-v2/turn` | strategy-sim-v2 product | run state/spec | `state.json`, `turns.jsonl`, `rolls.jsonl` | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
+| POST | `/api/strategy-sim-v2/save` | strategy-sim-v2 product | run state | `state.json` | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
+| POST | `/api/strategy-sim-v2/load-run` | strategy-sim-v2 product | run state/spec | — | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
+| GET | `/api/strategy-sim-v2/runs` | strategy-sim-v2 product | runs directory | — | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
+| POST | `/api/strategy-sim-v2/export-run` | strategy-sim-v2 product | run state/spec | — | no | yes | `v2-product-playable-routes -> strategy-sim-v2-product-service` |
 | POST | `/api/chat/message` | turn | chat.jsonl | chat.jsonl | no | yes | `handleChatMessage` |
 | GET | `/api/turn/debug` | turn | turn debug | — | no | yes | `handleTurnDebug` |
 | GET | `/api/status/turn/latest` | turn | status frames | — | no | yes | `handleLatestTurnState` |
@@ -133,4 +148,6 @@ Do not split these routes into files until this inventory is complete enough to 
 
 Future route extraction may create route group files, but that is not implemented in Stage 6 Closure.
 
-### V2 Routes: /api/tabletop-v2/* /api/detective-v2/* /api/characters/v2/* /api/single-player-scriptkill-v2/*
+### V2 Routes: /api/tabletop-v2/* /api/detective-v2/* /api/characters/v2/* /api/single-player-scriptkill-v2/* /api/worldbook-v2/* /api/strategy-sim-v2/*
+
+`/api/worldbook-v2/*` and `/api/strategy-sim-v2/*` are routed through `src/server/v2-product-playable-routes.js`. This is a bounded route adapter, not a full server router rewrite.
