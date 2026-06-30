@@ -10,7 +10,7 @@
 | [STATUS_TERMINOLOGY.md](STATUS_TERMINOLOGY.md) | Required status vocabulary |
 | [AGENT_STATUS_HANDOFF.md](AGENT_STATUS_HANDOFF.md) | Agent handoff summary |
 
-Current status: Full V2 is not complete. Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is not complete.
+Current status: Full V2 is not complete. Selected V2 API/service loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; browser/UI entry flows remain PARTIAL or NOT PROVEN, and product-wide playable closure is not complete.
 Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure and blank template infrastructure are recorded as PASS; bundled story examples, tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
@@ -120,6 +120,11 @@ Key entry points for the current baseline:
 | [User Content Browser Smoke](reports/user-content-browser-smoke.md) | PASS browser/API hybrid smoke for Alchemy G1 Flow A/B |
 | [User Content Real LLM Smoke](reports/user-content-real-llm-smoke.md) | BLOCKED unless real LLM credentials/config are supplied |
 | [Product Entry Closure Matrix](reports/product-entry-closure-matrix.md) | PARTIAL entry evidence matrix |
+| [V2 Product Playable Closure Report](reports/v2-product-playable-closure-report.md) | PASS for selected V2 user-provided/structural product loops; Productization Closure remains PARTIAL |
+| [V2 Product Playable Closure Matrix](reports/v2-product-playable-closure-matrix.md) | Entry-by-entry route/write/readback/smoke matrix |
+| [LLM Prompt Inventory](reports/llm-prompt-inventory.md) | Full-function entry prompt inventory and audit scope |
+| [LLM Prompt Audit Report](reports/llm-prompt-audit-report.md) | Full-function entry prompt contract audit; live LLM behavior remains BLOCKED without credentials |
+| [Architecture Debt Reduction Report](reports/architecture-debt-reduction-report.md) | Bounded V2 product route adapter extraction report |
 | [Workflow Integration Report](WORKFLOW_INTEGRATION_REPORT.md) | ⚠️ 已被 Service Deepening 替代 |
 | [MODE_ROUTING_AND_CAPSULES.md](MODE_ROUTING_AND_CAPSULES.md) | 路由与模式胶囊 |
 | [MODE_PROMPTS_AND_PACKETS.md](MODE_PROMPTS_AND_PACKETS.md) | 提示词与数据包 |

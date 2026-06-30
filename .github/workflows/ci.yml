@@ -24,6 +24,12 @@ jobs:
       - run: npm run test:alchemy-closure
       - run: npm run test:worldbook-v2
       - run: npm run test:strategy-sim-v2
+      - run: npm run test:worldbook-v2-product
+      - run: npm run test:strategy-sim-v2-product
+      - run: npm run test:v2-product-playable
+      - run: npm run test:llm-prompts
+      - run: npm run audit:architecture-debt
+      - run: npm run audit:v2-product-playable
       - run: npm run test:world-tree-v2-entries
       - run: npm run test:project-complete-audit
       - run: npm run truth:check
