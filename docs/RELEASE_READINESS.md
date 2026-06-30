@@ -12,7 +12,8 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | Creation Forge G1 | AUTOMATED PASS | `npm run test:alchemy-closure` |
 | Worldbook V2 foundation | AUTOMATED PASS | `npm run test:worldbook-v2` |
 | Strategy Sim V2 foundation | AUTOMATED PASS | `npm run test:strategy-sim-v2` |
-| Selected V2 product-playable loops | AUTOMATED PASS | `npm run test:v2-product-playable`, `npm run smoke:v2-product-playable-api` |
+| Selected V2 API/service loops | AUTOMATED PASS | `npm run test:v2-product-playable`, `npm run smoke:v2-product-playable-api` |
+| Selected V2 browser/UI entry flows | PARTIAL / NOT PROVEN | `npm run smoke:v2-product-shell-browser` proves shell load only |
 | Full-function LLM prompt entry audit | AUTOMATED PASS / LIVE LLM BLOCKED | `npm run test:llm-prompts`, `node scripts/audit-llm-prompts.mjs`; no real LLM behavior PASS without credentials |
 | V2 entry service slices | AUTOMATED PASS | `npm run test:world-tree-v2-entries` |
 | Project audit | AUTOMATED PASS | `npm run test:project-complete-audit` |

@@ -41,18 +41,49 @@ async function run() {
 
     const ttStart = await api(server, "/api/tabletop-v2/start", { method: "POST", body: JSON.stringify({ module: { title: "Smoke Tabletop", sourceType: "quick_start" } }) });
     await api(server, "/api/tabletop-v2/turn", { method: "POST", body: JSON.stringify({ runId: ttStart.body.run.runId, playerIntent: "inspect" }) });
+    const ttSave = await api(server, "/api/tabletop-v2/save", { method: "POST", body: JSON.stringify({ runId: ttStart.body.run.runId, label: "fork point" }) });
+    assert.equal(ttSave.body.status, "ok");
+    const ttBranch = await api(server, "/api/tabletop-v2/branch", { method: "POST", body: JSON.stringify({ runId: ttStart.body.run.runId, saveId: ttSave.body.saveId, branchLabel: "alternate" }) });
+    assert.equal(ttBranch.body.status, "ok");
+    assert.equal((await api(server, "/api/tabletop-v2/restore-save", { method: "POST", body: JSON.stringify({ runId: ttStart.body.run.runId, saveId: ttSave.body.saveId }) })).body.status, "ok");
+    assert.equal((await api(server, "/api/tabletop-v2/switch-branch", { method: "POST", body: JSON.stringify({ runId: ttStart.body.run.runId, branchId: ttBranch.body.branchId }) })).body.status, "ok");
     const ttExport = await api(server, "/api/tabletop-v2/export-run", { method: "POST", body: JSON.stringify({ runId: ttStart.body.run.runId }) });
     assert.equal(ttExport.body.status, "ok");
-    evidence.flows.tabletop = { status: "ok", runId: ttStart.body.run.runId };
+    evidence.flows.tabletop = { status: "ok", runId: ttStart.body.run.runId, branchId: ttBranch.body.branchId };
 
-    const detCase = await api(server, "/api/detective-v2/import-commit", { method: "POST", body: JSON.stringify({ text: JSON.stringify({ title: "Smoke Case", truthLedger: { culpritIds: ["x"], motive: "hidden", method: "hidden" }, locations: [{ locationId: "room", name: "Room", isStartingLocation: true }] }) }) });
+    const detCase = await api(server, "/api/detective-v2/import-commit", { method: "POST", body: JSON.stringify({ text: JSON.stringify({
+      title: "Smoke Case",
+      truthLedger: { culpritIds: ["suspect_a"], motive: "hidden", method: "hidden" },
+      locations: [{ locationId: "room", name: "Room", isStartingLocation: true }],
+      evidence: [{ evidenceId: "note", name: "Public Note", locationId: "room", summary: "A public clue.", hiddenMeaning: "SECRET_SOLUTION" }],
+      characters: [{ characterId: "suspect_a", name: "Suspect A", isCulprit: true }],
+      testimony: [{ testimonyId: "t1", characterId: "suspect_a", publicText: "I was nearby.", deceptionReason: "SECRET_LIE" }]
+    }) }) });
     const detStart = await api(server, "/api/detective-v2/start", { method: "POST", body: JSON.stringify({ caseId: detCase.body.caseId }) });
+    assert.equal((await api(server, "/api/detective-v2/investigate", { method: "POST", body: JSON.stringify({ runId: detStart.body.run.runId, locationId: "room" }) })).body.status, "ok");
+    assert.equal((await api(server, "/api/detective-v2/interrogate", { method: "POST", body: JSON.stringify({ runId: detStart.body.run.runId, characterId: "suspect_a", question: "Where were you?" }) })).body.status, "ok");
+    const noteExtract = await api(server, "/api/detective-v2/notebook/extract", { method: "POST", body: JSON.stringify({ runId: detStart.body.run.runId, selection: { sourceType: "evidence", sourceId: "note" } }) });
+    assert.equal(noteExtract.body.status, "ok");
+    assert.equal((await api(server, "/api/detective-v2/notebook/update", { method: "POST", body: JSON.stringify({ runId: detStart.body.run.runId, entryId: noteExtract.body.entry.noteId, patch: { summary: "Player-written." } }) })).body.status, "ok");
+    assert.equal((await api(server, "/api/detective-v2/deduction/submit", { method: "POST", body: JSON.stringify({ runId: detStart.body.run.runId, report: { culpritId: "suspect_a", method: "guess" } }) })).body.status, "ok");
     const detExport = await api(server, "/api/detective-v2/export-run", { method: "POST", body: JSON.stringify({ runId: detStart.body.run.runId }) });
     assert.equal(detExport.body.status, "ok");
-    evidence.flows.detective = { status: "ok", runId: detStart.body.run.runId, hiddenSafe: !JSON.stringify(detExport.body.report.playerCase).includes("truthLedger") };
+    evidence.flows.detective = { status: "ok", runId: detStart.body.run.runId, hiddenSafe: !JSON.stringify(detExport.body.report).includes("SECRET_SOLUTION") };
 
     const skImport = await api(server, "/api/single-player-scriptkill-v2/import-commit", { method: "POST", body: JSON.stringify({ package: fixture }) });
     const skStart = await api(server, "/api/single-player-scriptkill-v2/start", { method: "POST", body: JSON.stringify({ scriptId: skImport.body.scriptId, runId: "smoke_scriptkill", realPlayerRoleId: "role_writer" }) });
+    assert.equal((await api(server, "/api/single-player-scriptkill-v2/read-role-act", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId }) })).body.status, "ok");
+    await api(server, "/api/single-player-scriptkill-v2/advance-phase", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, nextPhaseId: "phase_public" }) });
+    assert.equal((await api(server, "/api/single-player-scriptkill-v2/public-talk", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, text: "I give my timeline." }) })).body.status, "ok");
+    await api(server, "/api/single-player-scriptkill-v2/advance-phase", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, nextPhaseId: "phase_private" }) });
+    assert.equal((await api(server, "/api/single-player-scriptkill-v2/private-chat", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, targetRoleId: "role_doctor", text: "Private question." }) })).body.status, "ok");
+    await api(server, "/api/single-player-scriptkill-v2/advance-phase", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, nextPhaseId: "phase_search" }) });
+    assert.equal((await api(server, "/api/single-player-scriptkill-v2/search", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, clueId: "clue_watch", keepPrivate: true }) })).body.status, "ok");
+    await api(server, "/api/single-player-scriptkill-v2/advance-phase", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, nextPhaseId: "phase_vote" }) });
+    assert.equal((await api(server, "/api/single-player-scriptkill-v2/vote", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, targetRoleId: "role_doctor" }) })).body.status, "ok");
+    await api(server, "/api/single-player-scriptkill-v2/advance-phase", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId, nextPhaseId: "phase_debrief" }) });
+    assert.equal((await api(server, "/api/single-player-scriptkill-v2/debrief", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId }) })).body.status, "ok");
+    assert.equal((await api(server, "/api/single-player-scriptkill-v2/load-run", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId }) })).body.status, "ok");
     const skExport = await api(server, "/api/single-player-scriptkill-v2/export-run", { method: "POST", body: JSON.stringify({ runId: skStart.body.runId }) });
     assert.equal(skExport.body.status, "ok");
     evidence.flows.scriptKill = { status: "ok", runId: skStart.body.runId, hiddenSafe: !JSON.stringify(skExport.body.export.playerRun).includes("DM手册") };

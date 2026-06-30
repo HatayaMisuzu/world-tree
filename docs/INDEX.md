@@ -10,7 +10,7 @@
 | [STATUS_TERMINOLOGY.md](STATUS_TERMINOLOGY.md) | Required status vocabulary |
 | [AGENT_STATUS_HANDOFF.md](AGENT_STATUS_HANDOFF.md) | Agent handoff summary |
 
-Current status: Full V2 is not complete. Selected V2 product-playable loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; product-wide playable closure is not complete.
+Current status: Full V2 is not complete. Selected V2 API/service loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; browser/UI entry flows remain PARTIAL or NOT PROVEN, and product-wide playable closure is not complete.
 Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure and blank template infrastructure are recorded as PASS; bundled story examples, tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 

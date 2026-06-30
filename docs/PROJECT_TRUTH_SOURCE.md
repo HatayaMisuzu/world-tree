@@ -34,7 +34,7 @@ Historical reports may describe past limitations or past completion claims. They
 | v1.0.0 | NOT READY |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
-| Selected V2 product-playable loops | PASS for user-provided/structural paths |
+| Selected V2 API/service loops | PASS for user-provided/structural paths |
 | Full-function LLM prompt entry audit | PASS for local prompt contract coverage; live LLM behavior remains BLOCKED without credentials |
 | Current documentation status | post-merge user-created content product closure alignment |
 | Remote CI | PASS for merge commit `ecd8658d` in run `28389779734` |
@@ -44,12 +44,12 @@ Historical reports may describe past limitations or past completion claims. They
 
 | Area | Current status |
 |---|---|
-| Tabletop V2 | selected structural product loop PASS; full gameplay closure partial |
-| Detective V2 | selected user-provided case product loop PASS; full reasoning-engine closure partial |
+| Tabletop V2 | selected structural API/service loop PASS; browser UI flow not proven; full gameplay closure partial |
+| Detective V2 | selected user-provided case API/service loop PASS; browser UI flow not proven; full reasoning-engine closure partial |
 | Character V2 long-term | engineering/service closure complete; advanced product editor not complete |
-| Single Player ScriptKill V2 | selected user-provided package product loop PASS; bundled content deferred |
-| Strategy Sim V2 | user-provided StrategySimSpec product loop PASS; complete strategy gameplay not complete |
-| Worldbook V2 | user-provided/structural Worldbook V2 product loop PASS; full editor UX not complete |
+| Single Player ScriptKill V2 | selected user-provided package API/service loop PASS; browser UI flow not proven; bundled content deferred |
+| Strategy Sim V2 | user-provided StrategySimSpec API loop PASS; browser UI flow not proven; complete strategy gameplay not complete |
+| Worldbook V2 | user-provided/structural Worldbook V2 API loop PASS; browser UI editor partial; full editor UX not complete |
 | Quick Setting | usable thin loop |
 | Creation Forge / Alchemy G1 | user-created content product closure PASS for Flow A/B; full productization remains PARTIAL |
 
@@ -60,7 +60,8 @@ Historical reports may describe past limitations or past completion claims. They
 - User-Created Content Product Closure is PASS for the recorded Flow A/Flow B paths.
 - Real LLM Flow is BLOCKED unless credentials/config are explicitly supplied and recorded.
 - Productization Closure remains PARTIAL by product decision.
-- Selected V2 product-playable loops are PASS only for the recorded user-provided/structural API paths.
+- Selected V2 API/service loops are PASS only for the recorded user-provided/structural API paths.
+- Browser/UI entry flows for the selected V2 loops are PARTIAL or NOT PROVEN unless a dedicated UI smoke is recorded.
 - Full-function LLM prompt entry audit is PASS for local contract coverage, not a live LLM behavior PASS.
 - v1.0.0 is NOT READY.
 - Bundled story examples, tutorial content, and onboarding demos are DEFERRED BY PRODUCT DECISION.

@@ -96,7 +96,7 @@
     "audit:architecture-debt": "node scripts/audit-architecture-debt.mjs",
     "audit:v2-product-playable": "node scripts/audit-v2-product-playable-closure.mjs",
     "smoke:v2-product-playable-api": "node scripts/smoke-v2-product-playable-api.mjs",
-    "smoke:v2-product-playable-browser": "node scripts/smoke-v2-product-playable-browser.mjs",
+    "smoke:v2-product-shell-browser": "node scripts/smoke-v2-product-shell-browser.mjs",
     "test:alchemy-closure": "node --test tests/unit/alchemy-capabilities.test.js tests/unit/alchemy-planner-service.test.js tests/unit/alchemy-generation-service.test.js tests/unit/alchemy-localizer-service.test.js tests/unit/alchemy-delivery-service.test.js tests/unit/alchemy-server-route-contract.test.js tests/unit/alchemy-console-g1-ui.test.js tests/integration/alchemy-engineering-closure.test.js",
     "smoke:user-content-api": "node scripts/smoke-user-content-api.mjs",
     "test:user-content-browser-smoke": "node scripts/run-user-content-browser-smoke.mjs",

@@ -6,11 +6,16 @@ import { createTempDataDir, removeTempDir, startWorldTreeServer } from "../tests
 
 async function run() {
   const dataDir = await createTempDataDir("wt-v2-product-browser-smoke-");
-  const evidenceDir = join("audit", `v2-product-playable-closure-${Date.now()}-browser`);
+  const evidenceDir = join("audit", `v2-product-shell-browser-${Date.now()}`);
   mkdirSync(evidenceDir, { recursive: true });
   const server = await startWorldTreeServer({ dataDir, env: { WORLD_TREE_DISABLE_LLM: "1" } });
   const browser = await chromium.launch();
-  const evidence = { status: "ok", browser: "chromium", flows: { uiShell: "partial", apiFromBrowserContext: "partial" } };
+  const evidence = {
+    status: "ok",
+    browser: "chromium",
+    scope: "shell load and browser-context API access only; not product entry UI closure",
+    flows: { uiShell: "partial", apiFromBrowserContext: "partial" }
+  };
   try {
     const page = await browser.newPage();
     const consoleEvents = [];
@@ -31,7 +36,7 @@ async function run() {
   }
   const evidencePath = join(evidenceDir, "evidence.json");
   writeFileSync(evidencePath, JSON.stringify(evidence, null, 2));
-  console.log(`V2 product playable browser smoke: PASS ${evidencePath}`);
+  console.log(`V2 product shell browser smoke: PASS ${evidencePath}`);
 }
 
 run().catch((err) => {

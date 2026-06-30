@@ -11,7 +11,7 @@ for (const name of [
   "audit:architecture-debt",
   "audit:v2-product-playable",
   "smoke:v2-product-playable-api",
-  "smoke:v2-product-playable-browser"
+  "smoke:v2-product-shell-browser"
 ]) {
   if (!scripts[name]) failures.push(`missing package script ${name}`);
 }
@@ -48,6 +48,10 @@ for (const pattern of overclaimPatterns) {
 }
 if (!/Bundled first-run content\s*(\||:)\s*DEFERRED/i.test(joinedReports)) failures.push("missing bundled first-run deferred status");
 if (!joinedReports.includes("audit/v2-product-playable-closure-")) failures.push("missing smoke evidence path pattern");
+if (!/Browser\/UI loop status/i.test(joinedReports)) failures.push("missing Browser/UI loop status boundary");
+if (/\|\s*(?:SELECTED\s+)?(?:USER-PROVIDED\/STRUCTURAL\s+|USER-PROVIDED\s+\w+\s+|STRUCTURAL\s+)?PRODUCT LOOP PASS\b/i.test(joinedReports)) {
+  failures.push("ambiguous PRODUCT LOOP PASS status detected");
+}
 
 if (failures.length) {
   console.error("V2 product playable closure audit failed:");

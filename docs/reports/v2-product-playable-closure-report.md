@@ -19,8 +19,9 @@ Pre-read confirmed the current truth-source state:
 
 | Item | Status |
 |---|---|
-| Selected V2 product-playable loops | PASS for API/user-provided or structural-content paths |
-| User-provided-content playable closure | PASS for the five selected entries |
+| Selected V2 API/service loops | PASS for API/user-provided or structural-content paths |
+| Selected V2 browser/UI entry loops | PARTIAL / NOT PROVEN |
+| User-provided-content API/service closure | PASS for the five selected entries |
 | Bundled first-run content | DEFERRED |
 | Productization Closure | PARTIAL |
 | Full product-wide V2 complete | NO |
@@ -31,21 +32,21 @@ Pre-read confirmed the current truth-source state:
 
 ## Entry Results
 
-| Entry | Status | Evidence |
-|---|---|---|
-| Worldbook V2 | PRODUCT LOOP PASS | load/save/candidate decision/inject-preview/export service tests and HTTP route tests |
-| Strategy Sim V2 | PRODUCT LOOP PASS | validate/seal/start/turn/save/load/export service tests and HTTP route tests |
-| Tabletop | PRODUCT LOOP PASS for structural/user-provided module path | start/turn/save/load/export plus branch/restore tests |
-| Detective | PRODUCT LOOP PASS for user-provided case path | import/start/investigate/interrogate/notebook/deduction/player export/GM export tests |
-| ScriptKill | PRODUCT LOOP PASS for user-provided package path | import/start/role/public/private/search/vote/debrief/load/export tests |
+| Entry | API/service loop status | Browser/UI loop status | Evidence |
+|---|---|---|---|
+| Worldbook V2 | API LOOP PASS | PARTIAL / NOT PROVEN as full editor flow | load/save/candidate decision/inject-preview/export service tests and HTTP route tests |
+| Strategy Sim V2 | API LOOP PASS | NOT PROVEN | validate/seal/start/turn/save/load/export service tests and HTTP route tests |
+| Tabletop | SERVICE/API LOOP PASS for structural/user-provided module path | NOT PROVEN | start/turn/save/load/export plus branch/restore/switch HTTP tests |
+| Detective | SERVICE/API LOOP PASS for user-provided case path | NOT PROVEN | import/start/investigate/interrogate/notebook/deduction/player export/GM export HTTP tests |
+| ScriptKill | SERVICE/API LOOP PASS for user-provided package path | NOT PROVEN | import/start/role/public/private/search/vote/debrief/load/export HTTP tests |
 
 ## Smoke Evidence
 
 - API smoke writes local evidence to `audit/v2-product-playable-closure-<timestamp>/evidence.json`.
-- Latest API smoke evidence: `audit/v2-product-playable-closure-1782786268226/evidence.json`.
-- Browser smoke writes local evidence to `audit/v2-product-playable-closure-<timestamp>-browser/evidence.json`.
-- Latest browser smoke evidence: `audit/v2-product-playable-closure-1782786268626-browser/evidence.json`.
-- Browser smoke proves shell load and browser-context API access only; it is not a full manual UI closure claim.
+- Latest API smoke evidence: `audit/v2-product-playable-closure-1782787449943/evidence.json`.
+- Shell browser smoke writes local evidence to `audit/v2-product-shell-browser-<timestamp>/evidence.json`.
+- Latest shell browser smoke evidence: `audit/v2-product-shell-browser-1782787461699/evidence.json`.
+- Shell browser smoke proves shell load and browser-context API access only; it is not a full entry UI closure claim.
 
 ## Non-Claims
 

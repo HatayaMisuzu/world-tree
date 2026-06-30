@@ -7,6 +7,14 @@ import { createStrategyRunState } from "../core/strategy-sim/strategy-sim-run-st
 import { runStrategySimTurn } from "../core/strategy-sim/strategy-sim-turn-engine.js";
 import { assertNoHiddenStrategyLeak, scrubStrategyPublicView } from "../core/strategy-sim/strategy-sim-public-view-scrubber.js";
 
+export function safeStrategyRunId(input) {
+  const raw = String(input || "").trim();
+  if (!raw || raw === "." || raw === "..") return "";
+  if (raw.includes("..")) return "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,80}$/.test(raw)) return "";
+  return raw;
+}
+
 function productPublicView(spec, state) {
   const view = scrubStrategyPublicView(spec, state);
   const { omitted, ...safeView } = view;
@@ -16,7 +24,8 @@ function productPublicView(spec, state) {
 export function createStrategySimV2ProductService({ dataRoot } = {}) {
   const root = () => typeof dataRoot === "function" ? dataRoot() : dataRoot;
   const runsRoot = () => join(root(), "engine", "runs", "strategy-sim-v2");
-  const runDir = (runId) => join(runsRoot(), String(runId || "").replace(/[^\w.-]/g, "-"));
+  const invalidRunId = () => ({ status: "error", code: "INVALID_RUN_ID", errorMsg: "strategy runId is invalid." });
+  const runDir = (runId) => join(runsRoot(), runId);
 
   async function validateSpec(body = {}) {
     const spec = normalizeStrategySimSpec(body.spec || body);
@@ -32,7 +41,9 @@ export function createStrategySimV2ProductService({ dataRoot } = {}) {
 
   async function startRun(body = {}) {
     const sealed = body.sealedSpec || sealStrategySimSpec(normalizeStrategySimSpec(body.spec || {}), { sealedBy: "strategy-sim-v2-product-service" });
-    const runId = body.runId || `strategy-run-${Date.now()}`;
+    const requestedRunId = body.runId === undefined || body.runId === null ? `strategy-run-${Date.now()}` : body.runId;
+    const runId = safeStrategyRunId(requestedRunId);
+    if (!runId) return invalidRunId();
     const state = createStrategyRunState(sealed, { runId, rngSeed: body.rngSeed || sealed.balanceProfile?.rngSeed });
     const dir = runDir(runId);
     ensureDir(dir);
@@ -44,8 +55,10 @@ export function createStrategySimV2ProductService({ dataRoot } = {}) {
   }
 
   async function turn(body = {}) {
-    const dir = runDir(body.runId);
-    if (!body.runId || !existsSync(dir)) return { status: "error", code: "RUN_NOT_FOUND", errorMsg: "策略模拟存档不存在。" };
+    const runId = safeStrategyRunId(body.runId);
+    if (!runId) return invalidRunId();
+    const dir = runDir(runId);
+    if (!existsSync(dir)) return { status: "error", code: "RUN_NOT_FOUND", errorMsg: "策略模拟存档不存在。" };
     const spec = readJsonSync(join(dir, "spec.json"), null);
     const state = readJsonSync(join(dir, "state.json"), null);
     const result = runStrategySimTurn({ spec, state, playerAction: body.action || body.playerAction || body.decision || "" });
@@ -54,25 +67,29 @@ export function createStrategySimV2ProductService({ dataRoot } = {}) {
     for (const roll of result.turnLog.probabilityRolls || []) await appendJsonl(join(dir, "rolls.jsonl"), roll);
     const publicView = productPublicView(spec, result.state);
     assertNoHiddenStrategyLeak(publicView, "strategy-turn.publicView");
-    return { status: "ok", runId: body.runId, turn: result.turn, publicView, publicDelta: result.turnLog.publicDelta };
+    return { status: "ok", runId, turn: result.turn, publicView, publicDelta: result.turnLog.publicDelta };
   }
 
   async function saveRun(body = {}) {
-    const dir = runDir(body.runId);
-    if (!body.runId || !existsSync(dir)) return { status: "error", code: "RUN_NOT_FOUND", errorMsg: "策略模拟存档不存在。" };
+    const runId = safeStrategyRunId(body.runId);
+    if (!runId) return invalidRunId();
+    const dir = runDir(runId);
+    if (!existsSync(dir)) return { status: "error", code: "RUN_NOT_FOUND", errorMsg: "策略模拟存档不存在。" };
     const state = body.state || readJsonSync(join(dir, "state.json"), {});
     await writeJson(join(dir, "state.json"), { ...state, updatedAt: new Date().toISOString() });
-    return { status: "ok", runId: body.runId };
+    return { status: "ok", runId };
   }
 
   async function loadRun(body = {}) {
-    const dir = runDir(body.runId);
-    if (!body.runId || !existsSync(dir)) return { status: "error", code: "RUN_NOT_FOUND", errorMsg: "策略模拟存档不存在。" };
+    const runId = safeStrategyRunId(body.runId);
+    if (!runId) return invalidRunId();
+    const dir = runDir(runId);
+    if (!existsSync(dir)) return { status: "error", code: "RUN_NOT_FOUND", errorMsg: "策略模拟存档不存在。" };
     const spec = readJsonSync(join(dir, "spec.json"), null);
     const state = readJsonSync(join(dir, "state.json"), null);
     const publicView = productPublicView(spec, state);
     assertNoHiddenStrategyLeak(publicView, "strategy-load.publicView");
-    return { status: "ok", runId: body.runId, state, publicView };
+    return { status: "ok", runId, state, publicView };
   }
 
   async function listRuns() {
@@ -82,11 +99,13 @@ export function createStrategySimV2ProductService({ dataRoot } = {}) {
   }
 
   async function exportRun(body = {}) {
+    const runId = safeStrategyRunId(body.runId);
+    if (!runId) return invalidRunId();
     const loaded = await loadRun(body);
     if (loaded.status !== "ok") return loaded;
     return {
       status: "ok",
-      runId: body.runId,
+      runId,
       export: {
         schema: "strategy-sim-v2-product-export",
         publicView: loaded.publicView,
