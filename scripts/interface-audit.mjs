@@ -23,7 +23,15 @@ function pass(msg) { passes++; if (process.env.VERBOSE) console.log(`  ✅ ${msg
 
 console.log("\n📁 文件 IO 校准");
 
-const serverCode = readFileSync(join(ROOT, "server.js"), "utf-8");
+const readIfExists = (file) => existsSync(join(ROOT, file)) ? readFileSync(join(ROOT, file), "utf-8") : "";
+const serverCode = [
+  readIfExists("server.js"),
+  readIfExists("src/server/v2-product-playable-routes.js"),
+  readIfExists("src/server/tabletop-v2-routes.js"),
+  readIfExists("src/server/detective-v2-routes.js"),
+  readIfExists("src/server/character-v2-routes.js"),
+  readIfExists("src/server/single-player-scriptkill-v2-routes.js"),
+].join("\n");
 const alchemyPreviewCode = readFileSync(join(ROOT, "src/server/alchemy-preview-service.js"), "utf-8");
 const mechanismCode = readFileSync(join(ROOT, "src/server/mechanism-service.js"), "utf-8");
 const turnStateCode = readFileSync(join(ROOT, "src/server/turn-state-frame-service.js"), "utf-8");
@@ -93,7 +101,10 @@ console.log("\n🔌 API 契约检查");
 
 const htmlCode = readFileSync(join(ROOT, "world-tree-console.html"), "utf-8");
 // JS 已拆分为独立文件，合并搜索上下文避免假阳性
-const jsCode = readFileSync(join(ROOT, "world-tree-console.js"), "utf-8");
+const jsCode = [
+  readIfExists("world-tree-console.js"),
+  readIfExists("world-tree-client-core.js"),
+].join("\n");
 let combinedCode = htmlCode + "\n" + jsCode;
 // 附加文档和契约文件用于静态审计（模式契约、隔离文档等）
 const linkageDoc = join(ROOT, "docs/MODE_ASSET_LINKAGE_AND_RUNTIME_ISOLATION.md");

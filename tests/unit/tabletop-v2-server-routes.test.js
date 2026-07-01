@@ -1,4 +1,4 @@
-// Tabletop V2 Server Routes Dedup Test
+// Tabletop V2 Route Module Dedup Test
 // Asserts no duplicate route registrations for Tabletop V2 API paths.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -8,11 +8,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const serverPath = join(__dirname, "..", "..", "server.js");
+const routeModulePath = join(__dirname, "..", "..", "src", "server", "tabletop-v2-routes.js");
 const servicePath = join(__dirname, "..", "..", "src", "server", "tabletop-v2-service.js");
 const detectiveServicePath = join(__dirname, "..", "..", "src", "server", "detective-v2-service.js");
 const characterServicePath = join(__dirname, "..", "..", "src", "server", "character-capsule-service.js");
 
 const serverContent = readFileSync(serverPath, "utf-8");
+const routeModuleContent = readFileSync(routeModulePath, "utf-8");
 const serviceContent = readFileSync(servicePath, "utf-8");
 
 // ALL expected Tabletop V2 API routes (single source of truth)
@@ -31,27 +33,27 @@ const TABLETOP_V2_ROUTES = [
   "/api/tabletop-v2/export-run",
 ];
 
-test("server.js: /api/tabletop-v2/start appears exactly once as route handler", () => {
-  const matches = [...serverContent.matchAll(/\/api\/tabletop-v2\/start["']\s*&&\s*method/g)];
-  assert.equal(matches.length, 1, `Expected 1 route registration for /api/tabletop-v2/start, found ${matches.length}`);
+test("server.js delegates Tabletop V2 routes through V2 product registry", () => {
+  assert.match(serverContent, /handleV2ProductPlayableRoute/);
+  assert.doesNotMatch(serverContent, /\/api\/tabletop-v2\/start["']\s*&&\s*method/);
 });
 
-test("server.js: each Tabletop V2 API path is registered exactly once", () => {
+test("tabletop-v2-routes.js: each Tabletop V2 API path is registered exactly once", () => {
   for (const route of TABLETOP_V2_ROUTES) {
     // Count occurrences of the route path followed by " && method"
     const escaped = route.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
     const regex = new RegExp(`${escaped}["']\\s*&&\\s*method`, 'g');
-    const matches = [...serverContent.matchAll(regex)];
+    const matches = [...routeModuleContent.matchAll(regex)];
     assert.equal(matches.length, 1, `Route ${route} should appear exactly once, found ${matches.length}`);
   }
 });
 
-test("server.js: no Tabletop V2 route path appears without handler", () => {
+test("tabletop-v2-routes.js: no Tabletop V2 route path appears without handler", () => {
   // Each path in TABLETOP_V2_ROUTES must be paired with an import from tabletop-v2-service
   for (const route of TABLETOP_V2_ROUTES) {
     assert.ok(
-      serverContent.includes(route),
-      `Route ${route} must appear in server.js`
+      routeModuleContent.includes(route),
+      `Route ${route} must appear in tabletop-v2-routes.js`
     );
   }
 });

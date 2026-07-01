@@ -3,6 +3,22 @@ import { join } from "node:path";
 
 const ROOT = process.cwd();
 const VERSION = "0.4.2-v2-engineering-foundation-truth.0";
+const STALE_BASELINE = "v0.4.1-v2-entry-closure.0";
+
+const ACTIVE_TRUTH_DOCS = [
+  "README.md",
+  "README.en.md",
+  "docs/PROJECT_TRUTH_SOURCE.md",
+  "docs/CURRENT_PROJECT_STATE.md",
+  "docs/ARCHITECTURE_MAP.md",
+  "docs/API_ROUTE_INVENTORY.md",
+  "docs/INDEX.md",
+  "docs/STATUS_TERMINOLOGY.md"
+];
+
+const CURRENT_EVIDENCE_DOCS = [
+  "docs/reports/productization-closure-report.md"
+];
 
 const requiredFiles = [
   "docs/PROJECT_TRUTH_SOURCE.md",
@@ -98,6 +114,44 @@ for (const file of ["README.md", "AI-GUIDE.md", "CHANGELOG.md", ...walk("docs")]
   const text = read(file);
   for (const pattern of stalePatterns) {
     if (pattern.re.test(text)) errors.push(`${file} has stale unqualified status phrase. ${pattern.msg}`);
+  }
+}
+
+const falseCompletionPatterns = [
+  {
+    re: new RegExp(STALE_BASELINE.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
+    msg: "active docs must not use stale current baseline v0.4.1-v2-entry-closure.0"
+  },
+  {
+    re: /v1\.0\.0\s*(?:is\s*)?(?:READY|COMPLETE|PASS)/i,
+    msg: "active docs must not claim v1.0.0 READY"
+  },
+  {
+    re: /Full product-wide V2\s*(?:is\s*)?(?:COMPLETE|PASS|READY)/i,
+    msg: "active docs must not claim Full product-wide V2 COMPLETE"
+  },
+  {
+    re: /Product-wide playable closure\s*(?:is\s*)?(?:COMPLETE|PASS|READY)/i,
+    msg: "active docs must not claim Product-wide playable closure COMPLETE"
+  },
+  {
+    re: /Real LLM Flow\s*(?:is\s*)?PASS/i,
+    msg: "active docs must not claim Real LLM Flow PASS"
+  },
+  {
+    re: /Blank template infrastructure\s*(?:and|\/|\+)\s*bundled story examples\s*(?:are\s*)?PASS/i,
+    msg: "active docs must not conflate blank templates with bundled story examples"
+  }
+];
+
+for (const file of [...ACTIVE_TRUTH_DOCS, ...CURRENT_EVIDENCE_DOCS]) {
+  if (!existsSync(join(ROOT, file))) {
+    errors.push(`missing active truth/evidence doc: ${file}`);
+    continue;
+  }
+  const text = read(file);
+  for (const pattern of falseCompletionPatterns) {
+    if (pattern.re.test(text)) errors.push(`${file}: ${pattern.msg}`);
   }
 }
 
