@@ -36,7 +36,7 @@ Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy 
 - **Remote CI**: `UNKNOWN` unless a concrete workflow run is referenced
 - **Productization merge CI**: PASS for merge commit `ecd8658d` in run `28389779734`
 - **Status**: User-Created Content Product Closure PASS; Productization Closure PARTIAL by product decision
-- **Full V2**: Full product-wide V2 not complete; V2 entry closure complete for four entries
+- **Full V2**: Full product-wide V2 not complete; selected V2 API/service loops pass only for recorded user-provided/structural paths
 - **Browser QA**: user content browser smoke PASS; full product-wide browser QA NOT COMPLETE
 
 Product feature identity:
@@ -94,6 +94,8 @@ Key entry points for the current baseline:
 | [Long Play Kernel P2](P2_LONG_PLAY_KERNEL.md) | P2 长期游玩 Kernel |
 | [SCRIPTS_AND_CHECKS.md](SCRIPTS_AND_CHECKS.md) | 脚本与检查 |
 | [DOCUMENTATION_STATUS.md](DOCUMENTATION_STATUS.md) | 文档状态 |
+| [DOCUMENTATION_LIFECYCLE.md](DOCUMENTATION_LIFECYCLE.md) | 文档生命周期规则 |
+| [DOC_REGISTRY.json](DOC_REGISTRY.json) | 机器可检查的文档生命周期 registry |
 | [WORLD_TREE_REAL_PLAY_PRODUCTIZATION_0_3_EXECUTION.md](WORLD_TREE_REAL_PLAY_PRODUCTIZATION_0_3_EXECUTION.md) | Real Play 0-3 仓库内执行入口 |
 | [CHARACTER_CAPSULE_V2_PRODUCT_SPEC.md](CHARACTER_CAPSULE_V2_PRODUCT_SPEC.md) | Character Capsule V2 Text-first 产品与边界设计（V2 text-first / long-term entry closure implemented; full advanced editor deferred） |
 | [CHARACTER_CAPSULE_V2_UI_RULES.md](CHARACTER_CAPSULE_V2_UI_RULES.md) | Character Capsule V2 普通 UI / 高级设置折叠规则（V2 text-first / long-term entry closure implemented; full advanced editor deferred） |

@@ -6,7 +6,9 @@
 
 ## Status
 
-`server.js` still owns API route dispatch. Three infrastructure modules were extracted: `http-response.js`, `http-request.js`, `local-access.js`.
+`server.js` still owns API route dispatch for non-V2 routes. Three infrastructure modules were extracted: `http-response.js`, `http-request.js`, `local-access.js`.
+
+Selected V2 product route dispatch now uses `src/server/v2-product-playable-routes.js`. This is bounded dispatch extraction, not a full server router rewrite.
 
 ## Route Groups
 
@@ -24,6 +26,12 @@
 | export/import | world-pack, data export/import | `server.js` |
 | debug/diagnostics | health, status, engine manifest | `server.js` |
 | static | console and static assets | `server.js` |
+| worldbook-v2 product | selected Worldbook V2 product API loop | `src/server/v2-product-playable-routes.js` -> `worldbook-v2-product-service.js` |
+| strategy-sim-v2 product | selected Strategy Sim V2 product API loop | `src/server/v2-product-playable-routes.js` -> `strategy-sim-v2-product-service.js` |
+| tabletop-v2 product | selected Tabletop V2 product API loop | `src/server/v2-product-playable-routes.js` -> `tabletop-v2-routes.js` |
+| detective-v2 product | selected Detective V2 product API loop | `src/server/v2-product-playable-routes.js` -> `detective-v2-routes.js` |
+| single-player-scriptkill-v2 product | selected ScriptKill V2 product API loop | `src/server/v2-product-playable-routes.js` -> `single-player-scriptkill-v2-routes.js` |
+| character-v2 product | selected Character V2 runtime/candidate/export API loop | `src/server/v2-product-playable-routes.js` -> `character-v2-routes.js` |
 
 ## Inventory Table
 
@@ -150,4 +158,17 @@ Future route extraction may create route group files, but that is not implemente
 
 ### V2 Routes: /api/tabletop-v2/* /api/detective-v2/* /api/characters/v2/* /api/single-player-scriptkill-v2/* /api/worldbook-v2/* /api/strategy-sim-v2/*
 
-`/api/worldbook-v2/*` and `/api/strategy-sim-v2/*` are routed through `src/server/v2-product-playable-routes.js`. This is a bounded route adapter, not a full server router rewrite.
+The V2 route adapter now covers:
+
+- `/api/worldbook-v2/*`
+- `/api/strategy-sim-v2/*`
+- `/api/tabletop-v2/*`
+- `/api/detective-v2/*`
+- `/api/single-player-scriptkill-v2/*`
+- `/api/characters/v2/*`
+
+`/api/worldbook-v2/*` and `/api/strategy-sim-v2/*` are routed to product services. `/api/tabletop-v2/*`, `/api/detective-v2/*`, `/api/single-player-scriptkill-v2/*`, and `/api/characters/v2/*` are routed to bounded route modules.
+
+This is bounded dispatch extraction, not a full server router rewrite.
+
+Deferred: non-V2 route groups still remain in `server.js` until a separate route inventory and router split pass is approved.

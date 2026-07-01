@@ -1,0 +1,135 @@
+{
+  "version": "0.4.2-v2-engineering-foundation-truth.0",
+  "updatedAt": "2026-07-01T00:00:00.000Z",
+  "truthSourcePriority": [
+    "docs/PROJECT_TRUTH_SOURCE.md",
+    "docs/CURRENT_PROJECT_STATE.md",
+    "docs/V2_ENGINEERING_CLOSURE_STATUS.md",
+    "docs/V2_ENTRY_COMPLETION_STATUS.md",
+    "docs/PLAY_MODE_GUIDE.md",
+    "README.md",
+    "AI-GUIDE.md",
+    "docs/INDEX.md"
+  ],
+  "documents": [
+    {
+      "path": "docs/PROJECT_TRUTH_SOURCE.md",
+      "lifecycle": "current_truth",
+      "owner": "project-status",
+      "replacement": null,
+      "notes": "Current truth-source index."
+    },
+    {
+      "path": "docs/CURRENT_PROJECT_STATE.md",
+      "lifecycle": "current_truth",
+      "owner": "project-status",
+      "replacement": null,
+      "notes": "Current project state for agents and maintainers."
+    },
+    {
+      "path": "docs/V2_ENGINEERING_CLOSURE_STATUS.md",
+      "lifecycle": "current_truth",
+      "owner": "project-status",
+      "replacement": null,
+      "notes": "Current engineering foundation and service closure status."
+    },
+    {
+      "path": "docs/V2_ENTRY_COMPLETION_STATUS.md",
+      "lifecycle": "current_truth",
+      "owner": "project-status",
+      "replacement": null,
+      "notes": "Current entry-specific closure status with product limits."
+    },
+    {
+      "path": "docs/PLAY_MODE_GUIDE.md",
+      "lifecycle": "active_product_contract",
+      "owner": "product-status",
+      "replacement": null,
+      "notes": "Current play-mode status and limitations."
+    },
+    {
+      "path": "docs/STATUS_TERMINOLOGY.md",
+      "lifecycle": "active_product_contract",
+      "owner": "project-status",
+      "replacement": null,
+      "notes": "Required status vocabulary."
+    },
+    {
+      "path": "docs/ARCHITECTURE_MAP.md",
+      "lifecycle": "active_architecture",
+      "owner": "architecture",
+      "replacement": null,
+      "notes": "Current implemented architecture map, not future design."
+    },
+    {
+      "path": "docs/API_ROUTE_INVENTORY.md",
+      "lifecycle": "active_architecture",
+      "owner": "server-api",
+      "replacement": null,
+      "notes": "Current API route inventory and bounded V2 adapter scope."
+    },
+    {
+      "path": "docs/INDEX.md",
+      "lifecycle": "active_operating",
+      "owner": "docs",
+      "replacement": null,
+      "notes": "Current documentation index with truth-source priority."
+    },
+    {
+      "path": "README.md",
+      "lifecycle": "active_operating",
+      "owner": "product-docs",
+      "replacement": null,
+      "notes": "Current user-facing entry document."
+    },
+    {
+      "path": "README.en.md",
+      "lifecycle": "active_operating",
+      "owner": "product-docs",
+      "replacement": null,
+      "notes": "Current English user-facing entry document."
+    },
+    {
+      "path": "AI-GUIDE.md",
+      "lifecycle": "active_operating",
+      "owner": "agent-ops",
+      "replacement": null,
+      "notes": "Current AI agent guide."
+    },
+    {
+      "path": "docs/DOCUMENTATION_LIFECYCLE.md",
+      "lifecycle": "active_operating",
+      "owner": "docs",
+      "replacement": null,
+      "notes": "Lifecycle definitions and takeover rules."
+    },
+    {
+      "path": "docs/reports/productization-closure-report.md",
+      "lifecycle": "current_evidence_report",
+      "owner": "productization",
+      "replacement": null,
+      "notes": "Current productization closure evidence report."
+    },
+    {
+      "path": "docs/reports/v2-product-playable-closure-report.md",
+      "lifecycle": "current_evidence_report",
+      "owner": "productization",
+      "replacement": null,
+      "notes": "Selected V2 user-provided/structural loop evidence; not full product-wide closure."
+    },
+    {
+      "path": "docs/ROADMAP_CANDIDATES.md",
+      "lifecycle": "candidate_or_proposal",
+      "owner": "planning",
+      "replacement": null,
+      "notes": "Roadmap candidates, not current implementation facts."
+    },
+    {
+      "path": "docs/archive/stage-reports/PRE_V2_CLOSURE_REPORT.md",
+      "lifecycle": "historical_archive",
+      "owner": "archive",
+      "replacement": "docs/PROJECT_TRUTH_SOURCE.md",
+      "notes": "Historical Pre-V2 closure report."
+    }
+  ]
+}

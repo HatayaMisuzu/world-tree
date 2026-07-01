@@ -7,7 +7,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 
 const serverContent = readFileSync(join(root, "server.js"), "utf-8");
-const uiContent = readFileSync(join(root, "world-tree-console.js"), "utf-8");
+const routeContents = [
+  "src/server/v2-product-playable-routes.js",
+  "src/server/tabletop-v2-routes.js",
+  "src/server/detective-v2-routes.js",
+  "src/server/character-v2-routes.js",
+  "src/server/single-player-scriptkill-v2-routes.js"
+].map((file) => readFileSync(join(root, file), "utf-8")).join("\n");
+const uiContent = [
+  readFileSync(join(root, "world-tree-console.js"), "utf-8"),
+  readFileSync(join(root, "world-tree-client-core.js"), "utf-8")
+].join("\n");
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"));
 
 const results = { tabletop: [], detective: [], character: [], isolation: [] };
@@ -16,7 +26,8 @@ let pass = 0, fail = 0;
 function esc(s) { return s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'); }
 
 function hasRoute(method, path) {
-  return serverContent.includes(`path === "${path}" && method === "${method}"`);
+  return serverContent.includes(`path === "${path}" && method === "${method}"`)
+    || routeContents.includes(`path === "${path}" && method === "${method}"`);
 }
 
 function hasUiMethod(name) {

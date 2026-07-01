@@ -12,6 +12,7 @@
     "server.js",
     "world-tree-console.html",
     "world-tree-console.css",
+    "world-tree-client-core.js",
     "world-tree-console.js",
     "src/",
     "defaults/engine-profile/",
@@ -53,7 +54,7 @@
     "test:integration": "node --test tests/integration/*.test.js",
     "audit": "node scripts/audit.mjs",
     "interface-audit": "node scripts/interface-audit.mjs",
-    "docs:check": "node scripts/check-docs.mjs",
+    "docs:check": "node scripts/check-docs.mjs && node scripts/audit-doc-lifecycle.mjs",
     "test:character-v2": "node --test tests/unit/character-v2-text-core.test.js",
     "test:character-v2-ui": "node --test tests/unit/character-v2-advanced-ui-gate.test.js",
     "test:character-v2-capsule": "node --test tests/unit/character-v2-capsule-creation.test.js",
@@ -85,7 +86,7 @@
     "test:detective-v2-case-generator": "node --test tests/unit/detective-v2-case-generator.test.js",
     "test:detective-v2-full": "npm run test:detective-v2 && npm run test:detective-v2-case-generator",
     "legacy:check": "node scripts/check-legacy-status.mjs",
-    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && node scripts/check-docs.mjs && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:feature-alias && npm run test:llm-routing && npm run ux:check && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run test:world-tree-v2-entries && npm run test:single-player-scriptkill-v2 && npm run test:single-player-scriptkill-v2-audit && npm run test:project-complete-audit && npm run interface-audit",
+    "preflight": "node scripts/audit.mjs && node scripts/check.mjs && npm run docs:check && npm run asset:check && npm run test:p0 && npm run test:p1 && npm run test:p2 && npm run test:kernel && npm run test:prompts && npm run test:feature-alias && npm run test:llm-routing && npm run ux:check && npm run test:legacy-mechanisms && npm run test:assets && npm run test:authority && npm run test:legacy-modernization && npm run test:workflow-readiness && npm run workflow:check && npm run test:workflows && npm run test:unit && npm run test:integration && npm run test:v2-route-registry && npm run test:console-boundary && npm run test:v2-product-playable && npm run test:world-tree-v2-entries && npm run test:single-player-scriptkill-v2 && npm run test:single-player-scriptkill-v2-audit && npm run test:project-complete-audit && npm run interface-audit",
     "test:project-complete-audit": "node scripts/audit-world-tree-project-complete.mjs",
     "test:strategy-sim-v2": "node --test tests/unit/strategy-sim-spec.test.js tests/unit/strategy-sim-run-state.test.js tests/unit/strategy-sim-public-view-scrubber.test.js tests/unit/strategy-sim-turn-engine.test.js tests/unit/strategy-sim-probability-roll-record.test.js tests/unit/strategy-numeric-system.test.js tests/unit/strategy-probability-system.test.js tests/unit/strategy-v2-ready.test.js",
     "test:worldbook-v2": "node --test tests/unit/worldbook-v2-*.test.js",
@@ -101,7 +102,10 @@
     "smoke:user-content-api": "node scripts/smoke-user-content-api.mjs",
     "test:user-content-browser-smoke": "node scripts/run-user-content-browser-smoke.mjs",
     "smoke:user-content-real-llm": "node scripts/smoke-user-content-real-llm.mjs",
-    "truth:check": "node scripts/check-truth-source-sync.mjs"
+    "truth:check": "node scripts/check-truth-source-sync.mjs",
+    "test:v2-route-registry": "node --test tests/unit/v2-product-route-registry.test.js",
+    "test:console-boundary": "node --check world-tree-client-core.js && node --check world-tree-console.js && node --test tests/unit/console-client-core.test.js",
+    "docs:lifecycle:check": "node scripts/audit-doc-lifecycle.mjs"
   },
   "keywords": [
     "world-tree",

@@ -13,8 +13,18 @@ const json = (p) => {
 };
 
 const pkg = json("package.json");
-const server = read("server.js");
-const ui = read("world-tree-console.js");
+const server = [
+  read("server.js"),
+  read("src/server/v2-product-playable-routes.js"),
+  read("src/server/tabletop-v2-routes.js"),
+  read("src/server/detective-v2-routes.js"),
+  read("src/server/character-v2-routes.js"),
+  read("src/server/single-player-scriptkill-v2-routes.js"),
+].join("\n");
+const ui = [
+  read("world-tree-console.js"),
+  read("world-tree-client-core.js"),
+].join("\n");
 const readme = read("README.md");
 const changelog = read("CHANGELOG.md");
 const aiGuide = read("AI-GUIDE.md");

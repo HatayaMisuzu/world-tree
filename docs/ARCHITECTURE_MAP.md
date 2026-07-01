@@ -7,7 +7,9 @@
 
 World Tree is currently a local-first Node HTTP application with a browser console UI.
 
-This is not full V2. It is the v0.4.1 V2 Entry Closure baseline.
+Current baseline is `0.4.2-v2-engineering-foundation-truth.0`.
+
+This is not full V2. Full product-wide V2 is NOT COMPLETE, and product-wide playable closure is NOT COMPLETE.
 
 ## Top-Level Runtime
 
@@ -27,8 +29,8 @@ local JSON / JSONL persistence
 
 | Layer | Current Location | Owns | Must Not Own |
 |---|---|---|---|
-| Browser UI | `world-tree-console.js`, static files | User interaction, panels, client requests | Server persistence rules, canon authority |
-| HTTP entry | `server.js` | server boot, route dispatch, API orchestration | Large reusable helpers already moved to `src/server/*` |
+| Browser UI | `world-tree-console.js`, `world-tree-client-core.js`, static files | User interaction, panels, client utility/API requests | Server persistence rules, canon authority |
+| HTTP entry | `server.js` | server boot, non-V2 route dispatch, API orchestration | Large reusable helpers already moved to `src/server/*` |
 | HTTP response boundary | `src/server/http-response.js` | JSON response and error payload contract | Route business logic |
 | HTTP request boundary | `src/server/http-request.js` | JSON body parsing, request-size failure | Route business logic |
 | Local access boundary | `src/server/local-access.js` | local-only access checks and rate limit helpers | Route business logic |
@@ -50,7 +52,30 @@ src/server/http-request.js
 src/server/local-access.js
 ```
 
-`server.js` still owns route dispatch and business orchestration. This is intentional.
+`server.js` still owns the HTTP entry, non-V2 route dispatch, and broad API orchestration. This is intentional.
+
+Selected V2 product route dispatch now flows through `src/server/v2-product-playable-routes.js`:
+
+```text
+server.js
+  -> src/server/v2-product-playable-routes.js
+    -> worldbook-v2-product-service.js
+    -> strategy-sim-v2-product-service.js
+    -> tabletop-v2-routes.js
+    -> detective-v2-routes.js
+    -> single-player-scriptkill-v2-routes.js
+    -> character-v2-routes.js
+```
+
+Worldbook V2 and Strategy Sim V2 still use their product service handlers. Tabletop V2, Detective V2, Single Player ScriptKill V2, and Character V2 dispatch now lives in bounded route modules. This is a bounded dispatch extraction, not a full router rewrite.
+
+## Current Frontend Boundary
+
+`world-tree-console.js` still owns main UI state, rendering, and event handlers.
+
+`world-tree-client-core.js` owns the low-risk browser utility helpers and API client wrapper formerly embedded in `world-tree-console.js`.
+
+The frontend is still not fully split, and there is no TypeScript migration.
 
 ## Current Warnings Baseline
 
@@ -70,12 +95,14 @@ Update this section whenever the real command output changes.
 ## What Is Explicitly Not Complete
 
 - Full V2 is not implemented.
+- Product-wide playable closure is not complete.
 - Full mode-specific gameplay engines are not implemented.
 - `server.js` route dispatch is not fully split.
-- `world-tree-console.js` is not yet split.
+- `world-tree-console.js` still owns main UI rendering and event handlers.
 - Persistence format has not been redesigned.
 - Proposal/canon authority model has not been rewritten.
 - LLM adapter has not been deeply split.
+- TypeScript migration has not been started.
 
 ## Maintenance Rule
 

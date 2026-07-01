@@ -39,7 +39,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - **Engineering/service closure complete**: service/API/persistence/import/export or equivalent runtime service slice exists and is tested.
 - **Product closure not complete**: complete first-run UI/user flow, bundled content, browser QA, service persistence/API, or product-grade editing/review experience is not fully proven.
 - **Full V2 not complete**: project-wide product-grade V2 is not complete.
-- **V2 Entry Closure**: selected V2 entry engineering/service slices are sealed for audit purposes, but this does not mean product-wide playable closure is complete.
+- **V2 Entry Closure**: selected V2 entry engineering/service slices are sealed for audit purposes; product-wide playable closure remains NOT COMPLETE.
 
 ## Current status table
 
@@ -136,10 +136,10 @@ Product closure not complete:
 - Worldbook V2 is not a complete product editor/runtime experience.
 - Character V2 advanced editor is not complete.
 - Single Player ScriptKill V2 does not include bundled product content unless separately documented.
-- `server.js` remains monolithic.
-- `world-tree-console.js` remains monolithic.
+- `server.js` remains the main HTTP entry and still owns non-V2 route dispatch, but selected V2 product route dispatch has been partially extracted through `src/server/v2-product-playable-routes.js`.
+- `world-tree-console.js` remains the main browser UI script, but the browser utility/API client boundary has been extracted to `world-tree-client-core.js`.
 - No TypeScript migration.
-- No automated browser QA unless separately recorded.
+- Full product-wide browser QA remains incomplete unless a product entry browser smoke matrix is separately recorded.
 - `defaults/examples/manifest.json` currently contains blank structural placeholders only. They are install/readback test material and future replacement slots, not bundled story examples or tutorials.
 
 ## Required checks

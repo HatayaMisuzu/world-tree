@@ -13,7 +13,7 @@ export async function removeTempDir(dir) {
 }
 
 export function randomPort() {
-  return 3100 + Math.floor(Math.random() * 20000);
+  return 20000 + Math.floor(Math.random() * 20000);
 }
 
 export async function startWorldTreeServer({ port = randomPort(), dataDir, env = {} } = {}) {

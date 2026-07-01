@@ -47,6 +47,13 @@ console.log("\n🧭 UX Coherence Audit");
 
 const js = read("world-tree-console.js");
 const server = read("server.js");
+const v2RouteContent = [
+  "src/server/v2-product-playable-routes.js",
+  "src/server/tabletop-v2-routes.js",
+  "src/server/detective-v2-routes.js",
+  "src/server/single-player-scriptkill-v2-routes.js",
+  "src/server/character-v2-routes.js"
+].map(read).join("\n");
 const tabletopService = read("src/server/tabletop-v2-service.js");
 const pkg = read("package.json");
 const stateDoc = read("docs/CURRENT_PROJECT_STATE.md");
@@ -119,9 +126,10 @@ expect(pkg.includes("test:feature-alias"), "package.json has test:feature-alias"
 expect(pkg.includes("audit-ux-coherence.mjs"), "ux audit script wired in package.json", "audit-ux-coherence.mjs not wired in package.json");
 
 console.log("\n8. V2 runtime service route aliases are not product-count aliases");
-expect(server.includes("/api/single-player-scriptkill-v2") && aliasFile.includes("single-player-scriptkill-v2"), "single-player ScriptKill service route has canonical alias", "single-player ScriptKill route missing canonical alias coverage");
-expect(server.includes("/api/detective-v2") && aliasFile.includes("detective-v2"), "Detective V2 service route has canonical alias", "Detective V2 route missing canonical alias coverage");
-expect(server.includes("/api/tabletop-v2") && aliasFile.includes("tabletop-v2"), "Tabletop V2 service route has canonical alias", "Tabletop V2 route missing canonical alias coverage");
+const routeSource = `${server}\n${v2RouteContent}`;
+expect(routeSource.includes("/api/single-player-scriptkill-v2") && aliasFile.includes("single-player-scriptkill-v2"), "single-player ScriptKill service route has canonical alias", "single-player ScriptKill route missing canonical alias coverage");
+expect(routeSource.includes("/api/detective-v2") && aliasFile.includes("detective-v2"), "Detective V2 service route has canonical alias", "Detective V2 route missing canonical alias coverage");
+expect(routeSource.includes("/api/tabletop-v2") && aliasFile.includes("tabletop-v2"), "Tabletop V2 service route has canonical alias", "Tabletop V2 route missing canonical alias coverage");
 
 console.log("\n9. User-facing feature count guard");
 const featureCountMentionsNine = /9\s*个模式|九个功能|第九个功能|9\s*features/i.test(js + "\n" + stateDoc);

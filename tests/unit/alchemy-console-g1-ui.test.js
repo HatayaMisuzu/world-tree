@@ -3,13 +3,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const ui = readFileSync("world-tree-console.js", "utf8");
+const clientCore = readFileSync("world-tree-client-core.js", "utf8");
 
-test("console exposes G1 alchemy API methods", () => {
-  assert.match(ui, /alchemyCapabilities\(\)/);
-  assert.match(ui, /alchemyPlan\(data\)/);
-  assert.match(ui, /alchemyGeneratePreview\(data\)/);
-  assert.match(ui, /alchemyLocalize\(data\)/);
-  assert.match(ui, /alchemyDeliver\(data\)/);
+test("client core exposes G1 alchemy API methods", () => {
+  assert.match(clientCore, /alchemyCapabilities\(\)/);
+  assert.match(clientCore, /alchemyPlan\(data\)/);
+  assert.match(clientCore, /alchemyGeneratePreview\(data\)/);
+  assert.match(clientCore, /alchemyLocalize\(data\)/);
+  assert.match(clientCore, /alchemyDeliver\(data\)/);
 });
 
 test("console renders G1 creation map and target selection UI", () => {
