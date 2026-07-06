@@ -10,6 +10,8 @@ import { generateDirectionPacket } from "../core/engine/director.js";
 import { validateNarrativeAgainstDirection, validateWithAutoCorrect } from "../core/engine/guardian.js";
 import { extractVisibleNarrative } from "../core/engine/output-parser.js";
 import { joinPromptSafetyClauses } from "../core/prompts/prompt-safety-clauses.js";
+import { renderOrderedPromptSections } from "../core/prompts/prompt-section-order.js";
+import { resolveProvider } from "./providers/index.js";
 import {
   extractJsonValue,
   validateChatCompletionJson,
@@ -21,6 +23,10 @@ import { createHash } from "node:crypto";
 function endpoint(config) {
   const base = (config.llmBaseUrl || "").replace(/\/$/, "");
   return `${base}/chat/completions`;
+}
+
+function baseUrl(config = {}) {
+  return (config.llmBaseUrl || "").replace(/\/$/, "");
 }
 
 // 🆕 v0.9.5 按角色解析模型
@@ -40,13 +46,20 @@ function resolveEndpointForRole(role, config = {}) {
   return base ? `${base}/chat/completions` : "";
 }
 
+function resolveBaseUrlForRole(role, config = {}) {
+  const key = ROLE_URL_KEYS[role];
+  return (config[key] || config.llmBaseUrl || "").replace(/\/$/, "");
+}
+
 export function canUseDirectLlm(config, secretAvailable = false) {
   // 至少有一个模型可用（默认或按角色）
   const hasDefault = Boolean(config.llmBaseUrl && config.llmModel);
   const hasAnyRole = ["director", "writer", "guardian"].some(
     (r) => resolveEndpointForRole(r, config) && resolveModelForRole(r, config)
   );
-  return Boolean((hasDefault || hasAnyRole) && secretAvailable);
+  const providerId = String(config.llmProvider || config.provider || "openai-compatible").toLowerCase();
+  const hasCredential = secretAvailable || providerId === "mock";
+  return Boolean((hasDefault || hasAnyRole) && hasCredential);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -158,11 +171,11 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   // 🆕 Prompt Orchestration: prepend mode+task governance blocks
   const orchestrationPrefix = options.orchestrationPrefix || "";
   const taskContractPrefix = options.taskContractPrefix || "";
-  const systemPrompt = [
-    orchestrationPrefix,
-    taskContractPrefix,
-    basePrompt
-  ].filter(Boolean).join("\n\n---\n\n");
+  const systemPrompt = renderOrderedPromptSections([
+    { kind: "system_identity", content: basePrompt },
+    { kind: "task_contract", content: taskContractPrefix },
+    { kind: "runtime_orchestration", content: orchestrationPrefix }
+  ]);
   const { messages: historyMessages = [], temperature: optTemp, max_tokens: optMaxTokens } = options;
   const temperature = optTemp ?? (role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85);
   const maxTokens   = optMaxTokens ?? (role === "director" ? 1024 : role === "guardian" ? 1024 : 4096);
@@ -194,85 +207,36 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
 
       attempts.push({ role, targetUrl, modelName });
 
-      const expectsJson = role === "director" || role === "guardian" || options.responseFormat === "json";
-      const body = { model: modelName, messages, temperature, max_tokens: maxTokens };
-      if (expectsJson && !jsonModeUnsupportedEndpoints.has(targetUrl)) {
-        body.response_format = { type: "json_object" };
-      }
-
       try {
-        let response = await fetch(targetUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(timeoutMs)
+        const provider = resolveProvider(config.llmProvider || config.provider || "openai-compatible");
+        const providerResult = await provider.chat({
+          baseUrl: targetUrl,
+          model: modelName,
+          messages,
+          apiKey,
+          temperature,
+          maxTokens,
+          responseFormat: role === "director" || role === "guardian" || options.responseFormat === "json" ? "json" : null,
+          timeoutMs
         });
-
-      const text = await response.text();
-
-      if (!response.ok && response.status === 400 && body.response_format && /response[_ -]?format|json_object/i.test(text)) {
-        jsonModeUnsupportedEndpoints.add(targetUrl);
-        const retryBody = { ...body };
-        delete retryBody.response_format;
-        response = await fetch(targetUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(retryBody),
-          signal: AbortSignal.timeout(timeoutMs)
-        });
-        const retryText = await response.text();
-        if (!response.ok) {
-          if (response.status === 404 || response.status === 400) {
-            console.warn(`[LLM] ${role} 模型 "${modelName}" 不可用 (${response.status})，尝试候补...`);
-            lastError = new Error(`模型不可用: ${modelName} (${response.status})`);
-            continue;
-          }
-          throw new Error(retryText || `LLM HTTP ${response.status}`);
-        }
-        const parsedRetry = extractJsonValue(retryText, { validate: validateChatCompletionJson });
-        if (!parsedRetry.ok) throw new Error(`LLM response JSON invalid: ${parsedRetry.error}`);
-        const retryRawResponse = parsedRetry.value?.choices?.[0]?.message?.content || JSON.stringify(parsedRetry.value);
+        const rawResponse = providerResult.text || "";
         return {
           role,
-          rawResponse: retryRawResponse,
-          parsedContent: retryRawResponse,
-          modelUsed: modelName,
-          endpointUsed: targetUrl,
+          rawResponse,
+          parsedContent: rawResponse,
+          modelUsed: providerResult.modelUsed || modelName,
+          endpointUsed: providerResult.endpointUsed || targetUrl,
+          provider: providerResult.provider || provider.id,
+          usage: providerResult.usage || null,
           modelPath: "cartesian",
-          jsonMode: "unsupported-retried"
+          jsonMode: provider.id === "openai-compatible" ? "provider" : "native"
         };
-      }
-
-      if (!response.ok) {
-        // 404/模型不存在 → 尝试下一个候选
-        if (response.status === 404 || response.status === 400) {
-          console.warn(`[LLM] ${role} 模型 "${modelName}" 不可用 (${response.status})，尝试候补...`);
-          lastError = new Error(`模型不可用: ${modelName} (${response.status})`);
-          continue;
-        }
-        throw new Error(text || `LLM HTTP ${response.status}`);
-      }
-
-      const parsedResponse = extractJsonValue(text, { validate: validateChatCompletionJson });
-      if (!parsedResponse.ok) throw new Error(`LLM response JSON invalid: ${parsedResponse.error}`);
-      const data = parsedResponse.value;
-      const rawResponse = data?.choices?.[0]?.message?.content || JSON.stringify(data);
-
-      return {
-        role,
-        rawResponse,
-        parsedContent: rawResponse,
-        modelUsed: modelName,
-        endpointUsed: targetUrl,
-        modelPath: "cartesian"
-      };
     } catch (err) {
+      if (err.status === 400 || err.status === 404) {
+        console.warn(`[LLM] ${role} 模型 "${modelName}" 不可用 (${err.status})，尝试候补...`);
+        lastError = new Error(`模型不可用: ${modelName} (${err.status})`);
+        continue;
+      }
       // 超时错误 → 尝试下一个
       if (err.name === "AbortError" || err.name === "TimeoutError") {
         console.warn(`[LLM] ${role} 端点 "${targetUrl}" 超时 (${timeoutMs}ms)，尝试候补...`);
@@ -363,11 +327,11 @@ export async function callLLMByRoleStream(role, packet, config, apiKey, options 
   const basePrompt = ROLE_PROMPTS[role] || WRITER_SYSTEM_PROMPT;
   const orchestrationPrefix = options.orchestrationPrefix || "";
   const taskContractPrefix = options.taskContractPrefix || "";
-  const systemPrompt = [
-    orchestrationPrefix,
-    taskContractPrefix,
-    basePrompt
-  ].filter(Boolean).join("\n\n---\n\n");
+  const systemPrompt = renderOrderedPromptSections([
+    { kind: "system_identity", content: basePrompt },
+    { kind: "task_contract", content: taskContractPrefix },
+    { kind: "runtime_orchestration", content: orchestrationPrefix }
+  ]);
   const { messages: historyMessages = [], temperature: optTemp, max_tokens: optMaxTokens } = options;
   const temperature = optTemp ?? (role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85);
   const maxTokens = optMaxTokens ?? (role === "director" ? 1024 : role === "guardian" ? 1024 : 4096);
@@ -387,44 +351,38 @@ export async function callLLMByRoleStream(role, packet, config, apiKey, options 
     if (keyWarning) console.warn(`[LLM] ${keyWarning.reason}`);
     for (const modelName of modelCandidates) {
       if (!modelName || !targetUrl) continue;
-      const body = { model: modelName, messages, temperature, max_tokens: maxTokens, stream: true };
       try {
-        const response = await fetch(targetUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(timeoutMs)
+        const provider = resolveProvider(config.llmProvider || config.provider || "openai-compatible");
+        const providerResult = await provider.chatStream({
+          baseUrl: targetUrl,
+          model: modelName,
+          messages,
+          apiKey,
+          temperature,
+          maxTokens,
+          timeoutMs,
+          onDelta: (content) => {
+            if (typeof options.onDelta === "function") options.onDelta(content, { type: "delta", content });
+          }
         });
-        if (!response.ok) {
-          const text = await response.text().catch(() => "");
-          if (response.status === 400 || response.status === 404) {
-            lastError = streamUnsupportedError(`模型或端点不支持 stream: ${modelName} (${response.status})`, new Error(text || `HTTP ${response.status}`));
-            continue;
-          }
-          throw new Error(text || `LLM HTTP ${response.status}`);
-        }
-        if (!response.body) throw streamUnsupportedError("LLM response did not include a readable stream body");
-        let rawResponse = "";
-        for await (const event of parseOpenAIChatCompletionStream(response.body)) {
-          if (event.type === "delta") {
-            rawResponse += event.content;
-            if (typeof options.onDelta === "function") options.onDelta(event.content, event);
-          }
-        }
+        const rawResponse = providerResult.text || "";
         if (!rawResponse) throw streamUnsupportedError("LLM stream ended without text deltas");
         return {
           role,
           rawResponse,
           parsedContent: rawResponse,
-          modelUsed: modelName,
-          endpointUsed: targetUrl,
+          modelUsed: providerResult.modelUsed || modelName,
+          endpointUsed: providerResult.endpointUsed || targetUrl,
+          provider: providerResult.provider || provider.id,
+          usage: providerResult.usage || null,
           modelPath: "cartesian",
           stream: true
         };
       } catch (err) {
+        if (err.status === 400 || err.status === 404) {
+          lastError = streamUnsupportedError(`模型或端点不支持 stream: ${modelName} (${err.status})`, err);
+          continue;
+        }
         if (isStreamUnsupportedError(err)) {
           lastError = err;
           continue;
@@ -474,8 +432,8 @@ function buildModelCandidates(role, config) {
 /** 🆕 v0.9.5 构建端点候选列表：[角色专属, 默认] */
 function buildUrlCandidates(role, config) {
   const candidates = [];
-  const roleUrl = resolveEndpointForRole(role, config);
-  const defaultUrl = endpoint(config);
+  const roleUrl = resolveBaseUrlForRole(role, config);
+  const defaultUrl = baseUrl(config);
 
   if (roleUrl && roleUrl !== defaultUrl) candidates.push(roleUrl);
   if (defaultUrl) candidates.push(defaultUrl);
@@ -536,6 +494,19 @@ export async function sendDualStageTurn(opts = {}) {
     }
   } catch { /* non-critical */ }
 
+  const usageRecords = [];
+  const addUsage = (stage, result) => {
+    if (!result?.usage) return;
+    usageRecords.push({
+      stage,
+      role: result.role || stage,
+      provider: result.provider || config.llmProvider || config.provider || "openai-compatible",
+      model: result.modelUsed || "",
+      endpoint: result.endpointUsed || "",
+      usage: result.usage
+    });
+  };
+
   // 🆕 directorMode 覆盖 skipDirector/useLlmAnalysis
   let effectiveSkipDirector = skipDirector;
   let effectiveUseLlmAnalysis = useLlmAnalysis;
@@ -577,6 +548,7 @@ export async function sendDualStageTurn(opts = {}) {
 
     try {
       const analysisResult = await callLLMByRole("director", analyzerInput, config, apiKey, { temperature: 0.3, max_tokens: 512, orchestrationPrefix });
+      addUsage("analysis", analysisResult);
       const extracted = extractJsonValue(analysisResult.rawResponse, { validate: validateLlmAnalysisJson });
       if (!extracted.ok) throw new Error(`LLM analysis JSON invalid: ${extracted.error}`);
       const parsed = extracted.value;
@@ -607,6 +579,7 @@ export async function sendDualStageTurn(opts = {}) {
   if (!effectiveSkipDirector && !finalDirectionPacket) {
     const directorInput = buildDirectorPacket({ model, input, engineState, turnPrep, knowledgeCards });
     const directorResult = await callLLMByRole("director", directorInput, config, apiKey, { orchestrationPrefix });
+    addUsage("director", directorResult);
     // 尝试解析 JSON
     try {
       const extracted = extractJsonValue(directorResult.rawResponse, { validate: validateDirectionPacketJson });
@@ -699,6 +672,7 @@ export async function sendDualStageTurn(opts = {}) {
   } else {
     writerResult = await callLLMByRole("writer", writerInput, config, apiKey, { messages, orchestrationPrefix });
   }
+  addUsage("writer", writerResult);
   const rawText = writerResult.rawResponse;
 
   // === Step 3: Guardian（可选·v0.8.5 自动修正） ===
@@ -782,7 +756,8 @@ export async function sendDualStageTurn(opts = {}) {
     _dualStage: {
       usedDirectorLLM: !effectiveSkipDirector,
       usedGuardianLLM: !skipGuardian && String(guardianResult?.source || "").startsWith("llm"),
-      directionSummary: finalDirectionPacket?.summary || ""
+      directionSummary: finalDirectionPacket?.summary || "",
+      usage: usageRecords
     }
   };
 }

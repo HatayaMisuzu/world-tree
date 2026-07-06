@@ -79,3 +79,39 @@ test("connection diagnostics reports checks, suggestions, and safe-to-save state
     await removeTempDir(dataDir);
   }
 });
+
+test("connection diagnostics routes provider key to mock adapter without credentials", async () => {
+  const dataDir = await createTempDataDir();
+  const server = await startWorldTreeServer({ dataDir });
+
+  try {
+    const save = await api(server, "/api/connections", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "upsert",
+        setDefault: true,
+        profile: {
+          id: "mock-local",
+          label: "Mock Local",
+          provider: "mock",
+          baseUrl: "mock://local",
+          model: "mock-model"
+        }
+      })
+    });
+    assert.equal(save.body.status, "ok");
+
+    const testResult = await api(server, "/api/connections", {
+      method: "POST",
+      body: JSON.stringify({ action: "test", id: "mock-local" })
+    });
+    assert.equal(testResult.body.status, "ok");
+    assert.equal(testResult.body.provider, "mock");
+    assert.equal(testResult.body.safeToSave, true);
+    assert.equal(testResult.body.checks.some((check) => check.id === "provider" && check.detail === "mock"), true);
+    assert.equal(testResult.body.checks.some((check) => check.id === "chat" && check.status === "ok"), true);
+  } finally {
+    await server.stop();
+    await removeTempDir(dataDir);
+  }
+});

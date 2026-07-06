@@ -2,12 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 
-test("Claude preset uses OpenRouter OpenAI-compatible endpoint", () => {
+test("Claude presets keep OpenRouter compatibility and expose native Anthropic adapter", () => {
   const server = readFileSync("server.js", "utf8");
   assert.match(server, /claude-openrouter/);
   assert.match(server, /https:\/\/openrouter\.ai\/api\/v1/);
   assert.match(server, /anthropic\/claude-sonnet-4\.5/);
-  assert.doesNotMatch(server, /https:\/\/api\.anthropic\.com\/v1/);
+  assert.match(server, /https:\/\/api\.anthropic\.com\/v1/);
+  assert.match(server, /provider: "anthropic"/);
 });
 
 test("release hygiene scripts and line ending policy are registered", () => {

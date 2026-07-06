@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import {
@@ -49,7 +50,7 @@ async function startStreamingLlm() {
             })
           : "【叙事】\n雾铃塔的钟声沿着云桥亮起，玩家的脚步被温柔地接住。";
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }));
+        res.end(JSON.stringify({ choices: [{ message: { role: "assistant", content } }], usage: { prompt_tokens: 11, completion_tokens: 7, total_tokens: 18 } }));
       });
       return;
     }
@@ -137,6 +138,7 @@ test("chat stream endpoint emits SSE deltas, persists done turn, and message-op 
       input: "走向雾铃塔",
       modeId: "world-rpg",
       dataMode: "worldbook",
+      pipelineProfileId: "balanced",
       engineState: { dataMode: "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
       messages: []
     });
@@ -144,8 +146,13 @@ test("chat stream endpoint emits SSE deltas, persists done turn, and message-op 
     assert.match(events.filter(item => item.event === "delta").map(item => item.data.content).join(""), /雾铃塔/);
     const done = events.find(item => item.event === "done")?.data;
     assert.equal(done.status, "ok");
+    assert.equal(done.pipelineProfile.id, "balanced");
     assert.match(done.narrative, /雾铃塔的钟声/);
     assert.equal(done.narrative.includes("状态建议"), false);
+    assert.equal(done.usage.turn.totalTokens >= 18, true);
+    const usagePath = join(dataDir, "engine", "worlds", moduleKey, "runtime", "usage.jsonl");
+    assert.equal(existsSync(usagePath), true);
+    assert.match(await readFile(usagePath, "utf8"), /"totalTokens":18/);
 
     let records = await readChat(dataDir, moduleKey);
     const assistant = records.find(record => record.role === "assistant");

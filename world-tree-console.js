@@ -177,6 +177,7 @@ const AS = {
   engineState: null,
   lastScene: "",
   lastStatusSections: {},
+  usageSummary: null,
   dashboardData: {},
   kernel: null,
   kernelBranches: [],
@@ -317,12 +318,14 @@ const C = {
   chatSurface() {
     const m = AS.selectedModule;
     const title = AS.isQuickStart ? "快速对话" : (m ? (m.displayName || m.name) : "未选择世界");
+    const usage = C.usageBadge();
     return `<div class="chat-layout">
       <section class="panel chat-card">
         <div class="panel-head">
           <div>
             <h2>${U.esc(title)}</h2>
             <p class="sub">${AS.isQuickStart ? "快速项目草稿 · 已保存到本地 runtime" : m ? `${C.dataModeLabel(m)} · ${m.turnCount || 0} 回合${m.draft ? " · 草稿" : ""}` : "请先在工作台或世界管理中加载一个世界"}</p>
+            ${usage}
           </div>
           <div class="actions">
             <button class="small" data-action="toggle-developer-observability">开发者观测</button>
@@ -342,6 +345,20 @@ const C = {
       </section>
       ${renderStatusPanel()}
       ${renderDeveloperObservabilityDrawer()}
+    </div>`;
+  },
+  usageBadge() {
+    const usage = AS.usageSummary;
+    if (!usage?.turn && !usage?.session) return "";
+    const turn = usage.turn || {};
+    const session = usage.session || {};
+    const turnTokens = Number(turn.totalTokens || 0);
+    const sessionTokens = Number(session.totalTokens || 0);
+    const cost = Number((turn.estimatedCostCny || 0) + (session.estimatedCostCny || 0));
+    return `<div class="chip-row usage-row">
+      <span class="chip">本轮 ~${U.esc(String(turnTokens))} tokens</span>
+      <span class="chip">本局 ~${U.esc(String(sessionTokens))} tokens</span>
+      ${cost > 0 ? `<span class="chip">估算 ¥${U.esc(cost.toFixed(4))}</span>` : ""}
     </div>`;
   },
   worldbookRows(limit) {
@@ -1341,11 +1358,13 @@ function renderHealth() {
 
 function renderConnections() {
   const data = AS.connections || { items: [], templates: [] };
+  const profiles = data.pipelineProfiles?.profiles || [];
   const diag = AS.llmDiagnostics;
   return `<section class="layout-2">
     <div class="panel">
       <div class="panel-head"><h2>连接档案</h2><button class="small" data-action="load-connections">刷新</button></div>
       <div class="list">${(data.items || []).map(c => `<div class="item" data-connection-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.label || c.name)}</strong>${C.badge(c.active ? "默认" : "档案", c.active ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(c.provider || "openai-compatible")} · ${U.esc(c.model || "")}</span><div class="chip-row"><span class="chip">temp ${c.temperature ?? "-"}</span><span class="chip">max ${c.maxTokens ?? "-"}</span><span class="chip">top_p ${c.topP ?? "-"}</span>${c.hasApiKey ? `<span class="chip ok">key ${U.esc(c.maskedKey || "saved")}</span>` : `<span class="chip warn">no key</span>`}</div><div class="actions"><button class="small" data-action="set-default-connection">设为默认</button><button class="small" data-action="test-connection">测试</button><button class="small" data-action="duplicate-connection">复制</button><button class="small danger" data-action="delete-connection">删除</button></div></div>`).join("") || C.empty("暂无连接档案")}</div>
+      <div class="panel tight" style="margin-top:12px"><h3>叙事档位</h3><div class="list">${profiles.map(p => `<div class="item"><div class="item-head"><strong>${U.esc(p.label)}</strong>${C.badge(p.id === data.pipelineProfiles?.default ? "默认" : "档位", p.id === data.pipelineProfiles?.default ? "ok" : "pending")}</div><div class="chip-row"><span class="chip">质量 ${U.esc(p.quality)}</span><span class="chip">速度 ${U.esc(p.speed)}</span><span class="chip">成本 ${U.esc(p.cost)}</span></div></div>`).join("") || C.empty("暂无叙事档位")}</div></div>
       ${diag ? `<div class="panel tight" style="margin-top:12px"><div class="panel-head"><h3>最近诊断</h3>${C.badge(diag.safeToSave ? "可保存" : "需修正", diag.safeToSave ? "ok" : "bad")}</div><div class="list">${(diag.checks || []).map(c => `<div class="item"><div class="item-head"><strong>${U.esc(c.label || c.id)}</strong>${C.badge(c.status || "unknown", c.status === "ok" ? "ok" : c.status === "fail" ? "bad" : "warn")}</div><span class="tiny muted">${U.esc(c.detail || "")}</span></div>`).join("")}</div>${diag.suggestions?.length ? C.notice(U.esc(diag.suggestions.join("；")), diag.safeToSave ? "warn" : "bad") : ""}</div>` : ""}
     </div>
     <aside class="panel">
@@ -2519,6 +2538,7 @@ function buildChatPayload(text, messages) {
     modeId: AS.selectedModule.mode || AS.selectedModule.type || (AS.selectedModule.dataMode === "character_card" ? "character" : "world-rpg"),
     dataMode: AS.selectedModule.dataMode || "worldbook",
     engineState: AS.engineState || { turnCount: AS.selectedModule.turnCount || 0, dataMode: AS.selectedModule.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
+    pipelineProfileId: AS.connections?.pipelineProfiles?.default || "balanced",
     messages,
   };
 }
@@ -2557,6 +2577,7 @@ async function applyChatSuccess(res, userMessage, assistantMessage = null) {
   assistant.candidates = res.persistedIds?.assistantId ? [{ id: `${res.persistedIds.assistantId}-c0`, content: narrative, selected: true, createdAt: new Date().toISOString() }] : (assistant.candidates || []);
   CH.persist();
   AS.lastStatusSections = res.parsedSections || {};
+  AS.usageSummary = res.usage || AS.usageSummary;
   AS.engineState = res.engineState || AS.engineState;
   AS.modePlay = res.modePlay || AS.engineState?.realPlay || AS.modePlay;
   AS.lastWorkflowRun = { status: "completed", totalMs: res._progress?.totalMs || 0, stages: res._progress?.stages || [] };
@@ -3436,6 +3457,8 @@ function applyConnectionTemplate() {
 }
 
 async function saveConnection() {
+  const templateId = U.qs("#connTemplate")?.value;
+  const template = AS.connections?.templates?.find(x => x.id === templateId);
   const profile = {
     label: U.qs("#connLabel")?.value,
     baseUrl: U.qs("#connBaseUrl")?.value,
@@ -3444,7 +3467,7 @@ async function saveConnection() {
     maxTokens: U.qs("#connMaxTokens")?.value,
     topP: U.qs("#connTopP")?.value,
     apiKey: U.qs("#connKey")?.value,
-    provider: U.qs("#connTemplate")?.value
+    provider: template?.provider || templateId || "openai-compatible"
   };
   AS.connections = await API.connections({ action: "upsert", profile, setDefault: true });
   AS.llmDiagnostics = null;

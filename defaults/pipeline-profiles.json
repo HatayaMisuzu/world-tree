@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "default": "balanced",
+  "profiles": [
+    {
+      "id": "fast",
+      "label": "快速省时",
+      "quality": "low",
+      "speed": "high",
+      "cost": "low",
+      "directorMode": "js",
+      "guardian": "js"
+    },
+    {
+      "id": "balanced",
+      "label": "均衡体验",
+      "quality": "medium",
+      "speed": "medium",
+      "cost": "medium",
+      "directorMode": "hybrid",
+      "guardian": "js"
+    },
+    {
+      "id": "quality",
+      "label": "质量优先",
+      "quality": "high",
+      "speed": "low",
+      "cost": "high",
+      "directorMode": "llm",
+      "guardian": "llm"
+    }
+  ]
+}

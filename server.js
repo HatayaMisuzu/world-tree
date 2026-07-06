@@ -19,6 +19,7 @@ import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
 import { getWorldSessionRegistry } from "./src/core/engine/world-session.js";
 import { buildEngineGraphSidecar, splitWorldForSave, stripRegenerableWorldFields } from "./src/core/system/world-save-hygiene.js";
+import { loadPipelineProfiles, resolvePipelineProfile } from "./src/core/llm/pipeline-profiles.js";
 import { buildRealPlayTurnContext } from "./src/core/real-play/turn-context.js";
 import {
   errorPayload,
@@ -161,7 +162,9 @@ function secretsPath() {
 const DEFAULT_CONFIG = {
   llmBaseUrl: "https://api.deepseek.com/v1",
   llmModel: "deepseek-v4-flash",
+  llmProvider: "deepseek",
   llmTimeoutMs: 60000,
+  pipelineProfileId: "balanced",
   connectionProfileId: "deepseek",
   lastModuleKey: "",
   moduleHistory: [],
@@ -922,8 +925,9 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
 
   const config = await loadConfig();
   const apiKey = await getActiveLlmValue();
+  const providerId = String(config.llmProvider || config.provider || "openai-compatible").toLowerCase();
   if (process.env.WORLD_TREE_DISABLE_LLM === "1") return await handleLocalChatFallback(body, "LLM_DISABLED");
-  if (!apiKey) return await handleLocalChatFallback(body, "LLM_API_KEY_MISSING");
+  if (!apiKey && providerId !== "mock") return await handleLocalChatFallback(body, "LLM_API_KEY_MISSING");
   if (!config.llmBaseUrl || !config.llmModel) return await handleLocalChatFallback(body, "LLM_CONFIG_MISSING");
 
   // 懒加载引擎模块
@@ -1016,6 +1020,7 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
     const startedAt = Date.now();
     const progress = { startedAt, stages: [] };
 
+    const pipelineProfile = resolvePipelineProfile(body.pipelineProfileId || config.pipelineProfileId || "balanced");
     const result = await sendDualStageTurn({
       model,
       config: { ...config, llmBaseUrl: config.llmBaseUrl, llmModel: config.llmModel },
@@ -1027,8 +1032,9 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
       moduleKey: moduleKey || "unloaded",
       dataMode: dataMode || "worldbook",
       skipDirector: true,
-      skipGuardian: false,
+      skipGuardian: pipelineProfile?.guardian === "off",
       useLlmAnalysis: true,
+      directorMode: pipelineProfile?.directorMode || "hybrid",
       writerPacket,
       kernelContext,
       streamWriter: streamHooks.streamWriter === true,
@@ -1089,8 +1095,25 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
       });
     }
 
+    let usage = null;
+    const stageUsage = result._dualStage?.usage || [];
+    if (stageUsage.length && moduleKey && !moduleKey.startsWith("__")) {
+      const { appendUsageRecord, readUsageSummary, summarizeUsageRecords } = await import("./src/core/llm/usage-meter.js");
+      const usagePath = join(moduleRuntimeDir(moduleKey), "usage.jsonl");
+      const turnUsage = summarizeUsageRecords(stageUsage, { yuanPerMillionTokens: config.yuanPerMillionTokens });
+      await appendUsageRecord(usagePath, {
+        ts: new Date().toISOString(),
+        moduleKey,
+        turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1,
+        provider: config.llmProvider || config.provider || "openai-compatible",
+        stages: stageUsage,
+        turn: turnUsage
+      });
+      usage = { turn: turnUsage, session: await readUsageSummary(usagePath) };
+    }
+
     const returnedState = normalizeEngineState({ ...(result.engineState || realPlayState), realPlay: realPlayContext.state });
-  return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: returnedState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, kernel: summarizeKernelTurnContext(kernelContext), modePlay: realPlayContext.publicState, commandResult: realPlayContext.commandResult, _dualStage: result._dualStage || null, _progress: progress };
+    return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: returnedState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, usage, pipelineProfile: pipelineProfile ? { id: pipelineProfile.id, quality: pipelineProfile.quality, speed: pipelineProfile.speed, cost: pipelineProfile.cost } : null, kernel: summarizeKernelTurnContext(kernelContext), modePlay: realPlayContext.publicState, commandResult: realPlayContext.commandResult, _dualStage: result._dualStage || null, _progress: progress };
 }
 
 async function handleLlmChat(body) {
@@ -1930,7 +1953,10 @@ function connectionTemplates() {
     { id: "openai-compatible", label: "OpenAI-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1-mini", provider: "openai-compatible" },
     { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/auto", provider: "openai-compatible" },
     { id: "ollama", label: "Ollama", baseUrl: "http://127.0.0.1:11434/v1", model: "llama3.1", provider: "ollama" },
-    { id: "claude-openrouter", label: "Claude via OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-sonnet-4.5", provider: "openai-compatible", note: "Anthropic native /v1/messages is deferred until the provider adapter layer." }
+    { id: "claude-openrouter", label: "Claude via OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-sonnet-4.5", provider: "openai-compatible" },
+    { id: "anthropic", label: "Anthropic native", baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-5", provider: "anthropic" },
+    { id: "google", label: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta", model: "gemini-2.5-flash", provider: "google" },
+    { id: "mock", label: "Mock provider", baseUrl: "mock://local", model: "mock-model", provider: "mock" }
   ];
 }
 
@@ -1961,13 +1987,14 @@ function publicConnections(raw = loadConnectionsRaw()) {
     const secret = (secrets.llm?.items || []).find(i => i.id === (item.apiKeySecretId || item.id));
     return { ...item, hasApiKey: Boolean(secret?.value), maskedKey: maskSecret(secret?.value || ""), active: item.id === raw.active };
   });
-  return { status: "ok", active: raw.active, templates: connectionTemplates(), items };
+  return { status: "ok", active: raw.active, templates: connectionTemplates(), pipelineProfiles: loadPipelineProfiles(), items };
 }
 
 async function testConnectionProfile(profile) {
   const started = Date.now();
   const baseUrl = String(profile.baseUrl || "").replace(/\/$/, "");
   const model = String(profile.model || "").trim();
+  const providerId = String(profile.provider || "openai-compatible");
   const apiKey = await secretValueById(profile.apiKeySecretId || profile.id);
   const checks = [];
   const suggestions = [];
@@ -1978,14 +2005,14 @@ async function testConnectionProfile(profile) {
     suggestions.push("请填写 OpenAI-compatible Base URL。");
     return fail(errorPayload("CONNECTION_BASE_URL_MISSING", "连接地址为空。", "baseUrl is empty"));
   }
-  if (!/^https?:\/\//.test(baseUrl)) {
+  if (providerId !== "mock" && !/^https?:\/\//.test(baseUrl)) {
     add("base_url", "Base URL", "fail", baseUrl);
     suggestions.push("Base URL 应以 http:// 或 https:// 开头。");
     return fail(errorPayload("CONNECTION_BASE_URL_INVALID", "连接地址必须以 http:// 或 https:// 开头。", baseUrl));
   }
   add("base_url", "Base URL", "ok", baseUrl);
-  if (!baseUrl.endsWith("/v1")) suggestions.push("如果服务返回 404，请确认 Base URL 是否需要以 /v1 结尾。");
-  if (!apiKey && !baseUrl.includes("127.0.0.1") && !baseUrl.includes("localhost")) {
+  if (providerId !== "mock" && !baseUrl.endsWith("/v1")) suggestions.push("如果服务返回 404，请确认 Base URL 是否需要以 /v1 结尾。");
+  if (providerId !== "mock" && !apiKey && !baseUrl.includes("127.0.0.1") && !baseUrl.includes("localhost")) {
     add("api_key", "API Key", "fail", "missing");
     suggestions.push("远程服务通常需要保存 API Key。");
     return fail(errorPayload("CONNECTION_API_KEY_MISSING", "这个连接还没有保存 API Key。", "secret missing"));
@@ -1997,6 +2024,30 @@ async function testConnectionProfile(profile) {
     return fail(errorPayload("CONNECTION_MODEL_MISSING", "这个连接还没有填写模型名。", "model missing"));
   }
   add("model", "Model", "ok", model);
+  add("provider", "Provider", "ok", providerId);
+  try {
+    const { resolveProvider } = await import("./src/adapters/providers/index.js");
+    const provider = resolveProvider(providerId);
+    const probe = await provider.chat({
+      baseUrl,
+      model,
+      apiKey,
+      messages: [{ role: "user", content: "ping" }],
+      temperature: 0,
+      maxTokens: 1,
+      timeoutMs: 5000
+    });
+    add("chat", "Provider chat", "ok", probe.provider || provider.id);
+    if (providerId !== "openai-compatible" && providerId !== "deepseek" && providerId !== "openrouter" && providerId !== "ollama") {
+      return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, provider: provider.id, safeToSave: true };
+    }
+  } catch (providerError) {
+    if (providerId !== "openai-compatible" && providerId !== "deepseek" && providerId !== "openrouter" && providerId !== "ollama") {
+      const mapped = mapLlmError(providerError);
+      add("chat", "Provider chat", "fail", providerError?.message || "provider failed");
+      return { ...mapped, checks, suggestions, safeToSave: false };
+    }
+  }
   try {
     const response = await fetch(`${baseUrl}/models`, {
       method: "GET",
@@ -2066,7 +2117,7 @@ async function handleConnections(body = {}, method = "GET") {
     const id = String(body.id || "");
     const item = raw.items.find(i => i.id === id);
     if (!item) return { status: "error", errorMsg: "连接档案不存在。" };
-    await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model });
+    await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible" });
     const secrets = await loadSecrets();
     await saveSecrets({ ...secrets, llm: { ...secrets.llm, active: item.apiKeySecretId || item.id } });
     return saveConnectionsRaw({ ...raw, active: id });
@@ -2097,7 +2148,7 @@ async function handleConnections(body = {}, method = "GET") {
   if (key && !/\*{4,}/.test(key)) await saveLlmSecret({ id: item.apiKeySecretId, label: item.label, value: key });
   const items = [item, ...raw.items.filter(i => i.id !== id)];
   const active = body.setDefault ? id : raw.active;
-  if (body.setDefault) await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model });
+  if (body.setDefault) await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible" });
   return saveConnectionsRaw({ active, items });
 }
 
