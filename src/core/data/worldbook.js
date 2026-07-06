@@ -81,158 +81,165 @@ export function vectorStats(entries = []) {
 }
 
 export function matchEntries(worldbook, input = "", options = {}) {
-  const query = String(input || "").toLowerCase();
   const mode = options.mode || "both";
   const limit = options.limit || 10;
   const scanMessages = options.scanMessages || [];
   const sceneName = options.sceneName || "";
   const previousSceneName = options.previousScene || "";
   const sceneChanged = sceneName && previousSceneName && sceneName !== previousSceneName;
-
-  return normalizeWorldbookEntries(worldbook?.entries || worldbook || [])
+  const entries = normalizeWorldbookEntries(worldbook?.entries || worldbook || [])
     .filter((entry) => entry.enabled && entry.mode !== "disable")
-    // === 步骤1：常驻条目直接加入 ===
-    .map((entry) => {
-      if (entry.mode === "persistent" || entry.mode === "常驻") {
-        entry.inject = true;
-        entry.matchType = "persistent";
-        entry.reason = "persistent";
-        return entry;
+    .map((entry) => ({ ...entry, inject: false, matchType: "", reason: "", matchedKeys: [], hitCount: 0 }));
+
+  for (const entry of entries) {
+    if (entry.mode === "persistent" || entry.mode === "常驻") {
+      entry.inject = true;
+      entry.matchType = "persistent";
+      entry.reason = "persistent";
+      continue;
+    }
+    applyEntryMatch(entry, buildWorldbookScanTextForEntry(entry, input, scanMessages), mode, options);
+  }
+
+  for (const entry of entries) {
+    if (entry.inject) continue;
+    if (sceneChanged && (entry.triggerType === "场景变化" || entry.triggerType === "scene" || entry.triggerType === "both" || entry.triggerType === "两者")) {
+      const sceneKeywords = Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean);
+      const sceneHit = sceneKeywords.some((key) => sceneName.toLowerCase().includes(String(key).toLowerCase()));
+      if (sceneHit) { entry.inject = true; entry.matchType = "scene"; entry.reason = "sceneChanged"; }
+    }
+  }
+
+  const initialInjected = entries.filter((entry) => entry.inject);
+  if (options.recursiveDepth !== 0 && initialInjected.length) {
+    const recursiveText = initialInjected.map((entry) => `${entry.title || ""}\n${entry.content || ""}`).join("\n");
+    for (const entry of entries) {
+      if (entry.inject || entry.mode === "persistent" || entry.mode === "常驻") continue;
+      if (applyEntryMatch(entry, recursiveText, mode, options)) {
+        entry.matchType = `recursive:${entry.matchType || "exact"}`;
+        entry.reason = `recursive:${entry.reason || "matched"}`;
       }
-      entry.inject = false;
-      entry.matchType = "";
-      entry.reason = "";
-      return entry;
-    })
-    .map((entry) => {
-      if (entry.inject) return entry;
+    }
+  }
 
-      const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean);
-      if (keys.length === 0) return entry;
+  for (const entry of entries) {
+    if (!entry.inject || entry.matchType === "persistent") continue;
+    const prob = entry.probability ?? entry.triggerProb ?? 100;
+    if (prob >= 100) continue;
+    const roll = Math.floor(Math.random() * 100) + 1;
+    if (roll > prob) { entry.inject = false; entry.dropReason = `probability:${prob}`; }
+  }
 
-      // === 步骤2：精确关键词匹配 ===
-      const matchedExact = keys.filter((key) => {
-        if (/^\/.*\/$/.test(key)) {
-          try { const re = new RegExp(key.slice(1, -1)); return re.test(query); }
-          catch { return false; }
-        }
-        return query.includes(String(key).toLowerCase());
-      });
-
-      const matchLogic = entry.logic || entry.match || "any";
-
-      // AND 逻辑
-      if (matchLogic === "all" || matchLogic === "全部") {
-        const allHit = keys.every((key) => query.includes(String(key).toLowerCase()));
-        if (!allHit) {
-          // 语义回退
-          if (mode !== "exact" && _supportsSemantic(entry)) {
-            const semantic = _semanticStats(entry, query);
-            if (semantic.hit) {
-              entry.inject = true;
-              entry.matchType = "semantic";
-              entry.semanticScore = semantic.score;
-              entry.reason = `semantic:${semantic.score.toFixed(2)}`;
-            }
-          }
-          // 向量回退
-          if (!entry.inject && _supportsVector(mode, entry)) {
-            const vs = _vectorMatch(entry, query, options.vectors, options.queryVector);
-            if (vs > (options.vectorThreshold || 0.5)) {
-              entry.inject = true;
-              entry.matchType = "vector";
-              entry.vectorScore = vs;
-              entry.reason = `vector:${vs.toFixed(2)}`;
-            }
-          }
-          return entry;
-        }
-        entry.inject = true;
-        entry.matchType = "exact";
-        entry.matchedKeys = keys;
-        entry.reason = `exact:${keys.join(",")}`;
-        return entry;
-      }
-
-      // any 逻辑：任一命中
-      if (matchedExact.length > 0) {
-        entry.inject = true;
-        entry.matchType = "exact";
-        entry.matchedKeys = matchedExact;
-        entry.reason = `exact:${matchedExact.join(",")}`;
-        return entry;
-      }
-
-      // === 步骤3：语义回退 ===
-      if (mode !== "exact" && _supportsSemantic(entry)) {
-        const semantic = _semanticStats(entry, query);
-        if (semantic.hit) {
-          entry.inject = true;
-          entry.matchType = "semantic";
-          entry.semanticScore = semantic.score;
-          entry.reason = `semantic:${semantic.score.toFixed(2)}`;
-        }
-      }
-
-      // === 步骤3.5：向量化匹配（v12.18+）===
-      if (!entry.inject && _supportsVector(mode, entry)) {
-        const vs = _vectorMatch(entry, query, options.vectors, options.queryVector);
-        if (vs > (options.vectorThreshold || 0.5)) {
-          entry.inject = true;
-          entry.matchType = "vector";
-          entry.vectorScore = vs;
-          entry.reason = `vector:${vs.toFixed(2)}`;
-        }
-      }
-
-      return entry;
-    })
-    // === 步骤4：场景变化触发 ===
-    .map((entry) => {
-      if (entry.inject) return entry;
-      if (sceneChanged && (entry.triggerType === "场景变化" || entry.triggerType === "scene" || entry.triggerType === "both" || entry.triggerType === "两者")) {
-        const sceneKeywords = Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean);
-        const sceneHit = sceneKeywords.some((key) => sceneName.toLowerCase().includes(String(key).toLowerCase()));
-        if (sceneHit) { entry.inject = true; entry.matchType = "scene"; entry.reason = "sceneChanged"; }
-      }
-      return entry;
-    })
-    // === 步骤5：扫描深度过滤 ===
-    .map((entry) => {
-      if (!entry.inject) return entry;
-      const depth = entry.depth || entry.scanDepth || "中距";
-      const rangeMap = { "近距": 3, "中距": 5, "远程": 10, "全局": 999, "near": 3, "mid": 5, "far": 10, "global": 999 };
-      const range = rangeMap[depth] || 5;
-      if (depth === "全局" || depth === "global" || !scanMessages.length) return entry;
-      const recentText = scanMessages.slice(-range).map((m) => String(m || "").toLowerCase()).join(" ");
-      const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean);
-      const inRange = keys.some((key) => recentText.includes(String(key).toLowerCase()));
-      if (!inRange) { entry.inject = false; entry.dropReason = `scanDepth:${depth}`; }
-      return entry;
-    })
-    // === 步骤6：触发概率检查 ===
-    .map((entry) => {
-      if (!entry.inject) return entry;
-      if (entry.matchType === "persistent") return entry;
-      const prob = entry.probability ?? entry.triggerProb ?? 100;
-      if (prob >= 100) return entry;
-      const roll = Math.floor(Math.random() * 100) + 1;
-      if (roll > prob) { entry.inject = false; entry.dropReason = `probability:${prob}`; }
-      return entry;
-    })
-    // === 步骤7：过滤+排序 ===
+  return entries
     .filter((entry) => entry.inject)
-    .sort((a, b) => {
-      const layerOrder = { "base": 0, "基底": 0, "context": 1, "情境": 1, "instant": 2, "即时": 2 };
-      const layerA = layerOrder[a.layer || "context"] ?? 1;
-      const layerB = layerOrder[b.layer || "context"] ?? 1;
-      if (layerA !== layerB) return layerA - layerB;
-      return (b.priority ?? 100) - (a.priority ?? 100);
-    })
+    .sort(compareWorldbookEntries)
     .slice(0, limit);
 }
 
 // ---- 内部辅助 ----
+function buildWorldbookScanText(input = "", messages = []) {
+  return [input, ...(Array.isArray(messages) ? messages : [])].map((item) => String(item || "")).filter(Boolean).join("\n").toLowerCase();
+}
+
+function buildWorldbookScanTextForEntry(entry = {}, input = "", messages = []) {
+  const depth = entry.depth || entry.scanDepth || "中距";
+  const rangeMap = { "近距": 3, "中距": 5, "远程": 10, "全局": 999, "near": 3, "mid": 5, "far": 10, "global": 999 };
+  const range = depth === "全局" || depth === "global" ? 999 : (rangeMap[depth] || 5);
+  const history = Array.isArray(messages) ? messages.slice(-range) : [];
+  return buildWorldbookScanText(input, history);
+}
+
+function applyEntryMatch(entry, scanText, mode, options = {}) {
+  const keys = allEntryKeys(entry);
+  if (!keys.length) return false;
+  const matchLogic = entry.logic || entry.match || "any";
+  const matched = keys.filter((key) => matchWorldbookKey(key, scanText));
+  const exactHit = matchLogic === "all" || matchLogic === "全部"
+    ? matched.length === keys.length
+    : matched.length > 0;
+  if (exactHit) {
+    entry.inject = true;
+    entry.matchType = "exact";
+    entry.matchedKeys = matched;
+    entry.hitCount = matched.length;
+    entry.reason = `exact:${matched.join(",")}`;
+    return true;
+  }
+  if (mode !== "exact" && _supportsSemantic(entry)) {
+    const semantic = _semanticStats(entry, scanText);
+    if (semantic.hit) {
+      entry.inject = true;
+      entry.matchType = "semantic";
+      entry.semanticScore = semantic.score;
+      entry.hitCount = semantic.hitCount || 1;
+      entry.reason = `semantic:${semantic.score.toFixed(2)}`;
+      return true;
+    }
+  }
+  if (_supportsVector(mode, entry)) {
+    const vs = _vectorMatch(entry, scanText, options.vectors, options.queryVector);
+    if (vs > (options.vectorThreshold || 0.5)) {
+      entry.inject = true;
+      entry.matchType = "vector";
+      entry.vectorScore = vs;
+      entry.hitCount = Math.max(1, entry.hitCount || 0);
+      entry.reason = `vector:${vs.toFixed(2)}`;
+      return true;
+    }
+  }
+  return false;
+}
+
+function allEntryKeys(entry = {}) {
+  return [
+    ...(Array.isArray(entry.keys) ? entry.keys : [entry.keys].filter(Boolean)),
+    ...(Array.isArray(entry.secondaryKeys) ? entry.secondaryKeys : [entry.secondaryKeys].filter(Boolean)),
+    ...(Array.isArray(entry.tags) ? entry.tags : [])
+  ].map((key) => String(key || "").trim()).filter(Boolean);
+}
+
+function matchWorldbookKey(key = "", scanText = "") {
+  const raw = String(key || "").trim();
+  if (!raw) return false;
+  const text = String(scanText || "");
+  if (raw.startsWith("re:/")) {
+    const last = raw.lastIndexOf("/");
+    if (last > 3) {
+      try { return new RegExp(raw.slice(4, last), raw.slice(last + 1) || "i").test(text); }
+      catch { return false; }
+    }
+  }
+  if (/^\/.*\/[a-z]*$/i.test(raw)) {
+    const last = raw.lastIndexOf("/");
+    try { return new RegExp(raw.slice(1, last), raw.slice(last + 1)).test(text); }
+    catch { return false; }
+  }
+  if (raw.startsWith("w:")) {
+    const word = escapeRegExp(raw.slice(2).toLowerCase());
+    if (!word) return false;
+    return new RegExp(`(^|[^\\p{L}\\p{N}_])${word}($|[^\\p{L}\\p{N}_])`, "iu").test(text);
+  }
+  return text.includes(raw.toLowerCase());
+}
+
+function compareWorldbookEntries(a, b) {
+  const layerOrder = { "base": 0, "基底": 0, "context": 1, "情境": 1, "instant": 2, "即时": 2 };
+  const layerA = layerOrder[a.layer || "context"] ?? 1;
+  const layerB = layerOrder[b.layer || "context"] ?? 1;
+  if (layerA !== layerB) return layerA - layerB;
+  if ((b.hitCount || 0) !== (a.hitCount || 0)) return (b.hitCount || 0) - (a.hitCount || 0);
+  if ((b.priority ?? 100) !== (a.priority ?? 100)) return (b.priority ?? 100) - (a.priority ?? 100);
+  return estimateEntryCost(a) - estimateEntryCost(b);
+}
+
+function estimateEntryCost(entry = {}) {
+  return String(`${entry.title || ""}\n${entry.content || ""}`).length;
+}
+
+function escapeRegExp(value = "") {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function _supportsSemantic(entry) {
   return entry.matchMode === "semantic" || entry.matchMode === "语义" || entry.matchMode === "both" || entry.matchMode === "精确+语义" || entry.matchMode === "exact+semantic";
 }

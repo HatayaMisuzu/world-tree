@@ -1,0 +1,18 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const consoleCode = readFileSync(new URL("../../world-tree-console.js", import.meta.url), "utf8");
+
+test("chat history uses server records as the source of truth and localStorage only for drafts", () => {
+  const chBlock = consoleCode.slice(consoleCode.indexOf("const CH ="), consoleCode.indexOf("const Views ="));
+  assert.ok(chBlock.includes("wt-chat-draft-"));
+  assert.ok(chBlock.includes("localStorage.removeItem(CH.key(m))"));
+  assert.equal(chBlock.includes("JSON.stringify(AS.messages"), false);
+
+  const loadServerBlock = chBlock.slice(chBlock.indexOf("async loadServer"), chBlock.indexOf("},\n};"));
+  const catchBlock = loadServerBlock.slice(loadServerBlock.lastIndexOf("} catch"));
+  assert.ok(loadServerBlock.includes("AS.messages = Array.isArray(res.messages)"));
+  assert.ok(loadServerBlock.includes("AS.messages = []"));
+  assert.equal(catchBlock.includes("CH.loadLocal(m);"), false);
+});

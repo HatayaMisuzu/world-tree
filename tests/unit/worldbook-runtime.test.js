@@ -40,3 +40,65 @@ test("vector index handles Chinese bigrams through the same matcher", () => {
   assert.equal(hits[0].matchType, "vector");
   assert.match(hits[0].reason, /^vector:/);
 });
+
+test("worldbook runtime scans recent assistant history for pronoun followups", () => {
+  const runtime = prepareWorldbookInjection({
+    worldbook: {
+      entries: [
+        { id: "fogbell", title: "雾铃塔", keys: ["雾铃塔"], content: "雾铃塔会在云桥尽头回响。", priority: 100 }
+      ]
+    },
+    input: "继续观察它。",
+    engineState: { contextBudget: "tiny" },
+    messages: [
+      { role: "assistant", content: "你刚刚看见雾铃塔在雨里发光。" }
+    ]
+  });
+
+  assert.equal(runtime.injectedWorldbook.some((entry) => entry.id === "fogbell"), true);
+});
+
+test("worldbook matcher supports recursive depth 1 activation", () => {
+  const hits = matchEntries({
+    entries: [
+      { id: "cult", title: "银月教团", keys: ["银月教团"], content: "教团的圣女伊蕾娜掌管月井。", priority: 100 },
+      { id: "saint", title: "圣女伊蕾娜", keys: ["圣女伊蕾娜"], content: "伊蕾娜只在满月时现身。", priority: 90 }
+    ]
+  }, "调查银月教团", { limit: 4 });
+
+  assert.deepEqual(hits.map((entry) => entry.id), ["cult", "saint"]);
+  assert.match(hits.find((entry) => entry.id === "saint").matchType, /^recursive:/);
+});
+
+test("worldbook matcher supports regex and whole-word keys without migrating old JSON", () => {
+  const hits = matchEntries({
+    entries: [
+      { id: "regex", title: "Mist Tower", keys: ["re:/mist\\s+tower/i"], content: "Regex trigger." },
+      { id: "word", title: "Cat", keys: ["w:cat"], content: "Whole word trigger." },
+      { id: "legacy", title: "Legacy", keys: ["/silver gate/i"], content: "Legacy slash regex." }
+    ]
+  }, "MIST TOWER catalog cat near SILVER GATE", { limit: 5 });
+
+  assert.equal(hits.some((entry) => entry.id === "regex"), true);
+  assert.equal(hits.some((entry) => entry.id === "word"), true);
+  assert.equal(hits.some((entry) => entry.id === "legacy"), true);
+
+  const miss = matchEntries({ entries: [{ id: "word", keys: ["w:cat"], content: "Whole word trigger." }] }, "catalog", { limit: 5 });
+  assert.equal(miss.length, 0);
+});
+
+test("worldbook selection ranks hit count before priority and then trims by budget", () => {
+  const runtime = prepareWorldbookInjection({
+    worldbook: {
+      entries: [
+        { id: "low", title: "Low", keys: ["月井"], content: "x".repeat(1700), priority: 80 },
+        { id: "high", title: "High", keys: ["月井"], content: "短条目", priority: 140 }
+      ]
+    },
+    input: "月井",
+    engineState: { contextBudget: "emergency" }
+  });
+
+  assert.equal(runtime.injectedWorldbook[0].id, "high");
+  assert.ok(runtime.diagnostics.droppedByBudget.some((entry) => entry.id === "low"));
+});

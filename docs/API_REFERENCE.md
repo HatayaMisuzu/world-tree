@@ -52,6 +52,31 @@
 | GET | /api/grand-world/:projectId/summary | 大世界摘要 |
 | POST | /api/grand-world/:projectId/turn | 大世界 turn |
 
+Current worldbook runtime behavior:
+
+- Writer injection scans current input plus recent user/assistant chat history. The history window is controlled by the active context budget.
+- Triggers support plain substring keys, `re:/.../i` regular-expression keys, legacy `/.../i` regex keys, and `w:word` whole-word keys.
+- Recursive activation depth is 1: content from already activated entries may activate one additional layer of entries.
+- Selection considers match count, priority, and the active entry/character budget. Existing worldbook JSON remains usable without migration.
+
+## Chat / LLM
+
+Use these endpoints to send player turns:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/api/llm/chat` | Non-streaming chat turn |
+| POST | `/api/llm/chat/stream` | SSE chat turn with `stage`, `delta`, `done`, and `error` events |
+| POST | `/api/llm/chat/retry` | Retry a persisted failed turn |
+| POST | `/api/chat/message-op` | Edit/favorite/delete persisted chat messages |
+
+`/api/chat/message` is a deprecated compatibility alias for message operations only; it is not a send-chat endpoint and returns `Deprecation: true`.
+
+Chat history source of truth:
+
+- Server `runtime/chat.jsonl` is the source of truth when loading a world.
+- Browser `localStorage` is only an unsent draft buffer. It must not be treated as authoritative chat history.
+
 ## Creation Forge
 
 | Method | Path | Purpose |

@@ -685,12 +685,16 @@ function renderDeveloperObservabilityDrawer() {
 
 const CH = {
   key(m) { return `wt-chat-${m?.id || "global"}`; },
+  draftKey(m) { return `wt-chat-draft-${m?.id || "global"}`; },
   loadLocal(m) {
-    try { AS.messages = JSON.parse(localStorage.getItem(CH.key(m)) || "[]"); } catch { AS.messages = []; }
+    AS.messages = [];
+    try { AS.chatDraft = localStorage.getItem(CH.draftKey(m)) || AS.chatDraft || ""; } catch { /* draft unavailable */ }
   },
   persist() {
     if (AS.isQuickStart || !AS.selectedModule) return;
-    localStorage.setItem(CH.key(AS.selectedModule), JSON.stringify(AS.messages.slice(-200)));
+    const key = CH.draftKey(AS.selectedModule);
+    if (AS.chatDraft) localStorage.setItem(key, AS.chatDraft);
+    else localStorage.removeItem(key);
   },
   add(role, content, ext = {}) {
     const msg = { id: `m_${Date.now()}_${Math.random().toString(16).slice(2)}`, role, content, ts: new Date().toISOString(), ...ext };
@@ -705,11 +709,14 @@ const CH = {
       AS.messages = Array.isArray(res.messages)
         ? res.messages.map((r, i) => ({ id: r.id || `h_${i}`, role: r.role, content: r.content, ts: r.ts, favorite: !!r.favorite, candidates: r.candidates || [], sections: r.sections || null, round: r.round || null, turnId: r.turnId || (r.round ? `turn-${r.round}` : ""), failedTurnId: r.failedTurnId || "", code: r.code || "", userMessage: r.userMessage || "", detail: r.detail || "", retryable: r.retryable, turnStatus: r.turnStatus || "", inputRefId: r.inputRefId || "", retryOf: r.retryOf || "", supersedesErrorId: r.supersedesErrorId || "" }))
         : [];
+      localStorage.removeItem(CH.key(m));
+      AS.chatDraft = localStorage.getItem(CH.draftKey(m)) || "";
       AS.lastScene = res.lastScene || "";
       AS.engineState = res.engineState || AS.engineState;
       if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
     } catch {
-      CH.loadLocal(m);
+      AS.messages = [];
+      try { AS.chatDraft = localStorage.getItem(CH.draftKey(m)) || AS.chatDraft || ""; } catch { /* draft unavailable */ }
     }
   },
 };
@@ -1680,7 +1687,7 @@ function bindEvents() {
   if (chatInput) chatInput.onkeydown = e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
   };
-  if (chatInput) chatInput.oninput = () => { AS.chatDraft = chatInput.value; };
+  if (chatInput) chatInput.oninput = () => { AS.chatDraft = chatInput.value; CH.persist(); };
 
   bindDrop("#quickStartDrop", "#quickStartText", ".md,.txt,.json", true);
   bindDrop("#alchemyDrop", "#alchemyText", ".md,.txt,.json,.png", false);
@@ -2560,6 +2567,7 @@ async function sendChatNonStreaming(text, userMessage, messages) {
   const res = await API.chatSend(buildChatPayload(text, messages));
   if (res.status === "ok") return applyChatSuccess(res, userMessage);
   AS.chatDraft = text;
+  CH.persist();
   addChatErrorFromPayload(res);
 }
 
@@ -2575,6 +2583,7 @@ async function sendChat() {
   if (!text || AS.busy) return;
   if (!AS.selectedModule) return createToast("请先加载一个世界", "warn");
   AS.chatDraft = "";
+  CH.persist();
   input.value = "";
   AS.busy = true;
   setProgressProfile((AS.selectedModule?.mode || AS.selectedModule?.type || "") === "world-rpg" ? "dual-stage-chat" : "chat-default");
@@ -2618,11 +2627,13 @@ async function sendChat() {
     if (errorPayload) {
       AS.messages = AS.messages.filter(m => m.id !== assistantMessage.id || assistantMessage.content);
       AS.chatDraft = text;
+      CH.persist();
       addChatErrorFromPayload(errorPayload);
     } else if (donePayload?.status === "ok") {
       await applyChatSuccess(donePayload, userMessage, assistantMessage);
     } else if (donePayload) {
       AS.chatDraft = text;
+      CH.persist();
       addChatErrorFromPayload(donePayload);
     } else {
       AS.messages = AS.messages.filter(m => m.id !== assistantMessage.id || assistantMessage.content);
@@ -2645,6 +2656,7 @@ async function sendChat() {
         await sendChatNonStreaming(text, userMessage, currentChatHistory());
       } catch (fallbackErr) {
         AS.chatDraft = text;
+        CH.persist();
         addChatErrorFromPayload(fallbackErr.payload || err.payload || { errorMsg: fallbackErr.message || err.message || String(err) });
         AS.lastWorkflowRun = { status: "failed", totalMs: 0, stages: [] };
       }

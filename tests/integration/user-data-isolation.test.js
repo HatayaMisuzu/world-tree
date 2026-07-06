@@ -38,10 +38,9 @@ describe("P0 userData isolation", () => {
   after(async () => {
     if (server) await server.stop();
     await removeTempDir(dataDir);
-    // also clean up the auto-created .userData sibling
+    // also clean up the auto-created per-dataDir .userData
     if (dataDir) {
-      const siblingUserData = join(dataDir, "..", ".userData");
-      await removeTempDir(siblingUserData);
+      await removeTempDir(join(dataDir, ".userData"));
     }
   });
 
@@ -83,7 +82,7 @@ describe("P0 userData isolation", () => {
   it("test writes go to temp WORLD_TREE_USER_DATA_DIR, not real userData", async () => {
     // The server's getUserDataRoot() should point to the temp dir.
     // Verify by checking that the temp .userData directory exists and real userData unchanged.
-    const userDataDir = join(dataDir, "..", ".userData");
+    const userDataDir = join(dataDir, ".userData");
     try {
       await access(userDataDir);
     } catch {

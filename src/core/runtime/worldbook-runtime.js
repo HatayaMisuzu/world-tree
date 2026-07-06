@@ -19,7 +19,8 @@ export function prepareWorldbookInjection({
   const entries = model
     ? worldbookEntriesFromModel(model, {})
     : normalizeWorldbookEntries(worldbook?.entries || worldbook || []);
-  const scanMessages = normalizeMessages(messages).slice(-(budget.historyTurns || 20));
+  const historyRounds = Number(budget.historyTurns || 20);
+  const scanMessages = normalizeMessages(messages).slice(-(historyRounds * 2));
   const vectors = buildVectorIndex(entries);
   const candidateLimit = Math.max(entryLimit * 4, entries.length, 20);
   const candidates = matchEntries({ entries }, input || "", {
@@ -66,7 +67,8 @@ export function prepareWorldbookInjection({
       budget: {
         worldbookEntries: entryLimit,
         worldbookChars: maxChars,
-        historyTurns: budget.historyTurns || 20,
+        historyTurns: historyRounds,
+        historyMessages: scanMessages.length,
         usedChars
       },
       input: String(input || ""),
