@@ -10,7 +10,7 @@ test("kernel completion APIs cover summary, branches, telemetry, auto-light, and
   const dataDir = await createTempDataDir("world-tree-kernel-");
   const server = await startWorldTreeServer({ dataDir });
   try {
-    const created = await api(server, "/api/modules/create", { method: "POST", body: JSON.stringify({ name: "kernel_world", displayName: "Kernel World", mode: "world-rpg", dataMode: "worldbook", preset: "epic" }) });
+    const created = await api(server, "/api/modules/create", { method: "POST", body: JSON.stringify({ name: "kernel_world", displayName: "Kernel World", mode: "world-rpg", dataMode: "worldbook", preset: "epic", allowBlank: true }) });
     assert.equal(created.body.status, "ok");
     const project = encodeURIComponent("kernel_world");
 

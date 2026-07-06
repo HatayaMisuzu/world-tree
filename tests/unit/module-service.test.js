@@ -62,3 +62,36 @@ test("buildModuleModel reuses cache until a shared file mtime changes", async ()
     assert.ok(getReadCount() > afterFirst);
   });
 });
+
+test("mode creation rejects missing source text and reports ignored fields", async () => {
+  await withService(async ({ service }) => {
+    const result = await service.createModule({
+      name: "empty_idea",
+      displayName: "Empty Idea",
+      mode: "quick-setting",
+      idea: "A city under glass"
+    });
+
+    assert.equal(result.status, "error");
+    assert.equal(result.httpStatus, 400);
+    assert.equal(result.code, "MISSING_SOURCE_TEXT");
+    assert.deepEqual(result.ignoredFields, ["idea"]);
+    assert.match(result.hint, /sourceText/);
+  });
+});
+
+test("mode creation echoes accepted source chars and ignored fields", async () => {
+  await withService(async ({ service }) => {
+    const result = await service.createModule({
+      name: "accepted_source",
+      displayName: "Accepted Source",
+      mode: "quick-setting",
+      sourceText: "A city under glass",
+      idea: "legacy client field"
+    });
+
+    assert.equal(result.status, "ok");
+    assert.equal(result.acceptedSourceChars, "A city under glass".length);
+    assert.deepEqual(result.ignoredFields, ["idea"]);
+  });
+});

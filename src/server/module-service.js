@@ -75,6 +75,57 @@ export function createModuleService(deps) {
     modelCache.delete(`world:${normalized}`);
   }
 
+  const narrativeModes = new Set(["world-rpg", "mystery-puzzle", "tabletop", "strategy-sim", "murder-mystery"]);
+  const genericCreateFields = new Set([
+    "name",
+    "displayName",
+    "dataMode",
+    "subType",
+    "preset",
+    "mode",
+    "quickProject",
+    "draft",
+    "sourceType",
+    "allowBlank",
+    "title"
+  ]);
+  const sourceAliasesByMode = {
+    [QUICK_SETTING_MODE_ID]: ["sourceText", "text", "content"],
+    character: ["sourceText", "cardText", "content"],
+    "world-rpg": ["sourceText", "content", "seedText"],
+    "mystery-puzzle": ["sourceText", "content", "seedText"],
+    tabletop: ["sourceText", "content", "seedText"],
+    "strategy-sim": ["sourceText", "content", "seedText"],
+    "murder-mystery": ["sourceText", "content", "seedText"]
+  };
+
+  function ignoredCreateFields(body = {}) {
+    const mode = body?.mode || "";
+    const allowed = new Set([...genericCreateFields, ...(sourceAliasesByMode[mode] || ["sourceText"])]);
+    return Object.keys(body || {}).filter((field) => !allowed.has(field));
+  }
+
+  function sourceContractFor(body = {}, sourceText = "") {
+    const mode = body?.mode || "";
+    const requiresSource = mode === QUICK_SETTING_MODE_ID || mode === "character" || narrativeModes.has(mode);
+    const ignoredFields = ignoredCreateFields(body);
+    if (requiresSource && body?.allowBlank !== true && !String(sourceText || "").trim()) {
+      return {
+        ok: false,
+        response: {
+          status: "error",
+          httpStatus: 400,
+          code: "MISSING_SOURCE_TEXT",
+          errorMsg: "创建该模式需要 sourceText 或等价素材字段。",
+          hint: `接受字段：${(sourceAliasesByMode[mode] || ["sourceText"]).join(" | ")}；确需空白项目请显式传 allowBlank:true。`,
+          ignoredFields,
+          acceptedSourceChars: 0
+        }
+      };
+    }
+    return { ok: true, ignoredFields };
+  }
+
   function listModules() {
     const modules = [];
 
@@ -150,6 +201,10 @@ export function createModuleService(deps) {
       : null;
     const quickProject = quickSetting || body?.quickProject === true || body?.sourceType === "pasted_text";
     const sourceText = isCharacter ? String(body?.sourceText || body?.cardText || body?.content || "") : (isMultiMode ? String(body?.sourceText || body?.content || body?.seedText || "") : (quickSetting ? quickInput.sourceText : String(body?.sourceText || "")));
+    const sourceContract = sourceContractFor(body, sourceText);
+    if (!sourceContract.ok) return sourceContract.response;
+    const ignoredFields = sourceContract.ignoredFields || [];
+    if (ignoredFields.length) console.warn(`[modules/create] ignored fields: ${ignoredFields.join(", ")}`);
     const sourceType = isCharacter ? "character_card" : (isMultiMode ? (body?.sourceType || "pasted_text") : (quickProject ? (quickSetting ? quickInput.sourceType : (body?.sourceType || "pasted_text")) : ""));
     const draft = (quickProject || isCharacter || isMultiMode) ? body?.draft !== false : false;
     const effectiveDataMode = isCharacter ? "character_card" : (isMultiMode ? "worldbook" : (quickSetting ? "preset" : (dataMode || "worldbook")));
@@ -314,7 +369,7 @@ export function createModuleService(deps) {
     }
 
     clearModuleCache(worldName);
-    return { status: "ok", module: { id: worldName, name: worldName, displayName: worldData.displayName, type: "world", mode: worldData.mode || "", dataMode: worldData.dataMode, subType: worldData.subType, preset: worldData.preset, draft, sourceType, turnCount: 0 } };
+    return { status: "ok", ignoredFields, acceptedSourceChars: sourceText.length, module: { id: worldName, name: worldName, displayName: worldData.displayName, type: "world", mode: worldData.mode || "", dataMode: worldData.dataMode, subType: worldData.subType, preset: worldData.preset, draft, sourceType, turnCount: 0 } };
   }
 
   async function finalizeDraft(moduleId, patch = {}) {

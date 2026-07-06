@@ -69,10 +69,12 @@ import {
 import { handleWorkflowApiRequest, getWorkflowTypesResponse, getWorkflowStatus } from "./src/core/workflows/adapters/server-workflow-adapter.js";
 import { normalizeStrategySimSpec, validateStrategySimSpec, sealStrategySimSpec } from "./src/core/strategy-sim/strategy-sim-spec.js";
 import { handleV2ProductPlayableRoute } from "./src/server/v2-product-playable-routes.js";
+import { extractJsonValue, validateAlchemyJson } from "./src/core/llm/json-extract.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
 const PORT = process.env.PORT || 3000;
+const CHAT_INPUT_MAX_CHARS = 20000;
 const HOST = process.env.WORLD_TREE_HOST || "127.0.0.1";
 const MAX_BODY_BYTES = Number(process.env.WORLD_TREE_MAX_BODY_BYTES || 20 * 1024 * 1024);
 const readBody = createReadBody({ limit: MAX_BODY_BYTES });
@@ -154,7 +156,6 @@ function secretsPath() {
 }
 
 const DEFAULT_CONFIG = {
-  hermesBaseUrl: "http://127.0.0.1:8642",
   llmBaseUrl: "https://api.deepseek.com/v1",
   llmModel: "deepseek-v4-flash",
   llmTimeoutMs: 60000,
@@ -628,7 +629,7 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
   });
 
   // chat.jsonl — 追加用户+助手消息（截断阈值放宽：上下文窗口充足无需过度紧缩）
-  await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, turnId, role: "user", content: input.slice(0, 8000), round: turnCount, ts: now, favorite: false });
+  await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, turnId, role: "user", content: input.slice(0, CHAT_INPUT_MAX_CHARS), round: turnCount, ts: now, favorite: false });
   await appendJsonl(join(rtDir, "chat.jsonl"), { id: assistantId, turnId, role: "assistant", content: (result.narrative || "").slice(0, 10000), round: turnCount, ts: new Date().toISOString(), sections: result.parsedSections || {}, favorite: false, candidates: [{ id: `${assistantId}-c0`, content: (result.narrative || "").slice(0, 10000), selected: true, createdAt: now }] });
 
   // memory.jsonl — 追加记忆快照
@@ -721,7 +722,7 @@ async function handleLocalChatFallback(body = {}, reason = "LLM_NOT_CONFIGURED")
   const model = await buildModuleModel(moduleKey);
   const selected = model?.selected || {};
   const now = new Date().toISOString();
-  const cleanInput = String(input || "").slice(0, 8000);
+  const cleanInput = String(input || "").slice(0, CHAT_INPUT_MAX_CHARS);
   const narrative = [
     "（本地占位回复）当前未连接 AI 模型，本次输入已记录到本地存档。",
     "",
@@ -765,7 +766,6 @@ async function handleLlmChat(body) {
   if (!input) return { status: "error", errorMsg: "请输入内容后再发送" };
 
   // 业务级输入长度限制（防止超长文本打入 LLM）
-  const CHAT_INPUT_MAX_CHARS = 20000;
   if (String(input).length > CHAT_INPUT_MAX_CHARS) {
     return { status: "error", code: "INPUT_TOO_LONG", errorMsg: `输入文本过长（${String(input).length} 字符）。请精简到 ${CHAT_INPUT_MAX_CHARS} 字符以内再发送。` };
   }
@@ -949,19 +949,12 @@ function buildAlchemyLlmCall(config, apiKey) {
 }
 
 function parseAlchemyLlmJson(raw) {
-  const text = String(raw || "").trim();
-  if (!text) throw new Error("LLM returned empty response");
-
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced?.[1]
-    || text.match(/\{[\s\S]*\}/)?.[0]
-    || text;
-
-  try {
-    return JSON.parse(candidate);
-  } catch (err) {
-    throw new Error(`LLM JSON parse failed: ${err.message}`);
-  }
+  const purpose = arguments[1]?.purpose || "";
+  const extracted = extractJsonValue(raw, {
+    validate: (value) => validateAlchemyJson(value, purpose)
+  });
+  if (!extracted.ok) throw new Error(`LLM JSON parse failed: ${extracted.error}`);
+  return extracted.value;
 }
 
 async function runAlchemyLlmJson(prompt, options = {}) {
@@ -981,7 +974,7 @@ async function runAlchemyLlmJson(prompt, options = {}) {
   ].join("\n");
 
   const raw = await llmCall(system, String(prompt || ""));
-  return parseAlchemyLlmJson(raw);
+  return parseAlchemyLlmJson(raw, options);
 }
 
 async function handleAlchemyImport(body) {
@@ -1664,9 +1657,9 @@ function connectionTemplates() {
   return [
     { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-v4-flash", provider: "deepseek" },
     { id: "openai-compatible", label: "OpenAI-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1-mini", provider: "openai-compatible" },
-    { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/auto", provider: "openrouter" },
+    { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/auto", provider: "openai-compatible" },
     { id: "ollama", label: "Ollama", baseUrl: "http://127.0.0.1:11434/v1", model: "llama3.1", provider: "ollama" },
-    { id: "claude-compatible", label: "Claude-compatible", baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-20250514", provider: "claude-compatible" }
+    { id: "claude-openrouter", label: "Claude via OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-sonnet-4.5", provider: "openai-compatible", note: "Anthropic native /v1/messages is deferred until the provider adapter layer." }
   ];
 }
 
@@ -2791,7 +2784,12 @@ async function handleAPI(req, res) {
 
     // ── 模组管理 ──
     if (path === "/api/modules" && method === "GET") return jsonResponse(res, listModules());
-    if (path === "/api/modules/create" && method === "POST") return jsonResponse(res, await createModule(await readBody(req)));
+    if (path === "/api/modules/create" && method === "POST") {
+      const result = await createModule(await readBody(req));
+      const httpStatus = Number(result?.httpStatus || 200);
+      if (result && typeof result === "object") delete result.httpStatus;
+      return jsonResponse(res, result, httpStatus);
+    }
     if (path === "/api/modules/finalize-draft" && method === "POST") return jsonResponse(res, await finalizeDraftModule(await readBody(req)));
     if (path === "/api/modules/delete" && method === "POST") return jsonResponse(res, await deleteModule((await readBody(req)).id));
     if (path === "/api/modules/load" && method === "POST") {

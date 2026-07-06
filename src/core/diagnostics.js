@@ -25,12 +25,6 @@ export function runLocalDiagnostics(model, config = {}) {
     detail: model.engine.canonTemplate ? "已读取 canon_state.template.json" : "未读取到模板"
   });
   checks.push({
-    id: "hermes-config",
-    label: "Hermes 配置",
-    ok: Boolean(config.hermesBaseUrl),
-    detail: config.hermesBaseUrl || "未配置"
-  });
-  checks.push({
     id: "write-policy",
     label: "写入策略",
     ok: true,

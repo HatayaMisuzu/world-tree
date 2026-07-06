@@ -10,6 +10,12 @@ import { generateDirectionPacket } from "../core/engine/director.js";
 import { validateNarrativeAgainstDirection, validateWithAutoCorrect } from "../core/engine/guardian.js";
 import { extractVisibleNarrative } from "../core/engine/output-parser.js";
 import { joinPromptSafetyClauses } from "../core/prompts/prompt-safety-clauses.js";
+import {
+  extractJsonValue,
+  validateChatCompletionJson,
+  validateDirectionPacketJson,
+  validateLlmAnalysisJson
+} from "../core/llm/json-extract.js";
 import { createHash } from "node:crypto";
 
 function endpoint(config) {
@@ -48,6 +54,7 @@ export function canUseDirectLlm(config, secretAvailable = false) {
 // ═══════════════════════════════════════════════════════════════
 
 const keyHostMap = new Map(); // apiKey_hash → Set<hostname>
+const jsonModeUnsupportedEndpoints = new Set();
 
 export function checkKeyHostnameReuse(apiKey, baseUrl) {
   if (!apiKey || !baseUrl) return null;
@@ -187,10 +194,14 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
 
       attempts.push({ role, targetUrl, modelName });
 
+      const expectsJson = role === "director" || role === "guardian" || options.responseFormat === "json";
       const body = { model: modelName, messages, temperature, max_tokens: maxTokens };
+      if (expectsJson && !jsonModeUnsupportedEndpoints.has(targetUrl)) {
+        body.response_format = { type: "json_object" };
+      }
 
       try {
-        const response = await fetch(targetUrl, {
+        let response = await fetch(targetUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -202,6 +213,42 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
 
       const text = await response.text();
 
+      if (!response.ok && response.status === 400 && body.response_format && /response[_ -]?format|json_object/i.test(text)) {
+        jsonModeUnsupportedEndpoints.add(targetUrl);
+        const retryBody = { ...body };
+        delete retryBody.response_format;
+        response = await fetch(targetUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(retryBody),
+          signal: AbortSignal.timeout(timeoutMs)
+        });
+        const retryText = await response.text();
+        if (!response.ok) {
+          if (response.status === 404 || response.status === 400) {
+            console.warn(`[LLM] ${role} 模型 "${modelName}" 不可用 (${response.status})，尝试候补...`);
+            lastError = new Error(`模型不可用: ${modelName} (${response.status})`);
+            continue;
+          }
+          throw new Error(retryText || `LLM HTTP ${response.status}`);
+        }
+        const parsedRetry = extractJsonValue(retryText, { validate: validateChatCompletionJson });
+        if (!parsedRetry.ok) throw new Error(`LLM response JSON invalid: ${parsedRetry.error}`);
+        const retryRawResponse = parsedRetry.value?.choices?.[0]?.message?.content || JSON.stringify(parsedRetry.value);
+        return {
+          role,
+          rawResponse: retryRawResponse,
+          parsedContent: retryRawResponse,
+          modelUsed: modelName,
+          endpointUsed: targetUrl,
+          modelPath: "cartesian",
+          jsonMode: "unsupported-retried"
+        };
+      }
+
       if (!response.ok) {
         // 404/模型不存在 → 尝试下一个候选
         if (response.status === 404 || response.status === 400) {
@@ -212,7 +259,9 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
         throw new Error(text || `LLM HTTP ${response.status}`);
       }
 
-      const data = JSON.parse(text);
+      const parsedResponse = extractJsonValue(text, { validate: validateChatCompletionJson });
+      if (!parsedResponse.ok) throw new Error(`LLM response JSON invalid: ${parsedResponse.error}`);
+      const data = parsedResponse.value;
       const rawResponse = data?.choices?.[0]?.message?.content || JSON.stringify(data);
 
       return {
@@ -376,7 +425,9 @@ export async function sendDualStageTurn(opts = {}) {
 
     try {
       const analysisResult = await callLLMByRole("director", analyzerInput, config, apiKey, { temperature: 0.3, max_tokens: 512, orchestrationPrefix });
-      const parsed = JSON.parse(analysisResult.rawResponse);
+      const extracted = extractJsonValue(analysisResult.rawResponse, { validate: validateLlmAnalysisJson });
+      if (!extracted.ok) throw new Error(`LLM analysis JSON invalid: ${extracted.error}`);
+      const parsed = extracted.value;
       // 只采纳合法字段，其余用 JS 兜底
       llmAnalysis = {
         intent: typeof parsed.intent === "string" ? parsed.intent : null,
@@ -406,7 +457,9 @@ export async function sendDualStageTurn(opts = {}) {
     const directorResult = await callLLMByRole("director", directorInput, config, apiKey, { orchestrationPrefix });
     // 尝试解析 JSON
     try {
-      const parsed = JSON.parse(directorResult.rawResponse);
+      const extracted = extractJsonValue(directorResult.rawResponse, { validate: validateDirectionPacketJson });
+      if (!extracted.ok) throw new Error(`Director JSON invalid: ${extracted.error}`);
+      const parsed = extracted.value;
       finalDirectionPacket = { packet: parsed };
     } catch {
       // Director LLM 输出不是合法 JSON → 回退到 JS 方向包
@@ -643,7 +696,9 @@ export async function sendGameTurn({ model, config, apiKey, personaText, engineP
 
   const text = await response.text();
   if (!response.ok) throw new Error(text || `LLM HTTP ${response.status}`);
-  const data = JSON.parse(text);
+  const parsedResponse = extractJsonValue(text, { validate: validateChatCompletionJson });
+  if (!parsedResponse.ok) throw new Error(`LLM response JSON invalid: ${parsedResponse.error}`);
+  const data = parsedResponse.value;
   const rawText = data?.choices?.[0]?.message?.content || JSON.stringify(data);
   return completeTurn({ rawText, input, model, moduleKey, dataMode });
 }

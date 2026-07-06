@@ -3,7 +3,8 @@ pushd %~dp0
 title World Tree Desktop
 
 echo.
-echo World Tree Desktop v2.3.1
+for /f "usebackq delims=" %%v in (`node -p "require('./package.json').version"`) do set WT_VERSION=%%v
+echo World Tree Desktop v%WT_VERSION%
 echo =====================
 echo.
 
