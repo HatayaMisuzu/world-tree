@@ -762,7 +762,18 @@ export async function sendDualStageTurn(opts = {}) {
   }
 
   // === Step 4: 走原有 completeTurn 流程 ===
-  const turnResult = completeTurn({ rawText: effectiveRawText, input, model, moduleKey, dataMode, directorResult: turnPrep?.directorResult || null, engineState: turnPrep?.state || engineState || {} });
+  const complete = () => completeTurn({
+    rawText: effectiveRawText,
+    input,
+    model,
+    moduleKey,
+    dataMode,
+    directorResult: turnPrep?.directorResult || null,
+    engineState: turnPrep?.state || engineState || {}
+  });
+  const turnResult = typeof opts.finalizeTurn === "function"
+    ? await opts.finalizeTurn(complete)
+    : complete();
 
   return {
     ...turnResult,

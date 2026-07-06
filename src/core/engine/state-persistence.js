@@ -4,11 +4,12 @@
 //
 // 覆盖：记忆层 / 关系网 / 提案队列 / 预测缓存 / 情绪状态 / 事件历史
 
-import { exportMemorySnapshot, importMemorySnapshot } from "./memory-layers.js";
-import { exportRelations, importRelationsSnapshot } from "../data/relations.js";
-import { exportProposalSnapshot, importProposalSnapshot } from "./proposal-system.js";
+import { exportMemorySnapshot, importMemorySnapshot, resetAllMemoryLayers } from "./memory-layers.js";
+import { exportRelations, importRelationsSnapshot, resetRelations } from "../data/relations.js";
+import { exportProposalSnapshot, importProposalSnapshot, resetProposalStore } from "./proposal-system.js";
 import { exportPredictionStores, importPredictionStores } from "./director.js";
 import { getEventHistory, resetEventCache } from "../data/random-events.js";
+import { loadGlobalMemory } from "./global-memory.js";
 
 /**
  * 导出全部引擎内存状态为可序列化对象
@@ -32,6 +33,15 @@ export function exportEngineState(extra = {}) {
       sceneSummary: extra.sceneSummary || ""
     }
   };
+}
+
+export function resetEngineState() {
+  resetAllMemoryLayers();
+  resetRelations();
+  resetProposalStore();
+  importPredictionStores({});
+  resetEventCache();
+  loadGlobalMemory({ snapshots: [], version: 2 });
 }
 
 /**

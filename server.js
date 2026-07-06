@@ -17,6 +17,7 @@ import { getUserDataRoot, userDataPath } from "./src/server/user-data-root.js";
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
+import { getWorldSessionRegistry } from "./src/core/engine/world-session.js";
 import { buildRealPlayTurnContext } from "./src/core/real-play/turn-context.js";
 import {
   errorPayload,
@@ -565,15 +566,16 @@ async function deleteModule(moduleId) {
       clearPredictionStore(worldName);
       resetPendingStore(worldName);
     }
+    getWorldSessionRegistry().clear(moduleId);
   }
   return result;
 }
 
 /** 构建引擎 model 对象（从新目录结构加载，含 chat 历史） */
-async function buildModuleModel(moduleId) {
+async function buildModuleModel(moduleId, options = {}) {
   const model = await moduleService.buildModuleModel(moduleId);
   const snapshot = model?.moduleData?.runtime?.engineSnapshot || model?._overlay?.runtime?.engineSnapshot;
-  if (snapshot?.version) {
+  if (options.restoreEngineState !== false && snapshot?.version) {
     try { importEngineState(snapshot); } catch (err) { console.warn("[buildModuleModel] engine snapshot restore failed:", err.message); }
   }
   return model;
@@ -893,6 +895,12 @@ function createNarrativeStreamGate(onDelta) {
 }
 
 async function runLlmChatSuccess(body, retryMeta = {}, streamHooks = {}) {
+  const moduleKey = body?.moduleKey || "";
+  const session = getWorldSessionRegistry().get(moduleKey || "__default__");
+  return await session.runTurn(() => runLlmChatSuccessInSession(body, retryMeta, streamHooks, session));
+}
+
+async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}, worldSession = null) {
   const { input, moduleKey, dataMode, engineState, messages } = body || {};
   if (!input) return { status: "error", errorMsg: "请输入内容后再发送" };
 
@@ -916,11 +924,12 @@ async function runLlmChatSuccess(body, retryMeta = {}, streamHooks = {}) {
   }
 
   // 构建 model 对象
-  const model = moduleKey ? await buildModuleModel(moduleKey) : {
+  const model = moduleKey ? await buildModuleModel(moduleKey, { restoreEngineState: false }) : {
     loaded: true, selected: { id: "default", name: "默认" },
     moduleData: { characters: [], scenes: [], worldbook: { entries: [] }, relations: {}, timeline: {}, worldState: {}, organizations: [], races: [], runtime: {}, tracking: [], canon: {} },
     entities: [], turnCount: 0
   };
+  const sessionSnapshot = model?.moduleData?.runtime?.engineSnapshot || model?._overlay?.runtime?.engineSnapshot || null;
 
   // 标准化引擎状态
   const normState = normalizeEngineState(engineState || DEFAULT_ENGINE_STATE);
@@ -1013,7 +1022,12 @@ async function runLlmChatSuccess(body, retryMeta = {}, streamHooks = {}) {
       kernelContext,
       streamWriter: streamHooks.streamWriter === true,
       onWriterToken: streamHooks.onWriterToken,
-      onStreamFallback: streamHooks.onStreamFallback
+      onStreamFallback: streamHooks.onStreamFallback,
+      finalizeTurn: worldSession ? async (completeTurn) => {
+        const { result: finalized, restore } = await worldSession.finalizeWithSnapshot(sessionSnapshot, () => completeTurn());
+        if (restore?.warning && finalized && typeof finalized === "object") finalized.sessionWarning = restore.warning;
+        return finalized;
+      } : null
     });
 
     // 构建阶段耗时
