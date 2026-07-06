@@ -45,7 +45,11 @@
         const text = await res.text().catch(() => "");
         let payload = null;
         try { payload = JSON.parse(text); } catch {}
-        throw new Error(payload?.userMsg || payload?.errorMsg || payload?.error || `HTTP ${res.status}: ${text || res.statusText}`);
+        const err = new Error(payload?.userMessage || payload?.userMsg || payload?.errorMsg || payload?.error || `HTTP ${res.status}: ${text || res.statusText}`);
+        err.status = res.status;
+        err.payload = payload;
+        err.responseText = text;
+        throw err;
       }
       return res.json();
     },
@@ -63,6 +67,7 @@
     saveLlmKey(data) { return API.post("/api/secrets/llm", data); },
     testLlm(data) { return API.post("/api/llm/test", data); },
     chatSend(data) { return API.post("/api/llm/chat", data); },
+    chatRetry(data) { return API.post("/api/llm/chat/retry", data); },
     chatMessage(data) { return API.post("/api/chat/message", data); },
     alchemyImport(data) { return API.post("/api/alchemy/import", data); },
     alchemyPreview(data) { return API.post("/api/alchemy/preview", data); },

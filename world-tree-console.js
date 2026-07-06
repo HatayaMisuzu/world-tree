@@ -150,6 +150,7 @@ const AS = {
   characters: [],
   characterQuery: "",
   selectedModule: null,
+  chatDraft: "",
   currentCharacterCard: null,
   currentV2Capsule: null,
   currentV2RuntimeContext: null,
@@ -282,14 +283,18 @@ const C = {
     const candidates = Array.isArray(m.candidates) ? m.candidates : [];
     const selectedIndex = Math.max(0, candidates.findIndex(c => c.selected));
     const turnId = m.turnId || (m.round ? `turn-${m.round}` : "");
+    const displayText = role === "error" ? (m.userMessage || m.content || "AI 调用失败") : (m.content || "");
     return `<div class="chat-message ${tone} ${m.id && AS.selectedMessageId === m.id ? "selected-message" : ""}" data-message-id="${U.esc(m.id || "")}" data-turn-id="${U.esc(turnId)}">
       <div class="chat-meta">
-        <strong>${role === "user" ? "你" : role === "assistant" ? "叙事引擎" : role}</strong>
+        <strong>${role === "user" ? "你" : role === "assistant" ? "叙事引擎" : role === "error" ? "错误" : role}</strong>
         ${m.favorite ? C.badge("收藏", "warn") : ""}
+        ${role === "error" && m.code ? C.badge(m.code, m.retryable === false ? "warn" : "bad") : ""}
+        ${role === "error" && m.retryOf ? C.badge("重试失败", "warn") : ""}
         ${m.round ? `<span>第 ${U.esc(m.round)} 轮</span>` : ""}
         ${m.ts ? `<span>${U.date(m.ts)}</span>` : ""}
       </div>
-      <div class="chat-text">${U.esc(m.content || "")}</div>
+      <div class="chat-text">${U.esc(displayText)}</div>
+      ${role === "error" && m.detail ? `<details class="tiny"><summary>技术细节</summary><pre>${U.esc(U.compact(m.detail, 1200))}</pre></details>` : ""}
       ${candidates.length > 1 ? `<div class="candidate-row">
         <button class="small" data-action="candidate-prev">上一个</button>
         <span>候选 ${selectedIndex + 1} / ${candidates.length}</span>
@@ -300,6 +305,8 @@ const C = {
         <button data-action="edit-message">编辑</button>
         <button data-action="favorite-message">${m.favorite ? "取消收藏" : "收藏"}</button>
         ${role === "assistant" ? `<button data-action="regen-message">重生成</button>` : ""}
+        ${role === "error" && m.retryable !== false ? `<button data-action="retry-message">重试</button>` : ""}
+        ${role === "error" ? `<button data-action="open-settings">设置</button>` : ""}
         <button class="danger" data-action="delete-message">删除</button>
       </div>
     </div>`;
@@ -323,7 +330,7 @@ const C = {
         <div id="chatMessages" class="chat-messages">${AS.messages.length ? AS.messages.map(C.chatMsg).join("") : C.empty("开始对话", "输入行动、台词或 / 命令。")}</div>
         ${renderProgressPanel()}
         <div class="composer">
-          <textarea id="chatInput" placeholder="续写这一幕... 输入 / 调用命令，Enter 发送"></textarea>
+          <textarea id="chatInput" placeholder="续写这一幕... 输入 / 调用命令，Enter 发送">${U.esc(AS.chatDraft || "")}</textarea>
           <button class="primary" data-action="chat-send" ${AS.busy ? "disabled" : ""}>发送</button>
         </div>
         ${renderKernelPanel()}
@@ -695,7 +702,7 @@ const CH = {
     try {
       const res = await API.get(`/api/modules/${encodeURIComponent(m.id)}/history?limit=80`);
       AS.messages = Array.isArray(res.messages)
-        ? res.messages.map((r, i) => ({ id: r.id || `h_${i}`, role: r.role, content: r.content, ts: r.ts, favorite: !!r.favorite, candidates: r.candidates || [], sections: r.sections || null, round: r.round || null, turnId: r.turnId || (r.round ? `turn-${r.round}` : "") }))
+        ? res.messages.map((r, i) => ({ id: r.id || `h_${i}`, role: r.role, content: r.content, ts: r.ts, favorite: !!r.favorite, candidates: r.candidates || [], sections: r.sections || null, round: r.round || null, turnId: r.turnId || (r.round ? `turn-${r.round}` : ""), failedTurnId: r.failedTurnId || "", code: r.code || "", userMessage: r.userMessage || "", detail: r.detail || "", retryable: r.retryable, turnStatus: r.turnStatus || "", inputRefId: r.inputRefId || "", retryOf: r.retryOf || "", supersedesErrorId: r.supersedesErrorId || "" }))
         : [];
       AS.lastScene = res.lastScene || "";
       AS.engineState = res.engineState || AS.engineState;
@@ -1650,6 +1657,7 @@ function bindEvents() {
   if (chatInput) chatInput.onkeydown = e => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
   };
+  if (chatInput) chatInput.oninput = () => { AS.chatDraft = chatInput.value; };
 
   bindDrop("#quickStartDrop", "#quickStartText", ".md,.txt,.json", true);
   bindDrop("#alchemyDrop", "#alchemyText", ".md,.txt,.json,.png", false);
@@ -2132,7 +2140,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "load-plugins") { AS.plugins = await API.plugins(); return render(); }
     if (["enable-plugin", "disable-plugin"].includes(action)) return pluginAction(action, btn.closest("[data-plugin-id]")?.dataset.pluginId);
     if (action === "run-plugin") return runPlugin(btn.closest("[data-plugin-id]")?.dataset.pluginId);
-    if (["copy-message", "edit-message", "favorite-message", "delete-message", "regen-message", "candidate-prev", "candidate-next"].includes(action)) return messageAction(action, btn.closest("[data-message-id]")?.dataset.messageId);
+    if (["copy-message", "edit-message", "favorite-message", "delete-message", "regen-message", "candidate-prev", "candidate-next", "retry-message", "open-settings"].includes(action)) return messageAction(action, btn.closest("[data-message-id]")?.dataset.messageId);
     if (action === "legacy-export") return legacyExport(AS.selectedModule?.id);
     if (action === "legacy-import") return createToast("旧版 JSON 导入入口已保留在高级工具中，当前演示未自动覆盖数据。", "warn");
   } catch (err) {
@@ -2475,6 +2483,7 @@ async function sendChat() {
   const text = input?.value.trim();
   if (!text || AS.busy) return;
   if (!AS.selectedModule) return createToast("请先加载一个世界", "warn");
+  AS.chatDraft = "";
   input.value = "";
   AS.busy = true;
   setProgressProfile((AS.selectedModule?.mode || AS.selectedModule?.type || "") === "world-rpg" ? "dual-stage-chat" : "chat-default");
@@ -2520,10 +2529,12 @@ async function sendChat() {
       if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
       if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve(), loadKernelData()]);
     } else {
-      CH.add("error", res.errorMsg || "LLM 返回错误");
+      AS.chatDraft = text;
+      addChatErrorFromPayload(res);
     }
   } catch (err) {
-    CH.add("error", err.message || String(err));
+    AS.chatDraft = text;
+    addChatErrorFromPayload(err.payload || { errorMsg: err.message || String(err) });
     AS.lastWorkflowRun = { status: "failed", totalMs: 0, stages: [] };
   }
   if (progressTimer) clearInterval(progressTimer);
@@ -2531,6 +2542,77 @@ async function sendChat() {
   AS.progressIndex = 4;
   AS.busy = false;
   render();
+}
+
+function addChatErrorFromPayload(payload = {}) {
+  const persisted = payload.persistedIds || {};
+  CH.add("error", payload.userMessage || payload.userMsg || payload.errorMsg || "LLM 返回错误", {
+    id: persisted.errorId,
+    turnId: persisted.failedTurnId,
+    failedTurnId: persisted.failedTurnId,
+    code: payload.code || payload.error || "",
+    userMessage: payload.userMessage || payload.userMsg || payload.errorMsg || "",
+    detail: payload.detail || "",
+    retryable: payload.retryable !== false,
+    turnStatus: "failed",
+    inputRefId: persisted.userId || ""
+  });
+}
+
+async function retryFailedMessage(id) {
+  const msg = AS.messages.find(m => m.id === id);
+  if (!msg || AS.busy) return;
+  if (!AS.selectedModule) return createToast("请先加载一个世界", "warn");
+  const failedTurnId = msg.failedTurnId || msg.turnId || msg.id;
+  if (!failedTurnId) return createToast("这条错误消息缺少失败回合标识", "warn");
+  AS.busy = true;
+  msg.retrying = true;
+  setProgressProfile("chat-default");
+  render();
+  try {
+    const messages = AS.messages
+      .filter(m => m.role === "user" || m.role === "assistant" || m.role === "system")
+      .map(m => ({ role: m.role, content: m.content }))
+      .slice(-40);
+    const res = await API.chatRetry({
+      moduleKey: AS.selectedModule.id,
+      failedTurnId,
+      modeId: AS.selectedModule.mode || AS.selectedModule.type || (AS.selectedModule.dataMode === "character_card" ? "character" : "world-rpg"),
+      dataMode: AS.selectedModule.dataMode || "worldbook",
+      engineState: AS.engineState || { turnCount: AS.selectedModule.turnCount || 0, dataMode: AS.selectedModule.dataMode || "worldbook" },
+      messages
+    });
+    if (res.status !== "ok") {
+      addChatErrorFromPayload(res);
+      return;
+    }
+    msg.recoveredAt = new Date().toISOString();
+    const narrative = res.narrative || "（无回应）";
+    const turnId = res.persistedIds?.turnId || (res.turnCount ? `turn-${res.turnCount}` : "");
+    CH.add("assistant", narrative, {
+      id: res.persistedIds?.assistantId,
+      turnId,
+      round: res.turnCount || null,
+      retryOf: failedTurnId,
+      supersedesErrorId: msg.id,
+      candidates: res.persistedIds?.assistantId ? [{ id: `${res.persistedIds.assistantId}-c0`, content: narrative, selected: true, createdAt: new Date().toISOString() }] : []
+    });
+    AS.lastStatusSections = res.parsedSections || {};
+    AS.engineState = res.engineState || AS.engineState;
+    AS.modePlay = res.modePlay || AS.engineState?.realPlay || AS.modePlay;
+    AS.kernel = res.kernel || AS.kernel;
+    if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
+    if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve(), loadKernelData()]);
+  } catch (err) {
+    addChatErrorFromPayload(err.payload || { errorMsg: err.message || String(err) });
+  } finally {
+    msg.retrying = false;
+    if (progressTimer) clearInterval(progressTimer);
+    progressTimer = null;
+    AS.progressIndex = 4;
+    AS.busy = false;
+    render();
+  }
 }
 
 function confirmClearChat() {
@@ -2548,6 +2630,13 @@ function openCommandPanel() {
 async function messageAction(action, id) {
   const msg = AS.messages.find(m => m.id === id);
   if (!msg) return;
+  if (action === "retry-message") return retryFailedMessage(id);
+  if (action === "open-settings") {
+    AS.view = "settings";
+    AS.settingsTab = "connections";
+    await loadViewData();
+    return render();
+  }
   if (action === "copy-message") {
     await navigator.clipboard?.writeText(msg.content);
     return createToast("已复制");

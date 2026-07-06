@@ -52,6 +52,7 @@ test("client core preserves major API method names", () => {
     "loadExamples",
     "loadConfig",
     "saveConfig",
+    "chatRetry",
     "alchemyPlan",
     "worldbookV2Load",
     "strategySimV2Start",

@@ -70,6 +70,7 @@ import { handleWorkflowApiRequest, getWorkflowTypesResponse, getWorkflowStatus }
 import { normalizeStrategySimSpec, validateStrategySimSpec, sealStrategySimSpec } from "./src/core/strategy-sim/strategy-sim-spec.js";
 import { handleV2ProductPlayableRoute } from "./src/server/v2-product-playable-routes.js";
 import { extractJsonValue, validateAlchemyJson } from "./src/core/llm/json-extract.js";
+import { mapLlmError } from "./src/server/llm-error-mapper.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -580,7 +581,7 @@ function readOverlayData(worldDir) {
 }
 
 /** 完整持久化：保存引擎状态 + 对话记录 + 记忆快照 + overlay writeSet */
-async function persistTurn(moduleId, input, result, engineState, kernelContext = null) {
+async function persistTurn(moduleId, input, result, engineState, kernelContext = null, recordMeta = {}) {
   const isCharacter = String(moduleId || "").startsWith("char:");
   const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, "").replace(/^char:/, ""), "");
   const projectRoot = isCharacter ? join(CHARACTERS_DIR(), worldName) : moduleWorldDir(moduleId);
@@ -629,8 +630,8 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
   });
 
   // chat.jsonl — 追加用户+助手消息（截断阈值放宽：上下文窗口充足无需过度紧缩）
-  await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, turnId, role: "user", content: input.slice(0, CHAT_INPUT_MAX_CHARS), round: turnCount, ts: now, favorite: false });
-  await appendJsonl(join(rtDir, "chat.jsonl"), { id: assistantId, turnId, role: "assistant", content: (result.narrative || "").slice(0, 10000), round: turnCount, ts: new Date().toISOString(), sections: result.parsedSections || {}, favorite: false, candidates: [{ id: `${assistantId}-c0`, content: (result.narrative || "").slice(0, 10000), selected: true, createdAt: now }] });
+  await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, turnId, role: "user", content: input.slice(0, CHAT_INPUT_MAX_CHARS), round: turnCount, ts: now, favorite: false, ...(recordMeta.user || {}) });
+  await appendJsonl(join(rtDir, "chat.jsonl"), { id: assistantId, turnId, role: "assistant", content: (result.narrative || "").slice(0, 10000), round: turnCount, ts: new Date().toISOString(), sections: result.parsedSections || {}, favorite: false, candidates: [{ id: `${assistantId}-c0`, content: (result.narrative || "").slice(0, 10000), selected: true, createdAt: now }], ...(recordMeta.assistant || {}) });
 
   // memory.jsonl — 追加记忆快照
   if (result.overlayPatch?.memorySnapshot) {
@@ -761,7 +762,72 @@ async function handleLocalChatFallback(body = {}, reason = "LLM_NOT_CONFIGURED")
   };
 }
 
-async function handleLlmChat(body) {
+async function persistFailedTurn(moduleKey, input, mappedError, engineState = {}, metadata = {}) {
+  const rtDir = moduleRuntimeDir(moduleKey);
+  if (!rtDir || !moduleKey || String(moduleKey).startsWith("__")) return null;
+  ensureDir(rtDir);
+  const state = readJsonSync(join(rtDir, "state.json"), {});
+  const currentRound = Number(state.turnCount || 0);
+  const now = new Date().toISOString();
+  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const failedTurnId = metadata.failedTurnId || `failed-turn-${suffix}`;
+  const userId = `${failedTurnId}-user`;
+  const errorId = `${failedTurnId}-error`;
+  const common = {
+    failedTurnId,
+    turnStatus: "failed",
+    round: currentRound || null,
+    ts: now,
+    favorite: false
+  };
+  await appendJsonl(join(rtDir, "chat.jsonl"), {
+    ...common,
+    id: userId,
+    turnId: failedTurnId,
+    role: "user",
+    content: String(input || "").slice(0, CHAT_INPUT_MAX_CHARS),
+    attemptedAt: now,
+    engineState: engineState || {},
+    ...(metadata.user || {})
+  });
+  await appendJsonl(join(rtDir, "chat.jsonl"), {
+    ...common,
+    id: errorId,
+    turnId: failedTurnId,
+    role: "error",
+    content: mappedError.userMessage || mappedError.errorMsg || "LLM 调用失败",
+    code: mappedError.code || "LLM_UNKNOWN_ERROR",
+    userMessage: mappedError.userMessage || mappedError.errorMsg || "",
+    detail: mappedError.detail || "",
+    retryable: mappedError.retryable !== false,
+    attemptedAt: now,
+    inputRefId: userId,
+    ...(metadata.error || {})
+  });
+  moduleService.clearModuleCache?.(moduleKey);
+  return { failedTurnId, userId, errorId };
+}
+
+async function findFailedTurn(moduleKey, failedTurnId) {
+  const id = String(failedTurnId || "");
+  if (!moduleKey || !id) return null;
+  const records = await readChatRecords(moduleKey);
+  const error = records.find((record) =>
+    record.role === "error" && (record.failedTurnId === id || record.turnId === id || record.id === id)
+  );
+  if (!error) return null;
+  const user = records.find((record) =>
+    record.role === "user" && (
+      record.id === error.inputRefId ||
+      record.failedTurnId === error.failedTurnId ||
+      record.turnId === error.failedTurnId ||
+      record.turnId === error.turnId
+    )
+  );
+  return { error, user, records };
+}
+
+async function runLlmChatSuccess(body, retryMeta = {}) {
   const { input, moduleKey, dataMode, engineState, messages } = body || {};
   if (!input) return { status: "error", errorMsg: "请输入内容后再发送" };
 
@@ -829,8 +895,7 @@ async function handleLlmChat(body) {
     droppedByBudget: worldbookRuntime.diagnostics.droppedByBudget.length
   });
 
-  try {
-    // 按 dataMode 构建模式专属 writer 包（仅角色卡模式走 buildCharacterCardPacket）
+  // 按 dataMode 构建模式专属 writer 包（仅角色卡模式走 buildCharacterCardPacket）
     let writerPacket = null;
     let effectiveState = realPlayState;
     if (dataMode === "character_card") {
@@ -890,7 +955,16 @@ async function handleLlmChat(body) {
     let persistedIds = null;
     if (moduleKey && !moduleKey.startsWith("__")) {
       const persistResult = { ...result, narrative: cleanNarrative };
-      persistedIds = await persistTurn(moduleKey, input, persistResult, result.engineState || normState, kernelContext);
+      const recordMeta = retryMeta.failedTurnId ? {
+        user: { retryOf: retryMeta.failedTurnId },
+        assistant: {
+          retryOf: retryMeta.failedTurnId,
+          supersedesErrorId: retryMeta.errorId || "",
+          recoveredFromFailedTurnId: retryMeta.failedTurnId,
+          recoveredAt: new Date().toISOString()
+        }
+      } : {};
+      persistedIds = await persistTurn(moduleKey, input, persistResult, result.engineState || normState, kernelContext, recordMeta);
       await saveTurnDebug(moduleKey, {
         moduleKey,
         input,
@@ -908,8 +982,47 @@ async function handleLlmChat(body) {
     }
 
     const returnedState = normalizeEngineState({ ...(result.engineState || realPlayState), realPlay: realPlayContext.state });
-    return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: returnedState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, kernel: summarizeKernelTurnContext(kernelContext), modePlay: realPlayContext.publicState, commandResult: realPlayContext.commandResult, _dualStage: result._dualStage || null, _progress: progress };
-  } catch (err) { return { status: "error", errorMsg: err?.message || "LLM 调用失败" }; }
+  return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: returnedState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, kernel: summarizeKernelTurnContext(kernelContext), modePlay: realPlayContext.publicState, commandResult: realPlayContext.commandResult, _dualStage: result._dualStage || null, _progress: progress };
+}
+
+async function handleLlmChat(body) {
+  try {
+    return await runLlmChatSuccess(body);
+  } catch (err) {
+    const mapped = mapLlmError(err);
+    let persistedIds = null;
+    const moduleKey = body?.moduleKey || "";
+    if (moduleKey && !String(moduleKey).startsWith("__") && body?.input) {
+      persistedIds = await persistFailedTurn(moduleKey, body.input, mapped, body.engineState || {});
+    }
+    return { ...mapped, persistedIds };
+  }
+}
+
+async function handleLlmChatRetry(body = {}) {
+  const moduleKey = body.moduleKey || "";
+  const failedTurnId = body.failedTurnId || body.turnId || body.messageId || "";
+  const failed = await findFailedTurn(moduleKey, failedTurnId);
+  if (!failed?.user || !failed?.error) {
+    return { status: "error", code: "FAILED_TURN_NOT_FOUND", errorMsg: "没有找到可重试的失败回合。请重新加载对话后再试。", retryable: false };
+  }
+  try {
+    return await runLlmChatSuccess({
+      ...body,
+      input: failed.user.content || body.input || "",
+      messages: Array.isArray(body.messages) ? body.messages : []
+    }, {
+      failedTurnId: failed.error.failedTurnId || failed.error.turnId,
+      errorId: failed.error.id
+    });
+  } catch (err) {
+    const mapped = mapLlmError(err);
+    const persistedIds = await persistFailedTurn(moduleKey, failed.user.content || "", mapped, body.engineState || {}, {
+      failedTurnId: `retry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      error: { retryOf: failed.error.failedTurnId || failed.error.turnId, previousErrorId: failed.error.id }
+    });
+    return { ...mapped, persistedIds };
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2777,6 +2890,7 @@ async function handleAPI(req, res) {
     // ── LLM ──
     if (path === "/api/llm/test" && method === "POST") return jsonResponse(res, await testLlmConnection(await readBody(req)));
     if (path === "/api/llm/chat" && method === "POST") return jsonResponse(res, await handleLlmChat(await readBody(req)));
+    if (path === "/api/llm/chat/retry" && method === "POST") return jsonResponse(res, await handleLlmChatRetry(await readBody(req)));
 
     // ── 连接档案 ──
     if (path === "/api/connections" && method === "GET") return jsonResponse(res, await handleConnections({}, "GET"));
