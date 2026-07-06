@@ -294,6 +294,158 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
   throw lastError || new Error(`LLM 调用失败：所有候选均不可用 (role=${role}, attempts=${attempts.length})`);
 }
 
+function streamUnsupportedError(message, cause = null) {
+  const err = new Error(message || "LLM stream unsupported");
+  err.code = "LLM_STREAM_UNSUPPORTED";
+  err.streamUnsupported = true;
+  if (cause) err.cause = cause;
+  return err;
+}
+
+export function isStreamUnsupportedError(err) {
+  return err?.streamUnsupported === true || err?.code === "LLM_STREAM_UNSUPPORTED";
+}
+
+function parseSseFrame(frame = "") {
+  const lines = String(frame || "").split(/\r?\n/);
+  let event = "message";
+  const data = [];
+  for (const line of lines) {
+    if (!line || line.startsWith(":")) continue;
+    if (line.startsWith("event:")) event = line.slice(6).trim() || "message";
+    if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+  }
+  return { event, data: data.join("\n") };
+}
+
+export async function* parseOpenAIChatCompletionStream(readable) {
+  if (!readable) throw streamUnsupportedError("LLM response did not include a readable stream body");
+  const decoder = new TextDecoder();
+  let buffer = "";
+  const appendChunk = (chunk) => {
+    if (typeof chunk === "string") return chunk;
+    return decoder.decode(chunk, { stream: true });
+  };
+  for await (const chunk of readable) {
+    buffer += appendChunk(chunk);
+    let match = buffer.match(/\r?\n\r?\n/);
+    while (match) {
+      const frame = buffer.slice(0, match.index);
+      buffer = buffer.slice(match.index + match[0].length);
+      const parsed = parseSseFrame(frame);
+      if (!parsed.data) {
+        match = buffer.match(/\r?\n\r?\n/);
+        continue;
+      }
+      if (parsed.data === "[DONE]") return;
+      let payload = null;
+      try {
+        payload = JSON.parse(parsed.data);
+      } catch (err) {
+        throw new Error(`LLM stream JSON invalid: ${err.message}`);
+      }
+      const choice = payload?.choices?.[0] || {};
+      const delta = choice.delta?.content ?? choice.message?.content ?? "";
+      if (delta) yield { type: "delta", content: String(delta), raw: payload };
+      if (choice.finish_reason) yield { type: "done", finishReason: choice.finish_reason, raw: payload };
+      match = buffer.match(/\r?\n\r?\n/);
+    }
+  }
+  const tail = decoder.decode();
+  if (tail) buffer += tail;
+}
+
+export async function callLLMByRoleStream(role, packet, config, apiKey, options = {}) {
+  if (!canUseDirectLlm(config, Boolean(apiKey))) {
+    throw new Error("请先配置 LLM Base URL、Model 和 API Key");
+  }
+
+  const basePrompt = ROLE_PROMPTS[role] || WRITER_SYSTEM_PROMPT;
+  const orchestrationPrefix = options.orchestrationPrefix || "";
+  const taskContractPrefix = options.taskContractPrefix || "";
+  const systemPrompt = [
+    orchestrationPrefix,
+    taskContractPrefix,
+    basePrompt
+  ].filter(Boolean).join("\n\n---\n\n");
+  const { messages: historyMessages = [], temperature: optTemp, max_tokens: optMaxTokens } = options;
+  const temperature = optTemp ?? (role === "director" ? 0.3 : role === "guardian" ? 0.2 : 0.85);
+  const maxTokens = optMaxTokens ?? (role === "director" ? 1024 : role === "guardian" ? 1024 : 4096);
+  const timeoutMs = Number(options.timeoutMs || config.llmTimeoutMs || 60000);
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...(role === "writer" ? (historyMessages || []).filter((m) => m.role === "user" || m.role === "assistant" || m.role === "system").slice(-20) : []),
+    { role: "user", content: scrubPromptForPrivacy(packet) }
+  ];
+
+  const modelCandidates = buildModelCandidates(role, config);
+  const urlCandidates = buildUrlCandidates(role, config);
+  let lastError = null;
+
+  for (const targetUrl of urlCandidates) {
+    const keyWarning = checkKeyHostnameReuse(apiKey, targetUrl);
+    if (keyWarning) console.warn(`[LLM] ${keyWarning.reason}`);
+    for (const modelName of modelCandidates) {
+      if (!modelName || !targetUrl) continue;
+      const body = { model: modelName, messages, temperature, max_tokens: maxTokens, stream: true };
+      try {
+        const response = await fetch(targetUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(timeoutMs)
+        });
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          if (response.status === 400 || response.status === 404) {
+            lastError = streamUnsupportedError(`模型或端点不支持 stream: ${modelName} (${response.status})`, new Error(text || `HTTP ${response.status}`));
+            continue;
+          }
+          throw new Error(text || `LLM HTTP ${response.status}`);
+        }
+        if (!response.body) throw streamUnsupportedError("LLM response did not include a readable stream body");
+        let rawResponse = "";
+        for await (const event of parseOpenAIChatCompletionStream(response.body)) {
+          if (event.type === "delta") {
+            rawResponse += event.content;
+            if (typeof options.onDelta === "function") options.onDelta(event.content, event);
+          }
+        }
+        if (!rawResponse) throw streamUnsupportedError("LLM stream ended without text deltas");
+        return {
+          role,
+          rawResponse,
+          parsedContent: rawResponse,
+          modelUsed: modelName,
+          endpointUsed: targetUrl,
+          modelPath: "cartesian",
+          stream: true
+        };
+      } catch (err) {
+        if (isStreamUnsupportedError(err)) {
+          lastError = err;
+          continue;
+        }
+        if (err.name === "AbortError" || err.name === "TimeoutError") {
+          lastError = new Error(`LLM_TIMEOUT: ${role} stream 请求超时 (${timeoutMs}ms)`);
+          lastError.code = "LLM_TIMEOUT";
+          continue;
+        }
+        if (err.name === "TypeError" || err.message?.includes("fetch")) {
+          lastError = streamUnsupportedError("LLM stream endpoint connection failed", err);
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+
+  throw lastError || streamUnsupportedError(`LLM stream 调用失败：所有候选均不可用 (role=${role})`);
+}
+
 export async function callLLMWithTaskContract(taskId, promptText, config, apiKey, options = {}) {
   const { buildContractInstruction, requirePromptTaskContract } = await import("../core/prompts/prompt-task-contracts.js");
   const contract = requirePromptTaskContract(taskId);
@@ -531,7 +683,22 @@ export async function sendDualStageTurn(opts = {}) {
     ? `${baseWriterInput}\n\n${kernelContext.promptText}`
     : baseWriterInput;
 
-  const writerResult = await callLLMByRole("writer", writerInput, config, apiKey, { messages, orchestrationPrefix });
+  let writerResult;
+  if (opts.streamWriter) {
+    try {
+      writerResult = await callLLMByRoleStream("writer", writerInput, config, apiKey, {
+        messages,
+        orchestrationPrefix,
+        onDelta: opts.onWriterToken
+      });
+    } catch (err) {
+      if (typeof opts.onStreamFallback === "function") opts.onStreamFallback(err);
+      writerResult = await callLLMByRole("writer", writerInput, config, apiKey, { messages, orchestrationPrefix });
+      if (typeof opts.onWriterFallbackText === "function") opts.onWriterFallbackText(writerResult.rawResponse);
+    }
+  } else {
+    writerResult = await callLLMByRole("writer", writerInput, config, apiKey, { messages, orchestrationPrefix });
+  }
   const rawText = writerResult.rawResponse;
 
   // === Step 3: Guardian（可选·v0.8.5 自动修正） ===

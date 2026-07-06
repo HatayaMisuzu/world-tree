@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 // Deferred/internal: plugin system is not part of v0.3.0 public product scope.
 const ENABLE_DEFERRED_PLUGINS = false;
@@ -48,6 +48,7 @@ const PROGRESS_STAGE_PROFILES = {
 };
 const PROGRESS_STAGES = PROGRESS_STAGE_PROFILES["chat-default"];
 let progressTimer = null;
+let activeChatAbortController = null;
 
 function getProgressStages(profile = "chat-default") {
   return PROGRESS_STAGE_PROFILES[profile] || PROGRESS_STAGE_PROFILES["chat-default"];
@@ -293,7 +294,7 @@ const C = {
         ${m.round ? `<span>第 ${U.esc(m.round)} 轮</span>` : ""}
         ${m.ts ? `<span>${U.date(m.ts)}</span>` : ""}
       </div>
-      <div class="chat-text">${U.esc(displayText)}</div>
+      <div class="chat-text">${U.md(displayText)}</div>
       ${role === "error" && m.detail ? `<details class="tiny"><summary>技术细节</summary><pre>${U.esc(U.compact(m.detail, 1200))}</pre></details>` : ""}
       ${candidates.length > 1 ? `<div class="candidate-row">
         <button class="small" data-action="candidate-prev">上一个</button>
@@ -331,7 +332,7 @@ const C = {
         ${renderProgressPanel()}
         <div class="composer">
           <textarea id="chatInput" placeholder="续写这一幕... 输入 / 调用命令，Enter 发送">${U.esc(AS.chatDraft || "")}</textarea>
-          <button class="primary" data-action="chat-send" ${AS.busy ? "disabled" : ""}>发送</button>
+          ${AS.busy ? `<button class="danger" data-action="chat-stop">停止</button>` : `<button class="primary" data-action="chat-send">发送</button>`}
         </div>
         ${renderKernelPanel()}
         ${renderWorkflowPanel()}
@@ -2079,6 +2080,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "strategy-sim-start") return multiModeStart("strategy-sim", "#strategyTitle", "#strategyText");
     if (action === "murder-mystery-start") return multiModeStart("murder-mystery", "#murderTitle", "#murderText");
     if (action === "chat-send") return sendChat();
+    if (action === "chat-stop") return stopChatStream();
     if (action === "workflow-refresh") { const [status, types] = await Promise.all([API.workflowStatus(), API.workflowTypes()]); AS.workflowStatus = status; AS.workflowTypes = types.types || []; return render(); }
     if (action.startsWith("kernel-")) return kernelAction(action, btn);
     if (action === "clear-chat") return confirmClearChat();
@@ -2501,6 +2503,72 @@ async function multiModeStart(modeId, titleSel, textSel) {
   render();
 }
 
+function buildChatPayload(text, messages) {
+  return {
+    input: text,
+    moduleKey: AS.selectedModule.id,
+    modeId: AS.selectedModule.mode || AS.selectedModule.type || (AS.selectedModule.dataMode === "character_card" ? "character" : "world-rpg"),
+    dataMode: AS.selectedModule.dataMode || "worldbook",
+    engineState: AS.engineState || { turnCount: AS.selectedModule.turnCount || 0, dataMode: AS.selectedModule.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
+    messages,
+  };
+}
+
+function currentChatHistory() {
+  let messages = AS.messages.map(m => ({ role: m.role, content: m.content })).slice(-40);
+  if (AS.isQuickStart && AS.quickStartContent) messages = [{ role: "system", content: `以下为叙事设定背景：\n${AS.quickStartContent}` }, ...messages];
+  return messages;
+}
+
+function cssIdent(value) {
+  if (window.CSS?.escape) return CSS.escape(String(value || ""));
+  return String(value || "").replace(/["\\]/g, "\\$&");
+}
+
+function updateChatMessageNode(msg) {
+  if (!msg?.id) return false;
+  const node = U.qs(`.chat-message[data-message-id="${cssIdent(msg.id)}"] .chat-text`);
+  if (!node) return false;
+  node.innerHTML = U.md(msg.content || "");
+  return true;
+}
+
+async function applyChatSuccess(res, userMessage, assistantMessage = null) {
+  const narrative = res.narrative || "（无回应）";
+  const turnId = res.persistedIds?.turnId || (res.turnCount ? `turn-${res.turnCount}` : "");
+  if (res.persistedIds?.userId) userMessage.id = res.persistedIds.userId;
+  userMessage.turnId = turnId;
+  userMessage.round = res.turnCount || null;
+  const assistant = assistantMessage || CH.add("assistant", narrative);
+  assistant.content = narrative;
+  assistant.id = res.persistedIds?.assistantId || assistant.id;
+  assistant.turnId = turnId;
+  assistant.round = res.turnCount || null;
+  assistant.streaming = false;
+  assistant.candidates = res.persistedIds?.assistantId ? [{ id: `${res.persistedIds.assistantId}-c0`, content: narrative, selected: true, createdAt: new Date().toISOString() }] : (assistant.candidates || []);
+  CH.persist();
+  AS.lastStatusSections = res.parsedSections || {};
+  AS.engineState = res.engineState || AS.engineState;
+  AS.modePlay = res.modePlay || AS.engineState?.realPlay || AS.modePlay;
+  AS.lastWorkflowRun = { status: "completed", totalMs: res._progress?.totalMs || 0, stages: res._progress?.stages || [] };
+  AS.kernel = res.kernel || AS.kernel;
+  if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
+  if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve(), loadKernelData()]);
+}
+
+async function sendChatNonStreaming(text, userMessage, messages) {
+  const res = await API.chatSend(buildChatPayload(text, messages));
+  if (res.status === "ok") return applyChatSuccess(res, userMessage);
+  AS.chatDraft = text;
+  addChatErrorFromPayload(res);
+}
+
+function stopChatStream() {
+  if (!activeChatAbortController) return;
+  activeChatAbortController.abort();
+  createToast("已停止生成。本地只保留当前可见片段；服务端仅在 done 后落盘。", "warn");
+}
+
 async function sendChat() {
   const input = U.qs("#chatInput");
   const text = input?.value.trim();
@@ -2523,42 +2591,64 @@ async function sendChat() {
   progressTimer = setInterval(() => {
     if (!AS.busy) return;
     AS.progressIndex = Math.min(3, AS.progressIndex + 1);
-    render();
+    if (!activeChatAbortController) render();
   }, 1400);
   try {
-    let messages = AS.messages.map(m => ({ role: m.role, content: m.content })).slice(-40);
-    if (AS.isQuickStart && AS.quickStartContent) messages = [{ role: "system", content: `以下为叙事设定背景：\n${AS.quickStartContent}` }, ...messages];
-    const res = await API.chatSend({
-      input: text,
-      moduleKey: AS.selectedModule.id,
-      modeId: AS.selectedModule.mode || AS.selectedModule.type || (AS.selectedModule.dataMode === "character_card" ? "character" : "world-rpg"),
-      dataMode: AS.selectedModule.dataMode || "worldbook",
-      engineState: AS.engineState || { turnCount: AS.selectedModule.turnCount || 0, dataMode: AS.selectedModule.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } },
-      messages,
+    const messages = currentChatHistory();
+    const assistantMessage = CH.add("assistant", "", { streaming: true });
+    render();
+    activeChatAbortController = new AbortController();
+    let donePayload = null;
+    let errorPayload = null;
+    await API.chatStream(buildChatPayload(text, messages), {
+      signal: activeChatAbortController.signal,
+      onEvent(event, payload) {
+        if (event === "stage") {
+          AS.lastWorkflowRun = { status: "running", totalMs: 0, stages: [{ name: payload?.label || payload?.name || "stream", active: true }] };
+        }
+        if (event === "delta") {
+          assistantMessage.content += payload?.content || "";
+          updateChatMessageNode(assistantMessage);
+        }
+        if (event === "done") donePayload = payload;
+        if (event === "error") errorPayload = payload;
+      }
     });
-    if (res.status === "ok") {
-      const narrative = res.narrative || "（无回应）";
-      const turnId = res.persistedIds?.turnId || (res.turnCount ? `turn-${res.turnCount}` : "");
-      if (res.persistedIds?.userId) userMessage.id = res.persistedIds.userId;
-      userMessage.turnId = turnId;
-      userMessage.round = res.turnCount || null;
-      CH.add("assistant", narrative, { id: res.persistedIds?.assistantId, turnId, round: res.turnCount || null, candidates: res.persistedIds?.assistantId ? [{ id: `${res.persistedIds.assistantId}-c0`, content: narrative, selected: true, createdAt: new Date().toISOString() }] : [] });
-      CH.persist();
-      AS.lastStatusSections = res.parsedSections || {};
-      AS.engineState = res.engineState || AS.engineState;
-      AS.modePlay = res.modePlay || AS.engineState?.realPlay || AS.modePlay;
-      AS.lastWorkflowRun = { status: "completed", totalMs: res._progress?.totalMs || 0, stages: res._progress?.stages || [] };
-      AS.kernel = res.kernel || AS.kernel;
-      if (res.turnCount && AS.selectedModule) AS.selectedModule.turnCount = res.turnCount;
-      if (AS.selectedModule?.id !== "__quick__") await Promise.all([loadLatestStatusFrame(), refreshObserve(), loadKernelData()]);
-    } else {
+    activeChatAbortController = null;
+    if (errorPayload) {
+      AS.messages = AS.messages.filter(m => m.id !== assistantMessage.id || assistantMessage.content);
       AS.chatDraft = text;
-      addChatErrorFromPayload(res);
+      addChatErrorFromPayload(errorPayload);
+    } else if (donePayload?.status === "ok") {
+      await applyChatSuccess(donePayload, userMessage, assistantMessage);
+    } else if (donePayload) {
+      AS.chatDraft = text;
+      addChatErrorFromPayload(donePayload);
+    } else {
+      AS.messages = AS.messages.filter(m => m.id !== assistantMessage.id || assistantMessage.content);
+      await sendChatNonStreaming(text, userMessage, messages);
     }
   } catch (err) {
-    AS.chatDraft = text;
-    addChatErrorFromPayload(err.payload || { errorMsg: err.message || String(err) });
-    AS.lastWorkflowRun = { status: "failed", totalMs: 0, stages: [] };
+    const aborted = err?.name === "AbortError";
+    activeChatAbortController = null;
+    const streamingAssistant = [...AS.messages].reverse().find(m => m.role === "assistant" && m.streaming);
+    if (aborted) {
+      if (streamingAssistant) {
+        streamingAssistant.streaming = false;
+        streamingAssistant.aborted = true;
+        streamingAssistant.content = streamingAssistant.content || "（已停止，未完成落盘）";
+        CH.persist();
+      }
+    } else {
+      if (streamingAssistant) AS.messages = AS.messages.filter(m => m.id !== streamingAssistant.id);
+      try {
+        await sendChatNonStreaming(text, userMessage, currentChatHistory());
+      } catch (fallbackErr) {
+        AS.chatDraft = text;
+        addChatErrorFromPayload(fallbackErr.payload || err.payload || { errorMsg: fallbackErr.message || err.message || String(err) });
+        AS.lastWorkflowRun = { status: "failed", totalMs: 0, stages: [] };
+      }
+    }
   }
   if (progressTimer) clearInterval(progressTimer);
   progressTimer = null;
@@ -2669,18 +2759,18 @@ async function messageAction(action, id) {
     if (content == null) return;
     msg.content = content;
     CH.persist();
-    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "edit", content }).catch(() => {});
+    API.chatEdit({ moduleKey: AS.selectedModule?.id, messageId: id, action: "edit", content }).catch(() => {});
   }
   if (action === "favorite-message") {
     msg.favorite = !msg.favorite;
     CH.persist();
-    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "favorite", favorite: msg.favorite }).catch(() => {});
+    API.chatEdit({ moduleKey: AS.selectedModule?.id, messageId: id, action: "favorite", favorite: msg.favorite }).catch(() => {});
   }
   if (action === "delete-message") {
     if (!confirm("删除这条消息？")) return;
     AS.messages = AS.messages.filter(m => m.id !== id);
     CH.persist();
-    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "delete" }).catch(() => {});
+    API.chatEdit({ moduleKey: AS.selectedModule?.id, messageId: id, action: "delete" }).catch(() => {});
   }
   if (action === "regen-message") {
     const content = prompt("添加一个候选回复版本", msg.content);
@@ -2689,7 +2779,7 @@ async function messageAction(action, id) {
     const candidate = { id: `${id}-c${msg.candidates.length}`, content, selected: false, createdAt: new Date().toISOString() };
     msg.candidates.push(candidate);
     CH.persist();
-    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "add-candidate", content }).catch(() => {});
+    API.chatEdit({ moduleKey: AS.selectedModule?.id, messageId: id, action: "add-candidate", content }).catch(() => {});
   }
   if (action === "candidate-prev" || action === "candidate-next") {
     const candidates = msg.candidates || [];
@@ -2699,7 +2789,7 @@ async function messageAction(action, id) {
     msg.candidates = candidates.map((c, i) => ({ ...c, selected: i === next }));
     msg.content = msg.candidates[next].content;
     CH.persist();
-    API.chatMessage({ moduleKey: AS.selectedModule?.id, messageId: id, action: "select-candidate", candidateId: msg.candidates[next].id }).catch(() => {});
+    API.chatEdit({ moduleKey: AS.selectedModule?.id, messageId: id, action: "select-candidate", candidateId: msg.candidates[next].id }).catch(() => {});
   }
   render();
 }

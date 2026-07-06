@@ -52,6 +52,8 @@ test("client core preserves major API method names", () => {
     "loadExamples",
     "loadConfig",
     "saveConfig",
+    "chatStream",
+    "chatEdit",
     "chatRetry",
     "alchemyPlan",
     "worldbookV2Load",
@@ -62,4 +64,22 @@ test("client core preserves major API method names", () => {
   ]) {
     assert.equal(typeof core.API[method], "function", `${method} should exist`);
   }
+});
+
+test("client core md-lite escapes first and only renders whitelisted markdown", () => {
+  const { core } = loadClientCore();
+  const rendered = core.U.md("**安全** <img src=x onerror=alert(1)>\n- `code`");
+  assert.match(rendered, /<strong>安全<\/strong>/);
+  assert.match(rendered, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.match(rendered, /<code>code<\/code>/);
+  assert.equal(rendered.includes("<img"), false);
+  assert.equal(rendered.includes("onerror=") && rendered.includes("<img"), false);
+});
+
+test("client core routes message operations to message-op while keeping compatibility alias", async () => {
+  const { core, fetchCalls } = loadClientCore();
+  await core.API.chatEdit({ messageId: "m1", action: "favorite" });
+  await core.API.chatMessage({ messageId: "m1", action: "delete" });
+  assert.equal(fetchCalls[0].url, "/api/chat/message-op");
+  assert.equal(fetchCalls[1].url, "/api/chat/message-op");
 });

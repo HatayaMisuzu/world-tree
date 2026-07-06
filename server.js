@@ -830,7 +830,69 @@ async function findFailedTurn(moduleKey, failedTurnId) {
   return { error, user, records };
 }
 
-async function runLlmChatSuccess(body, retryMeta = {}) {
+function sseWrite(res, event, data = {}) {
+  if (res.writableEnded || res.destroyed) return false;
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+  return true;
+}
+
+function splitSseText(text = "", size = 48) {
+  const source = String(text || "");
+  const chunks = [];
+  for (let i = 0; i < source.length; i += size) chunks.push(source.slice(i, i + size));
+  return chunks;
+}
+
+function createNarrativeStreamGate(onDelta) {
+  let buffer = "";
+  let narrativeOpen = false;
+  let stopped = false;
+  let emittedAny = false;
+  const marker = "【叙事】";
+  const emit = (text) => {
+    const value = String(text || "");
+    if (!value) return;
+    emittedAny = true;
+    onDelta(value);
+  };
+  return {
+    feed(chunk = "") {
+      if (stopped) return;
+      buffer += String(chunk || "");
+      if (!narrativeOpen) {
+        const idx = buffer.indexOf(marker);
+        if (idx < 0) {
+          buffer = buffer.slice(-marker.length);
+          return;
+        }
+        narrativeOpen = true;
+        buffer = buffer.slice(idx + marker.length).replace(/^\s*\r?\n?/, "");
+      }
+      const nextSection = buffer.search(/\r?\n【[^】]+】/);
+      if (nextSection >= 0) {
+        emit(buffer.slice(0, nextSection));
+        buffer = "";
+        stopped = true;
+        return;
+      }
+      const safeLength = Math.max(0, buffer.length - 12);
+      if (safeLength > 0) {
+        emit(buffer.slice(0, safeLength));
+        buffer = buffer.slice(safeLength);
+      }
+    },
+    flush() {
+      if (stopped) return emittedAny;
+      if (narrativeOpen && buffer) emit(buffer);
+      buffer = "";
+      return emittedAny;
+    },
+    get emittedAny() { return emittedAny; }
+  };
+}
+
+async function runLlmChatSuccess(body, retryMeta = {}, streamHooks = {}) {
   const { input, moduleKey, dataMode, engineState, messages } = body || {};
   if (!input) return { status: "error", errorMsg: "请输入内容后再发送" };
 
@@ -934,7 +996,25 @@ async function runLlmChatSuccess(body, retryMeta = {}) {
     const startedAt = Date.now();
     const progress = { startedAt, stages: [] };
 
-    const result = await sendDualStageTurn({ model, config: { ...config, llmBaseUrl: config.llmBaseUrl, llmModel: config.llmModel }, apiKey, messages: messages || [], input: realPlayInput, injectedWorldbook, engineState: effectiveState, moduleKey: moduleKey || "unloaded", dataMode: dataMode || "worldbook", skipDirector: true, skipGuardian: false, useLlmAnalysis: true, writerPacket, kernelContext });
+    const result = await sendDualStageTurn({
+      model,
+      config: { ...config, llmBaseUrl: config.llmBaseUrl, llmModel: config.llmModel },
+      apiKey,
+      messages: messages || [],
+      input: realPlayInput,
+      injectedWorldbook,
+      engineState: effectiveState,
+      moduleKey: moduleKey || "unloaded",
+      dataMode: dataMode || "worldbook",
+      skipDirector: true,
+      skipGuardian: false,
+      useLlmAnalysis: true,
+      writerPacket,
+      kernelContext,
+      streamWriter: streamHooks.streamWriter === true,
+      onWriterToken: streamHooks.onWriterToken,
+      onStreamFallback: streamHooks.onStreamFallback
+    });
 
     // 构建阶段耗时
     const elapsed = Date.now() - startedAt;
@@ -999,6 +1079,56 @@ async function handleLlmChat(body) {
       persistedIds = await persistFailedTurn(moduleKey, body.input, mapped, body.engineState || {});
     }
     return { ...mapped, persistedIds };
+  }
+}
+
+async function handleLlmChatStream(req, res) {
+  const body = await readBody(req);
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no"
+  });
+  let closed = false;
+  let wroteDelta = false;
+  req.on("close", () => { closed = true; });
+  const emit = (event, data) => !closed && sseWrite(res, event, data);
+  const gate = createNarrativeStreamGate((content) => {
+    wroteDelta = true;
+    emit("delta", { content });
+  });
+  try {
+    emit("stage", { name: "analysis", label: "分析输入" });
+    emit("stage", { name: "writer", label: "生成叙事正文" });
+    const result = await runLlmChatSuccess(body, {}, {
+      streamWriter: true,
+      onWriterToken: (chunk) => gate.feed(chunk),
+      onStreamFallback: (err) => emit("stage", {
+        name: "fallback",
+        label: "stream 不可用，自动切换非流式完成",
+        code: err?.code || "LLM_STREAM_FALLBACK"
+      })
+    });
+    gate.flush();
+    if (!wroteDelta) {
+      for (const chunk of splitSseText(result.narrative || "（无回应）")) {
+        wroteDelta = true;
+        emit("delta", { content: chunk, fallbackMode: "non_streaming_server_fallback" });
+      }
+    }
+    emit("stage", { name: "persist", label: "已完成落盘" });
+    emit("done", result);
+  } catch (err) {
+    const mapped = mapLlmError(err);
+    let persistedIds = null;
+    const moduleKey = body?.moduleKey || "";
+    if (moduleKey && !String(moduleKey).startsWith("__") && body?.input) {
+      persistedIds = await persistFailedTurn(moduleKey, body.input, mapped, body.engineState || {});
+    }
+    emit("error", { ...mapped, persistedIds });
+  } finally {
+    if (!res.writableEnded && !res.destroyed) res.end();
   }
 }
 
@@ -2892,6 +3022,7 @@ async function handleAPI(req, res) {
 
     // ── LLM ──
     if (path === "/api/llm/test" && method === "POST") return jsonResponse(res, await testLlmConnection(await readBody(req)));
+    if (path === "/api/llm/chat/stream" && method === "POST") return handleLlmChatStream(req, res);
     if (path === "/api/llm/chat" && method === "POST") return jsonResponse(res, await handleLlmChat(await readBody(req)));
     if (path === "/api/llm/chat/retry" && method === "POST") return jsonResponse(res, await handleLlmChatRetry(await readBody(req)));
 
@@ -3086,7 +3217,12 @@ async function handleAPI(req, res) {
     if (path === "/api/worldbook/test" && method === "POST") return jsonResponse(res, await handleWorldbookTest(await readBody(req)));
 
     // ── 聊天消息操作 ──
-    if (path === "/api/chat/message" && method === "POST") return jsonResponse(res, await handleChatMessage(await readBody(req)));
+    if (path === "/api/chat/message-op" && method === "POST") return jsonResponse(res, await handleChatMessage(await readBody(req)));
+    if (path === "/api/chat/message" && method === "POST") {
+      res.setHeader("Deprecation", "true");
+      res.setHeader("Link", "</api/chat/message-op>; rel=\"successor-version\"");
+      return jsonResponse(res, await handleChatMessage(await readBody(req)));
+    }
 
     // ── 叙事黑盒 ──
     if (path === "/api/turn/debug" && method === "GET") return jsonResponse(res, await handleTurnDebug(url));

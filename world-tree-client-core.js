@@ -11,6 +11,31 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     },
+    md(v) {
+      const escaped = U.esc(v).replace(/'/g, "&#39;");
+      const lines = escaped.split(/\r?\n/);
+      let inList = false;
+      const inline = (text) => text
+        .replace(/`([^`]+)`/g, "<code>$1</code>")
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+      const out = [];
+      for (const line of lines) {
+        const trimmed = line.trim();
+        const item = trimmed.match(/^[-*]\s+(.+)$/);
+        if (item) {
+          if (!inList) { out.push("<ul>"); inList = true; }
+          out.push(`<li>${inline(item[1])}</li>`);
+          continue;
+        }
+        if (inList) { out.push("</ul>"); inList = false; }
+        if (!trimmed) { out.push(""); continue; }
+        if (/^---+$/.test(trimmed)) { out.push("<hr>"); continue; }
+        out.push(`<p>${inline(line)}</p>`);
+      }
+      if (inList) out.push("</ul>");
+      return out.filter((line, index, arr) => line || arr[index - 1]).join("");
+    },
     json(v) { try { return JSON.stringify(v ?? null, null, 2); } catch { return String(v); } },
     compact(v, max = 160) {
       const text = String(v ?? "").replace(/\s+/g, " ").trim();
@@ -55,6 +80,54 @@
     },
     get(path) { return API.call("GET", path); },
     post(path, body) { return API.call("POST", path, body); },
+    async stream(path, body, handlers = {}) {
+      const res = await fetch((API.base || "") + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify(body || {}),
+        signal: handlers.signal
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        let payload = null;
+        try { payload = JSON.parse(text); } catch {}
+        const err = new Error(payload?.userMessage || payload?.userMsg || payload?.errorMsg || payload?.error || `HTTP ${res.status}: ${text || res.statusText}`);
+        err.status = res.status;
+        err.payload = payload;
+        err.responseText = text;
+        throw err;
+      }
+      if (!res.body) throw new Error("ReadableStream unavailable for SSE response");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const dispatchFrame = (frame) => {
+        const lines = String(frame || "").split(/\r?\n/);
+        let event = "message";
+        const data = [];
+        for (const line of lines) {
+          if (line.startsWith("event:")) event = line.slice(6).trim() || "message";
+          if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+        }
+        if (!data.length) return;
+        let payload = data.join("\n");
+        try { payload = JSON.parse(payload); } catch {}
+        if (typeof handlers.onEvent === "function") handlers.onEvent(event, payload);
+      };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let match = buffer.match(/\r?\n\r?\n/);
+        while (match) {
+          dispatchFrame(buffer.slice(0, match.index));
+          buffer = buffer.slice(match.index + match[0].length);
+          match = buffer.match(/\r?\n\r?\n/);
+        }
+      }
+      buffer += decoder.decode();
+      if (buffer.trim()) dispatchFrame(buffer);
+    },
     loadModules() { return API.get("/api/modules"); },
     createModule(data) { return API.post("/api/modules/create", data); },
     finalizeDraft(data) { return API.post("/api/modules/finalize-draft", data); },
@@ -67,8 +140,10 @@
     saveLlmKey(data) { return API.post("/api/secrets/llm", data); },
     testLlm(data) { return API.post("/api/llm/test", data); },
     chatSend(data) { return API.post("/api/llm/chat", data); },
+    chatStream(data, handlers) { return API.stream("/api/llm/chat/stream", data, handlers); },
     chatRetry(data) { return API.post("/api/llm/chat/retry", data); },
-    chatMessage(data) { return API.post("/api/chat/message", data); },
+    chatEdit(data) { return API.post("/api/chat/message-op", data); },
+    chatMessage(data) { return API.chatEdit(data); },
     alchemyImport(data) { return API.post("/api/alchemy/import", data); },
     alchemyPreview(data) { return API.post("/api/alchemy/preview", data); },
     alchemyRefine(data) { return API.post("/api/alchemy/refine", data); },
