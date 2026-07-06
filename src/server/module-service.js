@@ -9,6 +9,7 @@ import {
 } from "../core/modes/quick-setting.js";
 import { createModeProjectDraft } from "../core/modes/mode-project-factory.js";
 import { getModeCapsule } from "../core/modes/mode-capsule-registry.js";
+import { buildEngineGraphSidecar, mergeLegacyWorldGraph, stripRegenerableWorldFields } from "../core/system/world-save-hygiene.js";
 
 export function normalizeModuleKey(value = "") {
   return String(value || "").replace(/^world:/, "").replace(/^char:/, "").trim();
@@ -253,19 +254,13 @@ export function createModuleService(deps) {
       preset: effectivePreset,
       ...(multiModeDraft ? {
         mode: multiModeDraft.mode,
-        modeMetadata: multiModeDraft.worldJsonDraft.modeMetadata,
-        moduleGraph: multiModeDraft.worldJsonDraft.moduleGraph,
-        wrapperGraph: multiModeDraft.runtimeStateDraft.wrapperGraph
+        modeMetadata: multiModeDraft.worldJsonDraft.modeMetadata
       } : characterDraft ? {
         mode: characterDraft.mode,
-        modeMetadata: characterDraft.worldJsonDraft.modeMetadata,
-        moduleGraph: characterDraft.worldJsonDraft.moduleGraph,
-        wrapperGraph: characterDraft.runtimeStateDraft.wrapperGraph
+        modeMetadata: characterDraft.worldJsonDraft.modeMetadata
       } : quickSettingDraft ? {
         mode: quickSettingDraft.mode,
-        modeMetadata: quickSettingDraft.worldJsonDraft.modeMetadata,
-        moduleGraph: quickSettingDraft.worldJsonDraft.moduleGraph,
-        wrapperGraph: quickSettingDraft.runtimeStateDraft.wrapperGraph
+        modeMetadata: quickSettingDraft.worldJsonDraft.modeMetadata
       } : {}),
       draft,
       sourceType,
@@ -274,9 +269,7 @@ export function createModuleService(deps) {
       updatedAt: now,
       turnCount: 0
     };
-    await writeJson(join(worldDir, "world.json"), worldData);
-    // state.json 包含完整引擎状态（含 modeStateEnvelope 兼容叠加）
-    await writeJson(join(worldDir, "runtime", "state.json"), {
+    const runtimeStateData = {
       turnCount: 0, activeBranch: "main", lastScene: "", lastInput: "",
       draft,
       sourceType,
@@ -309,7 +302,14 @@ export function createModuleService(deps) {
         emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 }
       },
       createdAt: now, updatedAt: now
-    });
+    };
+    await writeJson(join(worldDir, "world.json"), stripRegenerableWorldFields(worldData));
+    const engineGraph = buildEngineGraphSidecar({
+      moduleGraph: multiModeDraft?.worldJsonDraft?.moduleGraph || characterDraft?.worldJsonDraft?.moduleGraph || quickSettingDraft?.worldJsonDraft?.moduleGraph
+    }, runtimeStateData);
+    if (engineGraph) await writeJson(join(worldDir, "runtime", "engine-graph.json"), engineGraph);
+    // state.json 包含完整引擎状态（含 modeStateEnvelope 兼容叠加）
+    await writeJson(join(worldDir, "runtime", "state.json"), runtimeStateData);
     if (sourceText) {
       await writeFile(join(worldDir, "runtime", "source.txt"), sourceText.slice(0, 200000), "utf-8");
     }
@@ -483,7 +483,7 @@ export function createModuleService(deps) {
     if (cached?.fingerprint === fingerprint) return clone(cached.model);
 
     const world = readJsonSync(join(worldDir, "world.json"), {});
-    const state = readJsonWithLegacy(join(worldDir, "runtime", "state.json"), join(worldDir, "runtime.json"), {}); // 兼容旧格式
+    const state = mergeLegacyWorldGraph(world, readJsonWithLegacy(join(worldDir, "runtime", "state.json"), join(worldDir, "runtime.json"), {})); // 兼容旧格式
     const shared = join(worldDir, "shared");
 
     const modeSpecificSharedFiles = modeSpecificSharedFilesForWorld(world);

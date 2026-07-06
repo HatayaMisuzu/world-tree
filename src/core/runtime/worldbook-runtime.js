@@ -1,6 +1,6 @@
 import { normalizeWorldbookEntries, worldbookEntriesFromModel } from "../cards.js";
 import { buildVectorIndex, matchEntries } from "../data/worldbook.js";
-import { budgetFor, estimateContextChars } from "../engine/context-budget.js";
+import { budgetFor, estimateContextChars, estimateContextTokens } from "../engine/context-budget.js";
 
 export function prepareWorldbookInjection({
   model = null,
@@ -15,7 +15,7 @@ export function prepareWorldbookInjection({
   const budgetName = engineState?.contextBudget || "balanced";
   const budget = budgetFor(budgetName);
   const entryLimit = Number(limit || budget.worldbookEntries || 10);
-  const maxChars = Number(budget.worldbookChars || Infinity);
+  const maxTokens = Number(budget.worldbookTokens || budget.worldbookChars || Infinity);
   const entries = model
     ? worldbookEntriesFromModel(model, {})
     : normalizeWorldbookEntries(worldbook?.entries || worldbook || []);
@@ -36,19 +36,22 @@ export function prepareWorldbookInjection({
 
   const selected = [];
   const droppedByBudget = [];
+  let usedTokens = 0;
   let usedChars = 0;
   for (const entry of candidates) {
-    const cost = estimateEntryChars(entry);
+    const costTokens = estimateEntryTokens(entry);
+    const costChars = estimateEntryChars(entry);
     if (selected.length >= entryLimit) {
-      droppedByBudget.push({ ...summarizeEntry(entry), cost, dropReason: "budget:entry-limit" });
+      droppedByBudget.push({ ...summarizeEntry(entry), cost: costTokens, costTokens, costChars, dropReason: "budget:entry-limit" });
       continue;
     }
-    if (Number.isFinite(maxChars) && usedChars + cost > maxChars && selected.length > 0) {
-      droppedByBudget.push({ ...summarizeEntry(entry), cost, dropReason: "budget:chars" });
+    if (Number.isFinite(maxTokens) && usedTokens + costTokens > maxTokens && selected.length > 0) {
+      droppedByBudget.push({ ...summarizeEntry(entry), cost: costTokens, costTokens, costChars, dropReason: "budget:tokens" });
       continue;
     }
-    selected.push({ ...entry, budgetCost: cost, budgetUsedBefore: usedChars });
-    usedChars += cost;
+    selected.push({ ...entry, budgetCost: costTokens, budgetCostTokens: costTokens, budgetCostChars: costChars, budgetUsedBefore: usedTokens });
+    usedTokens += costTokens;
+    usedChars += costChars;
   }
 
   const candidateIds = new Set(candidates.map((entry) => entry.id));
@@ -66,9 +69,12 @@ export function prepareWorldbookInjection({
       budgetName,
       budget: {
         worldbookEntries: entryLimit,
-        worldbookChars: maxChars,
+        worldbookTokens: maxTokens,
+        worldbookChars: Number(budget.worldbookChars || maxTokens),
+        budgetUnit: budget.budgetUnit || "estimated_tokens",
         historyTurns: historyRounds,
         historyMessages: scanMessages.length,
+        usedTokens,
         usedChars
       },
       input: String(input || ""),
@@ -84,6 +90,10 @@ export function prepareWorldbookInjection({
 
 export function estimateEntryChars(entry = {}) {
   return estimateContextChars(`${entry.title || ""}\n${entry.keys || ""}\n${entry.content || ""}`);
+}
+
+export function estimateEntryTokens(entry = {}) {
+  return estimateContextTokens(`${entry.title || ""}\n${entry.keys || ""}\n${entry.content || ""}`);
 }
 
 function normalizeMessages(messages = []) {

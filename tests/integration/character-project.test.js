@@ -43,7 +43,9 @@ test("character project creates with mode=character and character_card engineSta
     assert.equal(world.mode, "character");
     assert.ok(world.modeMetadata);
     assert.equal(world.modeMetadata.dataMode, "character_card");
-    assert.ok(world.moduleGraph);
+    assert.equal(world.moduleGraph, undefined);
+    const engineGraph = JSON.parse(readFileSync(join(worldDir, "runtime", "engine-graph.json"), "utf-8"));
+    assert.ok(engineGraph.moduleGraph);
 
     // runtime/state.json checks
     const state = JSON.parse(readFileSync(join(worldDir, "runtime", "state.json"), "utf-8"));
@@ -71,7 +73,7 @@ test("character project creates with mode=character and character_card engineSta
     });
     assert.equal(exported.body.status, "ok");
     assert.equal(exported.body.pack.files["world.json"].mode, "character");
-    assert.ok(exported.body.pack.files["world.json"].moduleGraph);
+    assert.equal(exported.body.pack.files["world.json"].moduleGraph, undefined);
 
     const imported = await api(server, "/api/world-pack/import", {
       method: "POST",

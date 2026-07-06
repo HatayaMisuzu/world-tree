@@ -3,6 +3,7 @@ import { getModeRuntimeHints } from "./mode-metadata.js";
 import { createModeRuntimePacket } from "./mode-runtime.js";
 import { createModuleRuntimePacket } from "../modules/module-runtime-orchestrator.js";
 import { createModeStateEnvelope } from "./mode-state-schema.js";
+import { buildEngineGraphSidecar, stripRegenerableWorldFields } from "../system/world-save-hygiene.js";
 
 // ─── Mode 创建权限 ───
 
@@ -167,7 +168,6 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     title: projectDraft.title || "未命名项目",
     mode: projectDraft.mode || mode,
     modeMetadata: projectDraft.worldJsonDraft?.modeMetadata || {},
-    moduleGraph: projectDraft.worldJsonDraft?.moduleGraph || { modules: [] },
     createdAt: projectDraft.worldJsonDraft?.createdAt || now,
     updatedAt: now
   };
@@ -180,10 +180,12 @@ export function createModeProjectFiles(projectDraft = {}, options = {}) {
     wrapperGraph: projectDraft.runtimeStateDraft?.wrapperGraph || { wrappers: [] },
     modeStateEnvelope: projectDraft.runtimeStateDraft?.modeStateEnvelope || {}
   };
+  const engineGraph = buildEngineGraphSidecar(projectDraft.worldJsonDraft || {}, runtimeState);
 
   const files = {
-    "world.json": worldJson,
+    "world.json": stripRegenerableWorldFields(worldJson),
     "runtime/state.json": runtimeState,
+    ...(engineGraph ? { "runtime/engine-graph.json": engineGraph } : {}),
     "runtime/source.txt": sourceText,
     "shared/worldbook.json": { entries: [] },
     "shared/characters.json": [],

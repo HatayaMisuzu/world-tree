@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync, statSync, createReadStream, rmSync } from "node:fs";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { chmod, readFile, writeFile, mkdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { join, dirname, extname, resolve, isAbsolute } from "node:path";
@@ -18,6 +18,7 @@ import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-stor
 import { clearPredictionStore } from "./src/core/engine/director.js";
 import { importEngineState } from "./src/core/engine/state-persistence.js";
 import { getWorldSessionRegistry } from "./src/core/engine/world-session.js";
+import { buildEngineGraphSidecar, splitWorldForSave, stripRegenerableWorldFields } from "./src/core/system/world-save-hygiene.js";
 import { buildRealPlayTurnContext } from "./src/core/real-play/turn-context.js";
 import {
   errorPayload,
@@ -201,6 +202,13 @@ async function loadSecrets() {
 
 async function saveSecrets(secrets) {
   await writeJson(secretsPath(), secrets);
+  if (process.platform !== "win32") {
+    try {
+      await chmod(secretsPath(), 0o600);
+    } catch (err) {
+      console.warn("[secrets] chmod 0600 failed:", err?.message || "unknown error");
+    }
+  }
   return getSecretState();
 }
 
@@ -467,7 +475,10 @@ async function installExample(body = {}) {
       updatedAt: now,
       turnCount: 0
     };
-    await writeJson(join(worldDir, "world.json"), world);
+    const runtimeState = readJsonSync(join(worldDir, "runtime", "state.json"), {});
+    const engineGraph = buildEngineGraphSidecar(world, runtimeState);
+    await writeJson(join(worldDir, "world.json"), stripRegenerableWorldFields(world));
+    if (engineGraph) await writeJson(join(worldDir, "runtime", "engine-graph.json"), engineGraph);
 
     const sharedDefaults = [
       ["worldbook.json", { entries: [] }],
@@ -2474,6 +2485,8 @@ async function handleWorldPackExport(body = {}, url = null) {
   if (include.runtimeState) {
     const statePath = join(ctx.worldDir, "runtime", "state.json");
     if (existsSync(statePath)) optionalFiles["runtime/state.json"] = readJsonSync(statePath, {});
+    const graphPath = join(ctx.worldDir, "runtime", "engine-graph.json");
+    if (existsSync(graphPath)) optionalFiles["runtime/engine-graph.json"] = readJsonSync(graphPath, {});
   }
   if (include.reviewQueue) optionalFiles["userData/alchemy-review.json"] = loadReviewQueue();
   if (include.mechanisms) {
@@ -2488,6 +2501,11 @@ async function handleWorldPackExport(body = {}, url = null) {
       const framePath = statusFramePath(moduleKey, turn.turnId);
       if (framePath && existsSync(framePath)) optionalFiles[`runtime/status/turn-frames/${turn.turnId}.json`] = scrubStateValue(readJsonSync(framePath, {}));
     }
+  }
+  const splitWorld = splitWorldForSave(ctx.world, optionalFiles["runtime/state.json"] || {});
+  const exportWorld = splitWorld.world;
+  if (include.runtimeState && splitWorld.engineGraph && !optionalFiles["runtime/engine-graph.json"]) {
+    optionalFiles["runtime/engine-graph.json"] = splitWorld.engineGraph;
   }
   const pack = {
     format: "worldtree-pack",
@@ -2505,9 +2523,9 @@ async function handleWorldPackExport(body = {}, url = null) {
       turnStateFrames: include.turnStateFrames && Boolean(optionalFiles["runtime/status/index.json"])
     },
     summary: {
-      name: ctx.world.displayName || ctx.world.name,
-      worldName: ctx.world.name,
-      dataMode: ctx.world.dataMode || "worldbook",
+      name: exportWorld.displayName || exportWorld.name,
+      worldName: exportWorld.name,
+      dataMode: exportWorld.dataMode || "worldbook",
       includes: [...(include.world ? ["world.json"] : ["world.json:minimal"]), ...Object.keys(sharedFiles), ...Object.keys(optionalFiles)],
       excludes: [
         "userData/secrets.json",
@@ -2523,9 +2541,9 @@ async function handleWorldPackExport(body = {}, url = null) {
       ]
     },
     include,
-    world: include.world ? ctx.world : { name: ctx.world.name, displayName: ctx.world.displayName, dataMode: ctx.world.dataMode, subType: ctx.world.subType },
+    world: include.world ? exportWorld : { name: exportWorld.name, displayName: exportWorld.displayName, dataMode: exportWorld.dataMode, subType: exportWorld.subType },
     files: {
-      ...(include.world ? { "world.json": ctx.world } : {}),
+      ...(include.world ? { "world.json": exportWorld } : {}),
       ...sharedFiles,
       ...optionalFiles
     },
@@ -2607,13 +2625,17 @@ async function handleWorldPackImport(body = {}) {
   mkdirSync(worldDir, { recursive: true });
   ensureDir(join(worldDir, "shared"));
   ensureDir(join(worldDir, "runtime"));
+  const importedRuntimeState = pack.files["runtime/state.json"] && typeof pack.files["runtime/state.json"] === "object"
+    ? pack.files["runtime/state.json"]
+    : {};
+  const importedEngineGraph = buildEngineGraphSidecar(pack.world || pack.files["world.json"] || {}, importedRuntimeState);
   for (const [key, value] of Object.entries(pack.files)) {
     const clean = validateImportFileKey(key);
     if (clean.startsWith("runtime/") || clean.startsWith("userData/")) continue;
     const target = clean === "world.json" ? join(worldDir, "world.json") : resolveInside(worldDir, clean);
     if (!target) continue;
     ensureDir(dirname(target));
-    await writeJson(target, clean === "world.json" ? { ...(value || {}), name: worldName, displayName: body.displayName || value.displayName || summary.name, importedAt: new Date().toISOString() } : value);
+    await writeJson(target, clean === "world.json" ? stripRegenerableWorldFields({ ...(value || {}), name: worldName, displayName: body.displayName || value.displayName || summary.name, importedAt: new Date().toISOString() }) : value);
   }
   const worldPath = join(worldDir, "world.json");
   if (!existsSync(worldPath)) {
@@ -2625,9 +2647,17 @@ async function handleWorldPackImport(body = {}) {
       importedAt: new Date().toISOString()
     });
   }
+  if (importedEngineGraph) await writeJson(join(worldDir, "runtime", "engine-graph.json"), importedEngineGraph);
   if (!existsSync(join(worldDir, "runtime", "chat.jsonl"))) writeFileSync(join(worldDir, "runtime", "chat.jsonl"), "", "utf-8");
   if (!existsSync(join(worldDir, "runtime", "memory.jsonl"))) writeFileSync(join(worldDir, "runtime", "memory.jsonl"), "", "utf-8");
-  await writeJson(join(worldDir, "runtime", "state.json"), { turnCount: 0, activeBranch: "main", importedAt: new Date().toISOString(), engineState: { dataMode: pack.world?.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } } });
+  await writeJson(join(worldDir, "runtime", "state.json"), {
+    turnCount: 0,
+    activeBranch: "main",
+    importedAt: new Date().toISOString(),
+    ...(importedEngineGraph?.moduleGraph ? { moduleGraph: importedEngineGraph.moduleGraph } : {}),
+    ...(importedEngineGraph?.wrapperGraph ? { wrapperGraph: importedEngineGraph.wrapperGraph } : {}),
+    engineState: { dataMode: pack.world?.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } }
+  });
   return { status: "ok", module: { id: worldName, name: worldName, displayName: body.displayName || summary.name, type: "world", mode: pack.world?.mode || "", dataMode: pack.world?.dataMode || "worldbook", subType: pack.world?.subType || "classic", turnCount: 0 } };
 }
 

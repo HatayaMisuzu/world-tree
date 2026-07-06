@@ -86,11 +86,13 @@ test("quick-setting creates preset-compatible metadata and survives worldpack ro
     const worldDir = join(dataDir, "engine", "worlds", "quick_setting_test");
     const world = JSON.parse(readFileSync(join(worldDir, "world.json"), "utf-8"));
     const state = JSON.parse(readFileSync(join(worldDir, "runtime", "state.json"), "utf-8"));
+    const engineGraph = JSON.parse(readFileSync(join(worldDir, "runtime", "engine-graph.json"), "utf-8"));
     assert.equal(world.mode, "quick-setting");
     assert.equal(world.modeMetadata.dataMode, "preset");
     assert.equal(world.modeMetadata.worldSubType, "classic");
-    assert.ok(world.moduleGraph.resolved.includes("core.world_container"));
-    assert.deepEqual(world.moduleGraph.missing, []);
+    assert.equal(world.moduleGraph, undefined);
+    assert.ok(engineGraph.moduleGraph.resolved.includes("core.world_container"));
+    assert.deepEqual(engineGraph.moduleGraph.missing, []);
     assert.equal(state.mode, "quick-setting");
     assert.equal(state.engineState.dataMode, "preset");
     assert.equal(state.engineState.worldSubType, "classic");
@@ -107,7 +109,7 @@ test("quick-setting creates preset-compatible metadata and survives worldpack ro
     });
     assert.equal(exported.body.status, "ok");
     assert.equal(exported.body.pack.files["world.json"].mode, "quick-setting");
-    assert.ok(exported.body.pack.files["world.json"].moduleGraph.resolved.length > 0);
+    assert.equal(exported.body.pack.files["world.json"].moduleGraph, undefined);
 
     const imported = await api(server, "/api/world-pack/import", {
       method: "POST",
@@ -122,7 +124,7 @@ test("quick-setting creates preset-compatible metadata and survives worldpack ro
     const importedWorld = JSON.parse(readFileSync(join(dataDir, "engine", "worlds", imported.body.module.id, "world.json"), "utf-8"));
     assert.equal(importedWorld.mode, "quick-setting");
     assert.equal(importedWorld.modeMetadata.dataMode, "preset");
-    assert.ok(importedWorld.moduleGraph.resolved.includes("scene.session"));
+    assert.equal(importedWorld.moduleGraph, undefined);
   } finally {
     await server.stop();
     await removeTempDir(dataDir);

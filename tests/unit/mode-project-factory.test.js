@@ -69,7 +69,7 @@ test("6. quick-setting worldJsonDraft contains mode and modeMetadata", () => {
   assert.equal(wj.mode, "quick-setting");
   assert.equal(wj.modeMetadata.dataMode, "preset");
   assert.equal(wj.modeMetadata.worldSubType, "classic");
-  assert.ok(wj.moduleGraph.modules.length > 0);
+  assert.ok(draft.runtimeStateDraft.moduleGraph.modules.length > 0);
 });
 
 // ─── Test 7: runtimeStateDraft 包含 engineState / moduleGraph / wrapperGraph ───
@@ -91,12 +91,14 @@ test("8. createModeProjectFiles returns world.json, runtime/state.json, runtime/
   const files = createModeProjectFiles(draft);
   assert.ok(files["world.json"]);
   assert.ok(files["runtime/state.json"]);
+  assert.ok(files["runtime/engine-graph.json"]);
+  assert.equal(files["world.json"].moduleGraph, undefined);
   assert.ok(files["runtime/source.txt"]);
   assert.equal(files["runtime/source.txt"], "风暴中的玻璃城");
   assert.ok(files["shared/worldbook.json"]);
   assert.ok(files["shared/characters.json"]);
   // 核心文件 + P0 runtime/tracking 初始化文件
-  assert.equal(Object.keys(files).length, 29);
+  assert.equal(Object.keys(files).length, 30);
 });
 
 // ─── Test 9: createModeProjectDraft character ───

@@ -18,6 +18,8 @@ const CFG = {
 const CLIENT_CORE = window.WorldTreeClientCore || {};
 const U = CLIENT_CORE.U;
 const API = CLIENT_CORE.API;
+const UI_LABELS = window.WT_UI_LABELS || { label: (_id, fallback) => fallback || "" };
+const T = (id, fallback = "") => UI_LABELS.label(id, fallback);
 
 if (!U || !API) {
   throw new Error("WorldTreeClientCore failed to load before world-tree-console.js");
@@ -781,31 +783,31 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>解谜调查 / Mystery Puzzle <span class="badge exp">Experimental</span></h2><p class="sub">在谜题主持人的引导下探索线索、解开谜题。</p></div></div>
+        <div class="panel-head"><div><h2>解谜调查 / Mystery Puzzle <span class="badge exp">${T("experimental", "抢先体验")}</span></h2><p class="sub">在谜题主持人的引导下探索线索、解开谜题。</p></div></div>
         <input id="mysteryTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="mysteryText" placeholder="粘贴谜题、悬疑场景、线索片段。"></textarea>
-        <div class="actions"><button class="primary" data-action="mystery-puzzle-start">创建解谜项目</button><span class="tiny muted">已提供线索卡与假设白板薄切片；完整推理引擎未实现。</span></div>
+        <div class="actions"><button class="primary" data-action="mystery-puzzle-start">创建解谜项目</button><span class="tiny muted">已提供线索卡与假设白板${T("thinSlice", "基础版")}；完整推理引擎仍在打磨。</span></div>
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>桌面叙事 / Tabletop 项目草稿 <span class="badge exp">Experimental</span></h2><p class="sub">创建普通 Tabletop 项目草稿并进入对话；结构化 Tabletop V2 导入会在加载 Tabletop 项目后显示。</p></div></div>
+        <div class="panel-head"><div><h2>桌面叙事 / Tabletop 项目草稿 <span class="badge exp">${T("experimental", "抢先体验")}</span></h2><p class="sub">创建普通 Tabletop 项目草稿并进入对话；结构化 Tabletop V2 导入会在加载 Tabletop 项目后显示。</p></div></div>
         <input id="tabletopTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="tabletopText" placeholder="粘贴跑团背景、规则偏好、开场场景。"></textarea>
-        <div class="actions"><button class="primary" data-action="tabletop-start">创建 Tabletop 草稿</button><span class="tiny muted">支持 /roll 骰子薄切片；不是完整 DND 规则系统，也不是 Tabletop V2 导入确认。</span></div>
+        <div class="actions"><button class="primary" data-action="tabletop-start">创建 Tabletop 草稿</button><span class="tiny muted">支持 /roll 骰子${T("thinSlice", "基础版")}；${T("notFullDnd", "暂不包含完整 DND 规则")}，也不是 Tabletop V2 导入确认。</span></div>
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>策略模拟 / Strategy Sim <span class="badge exp">Experimental</span></h2><p class="sub">在策略顾问协助下进行阵营经营与决策推演。</p></div></div>
+        <div class="panel-head"><div><h2>策略模拟 / Strategy Sim <span class="badge exp">${T("experimental", "抢先体验")}</span></h2><p class="sub">在策略顾问协助下进行阵营经营与决策推演。</p></div></div>
         <input id="strategyTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="strategyText" placeholder="粘贴阵营、局势、资源或策略目标。"></textarea>
-        <div class="actions"><button class="primary" data-action="strategy-sim-start">创建策略项目</button><span class="tiny muted">已提供四项资源与决策薄切片；不是完整 4X。</span></div>
+        <div class="actions"><button class="primary" data-action="strategy-sim-start">创建策略项目</button><span class="tiny muted">已提供四项资源与决策${T("thinSlice", "基础版")}；${T("notFull4x", "暂不包含完整 4X 规则")}。</span></div>
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>单人剧本杀 / Murder Mystery <span class="badge exp">Experimental</span></h2><p class="sub">在案件主持人引导下调查线索、推理真相。</p></div></div>
+        <div class="panel-head"><div><h2>单人剧本杀 / Murder Mystery <span class="badge exp">${T("experimental", "抢先体验")}</span></h2><p class="sub">在案件主持人引导下调查线索、推理真相。</p></div></div>
         <input id="murderTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="murderText" placeholder="粘贴案件背景、角色、线索设定。"></textarea>
-        <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><button class="small" data-action="single-player-scriptkill-v2-toggle-panel">打开单人剧本杀 V2</button><span class="tiny muted">真相锁继续生效，并提供玩家可见线索板薄切片。</span></div>
+        <div class="actions"><button class="primary" data-action="murder-mystery-start">创建剧本杀项目</button><button class="small" data-action="single-player-scriptkill-v2-toggle-panel">打开单人剧本杀 V2</button><span class="tiny muted">${T("truthLockActive", "剧透保护已开启")}，并提供玩家可见线索板${T("thinSlice", "基础版")}。</span></div>
       </section>
 
       <section class="panel">

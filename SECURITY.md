@@ -25,9 +25,11 @@ These protections are defense-in-depth for a local-first tool, but they are not 
 
 LLM keys are stored in `userData/secrets.json` as local plaintext. This is intentional and honest: local encryption would still need a local decryption key, so it would not protect against malware or another process running as the same OS user.
 
+Do not sync `userData/` with cloud drives, public backups, Git repositories, or shared folders. Treat `userData/secrets.json` as a local-only credential file.
+
 **ACL risk**: On multi-user systems, any process running as the same OS user can read `userData/secrets.json`. Protect the project directory with OS-level access controls:
-- **Windows**: Store the project under your user profile directory; avoid shared directories.
-- **Unix-like systems**: Restrict the secrets file after it is created:
+- **Windows**: Store the project under your user profile directory; avoid shared directories. The app skips POSIX mode changes on Windows.
+- **Unix-like systems**: The app attempts to set `userData/secrets.json` to `0o600` after writing. You can also verify or repair it manually:
   ```bash
   chmod 600 userData/secrets.json
   ```

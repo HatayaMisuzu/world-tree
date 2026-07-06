@@ -1,6 +1,8 @@
 // Reusable Scriptplay Spoiler Guard
 // Prevents OOC/meta/DM-book leakage in role-play style entries.
 
+import { scanHiddenEntityCooccurrence } from "../../system/hidden-leak-audit.js";
+
 const META_PATTERNS = [
   /\bAI\b/i, /模型/, /系统提示/, /prompt/i, /token/i, /API/i,
   /作为(一个)?(玩家代理|模拟玩家|AI玩家)/,
@@ -20,6 +22,13 @@ export function scanScriptplaySpoilers(text = "", context = {}) {
     const snippet = String(secret || "").slice(0, 24);
     if (snippet && value.includes(snippet)) findings.push({ type: "secret_snippet", snippet, severity: "critical" });
   }
+  const hiddenAudit = scanHiddenEntityCooccurrence(value, {
+    modeId: context.modeId || "single-player-scriptkill-v2",
+    hiddenTruth: context.hiddenTruth,
+    dmBook: context.dmBook,
+    secretSnippets: context.secretSnippets
+  }, { enabled: context.semanticAudit !== false });
+  findings.push(...hiddenAudit.findings);
   return { ok: !findings.some(f => ["high", "critical"].includes(f.severity)), findings };
 }
 

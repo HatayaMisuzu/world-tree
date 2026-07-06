@@ -21,6 +21,8 @@ test("worldbook runtime returns selected hits with reasons and budget diagnostic
 
   assert.ok(runtime.injectedWorldbook.length >= 1);
   assert.ok(runtime.injectedWorldbook.some((entry) => entry.reason));
+  assert.equal(runtime.diagnostics.budget.budgetUnit, "estimated_tokens");
+  assert.ok(runtime.diagnostics.budget.worldbookTokens > 0);
   assert.ok(runtime.diagnostics.budget.worldbookChars > 0);
   assert.ok(Array.isArray(runtime.diagnostics.droppedByBudget));
 });
@@ -91,7 +93,7 @@ test("worldbook selection ranks hit count before priority and then trims by budg
   const runtime = prepareWorldbookInjection({
     worldbook: {
       entries: [
-        { id: "low", title: "Low", keys: ["月井"], content: "x".repeat(1700), priority: 80 },
+        { id: "low", title: "Low", keys: ["月井"], content: "长".repeat(1200), priority: 80 },
         { id: "high", title: "High", keys: ["月井"], content: "短条目", priority: 140 }
       ]
     },
