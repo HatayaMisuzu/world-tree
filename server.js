@@ -420,6 +420,9 @@ function publicExample(item) {
     files: Array.isArray(item.files) ? item.files : [],
     expectedInstallResult: item.expectedInstallResult || null,
     tags: Array.isArray(item.tags) ? item.tags : [],
+    recommendedForFirstRun: item.recommendedForFirstRun === true,
+    suggestedFirstInput: item.suggestedFirstInput || "",
+    suggestedActions: Array.isArray(item.suggestedActions) ? item.suggestedActions : [],
     dataMode: item.dataMode || (item.type === "character" ? "character_card" : "worldbook"),
     subType: item.subType || "classic"
   };

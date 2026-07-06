@@ -1,0 +1,12 @@
+{
+  "name": "demo-world-cloud-steam-city",
+  "displayName": "云上蒸汽城",
+  "description": "一座悬在云海和旧蒸汽管线之间的城邦。适合第一次体验 World Tree 的三轮真实 LLM smoke。",
+  "mode": "world-rpg",
+  "dataMode": "worldbook",
+  "subType": "demo_world",
+  "preset": "epic",
+  "turnCount": 0,
+  "createdAt": "2026-07-06T00:00:00.000Z",
+  "updatedAt": "2026-07-06T00:00:00.000Z"
+}

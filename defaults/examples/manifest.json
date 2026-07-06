@@ -2,6 +2,52 @@
   "version": 1,
   "examples": [
     {
+      "id": "demo-world-cloud-steam-city",
+      "type": "world",
+      "title": "云上蒸汽城",
+      "name": "云上蒸汽城",
+      "description": "30 分钟可玩的一局云上蒸汽冒险示例；用于首次体验与 smoke:first-play。",
+      "kind": "playable_demo",
+      "contentPolicy": "original_demo_content",
+      "entrypoint": "world_module",
+      "path": "demo-world-cloud-steam-city",
+      "targetName": "demo-world-cloud-steam-city",
+      "dataMode": "worldbook",
+      "subType": "demo_world",
+      "preset": "epic",
+      "recommendedForFirstRun": true,
+      "suggestedFirstInput": "我站在黄铜港的雾风里，先检查匿名委托附带的旧锚链齿轮，再询问附近有没有人听见雾铃塔第七次敲响。",
+      "suggestedActions": [
+        "检查旧锚链齿轮上的刻痕",
+        "向米拉·阀匠询问第七锚塔",
+        "去黄铜港寻找罗船长"
+      ],
+      "files": [
+        "world.json",
+        "shared/worldbook.json",
+        "shared/characters.json",
+        "shared/scenes.json",
+        "shared/world_state.json",
+        "shared/relations.json",
+        "shared/timeline.json",
+        "shared/organizations.json",
+        "shared/locations.json",
+        "shared/races.json",
+        "shared/rules.json",
+        "runtime/state.json",
+        "runtime/chat.jsonl",
+        "runtime/memory.jsonl",
+        "runtime/alchemy-deliveries.jsonl"
+      ],
+      "expectedInstallResult": {
+        "createsPlayableStructure": true,
+        "containsNarrativeContent": true,
+        "containsTutorialContent": true,
+        "worldbookEntries": 8,
+        "minimumRealLlmSmokeTarget": true
+      }
+    },
+    {
       "id": "blank-world-template",
       "type": "world",
       "title": "空白世界模板",

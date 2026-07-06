@@ -103,6 +103,7 @@
     "smoke:user-content-api": "node scripts/smoke-user-content-api.mjs",
     "test:user-content-browser-smoke": "node scripts/run-user-content-browser-smoke.mjs",
     "smoke:user-content-real-llm": "node scripts/smoke-user-content-real-llm.mjs",
+    "smoke:first-play": "node scripts/smoke-first-play.mjs",
     "truth:check": "node scripts/check-truth-source-sync.mjs",
     "test:v2-route-registry": "node --test tests/unit/v2-product-route-registry.test.js",
     "test:console-boundary": "node --check world-tree-client-core.js && node --check world-tree-console.js && node --test tests/unit/console-client-core.test.js",

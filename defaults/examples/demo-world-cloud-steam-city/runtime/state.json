@@ -1,0 +1,19 @@
+{
+  "turnCount": 0,
+  "activeBranch": "main",
+  "lastScene": "黄铜港开场",
+  "lastInput": "",
+  "engineState": {
+    "dataMode": "worldbook",
+    "mode": "world-rpg",
+    "directorMode": "hybrid",
+    "preset": "epic",
+    "contextBudget": "balanced",
+    "emotionState": {
+      "engagement": 6,
+      "tension": 5,
+      "fatigue": 4,
+      "curiosity": 7
+    }
+  }
+}

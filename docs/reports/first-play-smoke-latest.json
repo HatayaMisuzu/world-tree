@@ -1,0 +1,24 @@
+{
+  "status": "BLOCKED_BY_CREDENTIALS",
+  "reason": "missing WT_SMOKE_BASE_URL/WT_SMOKE_MODEL/WT_SMOKE_KEY",
+  "provider": {
+    "baseUrl": "",
+    "model": ""
+  },
+  "exampleId": "demo-world-cloud-steam-city",
+  "assertions": [
+    {
+      "id": "credentials",
+      "ok": false,
+      "detail": "missing WT_SMOKE_BASE_URL/WT_SMOKE_MODEL/WT_SMOKE_KEY"
+    },
+    {
+      "id": "no_fake_pass",
+      "ok": true,
+      "detail": "No real LLM PASS claimed without WT_SMOKE_BASE_URL/WT_SMOKE_MODEL/WT_SMOKE_KEY."
+    }
+  ],
+  "turns": [],
+  "note": "Real LLM Flow remains BLOCKED_BY_CREDENTIALS. This report is a gate record, not a PASS.",
+  "generatedAt": "2026-07-06T09:38:21.278Z"
+}

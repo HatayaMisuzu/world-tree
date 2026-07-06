@@ -1,0 +1,68 @@
+{
+  "entries": [
+    {
+      "id": "cloud-steam-city",
+      "title": "云上蒸汽城",
+      "keys": ["云上蒸汽城", "云城", "Cloud Steam City"],
+      "content": "云上蒸汽城悬浮在季风云海之上，靠十二座蒸汽锚塔维持高度。城中街道由铜桥、缆车和齿轮升降梯连接，市民相信每一次雾钟鸣响都意味着云海下方有新的旧时代遗物浮现。",
+      "priority": 100,
+      "visibility": "public"
+    },
+    {
+      "id": "fog-bell-tower",
+      "title": "雾铃塔",
+      "keys": ["雾铃塔", "雾钟", "第七锚塔"],
+      "content": "雾铃塔是第七锚塔顶端的观测钟楼，只有云压异常或锚链松动时才会自动鸣响。最近三晚，它都在同一时刻敲响七次。",
+      "priority": 95,
+      "visibility": "public"
+    },
+    {
+      "id": "brass-harbor",
+      "title": "黄铜港",
+      "keys": ["黄铜港", "飞艇港", "港务局"],
+      "content": "黄铜港停靠运煤飞艇、巡云船和拾荒者的轻型滑翔艇。港务局要求每艘船登记航行誓约，否则不得穿越云墙。",
+      "priority": 80,
+      "visibility": "public"
+    },
+    {
+      "id": "ash-guild",
+      "title": "灰烬工会",
+      "keys": ["灰烬工会", "锅炉工", "灰烬徽章"],
+      "content": "灰烬工会维护城市锅炉和锚塔蒸汽阀。他们佩戴黑铜徽章，最近有人暗中收购旧锚链碎片，似乎在寻找某种能改变浮空高度的材料。",
+      "priority": 75,
+      "visibility": "public"
+    },
+    {
+      "id": "wind-court",
+      "title": "风议会",
+      "keys": ["风议会", "议会", "风令"],
+      "content": "风议会由七名航线贵族和三名工会代表组成，负责发布风令。议会公开宣称雾铃塔异常只是机械故障，但港口传闻他们已秘密封锁下层云井。",
+      "priority": 70,
+      "visibility": "public"
+    },
+    {
+      "id": "player-hook",
+      "title": "玩家开场钩子",
+      "keys": ["开场", "调查委托", "第一幕"],
+      "content": "玩家从黄铜港收到一封无署名委托：在下一次雾铃塔敲响前，查明第七锚塔为何持续失压。委托附带一枚旧锚链齿轮和一句话：不要让云城下降。",
+      "priority": 90,
+      "visibility": "public"
+    },
+    {
+      "id": "mystery-boundary",
+      "title": "隐藏真相边界",
+      "keys": ["真相边界", "剧透边界"],
+      "content": "公开叙事不得直接声称谁破坏锚塔，也不得提前揭示云海下方的真实实体。相关事实必须通过线索、提案或玩家调查逐步呈现。",
+      "priority": 60,
+      "visibility": "system"
+    },
+    {
+      "id": "tone-guide",
+      "title": "叙事语气",
+      "keys": ["语气", "风格", "叙事"],
+      "content": "语气应是清晰、可行动、带轻微奇幻蒸汽感。每轮给玩家留下至少一个可选择的行动方向，避免替玩家做决定。",
+      "priority": 65,
+      "visibility": "public"
+    }
+  ]
+}

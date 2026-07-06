@@ -7,6 +7,7 @@ const root = resolve(".");
 const manifest = JSON.parse(readFileSync(join(root, "defaults", "examples", "manifest.json"), "utf8"));
 
 const expectedIds = [
+  "demo-world-cloud-steam-city",
   "blank-world-template",
   "blank-worldbook-template",
   "blank-character-template",
@@ -16,6 +17,8 @@ const expectedIds = [
   "blank-scriptkill-template",
   "blank-alchemy-localization-template"
 ];
+const blankExamples = manifest.examples.filter((item) => item.kind === "blank_template");
+const demoExamples = manifest.examples.filter((item) => item.kind === "playable_demo");
 
 function readTemplateFile(template, relPath) {
   return readFileSync(join(root, "defaults", "examples", template.path, relPath), "utf8");
@@ -25,11 +28,20 @@ function parseJsonTemplateFile(template, relPath) {
   return JSON.parse(readTemplateFile(template, relPath));
 }
 
-test("examples manifest contains only blank template placeholders", () => {
+test("examples manifest contains one playable demo and blank template placeholders", () => {
   assert.equal(manifest.version, 1);
   assert.deepEqual(manifest.examples.map((item) => item.id), expectedIds);
+  assert.equal(demoExamples.length, 1);
+  assert.equal(blankExamples.length, 8);
 
-  for (const item of manifest.examples) {
+  const demo = demoExamples[0];
+  assert.equal(demo.id, "demo-world-cloud-steam-city");
+  assert.equal(demo.contentPolicy, "original_demo_content");
+  assert.equal(demo.expectedInstallResult?.containsNarrativeContent, true);
+  assert.equal(demo.expectedInstallResult?.minimumRealLlmSmokeTarget, true);
+  assert.ok(demo.suggestedFirstInput);
+
+  for (const item of blankExamples) {
     assert.equal(item.kind, "blank_template");
     assert.equal(item.contentPolicy, "blank_structure_only");
     assert.equal(item.type, "world");
@@ -47,7 +59,7 @@ test("examples manifest contains only blank template placeholders", () => {
 });
 
 test("blank template files exist and contain only empty structures plus metadata", () => {
-  for (const item of manifest.examples) {
+  for (const item of blankExamples) {
     const templateDir = join(root, "defaults", "examples", item.path);
     assert.equal(existsSync(templateDir), true);
     assert.equal(statSync(templateDir).isDirectory(), true);
@@ -90,9 +102,32 @@ test("blank templates do not include story, tutorial, secret, hidden, or local p
     /\/(?:Users|home|var|tmp)\//
   ];
 
-  for (const item of manifest.examples) {
+  for (const item of blankExamples) {
     const templateDir = join(root, "defaults", "examples", item.path);
     const payload = item.files.map((relPath) => readFileSync(join(templateDir, relPath), "utf8")).join("\n");
+    for (const pattern of forbidden) {
+      assert.doesNotMatch(payload, pattern, `${item.id} matched ${pattern}`);
+    }
+  }
+});
+
+test("playable demo files are original content and avoid secrets or local paths", () => {
+  const forbidden = [
+    /hiddenTruth/i,
+    /gm_only/i,
+    /api.?key/i,
+    /secret/i,
+    /token/i,
+    /authorization/i,
+    /\b[A-Za-z]:\\/,
+    /\/(?:Users|home|var|tmp)\//
+  ];
+
+  for (const item of demoExamples) {
+    const templateDir = join(root, "defaults", "examples", item.path);
+    const payload = item.files.map((relPath) => readFileSync(join(templateDir, relPath), "utf8")).join("\n");
+    assert.match(payload, /云上蒸汽城/);
+    assert.match(payload, /雾铃塔/);
     for (const pattern of forbidden) {
       assert.doesNotMatch(payload, pattern, `${item.id} matched ${pattern}`);
     }

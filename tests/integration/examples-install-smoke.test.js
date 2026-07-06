@@ -15,7 +15,7 @@ async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
 
-test("blank templates list, install, and read back as empty structures", async () => {
+test("examples list, install, and read back with correct content policy", async () => {
   const dataDir = await createTempDataDir();
   const server = await startWorldTreeServer({ dataDir });
 
@@ -23,11 +23,13 @@ test("blank templates list, install, and read back as empty structures", async (
     const listed = await api(server, "/api/examples");
     assert.equal(listed.status, 200);
     assert.equal(listed.body.status, "ok");
-    assert.equal(listed.body.examples.length, 8);
+    assert.equal(listed.body.examples.length, 9);
+    assert.equal(listed.body.examples.filter(item => item.kind === "blank_template").length, 8);
+    assert.equal(listed.body.examples.filter(item => item.kind === "playable_demo").length, 1);
 
     for (const item of listed.body.examples) {
-      assert.equal(item.kind, "blank_template");
-      assert.equal(item.contentPolicy, "blank_structure_only");
+      const isDemo = item.kind === "playable_demo";
+      assert.equal(item.contentPolicy, isDemo ? "original_demo_content" : "blank_structure_only");
       assert.ok(item.entrypoint);
       assert.ok(item.files.includes("world.json"));
 
@@ -49,17 +51,25 @@ test("blank templates list, install, and read back as empty structures", async (
 
       const world = await readJson(join(worldDir, "world.json"));
       assert.equal(world.sourceExample, item.id);
-      assert.equal(world.preset, "blank");
+      assert.equal(world.preset, isDemo ? "epic" : "blank");
 
       const worldbook = await readJson(join(worldDir, "shared", "worldbook.json"));
-      assert.deepEqual(worldbook.entries, []);
+      if (isDemo) {
+        assert.equal(worldbook.entries.length >= 8, true);
+      } else {
+        assert.deepEqual(worldbook.entries, []);
+      }
 
       const characters = await readJson(join(worldDir, "shared", "characters.json"));
-      assert.deepEqual(characters, []);
+      if (isDemo) {
+        assert.equal(characters.length >= 2, true);
+      } else {
+        assert.deepEqual(characters, []);
+      }
 
       const state = await readJson(join(worldDir, "runtime", "state.json"));
       assert.equal(state.turnCount, 0);
-      assert.equal(state.lastScene, "");
+      assert.equal(isDemo ? Boolean(state.lastScene) : state.lastScene === "", true);
       assert.equal(state.lastInput, "");
 
       const loaded = await api(server, "/api/modules/load", {

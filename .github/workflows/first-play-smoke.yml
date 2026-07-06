@@ -1,0 +1,34 @@
+name: First Play Real LLM Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      example_id:
+        description: "Example id to run"
+        required: false
+        default: "demo-world-cloud-steam-city"
+
+jobs:
+  smoke-first-play:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - name: Run first play smoke
+        env:
+          WT_SMOKE_EXAMPLE_ID: ${{ inputs.example_id }}
+          WT_SMOKE_BASE_URL: ${{ secrets.WT_SMOKE_BASE_URL }}
+          WT_SMOKE_MODEL: ${{ secrets.WT_SMOKE_MODEL }}
+          WT_SMOKE_KEY: ${{ secrets.WT_SMOKE_KEY }}
+        run: npm run smoke:first-play
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-play-smoke-report
+          path: |
+            docs/reports/first-play-smoke-latest.md
+            docs/reports/first-play-smoke-latest.json

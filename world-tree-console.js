@@ -730,7 +730,12 @@ const Views = {
     const current = AS.selectedModule || AS.modules.find(m => m.type === "world") || AS.modules[0];
     const worldName = current ? (current.displayName || current.name) : "未选择世界";
     const reviewCount = AS.reviewItems.length;
+    const firstRunDemo = AS.examples.find(item => item.recommendedForFirstRun) || AS.examples.find(item => item.kind === "playable_demo");
+    const firstRunBanner = AS.config.firstRun !== false && firstRunDemo ? `<section class="panel">
+        <div class="panel-head"><div><h2>第一次来？</h2><p class="sub">安装示例世界「${U.esc(firstRunDemo.title || firstRunDemo.name)}」，首句会自动放进输入框；配好模型后按 Enter 就能开始。</p></div><button class="primary" data-action="install-first-run-demo">一键安装示例世界并开始</button></div>
+      </section>` : "";
     return `<div class="grid">
+      ${firstRunBanner}
       <section class="panel hero">
         <div class="hero-row">
           <div>
@@ -764,7 +769,7 @@ const Views = {
         <div class="panel-head"><div><h2>世界书大世界 / World RPG <span class="badge beta">Beta</span></h2><p class="sub">以 GM 方式在开放世界中冒险。粘贴世界设定或冒险背景。</p></div></div>
         <input id="wrpgTitle" placeholder="项目标题（可选）" class="full-width" style="margin-bottom:8px">
         <textarea id="wrpgText" placeholder="粘贴世界设定、冒险背景、初始场景。"></textarea>
-        <div class="actions"><button class="primary" data-action="world-rpg-start">创建世界冒险</button><span class="tiny muted">最小闭环版本，任务/战斗/成长系统后续开放。</span></div>
+        <div class="actions"><button class="primary" data-action="world-rpg-start">创建世界冒险</button>${firstRunDemo ? `<button class="small" data-action="install-first-run-demo">没有素材？用示例试试</button>` : ""}<span class="tiny muted">最小闭环版本，任务/战斗/成长系统后续开放。</span></div>
       </section>
 
       <section class="panel">
@@ -822,8 +827,8 @@ const Views = {
       </section>
 
       <section class="panel">
-        <div class="panel-head"><div><h2>空白模板</h2><p class="sub">当前开源包只携带空白结构占位符；不包含剧情、教程或 onboarding demo 内容。</p></div>${C.badge(AS.examples.length + " 个模板", "pending")}</div>
-        <div class="list">${AS.examples.length ? AS.examples.map(ex => `<div class="item" data-example-id="${U.esc(ex.id)}"><div class="item-head"><strong>${U.esc(ex.title || ex.name || ex.id)}</strong>${C.badge(ex.kind || "blank_template", "info")}</div><span class="tiny muted">${U.esc(ex.description || "可安装为空白本地结构。")}</span><button class="small primary" data-action="install-example">安装模板</button></div>`).join("") : C.empty("暂无内置模板", "保持无授权素材策略，等待你后续提供素材。")}</div>
+        <div class="panel-head"><div><h2>内置示例与模板</h2><p class="sub">示例用于首次试飞；空白模板用于从自己的素材开始。</p></div>${C.badge(AS.examples.length + " 个", "pending")}</div>
+        <div class="list">${AS.examples.length ? AS.examples.map(ex => `<div class="item" data-example-id="${U.esc(ex.id)}"><div class="item-head"><strong>${U.esc(ex.title || ex.name || ex.id)}</strong>${C.badge(ex.kind || "blank_template", ex.kind === "playable_demo" ? "ok" : "info")}</div><span class="tiny muted">${U.esc(ex.description || "可安装为本地结构。")}</span>${ex.suggestedActions?.length ? `<div class="chip-row">${ex.suggestedActions.slice(0, 3).map(action => `<span class="chip">${U.esc(action)}</span>`).join("")}</div>` : ""}<button class="small primary" data-action="install-example">${ex.kind === "playable_demo" ? "安装并开始" : "安装模板"}</button></div>`).join("") : C.empty("暂无内置模板", "保持无授权素材策略，等待你后续提供素材。")}</div>
       </section>
     </div>`;
   },
@@ -1619,8 +1624,25 @@ async function installExample(id) {
   if (res.status !== "ok") throw new Error(res.errorMsg || "示例安装失败");
   await refreshModules();
   if (res.module?.id) await selectModule(res.module.id, "workbench");
+  AS.chatDraft = res.example?.suggestedFirstInput || "";
   AS.workbenchMode = "chat";
   createToast("示例已安装");
+  render();
+}
+
+async function installFirstRunDemo() {
+  const demo = AS.examples.find(item => item.recommendedForFirstRun) || AS.examples.find(item => item.kind === "playable_demo");
+  if (!demo) return createToast("当前包没有可安装的首跑示例", "warn");
+  const res = await API.installExample(demo.id);
+  if (res.status !== "ok") throw new Error(res.errorMsg || "示例安装失败");
+  await API.saveConfig({ firstRun: false }).catch(() => {});
+  AS.config.firstRun = false;
+  await refreshModules();
+  if (res.module?.id) await selectModule(res.module.id, "workbench");
+  AS.chatDraft = res.example?.suggestedFirstInput || demo.suggestedFirstInput || "";
+  AS.workbenchMode = "chat";
+  AS.view = "workbench";
+  createToast("已安装示例世界，首句已放入输入框");
   render();
 }
 
@@ -2074,6 +2096,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "load-telemetry") { if (AS.selectedModule) AS.dashboardData.telemetry = await API.telemetry(AS.selectedModule.id); return render(); }
     if (action === "load-worlddata") { if (AS.selectedModule) AS.dashboardData.entities = await API.entities(AS.selectedModule.id); return render(); }
     if (action === "refresh-modules") { await refreshModules(); return render(); }
+    if (action === "install-first-run-demo") return installFirstRunDemo();
     if (action === "load-module-from-list") { await selectModule(btn.dataset.moduleId, "workbench"); AS.workbenchMode = "chat"; return render(); }
     if (action === "install-example") return installExample(btn.closest("[data-example-id]")?.dataset.exampleId);
     if (action === "select-module") { await selectModule(btn.closest("[data-module-id]")?.dataset.moduleId, "chat"); return render(); }
