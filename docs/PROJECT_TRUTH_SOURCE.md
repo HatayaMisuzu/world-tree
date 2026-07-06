@@ -6,16 +6,31 @@ Audience: AI agents, maintainers, reviewers.
 
 This is the current truth-source index for repository status. Read this before using historical reports.
 
+## Active fable5 execution overlay
+
+The fable5 revised four-file packet is the active execution overlay for the productization closure run that started on 2026-07-06. For this run, these files are authoritative for batch order, acceptance gates, and blocked-status wording:
+
+1. `docs/plans/fable5-01-full-audit-revised.md`
+2. `docs/plans/fable5-02-fix-plan-revised.md`
+3. `docs/plans/fable5-03-optimization-plan-revised.md`
+4. `docs/plans/fable5-04-future-execution-revised.md`
+
+Batch execution must proceed in order from batch-00 through batch-11. Each batch requires targeted tests, necessary integration coverage, `npm run preflight`, and a commit before the next batch starts. Missing real LLM credentials, external services, human playtest evidence, or screen recording evidence must be recorded as `BLOCKED_BY_CREDENTIALS`, `BLOCKED_BY_BROWSER`, or `HUMAN_VALIDATION_REQUIRED`; no mock result may be reported as a real LLM or PLAYABLE pass.
+
 ## Truth-source priority
 
 1. `docs/PROJECT_TRUTH_SOURCE.md`
 2. `docs/CURRENT_PROJECT_STATE.md`
-3. `docs/V2_ENGINEERING_CLOSURE_STATUS.md`
-4. `docs/V2_ENTRY_COMPLETION_STATUS.md`
-5. `docs/PLAY_MODE_GUIDE.md`
-6. `README.md`, `AI-GUIDE.md`, `docs/INDEX.md`
-7. Active architecture documents
-8. Historical reports and archive files
+3. `docs/plans/fable5-01-full-audit-revised.md`
+4. `docs/plans/fable5-02-fix-plan-revised.md`
+5. `docs/plans/fable5-03-optimization-plan-revised.md`
+6. `docs/plans/fable5-04-future-execution-revised.md`
+7. `docs/V2_ENGINEERING_CLOSURE_STATUS.md`
+8. `docs/V2_ENTRY_COMPLETION_STATUS.md`
+9. `docs/PLAY_MODE_GUIDE.md`
+10. `README.md`, `AI-GUIDE.md`, `docs/INDEX.md`
+11. Active architecture documents
+12. Historical reports and archive files
 
 Historical reports may describe past limitations or past completion claims. They are not current truth if they conflict with the files above.
 
@@ -39,6 +54,7 @@ Historical reports may describe past limitations or past completion claims. They
 | Current documentation status | post-merge user-created content product closure alignment |
 | Remote CI | PASS for merge commit `ecd8658d` in run `28389779734` |
 | Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
+| Active execution overlay | fable5 revised four-file packet, batch-00 through batch-11 |
 
 ## Current status summary
 

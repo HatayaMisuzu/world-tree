@@ -9,6 +9,10 @@
 | [V2_ENTRY_COMPLETION_STATUS.md](V2_ENTRY_COMPLETION_STATUS.md) | Entry-specific closure status |
 | [STATUS_TERMINOLOGY.md](STATUS_TERMINOLOGY.md) | Required status vocabulary |
 | [AGENT_STATUS_HANDOFF.md](AGENT_STATUS_HANDOFF.md) | Agent handoff summary |
+| [plans/fable5-01-full-audit-revised.md](plans/fable5-01-full-audit-revised.md) | Active fable5 revised full audit |
+| [plans/fable5-02-fix-plan-revised.md](plans/fable5-02-fix-plan-revised.md) | Active fable5 revised fix plan |
+| [plans/fable5-03-optimization-plan-revised.md](plans/fable5-03-optimization-plan-revised.md) | Active fable5 revised optimization plan |
+| [plans/fable5-04-future-execution-revised.md](plans/fable5-04-future-execution-revised.md) | Active fable5 revised future execution plan |
 
 Current status: Full V2 is not complete. Selected V2 API/service loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; browser/UI entry flows remain PARTIAL or NOT PROVEN, and product-wide playable closure is not complete.
 Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure and blank template infrastructure are recorded as PASS; bundled story examples, tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
@@ -80,6 +84,10 @@ Key entry points for the current baseline:
 | [RELEASE_READINESS.md](RELEASE_READINESS.md) | 发布准备状态 |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 常见问题排查 |
 | [ROADMAP_CANDIDATES.md](ROADMAP_CANDIDATES.md) | 路线候选建议（不代表已实现） |
+| [Fable5 revised full audit](plans/fable5-01-full-audit-revised.md) | 本轮产品化闭环 truth source 1/4 |
+| [Fable5 revised fix plan](plans/fable5-02-fix-plan-revised.md) | 本轮产品化闭环 truth source 2/4 |
+| [Fable5 revised optimization plan](plans/fable5-03-optimization-plan-revised.md) | 本轮产品化闭环 truth source 3/4 |
+| [Fable5 revised future execution](plans/fable5-04-future-execution-revised.md) | 本轮产品化闭环 truth source 4/4 |
 
 ## 给维护者（架构和工作流）
 

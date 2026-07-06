@@ -6,6 +6,17 @@ Audience: AI agents, maintainers, reviewers.
 
 Any AI agent taking over this repository must read this file and `docs/PROJECT_TRUTH_SOURCE.md` first.
 
+## Active fable5 productization run
+
+The current active execution scope is the fable5 revised four-file packet in `docs/plans/`:
+
+- `fable5-01-full-audit-revised.md`
+- `fable5-02-fix-plan-revised.md`
+- `fable5-03-optimization-plan-revised.md`
+- `fable5-04-future-execution-revised.md`
+
+This overlay does not itself mark new capability as complete. It defines the ordered batch plan for moving from the existing engineering/service closure toward a real first-play product closure. Batches must run sequentially, and every batch must pass targeted tests, required integration coverage, and `npm run preflight` before its commit can be used as the next batch baseline.
+
 ## Trusted baseline
 
 | Item | Value |
@@ -32,6 +43,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 | Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
 | Asset/function inventory role | preservation ledger / evidence index; not proof by itself |
+| Active fable5 batch run | Batch 00 reality check in progress; batches 01-11 pending until gated commits exist |
 
 ## Definitions
 
@@ -72,6 +84,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 - Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
 - Productization Closure is PARTIAL by product decision; User-Created Content Product Closure and blank template infrastructure are recorded as PASS, while bundled story examples, tutorials, onboarding demo content, product-wide manual smoke, and release readiness remain incomplete or deferred.
 - Real LLM Flow is BLOCKED until real credentials/config are provided and a non-fallback smoke is recorded.
+- fable5 smoke and PLAYABLE claims require real LLM evidence, human playtest evidence, and screen recording evidence; missing credentials or human validation must be labeled, not converted into PASS.
 - Selected V2 API/service closure is improved for user-provided/structural content across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill.
 - Browser/UI entry flows for these five entries remain PARTIAL or NOT PROVEN unless a dedicated UI smoke is recorded.
 - Full product-wide playable closure remains incomplete.

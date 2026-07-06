@@ -4,6 +4,10 @@
   "truthSourcePriority": [
     "docs/PROJECT_TRUTH_SOURCE.md",
     "docs/CURRENT_PROJECT_STATE.md",
+    "docs/plans/fable5-01-full-audit-revised.md",
+    "docs/plans/fable5-02-fix-plan-revised.md",
+    "docs/plans/fable5-03-optimization-plan-revised.md",
+    "docs/plans/fable5-04-future-execution-revised.md",
     "docs/V2_ENGINEERING_CLOSURE_STATUS.md",
     "docs/V2_ENTRY_COMPLETION_STATUS.md",
     "docs/PLAY_MODE_GUIDE.md",
@@ -25,6 +29,34 @@
       "owner": "project-status",
       "replacement": null,
       "notes": "Current project state for agents and maintainers."
+    },
+    {
+      "path": "docs/plans/fable5-01-full-audit-revised.md",
+      "lifecycle": "current_truth",
+      "owner": "fable5-productization",
+      "replacement": null,
+      "notes": "Active fable5 revised full audit for the batch-00 through batch-11 productization run."
+    },
+    {
+      "path": "docs/plans/fable5-02-fix-plan-revised.md",
+      "lifecycle": "current_truth",
+      "owner": "fable5-productization",
+      "replacement": null,
+      "notes": "Active fable5 revised fix plan and P0-P2 repair contract."
+    },
+    {
+      "path": "docs/plans/fable5-03-optimization-plan-revised.md",
+      "lifecycle": "current_truth",
+      "owner": "fable5-productization",
+      "replacement": null,
+      "notes": "Active fable5 revised optimization plan for post-P0 productization work."
+    },
+    {
+      "path": "docs/plans/fable5-04-future-execution-revised.md",
+      "lifecycle": "current_truth",
+      "owner": "fable5-productization",
+      "replacement": null,
+      "notes": "Active fable5 revised future execution plan and governance route."
     },
     {
       "path": "docs/V2_ENGINEERING_CLOSURE_STATUS.md",
