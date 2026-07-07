@@ -6,7 +6,7 @@ const ENABLE_DEFERRED_PLUGINS = false;
 const CFG = {
   version: "unknown",
   nav: [
-    { id: "workbench", label: "工作台", icon: "□", meta: "首页" },
+    { id: "workbench", label: "大厅", icon: "□", meta: "开始" },
     { id: "chat", label: "对话", icon: "◇", meta: "创作" },
     { id: "library", label: "资料库", icon: "▦", meta: "素材" },
     { id: "worlds", label: "世界管理", icon: "◎", meta: "项目" },
@@ -319,6 +319,7 @@ const C = {
     const m = AS.selectedModule;
     const title = AS.isQuickStart ? "快速对话" : (m ? (m.displayName || m.name) : "未选择世界");
     const usage = C.usageBadge();
+    const proposalCount = (AS.kernel?.pendingProposals || []).length + (AS.reviewItems || []).length;
     return `<div class="chat-layout">
       <section class="panel chat-card">
         <div class="panel-head">
@@ -329,11 +330,13 @@ const C = {
           </div>
           <div class="actions">
             <button class="small" data-action="toggle-developer-observability">开发者观测</button>
+            <button class="small proposal-dot-button ${proposalCount ? "has-dot" : ""}" data-action="library-review">提案审阅${proposalCount ? `<span>${proposalCount}</span>` : ""}</button>
+            <button class="small" data-action="drawer-branches">分支</button>
             <button class="small" data-action="open-command-panel">命令</button>
             <button class="small danger" data-action="clear-chat">清空</button>
           </div>
         </div>
-        <div id="chatMessages" class="chat-messages">${AS.messages.length ? AS.messages.map(C.chatMsg).join("") : C.empty("开始对话", "输入行动、台词或 / 命令。")}</div>
+        <div id="chatMessages" class="chat-messages">${AS.messages.length ? AS.messages.map(C.chatMsg).join("") : C.openingSuggestions()}</div>
         ${renderProgressPanel()}
         <div class="composer">
           <textarea id="chatInput" placeholder="续写这一幕... 输入 / 调用命令，Enter 发送">${U.esc(AS.chatDraft || "")}</textarea>
@@ -360,6 +363,32 @@ const C = {
       <span class="chip">本局 ~${U.esc(String(sessionTokens))} tokens</span>
       ${cost > 0 ? `<span class="chip">估算 ¥${U.esc(cost.toFixed(4))}</span>` : ""}
     </div>`;
+  },
+  openingSuggestions() {
+    const suggestions = ["观察周围", "询问同伴", "继续当前目标", "/recap"];
+    return `<div class="opening-suggestions">
+      <strong>开场建议</strong>
+      <p class="tiny muted">可以从一个动作、问题或命令开始。</p>
+      <div class="chip-row">${suggestions.map(text => `<button class="small" data-action="use-opening-suggestion" data-suggestion="${U.esc(text)}">${U.esc(text)}</button>`).join("")}</div>
+    </div>`;
+  },
+  lobbyEntryDetails(firstRunDemo) {
+    const demoName = firstRunDemo ? (firstRunDemo.title || firstRunDemo.name || "内置示例") : "内置示例";
+    const cards = [
+      ["这是什么", "World Tree 是可以持续保存世界状态的文字冒险大厅；你可以从示例、素材或空白世界进入。", "open-settings", "检查连接"],
+      ["示例回放", `先用「${demoName}」跑一轮，确认模型连接、消息流和审核路径都能工作。`, "install-first-run-demo", "安装示例"],
+      ["用示例开始", "选择官方示例或模板，创建可继续、可导出、可回滚的本地世界。", "install-first-run-demo", "用示例开始"],
+      ["导入素材", "把设定、角色卡、世界书或片段交给炼金台，候选内容先进入审核队列。", "library-alchemy", "导入素材"],
+      ["空白开始", "从一个空白世界出发，逐步补充世界书、角色、机制和开场剧情。", "create-world", "空白开始"]
+    ];
+    return `<section class="panel lobby-entry-details">
+      <div class="panel-head"><div><h2>开始新的冒险</h2><p class="sub">入口详情页把第一次进入的关键选择放在同一屏：理解产品、试跑示例、导入素材或空白开始。</p></div>${C.badge("示例/新建", "info")}</div>
+      <div class="entry-grid">${cards.map(([title, text, action, cta]) => `<article class="entry-card">
+        <strong>${U.esc(title)}</strong>
+        <p>${U.esc(text)}</p>
+        <button class="small ${title === "用示例开始" || title === "空白开始" ? "primary" : ""}" data-action="${U.esc(action)}">${U.esc(cta)}</button>
+      </article>`).join("")}</div>
+    </section>`;
   },
   worldbookRows(limit) {
     const rows = (AS.worldbookEntries || []).slice(0, limit || 100);
@@ -763,20 +792,23 @@ const Views = {
       </section>` : "";
     return `<div class="grid">
       ${firstRunBanner}
-      <section class="panel hero">
+      <section class="panel hero lobby-hero">
         <div class="hero-row">
           <div>
-            ${C.badge(current ? "当前世界" : "等待选择", current ? "ok" : "pending")}
-            <div class="hero-title">${U.esc(worldName)}</div>
-            <p class="sub">${current ? `${C.dataModeLabel(current)} · ${current.subType || "classic"}` : "创建或导入一个世界后开始创作。"}</p>
+            ${C.badge("冒险大厅", "ok")}
+            <div class="hero-title">继续冒险：${U.esc(worldName)}</div>
+            <p class="sub">${current ? `${C.dataModeLabel(current)} · ${current.subType || "classic"} · 最近世界` : "创建或导入一个世界后开始创作。"}</p>
           </div>
           <div class="actions">
-            <button class="primary" data-action="load-and-chat">加载并开始对话</button>
+            <button class="primary" data-action="load-and-chat">继续冒险</button>
             <button data-action="create-world">新建世界</button>
             <button data-action="library-alchemy">导入素材</button>
+            <button data-action="open-settings">设置</button>
           </div>
         </div>
       </section>
+
+      ${C.lobbyEntryDetails(firstRunDemo)}
 
       <section class="cols-4">
         ${C.stat("模型连接", AS.llmConnected ? "已连接" : "未连接", AS.config.llmModel || "")}
@@ -845,7 +877,7 @@ const Views = {
           <div class="list">${C.worldbookRows(3)}</div>
         </div>
         <div class="panel">
-          <div class="panel-head"><div><h2>存档总览</h2><p class="sub">最近故事和模块历史。</p></div>${C.badge(AS.messages.length + " 条消息", "pending")}</div>
+          <div class="panel-head"><div><h2>最近世界</h2><p class="sub">最近故事和模块历史。</p></div>${C.badge(AS.messages.length + " 条消息", "pending")}</div>
           ${AS.lastScene ? `<div class="notice">上一幕：${U.esc(U.compact(AS.lastScene, 120))}</div>` : ""}
           <div class="list">
             ${(AS.modules || []).slice(0, 4).map(m => `<div class="item"><div class="item-head"><strong>${U.esc(m.displayName || m.name)}</strong>${C.badge((m.turnCount || 0) + " 回合")}</div><span class="tiny muted">${m.lastPlayed ? U.rel(m.lastPlayed) : "未开始"}</span><button class="small" data-module-id="${U.esc(m.id)}" data-action="load-module-from-list">继续</button></div>`).join("") || C.empty("暂无存档")}
@@ -950,19 +982,19 @@ const Views = {
   },
 
   settings() {
-    // Fallback: if deferred plugins are hidden but user had stale tab state
-    if (!ENABLE_DEFERRED_PLUGINS && AS.settingsTab === "plugins") AS.settingsTab = "connections";
-    const tabs = [];
-    tabs.push({ id: "connections", label: "模型连接" });
-    if (ENABLE_DEFERRED_PLUGINS) tabs.push({ id: "plugins", label: "插件" });
-    tabs.push({ id: "data", label: "数据与备份" });
-    tabs.push({ id: "appearance", label: "外观" });
-    tabs.push({ id: "advanced", label: "高级" });
-    const body = (ENABLE_DEFERRED_PLUGINS
-      ? { connections: renderConnections, plugins: renderPlugins, data: renderDataSettings, appearance: renderAppearance, advanced: renderAdvanced }
-      : { connections: renderConnections, data: renderDataSettings, appearance: renderAppearance, advanced: renderAdvanced })[AS.settingsTab]();
+    const allowed = ["connections", "narrative", "advanced"];
+    if (!allowed.includes(AS.settingsTab)) AS.settingsTab = "connections";
+    const tabs = [
+      { id: "connections", label: "连接" },
+      { id: "narrative", label: "叙事" },
+      { id: "advanced", label: "高级" }
+    ];
+    const body = ({ connections: renderConnections, narrative: renderNarrativeSettings, advanced: renderAdvancedSettingsCard })[AS.settingsTab]();
     return `<div class="grid">
       <div><h2>设置</h2><p class="sub">低频、敏感与技术性操作集中在这里。</p></div>
+      <section class="settings-card-grid">
+        ${tabs.map(tab => `<button class="settings-card ${AS.settingsTab === tab.id ? "active" : ""}" data-action="settings-card-open" data-settings-tab="${tab.id}"><strong>${tab.label}</strong><span>${tab.id === "connections" ? "模型、Key 与测试连接" : tab.id === "narrative" ? "档位、视觉语言与备份" : "导出、危险操作与调试"}</span></button>`).join("")}
+      </section>
       ${C.tabs(tabs, AS.settingsTab, "data-settings-tab")}
       ${body}
     </div>`;
@@ -1394,6 +1426,32 @@ function renderPlugins() {
   </section>`;
 }
 
+function renderNarrativeSettings() {
+  const data = AS.connections || { pipelineProfiles: { profiles: [] } };
+  const profiles = data.pipelineProfiles?.profiles || [];
+  return `<section class="grid">
+    <div class="layout-2">
+      <div class="panel settings-narrative-card">
+        <div class="panel-head"><div><h2>叙事设置</h2><p class="sub">选择适合当前故事的质量、速度与成本档位；连接档案仍在“连接”卡中维护。</p></div>${C.badge(data.pipelineProfiles?.default || "默认", "info")}</div>
+        <div class="list">${profiles.map(p => `<div class="item"><div class="item-head"><strong>${U.esc(p.label || p.id)}</strong>${C.badge(p.id === data.pipelineProfiles?.default ? "默认" : "可选", p.id === data.pipelineProfiles?.default ? "ok" : "pending")}</div><p class="tiny muted">${U.esc(p.description || "叙事管线档位")}</p><div class="chip-row"><span class="chip">质量 ${U.esc(p.quality || "-")}</span><span class="chip">速度 ${U.esc(p.speed || "-")}</span><span class="chip">成本 ${U.esc(p.cost || "-")}</span></div></div>`).join("") || C.empty("暂无叙事档位", "连接服务返回 pipeline profiles 后会显示在这里。")}</div>
+      </div>
+      <aside class="panel settings-visual-card">
+        <h2>视觉语言</h2>
+        <p class="sub">保留纸张、森林绿、手记式工作台气质，并跟随系统深色主题切换。</p>
+        <div class="chip-row"><span class="chip">cream paper</span><span class="chip ok">forest green</span><span class="chip">dark theme</span></div>
+      </aside>
+    </div>
+    ${renderDataSettings()}
+  </section>`;
+}
+
+function renderAdvancedSettingsCard() {
+  return `<section class="grid">
+    ${ENABLE_DEFERRED_PLUGINS ? renderPlugins() : ""}
+    ${renderAdvanced()}
+  </section>`;
+}
+
 function renderDataSettings() {
   return `<section class="panel"><h2>数据与备份</h2><div class="list"><div class="item"><strong>本地优先</strong><span class="tiny muted">世界、角色、运行记录默认保存在本机数据目录。</span></div><div class="item"><strong>旧版导入导出</strong><span class="tiny muted">高级用户仍可使用旧版 /api/data/export 和 /api/data/import。</span></div></div><div class="actions"><button data-action="legacy-export">导出当前模块 JSON</button><button data-action="legacy-import">导入旧版 JSON</button></div></section>`;
 }
@@ -1408,10 +1466,13 @@ function renderAdvanced() {
 
 function renderDrawer() {
   if (!AS.activeDrawer) return "";
-  const title = AS.activeDrawer === "worldbook" ? "世界书 · 快速查看" : "存档 · 快速切换";
-  const body = AS.activeDrawer === "worldbook"
-    ? `<div class="list">${C.worldbookRows(8)}</div>`
-    : `<div class="list">${AS.modules.slice(0, 8).map(m => `<div class="item"><strong>${U.esc(m.displayName || m.name)}</strong><span class="tiny muted">${m.turnCount || 0} 回合</span><button class="small" data-module-id="${U.esc(m.id)}" data-action="load-module-from-list">切换</button></div>`).join("")}</div>`;
+  const branches = AS.kernelBranches || AS.kernel?.branches || [];
+  const configs = {
+    worldbook: ["世界书 · 快速查看", `<div class="list">${C.worldbookRows(8)}</div>`],
+    branches: ["分支 · 快速切换", `<div class="list">${branches.map(branch => `<div class="item"><div class="item-head"><strong>${U.esc(branch.label || branch.id)}</strong>${C.badge(branch.id === AS.kernel?.activeBranchId ? "当前" : branch.status || "分支", branch.id === AS.kernel?.activeBranchId ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(branch.description || branch.id || "")}</span><div class="actions"><button class="small ${branch.id === AS.kernel?.activeBranchId ? "primary" : ""}" data-action="kernel-switch-branch" data-branch-id="${U.esc(branch.id)}" ${branch.status === "archived" ? "disabled" : ""}>切换</button>${branch.id && branch.id !== "main" ? `<button class="small" data-action="kernel-diff-branch" data-branch-id="${U.esc(branch.id)}">差异</button>` : ""}</div></div>`).join("") || C.empty("尚未加载分支", "进入世界后会显示主线和候选分支。")}</div>`],
+    saves: ["存档 · 快速切换", `<div class="list">${AS.modules.slice(0, 8).map(m => `<div class="item"><strong>${U.esc(m.displayName || m.name)}</strong><span class="tiny muted">${m.turnCount || 0} 回合</span><button class="small" data-module-id="${U.esc(m.id)}" data-action="load-module-from-list">切换</button></div>`).join("")}</div>`]
+  };
+  const [title, body] = configs[AS.activeDrawer] || configs.saves;
   return `<div class="overlay-backdrop open" data-action="close-drawer"><div class="drawer" onclick="event.stopPropagation()"><div class="overlay-head"><h3>${title}</h3><button data-action="close-drawer">关闭</button></div>${body}</div></div>`;
 }
 
@@ -1453,7 +1514,7 @@ async function loadViewData() {
     }
     if ((AS.view === "library" && AS.libraryTab === "worldbook") || AS.view === "workbench") await loadWorldbookIfPossible();
     if (AS.view === "library" && AS.libraryTab === "review") await loadReviewFacts();
-    if (AS.view === "settings" && AS.settingsTab === "connections") AS.connections = await API.connections();
+    if (AS.view === "settings" && ["connections", "narrative"].includes(AS.settingsTab)) AS.connections = await API.connections();
     if (AS.view === "settings" && AS.settingsTab === "plugins" && ENABLE_DEFERRED_PLUGINS) AS.plugins = await API.plugins();
     if (AS.view === "observe") await refreshObserve();
   } catch (err) {
@@ -2086,6 +2147,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "close-drawer") { AS.activeDrawer = ""; return render(); }
     if (action === "drawer-worldbook") { AS.activeDrawer = "worldbook"; return render(); }
     if (action === "drawer-saves") { AS.activeDrawer = "saves"; return render(); }
+    if (action === "drawer-branches") { AS.activeDrawer = "branches"; return render(); }
     if (action === "workbench-overview") { AS.workbenchMode = "overview"; AS.activeDrawer = ""; return render(); }
     if (action === "load-and-chat") return loadAndChat();
     if (action === "quick-start-chat") return quickStartChat();
@@ -2113,6 +2175,13 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action.startsWith("kernel-")) return kernelAction(action, btn);
     if (action === "clear-chat") return confirmClearChat();
     if (action === "open-command-panel") return openCommandPanel();
+    if (action === "use-opening-suggestion") {
+      AS.chatDraft = btn.dataset.suggestion || "";
+      CH.persist();
+      render();
+      setTimeout(() => U.qs("#chatInput")?.focus(), 0);
+      return;
+    }
     if (action === "toggle-developer-observability") { AS.developerObservabilityOpen = !AS.developerObservabilityOpen; if (AS.developerObservabilityOpen) await refreshObserve(); return render(); }
     if (action === "close-developer-observability") { AS.developerObservabilityOpen = false; return render(); }
     if (action === "developer-observability-tab") { AS.developerObservabilityTab = btn.dataset.observabilityTab || "context"; return render(); }
@@ -2190,10 +2259,12 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "apply-connection-template") return applyConnectionTemplate();
     if (action === "save-connection") return saveConnection();
     if (["set-default-connection", "test-connection", "duplicate-connection", "delete-connection"].includes(action)) return connectionAction(action, btn.closest("[data-connection-id]")?.dataset.connectionId);
+    if (action === "settings-card-open") { AS.settingsTab = btn.dataset.settingsTab || "connections"; await loadViewData(); return render(); }
     if (action === "load-plugins") { AS.plugins = await API.plugins(); return render(); }
     if (["enable-plugin", "disable-plugin"].includes(action)) return pluginAction(action, btn.closest("[data-plugin-id]")?.dataset.pluginId);
     if (action === "run-plugin") return runPlugin(btn.closest("[data-plugin-id]")?.dataset.pluginId);
-    if (["copy-message", "edit-message", "favorite-message", "delete-message", "regen-message", "candidate-prev", "candidate-next", "retry-message", "open-settings"].includes(action)) return messageAction(action, btn.closest("[data-message-id]")?.dataset.messageId);
+    if (action === "open-settings") { AS.view = "settings"; AS.settingsTab = "connections"; await loadViewData(); return render(); }
+    if (["copy-message", "edit-message", "favorite-message", "delete-message", "regen-message", "candidate-prev", "candidate-next", "retry-message"].includes(action)) return messageAction(action, btn.closest("[data-message-id]")?.dataset.messageId);
     if (action === "legacy-export") return legacyExport(AS.selectedModule?.id);
     if (action === "legacy-import") return createToast("旧版 JSON 导入入口已保留在高级工具中，当前演示未自动覆盖数据。", "warn");
   } catch (err) {
