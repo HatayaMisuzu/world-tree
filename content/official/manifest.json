@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "pipeline": "world-tree-official-content",
+  "states": ["draft", "review", "approved", "blocked"],
+  "requiredPackManifestFields": [
+    "specVersion",
+    "kind",
+    "id",
+    "title",
+    "author",
+    "license",
+    "minEngine",
+    "contentRating",
+    "checksums"
+  ],
+  "packs": []
+}

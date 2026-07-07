@@ -24,6 +24,26 @@ export function parseNAILorebook(json) {
   return null;
 }
 
+export function parseSTLorebook(json) {
+  if (!json || typeof json !== "object") return null;
+  const rawEntries = json.entries;
+  if (!rawEntries || Array.isArray(rawEntries) || typeof rawEntries !== "object") return null;
+  const entries = Object.entries(rawEntries).map(([id, entry]) => ({
+    id: entry.uid ?? id,
+    title: entry.comment || entry.name || entry.key?.[0] || entry.keys?.[0] || `条目${id}`,
+    keys: entry.key || entry.keys || [],
+    secondaryKeys: entry.keysecondary || entry.secondary_keys || [],
+    content: entry.content || "",
+    constant: entry.constant === true,
+    enabled: entry.disable !== true && entry.enabled !== false,
+    priority: entry.order ?? entry.priority ?? 100,
+    position: entry.position,
+    raw: entry
+  })).filter((entry) => entry.enabled !== false);
+  if (!entries.length) return null;
+  return { format: "st_lorebook", entries, raw: json };
+}
+
 /**
  * 解析 World Tree 世界书 JSON（已有格式）
  * @param {Object} json
@@ -62,7 +82,7 @@ export function parseWTWorldbook(json) {
  * @returns {Object|null}
  */
 export function parseLorebook(json) {
-  return parseNAILorebook(json) || parseWTWorldbook(json) || null;
+  return parseNAILorebook(json) || parseSTLorebook(json) || parseWTWorldbook(json) || null;
 }
 
 /**

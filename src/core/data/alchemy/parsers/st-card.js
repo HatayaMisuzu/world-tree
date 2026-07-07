@@ -3,6 +3,26 @@
 
 import { Buffer } from "buffer";
 
+const ST_SUPPORTED_DATA_FIELDS = new Set([
+  "name",
+  "description",
+  "personality",
+  "scenario",
+  "first_mes",
+  "mes_example",
+  "creator_notes",
+  "system_prompt",
+  "post_history_instructions",
+  "alternate_greetings",
+  "tags",
+  "creator",
+  "character_version",
+  "extensions",
+  "character_book",
+  "groups",
+  "assets"
+]);
+
 // ═══════════════════════════════════════════════════════════════
 //  PNG 解析：从 tEXt 块中提取 "chara" 关键词的 base64 JSON
 // ═══════════════════════════════════════════════════════════════
@@ -60,10 +80,11 @@ function parseJSONCard(json) {
   if (!json || typeof json !== "object") return null;
 
   const spec = json.spec || json.data?.spec || "";
+  const data = json.data || {};
+  const ignoredUnsupportedFields = unsupportedFields(data, ST_SUPPORTED_DATA_FIELDS);
 
   // ST v2 格式
   if (spec === "chara_card_v2" || json.spec_version === "2.0") {
-    const data = json.data || {};
     return {
       format: "st_v2",
       name: data.name || "",
@@ -81,13 +102,13 @@ function parseJSONCard(json) {
       version: data.character_version || "1.0",
       extensions: data.extensions || {},
       characterBook: data.character_book || null,  // 嵌入式世界书
+      ignoredUnsupportedFields,
       raw: json
     };
   }
 
   // ST v3 格式
   if (spec === "chara_card_v3" || json.spec_version === "3.0") {
-    const data = json.data || {};
     return {
       format: "st_v3",
       name: data.name || "",
@@ -108,6 +129,7 @@ function parseJSONCard(json) {
       // v3 新增字段
       groups: data.groups || [],
       assets: data.assets || {},
+      ignoredUnsupportedFields,
       raw: json
     };
   }
@@ -123,11 +145,16 @@ function parseJSONCard(json) {
       firstMessage: json.first_mes || json.firstMessage || json.首次对话 || "",
       messageExamples: json.mes_example || json.messageExamples || json.对话示例 || "",
       tags: json.tags || json.标签 || [],
+      ignoredUnsupportedFields: unsupportedFields(json, new Set(["name", "名称", "description", "描述", "外表", "personality", "性格", "scenario", "背景", "first_mes", "firstMessage", "首次对话", "mes_example", "messageExamples", "对话示例", "tags", "标签"])),
       raw: json
     };
   }
 
   return null;
+}
+
+function unsupportedFields(value = {}, supported = new Set()) {
+  return Object.keys(value || {}).filter((key) => !supported.has(key)).sort();
 }
 
 /**

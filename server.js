@@ -21,6 +21,7 @@ import { getWorldSessionRegistry } from "./src/core/engine/world-session.js";
 import { buildEngineGraphSidecar, splitWorldForSave, stripRegenerableWorldFields } from "./src/core/system/world-save-hygiene.js";
 import { loadPipelineProfiles, resolvePipelineProfile } from "./src/core/llm/pipeline-profiles.js";
 import { buildRealPlayTurnContext } from "./src/core/real-play/turn-context.js";
+import { createWtpack, validateWtpack } from "./src/server/wtpack-service.js";
 import {
   errorPayload,
   HttpError,
@@ -1893,7 +1894,8 @@ async function handleCharacterImport(body = {}) {
     filename,
     format: parsed.format,
     importedAt: cardJson.importedAt,
-    source: "sillytavern"
+    source: "sillytavern",
+    ignoredUnsupportedFields: parsed.ignoredUnsupportedFields || []
   });
   if (parsed.characterBook?.entries?.length) {
     const entries = parsed.characterBook.entries.map((entry, index) => ({
@@ -1918,6 +1920,7 @@ async function handleCharacterImport(body = {}) {
   return {
     status: "ok",
     character: publicCharacterFromDir(charName),
+    ignoredUnsupportedFields: parsed.ignoredUnsupportedFields || [],
     module: { id: `char:${charName}`, name: charName, displayName: cardJson.名称 || charName, type: "character_card", dataMode: "character_card", subType: "default", preset: "minimal", turnCount: 0 }
   };
 }
@@ -2212,6 +2215,38 @@ async function handleWorldbookTest(body = {}) {
     content: entry.content || ""
   }));
   return { status: "ok", input: body.input || "", hits, diagnostics: runtime.diagnostics };
+}
+
+async function handleWorldbookImport(body = {}) {
+  const input = body.lorebook || body.json || body.data || body.content || null;
+  let json = input;
+  try {
+    if (typeof json === "string") json = JSON.parse(json);
+  } catch (err) {
+    return { status: "error", code: "WORLDBOOK_IMPORT_PARSE_FAILED", errorMsg: "世界书内容不是有效 JSON。", detail: err.message };
+  }
+  const { parseLorebook, lorebookToItems } = await import("./src/core/data/alchemy/parsers/nai-lorebook.js");
+  const parsed = parseLorebook(json);
+  if (!parsed) return { status: "error", code: "WORLDBOOK_IMPORT_UNSUPPORTED", errorMsg: "未识别到支持的 ST/NAI/World Tree 世界书格式。" };
+  const items = lorebookToItems(parsed);
+  const entries = items.map((item, index) => normalizeWorldbookEntryForSave({
+    title: item.data?.title || item.entity,
+    keys: item.data?.keywords || [],
+    content: item.data?.content || "",
+    group: item.data?.category || "导入",
+    mode: item.data?.mode === "常驻" ? "persistent" : "trigger",
+    source: item.sourceFormat || parsed.format
+  }, { index, source: item.sourceFormat || parsed.format, group: item.data?.category || "导入" })).filter(entry => entry.content || entry.keys.length);
+  if (!body.confirm || !body.moduleKey) return { status: "ok", preview: true, format: parsed.format, entries, ignoredUnsupportedFields: [] };
+  const ctx = readWorldShared(body.moduleKey || "");
+  if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请先选择要导入世界书的世界。" };
+  ensureDir(ctx.sharedDir);
+  const path = join(ctx.sharedDir, "worldbook.json");
+  const current = readJsonSync(path, { entries: [] });
+  const merged = { ...current, entries: [...entries, ...(Array.isArray(current.entries) ? current.entries : [])] };
+  await writeJson(path, merged);
+  moduleService.clearModuleCache?.(body.moduleKey || "");
+  return { status: "ok", format: parsed.format, imported: entries.length, entries };
 }
 
 async function readChatRecords(moduleKey = "") {
@@ -2710,6 +2745,49 @@ async function handleWorldPackImport(body = {}) {
     engineState: { dataMode: pack.world?.dataMode || "worldbook", emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } }
   });
   return { status: "ok", module: { id: worldName, name: worldName, displayName: body.displayName || summary.name, type: "world", mode: pack.world?.mode || "", dataMode: pack.world?.dataMode || "worldbook", subType: pack.world?.subType || "classic", turnCount: 0 } };
+}
+
+async function handleWtpackExport(body = {}, url = null) {
+  const base = await handleWorldPackExport({
+    ...body,
+    includeRuntimeState: false,
+    includeReviewQueue: false,
+    includeMechanisms: false,
+    includeTurnStateFrames: false
+  }, url);
+  if (base.status !== "ok") return base;
+  const world = base.pack.world || {};
+  const pack = createWtpack({
+    appVersion: PKG_VERSION,
+    manifest: {
+      kind: body.kind || "world",
+      id: world.name || body.moduleKey || "world",
+      title: world.displayName || world.name || "World Tree Pack",
+      author: body.author || "Unknown",
+      license: body.license || "UNSPECIFIED",
+      minEngine: body.minEngine || PKG_VERSION,
+      contentRating: body.contentRating || "unrated"
+    },
+    files: base.pack.files
+  });
+  return { status: "ok", filename: `${slugName(world.name || "world", "world")}.wtpack`, pack };
+}
+
+async function handleWtpackImport(body = {}) {
+  const pack = body.pack || body;
+  const validation = validateWtpack(pack);
+  if (!validation.ok) return { status: "error", error: validation.code, code: validation.code, errorMsg: validation.errorMsg };
+  const world = validation.files["world.json"] || {};
+  const legacyPack = {
+    format: "worldtree-pack",
+    schemaVersion: `wtpack-${validation.manifest.specVersion}`,
+    spec: "worldtree-pack",
+    world: { ...world, name: world.name || validation.manifest.id, displayName: world.displayName || validation.manifest.title },
+    summary: { name: validation.manifest.title, worldName: validation.manifest.id },
+    files: validation.files,
+    provenance: `wtpack:${validation.manifest.id}`
+  };
+  return handleWorldPackImport({ pack: legacyPack, preview: body.preview, confirm: body.confirm, name: body.name, displayName: body.displayName });
 }
 
 async function handlePlugins(body = {}, method = "GET") {
@@ -3309,6 +3387,7 @@ async function handleAPI(req, res) {
     // Legacy worldbook edit/test routes remain owned by server.js.
     if (path === "/api/worldbook" && method === "GET") return jsonResponse(res, await handleWorldbook({}, "GET", url));
     if (path === "/api/worldbook" && method === "POST") return jsonResponse(res, await handleWorldbook(await readBody(req), "POST", url));
+    if (path === "/api/worldbook/import" && method === "POST") return jsonResponse(res, await handleWorldbookImport(await readBody(req)));
     if (path === "/api/worldbook/test" && method === "POST") return jsonResponse(res, await handleWorldbookTest(await readBody(req)));
 
     // ── 聊天消息操作 ──
@@ -3334,6 +3413,9 @@ async function handleAPI(req, res) {
     if (path === "/api/world-pack/export" && method === "GET") return jsonResponse(res, await handleWorldPackExport({}, url));
     if (path === "/api/world-pack/export" && method === "POST") return jsonResponse(res, await handleWorldPackExport(await readBody(req), url));
     if (path === "/api/world-pack/import" && method === "POST") return jsonResponse(res, await handleWorldPackImport(await readBody(req)));
+    if (path === "/api/wtpack/export" && method === "GET") return jsonResponse(res, await handleWtpackExport({}, url));
+    if (path === "/api/wtpack/export" && method === "POST") return jsonResponse(res, await handleWtpackExport(await readBody(req), url));
+    if (path === "/api/wtpack/import" && method === "POST") return jsonResponse(res, await handleWtpackImport(await readBody(req)));
 
     // ── 本地插件 (Deferred/internal API. Plugin system is not part of v0.3.0 public product scope.) ──
     if (path === "/api/plugins" && (method === "GET" || method === "POST")) {
