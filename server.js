@@ -75,6 +75,7 @@ import { normalizeStrategySimSpec, validateStrategySimSpec, sealStrategySimSpec 
 import { handleV2ProductPlayableRoute } from "./src/server/v2-product-playable-routes.js";
 import { extractJsonValue, validateAlchemyJson } from "./src/core/llm/json-extract.js";
 import { mapLlmError } from "./src/server/llm-error-mapper.js";
+import { buildOpenAICompatibleChatBody } from "./src/adapters/providers/openai-compatible.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -164,6 +165,7 @@ const DEFAULT_CONFIG = {
   llmBaseUrl: "https://api.deepseek.com/v1",
   llmModel: "deepseek-v4-flash",
   llmProvider: "deepseek",
+  llmThinking: "auto",
   llmTimeoutMs: 60000,
   pipelineProfileId: "balanced",
   connectionProfileId: "deepseek",
@@ -248,6 +250,52 @@ async function saveLlmSecret(payload) {
   return saveSecrets({ ...secrets, llm: { active: id, items } });
 }
 
+const LLM_CONNECTION_SENTINEL = "WORLD_TREE_CONNECTION_OK";
+
+function llmProbeMessages() {
+  return [{ role: "user", content: `Reply exactly with this token and nothing else: ${LLM_CONNECTION_SENTINEL}` }];
+}
+
+function parseChatCompletionProbe(text = "") {
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { rawText: text };
+  }
+  const choice = data?.choices?.[0] || {};
+  const message = choice.message || {};
+  const content = String(message.content || "").trim();
+  const reasoningContent = String(message.reasoning_content || message.reasoningContent || "").trim();
+  const finishReason = choice.finish_reason || choice.finishReason || "";
+  return { data, content, reasoningContent, finishReason };
+}
+
+function strictProbeFailure(probe) {
+  if (!probe.content) {
+    return {
+      status: "fail",
+      detail: probe.reasoningContent
+        ? `empty content; reasoning_content present; finish_reason=${probe.finishReason || "unknown"}`
+        : `empty content; finish_reason=${probe.finishReason || "unknown"}`,
+      suggestion: "chat/completions 返回成功但没有可显示 content。DeepSeek V4 Flash 请关闭 thinking，或在启用 thinking 时提高 max_tokens。"
+    };
+  }
+  if (!probe.content.includes(LLM_CONNECTION_SENTINEL)) {
+    return {
+      status: "fail",
+      detail: `sentinel missing; content=${probe.content.slice(0, 80)}`,
+      suggestion: "连接测试没有返回指定 sentinel，说明模型/参数可用性仍需确认。"
+    };
+  }
+  return null;
+}
+
+function partialProbeResult({ latencyMs, checks, suggestions, detail }) {
+  if (detail) suggestions.push(detail);
+  return { status: "partial", latencyMs, checks, suggestions, safeToSave: false };
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  LLM 测试连接
 // ═══════════════════════════════════════════════════════════════
@@ -322,7 +370,15 @@ async function testLlmConnection(payload) {
     const chat = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, messages: [{ role: "user", content: "ping" }], max_tokens: 1, temperature: 0 }),
+      body: JSON.stringify(buildOpenAICompatibleChatBody({
+        baseUrl,
+        providerId: config.llmProvider || config.provider || "openai-compatible",
+        model,
+        messages: llmProbeMessages(),
+        maxTokens: 64,
+        temperature: 0,
+        thinking: config.llmThinking ?? config.thinking ?? "auto"
+      })),
       signal: AbortSignal.timeout(Math.min(Number(config.llmTimeoutMs || 60000), 60000))
     });
     const chatText = await chat.text();
@@ -333,6 +389,13 @@ async function testLlmConnection(payload) {
       return { ...llmHttpError(chat.status, chatText), checks, suggestions, safeToSave: false };
     }
     add("chat_completions", "chat/completions", "ok", `${Date.now() - chatStarted}ms`);
+    const probe = parseChatCompletionProbe(chatText);
+    const probeFailure = strictProbeFailure(probe);
+    if (probeFailure) {
+      add("chat_content", "Non-empty sentinel content", probeFailure.status, probeFailure.detail);
+      return partialProbeResult({ latencyMs: Date.now() - started, checks, suggestions, detail: probeFailure.suggestion });
+    }
+    add("chat_content", "Non-empty sentinel content", "ok", LLM_CONNECTION_SENTINEL);
 
     return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, safeToSave: true };
   } catch (error) {
@@ -1223,15 +1286,18 @@ function buildAlchemyLlmCall(config, apiKey) {
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
+      body: JSON.stringify(buildOpenAICompatibleChatBody({
+        baseUrl,
+        providerId: config.llmProvider || config.provider || "openai-compatible",
         model: config.llmModel,
         messages: [
           { role: "system", content: safeSystem },
           { role: "user", content: safeUser }
         ],
         temperature: 0.3,
-        max_tokens: 2048
-      }),
+        maxTokens: 2048,
+        thinking: config.llmThinking ?? config.thinking ?? "auto"
+      })),
       signal: AbortSignal.timeout(timeoutMs)
     });
     if (!response.ok) {
@@ -1502,10 +1568,19 @@ async function handleAlchemyDigest(body) {
       // 调用 LLM 做人格提炼
       const messages = buildCharacterRefineryPrompt(text, items);
       const refineUrl = `${config.llmBaseUrl.replace(/\/$/, "")}/chat/completions`;
+      const refineBaseUrl = config.llmBaseUrl.replace(/\/$/, "");
       const refineRes = await fetch(refineUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: config.llmModel, messages, temperature: 0.3, max_tokens: 4096 }),
+        body: JSON.stringify(buildOpenAICompatibleChatBody({
+          baseUrl: refineBaseUrl,
+          providerId: config.llmProvider || config.provider || "openai-compatible",
+          model: config.llmModel,
+          messages,
+          temperature: 0.3,
+          maxTokens: 4096,
+          thinking: config.llmThinking ?? config.thinking ?? "auto"
+        })),
         signal: AbortSignal.timeout(config.llmTimeoutMs || 60000)
       });
       if (!refineRes.ok) return { status: "error", errorMsg: `LLM 调用失败: HTTP ${refineRes.status}` };
@@ -1952,11 +2027,11 @@ async function handleCharacterUpdate(body = {}) {
 
 function connectionTemplates() {
   return [
-    { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-v4-flash", provider: "deepseek" },
-    { id: "openai-compatible", label: "OpenAI-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1-mini", provider: "openai-compatible" },
-    { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/auto", provider: "openai-compatible" },
-    { id: "ollama", label: "Ollama", baseUrl: "http://127.0.0.1:11434/v1", model: "llama3.1", provider: "ollama" },
-    { id: "claude-openrouter", label: "Claude via OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-sonnet-4.5", provider: "openai-compatible" },
+    { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-v4-flash", provider: "deepseek", thinking: "disabled" },
+    { id: "openai-compatible", label: "OpenAI-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1-mini", provider: "openai-compatible", thinking: "auto" },
+    { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/auto", provider: "openai-compatible", thinking: "auto" },
+    { id: "ollama", label: "Ollama", baseUrl: "http://127.0.0.1:11434/v1", model: "llama3.1", provider: "ollama", thinking: "auto" },
+    { id: "claude-openrouter", label: "Claude via OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-sonnet-4.5", provider: "openai-compatible", thinking: "auto" },
     { id: "anthropic", label: "Anthropic native", baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-5", provider: "anthropic" },
     { id: "google", label: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta", model: "gemini-2.5-flash", provider: "google" },
     { id: "mock", label: "Mock provider", baseUrl: "mock://local", model: "mock-model", provider: "mock" }
@@ -1967,7 +2042,7 @@ function loadConnectionsRaw() {
   const fallback = {
     active: "deepseek",
     items: [
-      { id: "deepseek", label: "DeepSeek", provider: "deepseek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-v4-flash", apiKeySecretId: "deepseek", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      { id: "deepseek", label: "DeepSeek", provider: "deepseek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-v4-flash", thinking: "disabled", apiKeySecretId: "deepseek", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
     ]
   };
   const raw = readJsonSync(CONNECTIONS_PATH(), fallback);
@@ -2033,14 +2108,30 @@ async function testConnectionProfile(profile) {
     const provider = resolveProvider(providerId);
     const probe = await provider.chat({
       baseUrl,
+      providerId,
       model,
       apiKey,
-      messages: [{ role: "user", content: "ping" }],
+      messages: llmProbeMessages(),
       temperature: 0,
-      maxTokens: 1,
+      maxTokens: 64,
+      thinking: profile.thinking || "auto",
       timeoutMs: 5000
     });
     add("chat", "Provider chat", "ok", probe.provider || provider.id);
+    const strictProviderProbe = ["openai-compatible", "deepseek", "openrouter", "ollama"].includes(providerId);
+    if (strictProviderProbe) {
+      const providerProbeFailure = strictProbeFailure({
+        content: String(probe.text || "").trim(),
+        reasoningContent: String(probe.reasoningContent || probe.raw?.choices?.[0]?.message?.reasoning_content || "").trim(),
+        finishReason: probe.raw?.choices?.[0]?.finish_reason || ""
+      });
+      if (providerProbeFailure) {
+        add("provider_chat_content", "Provider non-empty sentinel content", "fail", providerProbeFailure.detail);
+        suggestions.push(providerProbeFailure.suggestion);
+      } else {
+        add("provider_chat_content", "Provider non-empty sentinel content", "ok", LLM_CONNECTION_SENTINEL);
+      }
+    }
     if (providerId !== "openai-compatible" && providerId !== "deepseek" && providerId !== "openrouter" && providerId !== "ollama") {
       return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, provider: provider.id, safeToSave: true };
     }
@@ -2078,7 +2169,15 @@ async function testConnectionProfile(profile) {
     const chat = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
-      body: JSON.stringify({ model, messages: [{ role: "user", content: "ping" }], max_tokens: 1, temperature: 0 }),
+      body: JSON.stringify(buildOpenAICompatibleChatBody({
+        baseUrl,
+        providerId,
+        model,
+        messages: llmProbeMessages(),
+        maxTokens: 64,
+        temperature: 0,
+        thinking: profile.thinking || "auto"
+      })),
       signal: AbortSignal.timeout(5000)
     });
     const chatText = await chat.text();
@@ -2087,6 +2186,13 @@ async function testConnectionProfile(profile) {
       return { ...llmHttpError(chat.status, chatText), checks, suggestions, safeToSave: false };
     }
     add("chat_completions", "chat/completions", "ok");
+    const strictProbe = parseChatCompletionProbe(chatText);
+    const probeFailure = strictProbeFailure(strictProbe);
+    if (probeFailure) {
+      add("chat_content", "Non-empty sentinel content", probeFailure.status, probeFailure.detail);
+      return partialProbeResult({ latencyMs: Date.now() - started, checks, suggestions, detail: probeFailure.suggestion });
+    }
+    add("chat_content", "Non-empty sentinel content", "ok", LLM_CONNECTION_SENTINEL);
     return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, safeToSave: true };
   } catch (error) {
     const timedOut = error?.name === "TimeoutError" || /timeout/i.test(String(error?.message || ""));
@@ -2120,7 +2226,7 @@ async function handleConnections(body = {}, method = "GET") {
     const id = String(body.id || "");
     const item = raw.items.find(i => i.id === id);
     if (!item) return { status: "error", errorMsg: "连接档案不存在。" };
-    await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible" });
+    await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible", llmThinking: item.thinking || "auto" });
     const secrets = await loadSecrets();
     await saveSecrets({ ...secrets, llm: { ...secrets.llm, active: item.apiKeySecretId || item.id } });
     return saveConnectionsRaw({ ...raw, active: id });
@@ -2139,6 +2245,7 @@ async function handleConnections(body = {}, method = "GET") {
     provider: profile.provider || "openai-compatible",
     baseUrl: String(profile.baseUrl || "").trim(),
     model: String(profile.model || "").trim(),
+    thinking: ["auto", "disabled", "enabled"].includes(String(profile.thinking || "").trim()) ? String(profile.thinking || "auto").trim() : "auto",
     temperature: profile.temperature === "" || profile.temperature === undefined ? undefined : Number(profile.temperature),
     maxTokens: profile.maxTokens === "" || profile.maxTokens === undefined ? undefined : Number(profile.maxTokens),
     topP: profile.topP === "" || profile.topP === undefined ? undefined : Number(profile.topP),
@@ -2151,7 +2258,7 @@ async function handleConnections(body = {}, method = "GET") {
   if (key && !/\*{4,}/.test(key)) await saveLlmSecret({ id: item.apiKeySecretId, label: item.label, value: key });
   const items = [item, ...raw.items.filter(i => i.id !== id)];
   const active = body.setDefault ? id : raw.active;
-  if (body.setDefault) await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible" });
+  if (body.setDefault) await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible", llmThinking: item.thinking || "auto" });
   return saveConnectionsRaw({ active, items });
 }
 

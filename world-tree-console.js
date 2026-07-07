@@ -1395,7 +1395,7 @@ function renderConnections() {
   return `<section class="layout-2">
     <div class="panel">
       <div class="panel-head"><h2>连接档案</h2><button class="small" data-action="load-connections">刷新</button></div>
-      <div class="list">${(data.items || []).map(c => `<div class="item" data-connection-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.label || c.name)}</strong>${C.badge(c.active ? "默认" : "档案", c.active ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(c.provider || "openai-compatible")} · ${U.esc(c.model || "")}</span><div class="chip-row"><span class="chip">temp ${c.temperature ?? "-"}</span><span class="chip">max ${c.maxTokens ?? "-"}</span><span class="chip">top_p ${c.topP ?? "-"}</span>${c.hasApiKey ? `<span class="chip ok">key ${U.esc(c.maskedKey || "saved")}</span>` : `<span class="chip warn">no key</span>`}</div><div class="actions"><button class="small" data-action="set-default-connection">设为默认</button><button class="small" data-action="test-connection">测试</button><button class="small" data-action="duplicate-connection">复制</button><button class="small danger" data-action="delete-connection">删除</button></div></div>`).join("") || C.empty("暂无连接档案")}</div>
+      <div class="list">${(data.items || []).map(c => `<div class="item" data-connection-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.label || c.name)}</strong>${C.badge(c.active ? "默认" : "档案", c.active ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(c.provider || "openai-compatible")} · ${U.esc(c.model || "")}</span><div class="chip-row"><span class="chip">temp ${c.temperature ?? "-"}</span><span class="chip">max ${c.maxTokens ?? "-"}</span><span class="chip">top_p ${c.topP ?? "-"}</span><span class="chip">thinking ${U.esc(c.thinking || "auto")}</span>${c.hasApiKey ? `<span class="chip ok">key ${U.esc(c.maskedKey || "saved")}</span>` : `<span class="chip warn">no key</span>`}</div><div class="actions"><button class="small" data-action="set-default-connection">设为默认</button><button class="small" data-action="test-connection">测试</button><button class="small" data-action="duplicate-connection">复制</button><button class="small danger" data-action="delete-connection">删除</button></div></div>`).join("") || C.empty("暂无连接档案")}</div>
       <div class="panel tight" style="margin-top:12px"><h3>叙事档位</h3><div class="list">${profiles.map(p => `<div class="item"><div class="item-head"><strong>${U.esc(p.label)}</strong>${C.badge(p.id === data.pipelineProfiles?.default ? "默认" : "档位", p.id === data.pipelineProfiles?.default ? "ok" : "pending")}</div><div class="chip-row"><span class="chip">质量 ${U.esc(p.quality)}</span><span class="chip">速度 ${U.esc(p.speed)}</span><span class="chip">成本 ${U.esc(p.cost)}</span></div></div>`).join("") || C.empty("暂无叙事档位")}</div></div>
       ${diag ? `<div class="panel tight" style="margin-top:12px"><div class="panel-head"><h3>最近诊断</h3>${C.badge(diag.safeToSave ? "可保存" : "需修正", diag.safeToSave ? "ok" : "bad")}</div><div class="list">${(diag.checks || []).map(c => `<div class="item"><div class="item-head"><strong>${U.esc(c.label || c.id)}</strong>${C.badge(c.status || "unknown", c.status === "ok" ? "ok" : c.status === "fail" ? "bad" : "warn")}</div><span class="tiny muted">${U.esc(c.detail || "")}</span></div>`).join("")}</div>${diag.suggestions?.length ? C.notice(U.esc(diag.suggestions.join("；")), diag.safeToSave ? "warn" : "bad") : ""}</div>` : ""}
     </div>
@@ -1410,6 +1410,7 @@ function renderConnections() {
         <label>Max tokens<input id="connMaxTokens" type="number" min="1" placeholder="4096"></label>
         <label>Top P<input id="connTopP" type="number" step="0.05" min="0" max="1" placeholder="1"></label>
       </div>
+      <label>Thinking<select id="connThinking"><option value="auto">Auto</option><option value="disabled">Disabled</option><option value="enabled">Enabled</option></select></label>
       <label>API Key<input id="connKey" type="password" placeholder="留空则不覆盖"></label>
       <div class="actions"><button class="primary" data-action="save-connection">保存档案</button><button data-action="apply-connection-template">套用模板</button></div>
       ${C.notice("API Key 只写入本机 secrets，不进入仓库或 .worldtree。", "ok")}
@@ -3525,6 +3526,7 @@ function applyConnectionTemplate() {
   if (U.qs("#connTemperature")) U.qs("#connTemperature").value = t.temperature ?? "";
   if (U.qs("#connMaxTokens")) U.qs("#connMaxTokens").value = t.maxTokens ?? "";
   if (U.qs("#connTopP")) U.qs("#connTopP").value = t.topP ?? "";
+  if (U.qs("#connThinking")) U.qs("#connThinking").value = t.thinking || "auto";
 }
 
 async function saveConnection() {
@@ -3537,6 +3539,7 @@ async function saveConnection() {
     temperature: U.qs("#connTemperature")?.value,
     maxTokens: U.qs("#connMaxTokens")?.value,
     topP: U.qs("#connTopP")?.value,
+    thinking: U.qs("#connThinking")?.value || template?.thinking || "auto",
     apiKey: U.qs("#connKey")?.value,
     provider: template?.provider || templateId || "openai-compatible"
   };
@@ -3551,7 +3554,7 @@ async function connectionAction(action, id) {
   const res = await API.connections({ action: map[action], id });
   if (action === "test-connection") {
     AS.llmDiagnostics = res;
-    createToast(res.status === "ok" || res.status === "partial" ? `诊断完成 ${res.latencyMs || 0}ms` : (res.errorMsg || "连接失败"), res.status === "ok" || res.status === "partial" ? "" : "bad");
+    createToast(res.status === "ok" || res.status === "partial" ? `诊断完成 ${res.latencyMs || 0}ms` : (res.errorMsg || "连接失败"), res.status === "ok" ? "" : res.status === "partial" ? "warn" : "bad");
     render();
   }
   else { AS.connections = res; render(); }

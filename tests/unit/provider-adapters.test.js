@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { openAICompatibleProvider } from "../../src/adapters/providers/openai-compatible.js";
+import { openAICompatibleProvider, buildOpenAICompatibleChatBody } from "../../src/adapters/providers/openai-compatible.js";
+import { normalizeUsage } from "../../src/adapters/providers/common.js";
 import { anthropicProvider, buildAnthropicPayload } from "../../src/adapters/providers/anthropic.js";
 import { googleProvider, buildGooglePayload } from "../../src/adapters/providers/google.js";
 import { mockProvider } from "../../src/adapters/providers/mock.js";
@@ -71,6 +72,55 @@ test("openai-compatible adapter retries without json_object when endpoint reject
   assert.equal("response_format" in bodies[1], false);
   assert.equal(result.text, "{\"ok\":true}");
   assert.equal(result.usage.totalTokens, 2);
+});
+
+test("openai-compatible adapter disables DeepSeek V4 thinking by default", async () => {
+  const body = buildOpenAICompatibleChatBody({
+    baseUrl: "https://api.deepseek.com/v1",
+    providerId: "deepseek",
+    model: "deepseek-v4-flash",
+    messages: [{ role: "user", content: "hello" }],
+    maxTokens: 64
+  });
+  assert.deepEqual(body.thinking, { type: "disabled" });
+  assert.equal(body.max_tokens, 64);
+
+  const generic = buildOpenAICompatibleChatBody({
+    baseUrl: "https://openai.local/v1",
+    providerId: "openai-compatible",
+    model: "generic-model",
+    messages: [{ role: "user", content: "hello" }]
+  });
+  assert.equal("thinking" in generic, false);
+});
+
+test("openai-compatible adapter raises output budget when thinking is explicitly enabled", () => {
+  const body = buildOpenAICompatibleChatBody({
+    baseUrl: "https://api.deepseek.com/v1",
+    providerId: "deepseek",
+    model: "deepseek-v4-flash",
+    messages: [{ role: "user", content: "hello" }],
+    maxTokens: 64,
+    thinking: "enabled"
+  });
+  assert.deepEqual(body.thinking, { type: "enabled" });
+  assert.equal(body.max_tokens, 4096);
+});
+
+test("usage normalization keeps camel, cache, and reasoning token fields", () => {
+  const usage = normalizeUsage({
+    promptTokens: 10,
+    completionTokens: 7,
+    totalTokens: 20,
+    prompt_cache_hit_tokens: 8,
+    promptTokensDetails: { cachedTokens: 6 },
+    completion_tokens_details: { reasoning_tokens: 3 }
+  });
+  assert.equal(usage.promptTokens, 10);
+  assert.equal(usage.completionTokens, 7);
+  assert.equal(usage.totalTokens, 20);
+  assert.equal(usage.cacheHitTokens, 8);
+  assert.equal(usage.reasoningTokens, 3);
 });
 
 test("google adapter maps systemInstruction, contents, and usage", async () => {

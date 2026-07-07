@@ -2,6 +2,7 @@
 import { runWorkflowAction } from "../workflow-runner.js";
 import { WORKFLOW_TYPES } from "../workflow-types.js";
 import { buildContractInstruction } from "../../prompts/prompt-task-contracts.js";
+import { buildOpenAICompatibleChatBody } from "../../../adapters/providers/openai-compatible.js";
 
 export async function handleWorkflowApiRequest(body = {}, deps = {}) {
   const { workflowType, modeId, projectId, branchId, userInput, options } = body || {};
@@ -28,7 +29,15 @@ export async function handleWorkflowApiRequest(body = {}, deps = {}) {
         ];
         const resp = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${deps.apiKey}` },
-          body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 1024 }),
+          body: JSON.stringify(buildOpenAICompatibleChatBody({
+            baseUrl,
+            providerId: deps.llmConfig.llmProvider || deps.llmConfig.provider || "openai-compatible",
+            model,
+            messages,
+            temperature: 0.7,
+            maxTokens: 1024,
+            thinking: deps.llmConfig.llmThinking ?? deps.llmConfig.thinking ?? "auto"
+          })),
           signal: AbortSignal.timeout(30000)
         });
         if (!resp.ok) throw new Error(`LLM HTTP ${resp.status}`);

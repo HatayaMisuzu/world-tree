@@ -45,8 +45,50 @@ export function splitSystemMessages(messages = []) {
 }
 
 export function normalizeUsage(usage = {}) {
-  const promptTokens = Number(usage.prompt_tokens ?? usage.input_tokens ?? usage.promptTokenCount ?? 0);
-  const completionTokens = Number(usage.completion_tokens ?? usage.output_tokens ?? usage.candidatesTokenCount ?? 0);
-  const totalTokens = Number(usage.total_tokens ?? usage.totalTokenCount ?? (promptTokens + completionTokens));
-  return { promptTokens, completionTokens, totalTokens };
+  const promptDetails = usage.prompt_tokens_details || usage.promptTokensDetails || {};
+  const completionDetails = usage.completion_tokens_details || usage.completionTokensDetails || {};
+  const cacheHitTokens = Number(
+    usage.prompt_cache_hit_tokens ??
+    usage.promptCacheHitTokens ??
+    usage.cached_tokens ??
+    usage.cachedTokens ??
+    promptDetails.cached_tokens ??
+    promptDetails.cachedTokens ??
+    0
+  );
+  const cacheMissTokens = Number(
+    usage.prompt_cache_miss_tokens ??
+    usage.promptCacheMissTokens ??
+    0
+  );
+  const reasoningTokens = Number(
+    usage.reasoning_tokens ??
+    usage.reasoningTokens ??
+    completionDetails.reasoning_tokens ??
+    completionDetails.reasoningTokens ??
+    0
+  );
+  const promptTokens = Number(
+    usage.prompt_tokens ??
+    usage.promptTokens ??
+    usage.input_tokens ??
+    usage.inputTokens ??
+    usage.promptTokenCount ??
+    0
+  );
+  const completionTokens = Number(
+    usage.completion_tokens ??
+    usage.completionTokens ??
+    usage.output_tokens ??
+    usage.outputTokens ??
+    usage.candidatesTokenCount ??
+    0
+  );
+  const totalTokens = Number(
+    usage.total_tokens ??
+    usage.totalTokens ??
+    usage.totalTokenCount ??
+    (promptTokens + completionTokens)
+  );
+  return { promptTokens, completionTokens, totalTokens, cacheHitTokens, cacheMissTokens, reasoningTokens };
 }

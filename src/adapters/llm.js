@@ -209,13 +209,16 @@ export async function callLLMByRole(role, packet, config, apiKey, options = {}) 
 
       try {
         const provider = resolveProvider(config.llmProvider || config.provider || "openai-compatible");
+        const providerId = config.llmProvider || config.provider || "openai-compatible";
         const providerResult = await provider.chat({
           baseUrl: targetUrl,
+          providerId,
           model: modelName,
           messages,
           apiKey,
           temperature,
           maxTokens,
+          thinking: options.thinking ?? config.llmThinking ?? config.thinking ?? "auto",
           responseFormat: role === "director" || role === "guardian" || options.responseFormat === "json" ? "json" : null,
           timeoutMs
         });
@@ -353,13 +356,16 @@ export async function callLLMByRoleStream(role, packet, config, apiKey, options 
       if (!modelName || !targetUrl) continue;
       try {
         const provider = resolveProvider(config.llmProvider || config.provider || "openai-compatible");
+        const providerId = config.llmProvider || config.provider || "openai-compatible";
         const providerResult = await provider.chatStream({
           baseUrl: targetUrl,
+          providerId,
           model: modelName,
           messages,
           apiKey,
           temperature,
           maxTokens,
+          thinking: options.thinking ?? config.llmThinking ?? config.thinking ?? "auto",
           timeoutMs,
           onDelta: (content) => {
             if (typeof options.onDelta === "function") options.onDelta(content, { type: "delta", content });

@@ -9,11 +9,13 @@ import { appendUsageRecord, readUsageSummary, summarizeUsageRecords } from "../.
 test("usage meter summarizes staged token usage and estimated cost", () => {
   const summary = summarizeUsageRecords([
     { usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 } },
-    { usage: { promptTokens: 20, completionTokens: 10, totalTokens: 30 } }
+    { usage: { prompt_tokens: 20, completion_tokens: 10, total_tokens: 30, prompt_cache_hit_tokens: 12, completion_tokens_details: { reasoning_tokens: 4 } } }
   ], { yuanPerMillionTokens: 100 });
   assert.equal(summary.promptTokens, 30);
   assert.equal(summary.completionTokens, 15);
   assert.equal(summary.totalTokens, 45);
+  assert.equal(summary.cacheHitTokens, 12);
+  assert.equal(summary.reasoningTokens, 4);
   assert.equal(summary.estimatedCostCny, 0.0045);
 });
 
