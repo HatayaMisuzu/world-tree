@@ -51,6 +51,10 @@ src/v0-out.bak/
 *.log
 npm-debug.log*
 
+# 本地治理报告（脚本可重生成，最终批次报告单独提交）
+docs/reports/narrative-eval-latest.*
+docs/reports/self-report-latest.*
+
 # 本地浏览器烟测产物
 .playwright-cli/
 output/playwright/

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "minimumScenarioCount": 20,
+  "minimumChars": 120,
+  "criteria": [
+    "continuity",
+    "player_agency",
+    "mode_boundary",
+    "hidden_truth_safety"
+  ],
+  "forbiddenPatterns": [
+    "hiddenTruth",
+    "system prompt",
+    "api key",
+    "gm_only"
+  ]
+}

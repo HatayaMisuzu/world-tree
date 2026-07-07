@@ -1,20 +1,10 @@
-<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:START -->
-> **Current truth-source version:** `0.4.2-v2-engineering-foundation-truth.0`
->
-> Read first: `docs/PROJECT_TRUTH_SOURCE.md`, `docs/CURRENT_PROJECT_STATE.md`, `docs/V2_ENGINEERING_CLOSURE_STATUS.md`.
->
-> Current distinction: selected V2 service closures and engineering foundations exist, but Full product-wide V2 and product-wide playable closure are not complete.
->
-> Strategy Sim V2: engineering foundation complete / selected user-provided spec product loop PASS; full strategy gameplay incomplete.
->
-> Worldbook V2: engineering foundation complete / selected user-provided structural product loop PASS; full editor UX incomplete.
-<!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
-
 # World Tree
 
-> **当前版本：v0.4.2-v2-engineering-foundation-truth.0 — Truth-source alignment after Strategy Sim V2 and Worldbook V2 engineering foundations.**
-> V2 Entry Closure baseline covers Tabletop V2, Detective V2, Character V2, and 单人剧本杀 V2 service/engineering slices; it does not mean full product-wide playable closure.
-> 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md)
+> 本地优先的 AI 文字冒险大厅：导入角色、世界书、案件或灵感，进入一个可以保存、继续、审核和导出的互动世界。
+>
+> Package version: v0.4.2-v2-engineering-foundation-truth.0
+>
+> 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md) | 状态术语：[docs/STATUS_TERMINOLOGY.md](docs/STATUS_TERMINOLOGY.md)
 
 World Tree 让用户进入角色、世界、案件、局势和故事现场，进行持续的互动、探索、推理、扮演和体验。它也提供创作能力，但创作不是终点：创作角色，是为了互动；创作世界书，是为了探索；创作案件，是为了推理；创作项目包，是为了让体验能保存、继续和扩展。
 
@@ -25,6 +15,60 @@ World Tree 的重点，是让用户真的能进去玩。
 ```
 
 ---
+
+## 第一眼
+
+> GIF 占位：发布候选前需要替换为 60 秒以上真实试玩录屏或压缩动图。没有真人试玩和录屏时，不得标记 PLAYABLE。
+
+## 三支柱
+
+| 支柱 | 你得到什么 |
+| --- | --- |
+| 持续冒险 | 每个世界有历史、状态、提案和可继续的上下文，不只是一次性聊天 |
+| 受控创作 | 炼金台、导入器和审核队列把素材变成候选内容，关键变化先确认再写入 |
+| 本地优先 | 项目、角色、世界书、运行记录和导出包都以本机文件为核心，便于迁移和审计 |
+
+## 60 秒上手
+
+```bash
+git clone https://github.com/HatayaMisuzu/world-tree.git
+cd world-tree
+npm install
+npm start
+```
+
+打开 `http://127.0.0.1:3000`，进入大厅：
+
+1. 点击“一键安装示例世界并开始”或“空白开始”。
+2. 在设置里填入 OpenAI-compatible 模型服务。
+3. 回到大厅，点击“继续冒险”。
+4. 输入一个动作或选择开场建议。
+5. 看到提案红点时先审阅，再决定是否写入世界。
+
+## 模型服务
+
+World Tree 当前优先支持 OpenAI-compatible 服务，并提供 provider adapter 基础：OpenAI-compatible、Anthropic、Google、mock。真实首玩 smoke 需要 `WT_SMOKE_BASE_URL`、`WT_SMOKE_MODEL`、`WT_SMOKE_KEY` 或 workflow secrets；没有凭据时只能记录 `BLOCKED_BY_CREDENTIALS`，不能声称真实 LLM PASS。
+
+## 和 SillyTavern 的关系
+
+World Tree 可以导入 SillyTavern 角色卡和世界书，把它们变成本地可审核、可继续的项目素材。它不是 ST 前端替代品，也不承诺直接复刻 ST 全部字段；不支持字段会以 `ignoredUnsupportedFields` 显示，避免静默吞内容。
+
+## Roadmap
+
+| 阶段 | 重点 | 状态 |
+| --- | --- | --- |
+| First playable candidate | 示例世界、首玩 smoke、产品大厅、基础导入导出 | 当前工程已建立候选路径 |
+| Playable evidence | Tier-1 真实 LLM、真人试玩、60 秒录屏、HUMAN_SIGNED | 需要凭据和人工验收 |
+| Content ecosystem | `.wtpack`、官方内容管线、ST 导入质量、第三方内容包 | 基础规格已建立 |
+| Long-play quality | Tier-2 叙事评测、录制回放、长期记忆/分支稳定性 | 评测 harness 已建立 |
+
+## 工程状态与真相源
+
+当前版本：`0.4.2-v2-engineering-foundation-truth.0`。维护者和 agent 的当前 truth source 在 [docs/PROJECT_TRUTH_SOURCE.md](docs/PROJECT_TRUTH_SOURCE.md)，配套状态文件是 [docs/CURRENT_PROJECT_STATE.md](docs/CURRENT_PROJECT_STATE.md) 和 [docs/V2_ENGINEERING_CLOSURE_STATUS.md](docs/V2_ENGINEERING_CLOSURE_STATUS.md)。
+
+Selected V2 service slices have engineering foundation evidence, but full product closure is not complete. Strategy Sim V2 engineering foundation is complete; Strategy Sim V2 product closure is not complete. Worldbook V2 engineering foundation is complete; Worldbook V2 product closure is not complete.
+
+V2 Entry Closure baseline covers Tabletop V2, Detective V2, Character V2, and 单人剧本杀 V2 service/engineering slices; it does not mean full product-wide playable closure.
 
 ## 你可以体验什么？
 

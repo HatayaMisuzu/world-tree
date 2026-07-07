@@ -1,0 +1,7 @@
+{
+  "format": "world-tree.llm-recording",
+  "version": 1,
+  "provider": "mock",
+  "description": "Deterministic narrative eval playback fixture. This is not real LLM evidence.",
+  "defaultResponse": "The scene continues from {{title}} while preserving the current entry boundary. It names the immediate pressure, gives the player two concrete choices, keeps unresolved secrets out of view, and echoes the required anchors: {{anchors}}. The result is intentionally plain but long enough for deterministic governance tests and mock playback validation."
+}

@@ -101,6 +101,7 @@ function assertPass(assertions, id, ok, detail) {
 await mkdir(reportDir, { recursive: true });
 
 const provider = {
+  id: envValue("WT_SMOKE_PROVIDER_ID", "WORLD_TREE_LLM_PROVIDER") || "openai-compatible",
   baseUrl: envValue("WT_SMOKE_BASE_URL", "WORLD_TREE_LLM_BASE_URL", "LLM_BASE_URL"),
   model: envValue("WT_SMOKE_MODEL", "WORLD_TREE_LLM_MODEL", "LLM_MODEL")
 };

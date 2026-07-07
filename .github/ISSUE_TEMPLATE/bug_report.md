@@ -27,7 +27,8 @@ assignees: ""
 ## Validation
 
 - [ ] I ran `npm run preflight`
+- [ ] I ran the smallest targeted test for the changed area
+- [ ] This report does not include API keys, cookies, secrets, or private project data
 - Result:
 
 ## Logs or Screenshots
-

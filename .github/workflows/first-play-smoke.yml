@@ -7,10 +7,28 @@ on:
         description: "Example id to run"
         required: false
         default: "demo-world-cloud-steam-city"
+  schedule:
+    - cron: "17 19 * * *"
 
 jobs:
   smoke-first-play:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - provider: openai-compatible
+            base_url_secret: WT_SMOKE_BASE_URL
+            model_secret: WT_SMOKE_MODEL
+            key_secret: WT_SMOKE_KEY
+          - provider: deepseek
+            base_url_secret: WT_SMOKE_DEEPSEEK_BASE_URL
+            model_secret: WT_SMOKE_DEEPSEEK_MODEL
+            key_secret: WT_SMOKE_DEEPSEEK_KEY
+          - provider: openrouter
+            base_url_secret: WT_SMOKE_OPENROUTER_BASE_URL
+            model_secret: WT_SMOKE_OPENROUTER_MODEL
+            key_secret: WT_SMOKE_OPENROUTER_KEY
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,15 +38,16 @@ jobs:
       - run: npm ci
       - name: Run first play smoke
         env:
-          WT_SMOKE_EXAMPLE_ID: ${{ inputs.example_id }}
-          WT_SMOKE_BASE_URL: ${{ secrets.WT_SMOKE_BASE_URL }}
-          WT_SMOKE_MODEL: ${{ secrets.WT_SMOKE_MODEL }}
-          WT_SMOKE_KEY: ${{ secrets.WT_SMOKE_KEY }}
+          WT_SMOKE_EXAMPLE_ID: ${{ inputs.example_id || 'demo-world-cloud-steam-city' }}
+          WT_SMOKE_PROVIDER_ID: ${{ matrix.provider }}
+          WT_SMOKE_BASE_URL: ${{ secrets[matrix.base_url_secret] }}
+          WT_SMOKE_MODEL: ${{ secrets[matrix.model_secret] }}
+          WT_SMOKE_KEY: ${{ secrets[matrix.key_secret] }}
         run: npm run smoke:first-play
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: first-play-smoke-report
+          name: first-play-smoke-report-${{ matrix.provider }}
           path: |
             docs/reports/first-play-smoke-latest.md
             docs/reports/first-play-smoke-latest.json

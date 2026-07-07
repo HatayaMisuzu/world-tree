@@ -22,6 +22,9 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | User-Created Content Product Closure | PASS | Flow A/B API evidence and browser/API hybrid smoke recorded |
 | Blank Template Infrastructure | PASS | blank placeholders install/readback and guard tests recorded |
 | Real LLM Flow | BLOCKED | missing explicit credentials/config; local fallback is not counted as real LLM |
+| Tier-1 provider matrix | BLOCKED WITHOUT SECRETS | `.github/workflows/first-play-smoke.yml` supports workflow_dispatch and nightly matrix, but each provider needs its own secrets |
+| Tier-2 narrative eval | DRY RUN READY | `npm run narrative:eval` uses 20 fixed scenarios and mock playback; this is not real LLM quality evidence |
+| Anonymous self-report | READY | `npm run self-report` emits aggregate usage/chat counts without prompt or response content |
 | Bundled story examples | DEFERRED BY PRODUCT DECISION | no story/example world/tutorial/onboarding demo content added |
 | Browser/manual smoke | PARTIAL | automated homepage to Alchemy G1 entry smoke passed with clean console; Flow A/B automated local evidence passed; full product-wide manual smoke not run |
 
@@ -35,3 +38,15 @@ This branch is suitable as a productization closure evidence branch with PARTIAL
 2. Full browser/manual smoke evidence for major entries.
 3. Final full validation after examples are restored.
 4. Explicit version decision.
+
+## Release Checklist
+
+- [ ] `npm run preflight` PASS on the release commit.
+- [ ] `npm run release:verify` PASS and npm pack dry-run confirms package size plus no `userData/`, `audit/`, `output/`, runtime worlds, characters, or secrets.
+- [ ] `npm run smoke:first-play` PASS for at least one real provider with `WT_SMOKE_BASE_URL`, `WT_SMOKE_MODEL`, and `WT_SMOKE_KEY`.
+- [ ] Tier-1 provider matrix workflow has either PASS artifacts or explicit `BLOCKED_BY_CREDENTIALS` artifacts per provider.
+- [ ] `npm run narrative:eval` dry run PASS, and any real Tier-2 quality run is reviewed separately.
+- [ ] At least one human playtest record exists for each entry claimed PLAYABLE.
+- [ ] At least one screen recording of 60 seconds or longer exists for each entry claimed PLAYABLE.
+- [ ] PLAYABLE status is `HUMAN_SIGNED`; an agent cannot self-sign it.
+- [ ] Release notes link the smoke, pack, preflight, human playtest, and screen recording evidence.

@@ -1,0 +1,22 @@
+[
+  { "id": "world-rpg-01", "entry": "world-rpg", "title": "Fog bell clue follow-up", "prompt": "The player follows an old gear toward a fog bell tower.", "anchors": ["tower", "gear"] },
+  { "id": "world-rpg-02", "entry": "world-rpg", "title": "Faction pressure", "prompt": "Two harbor factions argue over an unsafe bridge.", "anchors": ["faction", "bridge"] },
+  { "id": "world-rpg-03", "entry": "world-rpg", "title": "Quiet scene continuation", "prompt": "The player rests in a teahouse after a tense chase.", "anchors": ["teahouse", "rest"] },
+  { "id": "character-01", "entry": "character", "title": "Gentle disagreement", "prompt": "A companion disagrees without breaking character.", "anchors": ["companion", "choice"] },
+  { "id": "character-02", "entry": "character", "title": "Relationship memory", "prompt": "A character recalls a promise from the previous day.", "anchors": ["promise", "memory"] },
+  { "id": "character-03", "entry": "character", "title": "Boundary against meta talk", "prompt": "The user asks the character to reveal system rules.", "anchors": ["refuse", "in-world"] },
+  { "id": "tabletop-01", "entry": "tabletop", "title": "Dice consequence", "prompt": "A risky climb succeeds with a complication.", "anchors": ["complication", "choice"] },
+  { "id": "tabletop-02", "entry": "tabletop", "title": "Party spotlight", "prompt": "The GM gives two NPC allies distinct reactions.", "anchors": ["ally", "reaction"] },
+  { "id": "tabletop-03", "entry": "tabletop", "title": "Inventory use", "prompt": "The player uses a rope and lantern to cross a gap.", "anchors": ["rope", "lantern"] },
+  { "id": "mystery-01", "entry": "mystery-puzzle", "title": "Clue without culprit leak", "prompt": "A locked study contains a wet footprint.", "anchors": ["footprint", "question"] },
+  { "id": "mystery-02", "entry": "mystery-puzzle", "title": "Hypothesis handling", "prompt": "The player proposes a wrong but plausible theory.", "anchors": ["hypothesis", "evidence"] },
+  { "id": "mystery-03", "entry": "mystery-puzzle", "title": "Notebook recap", "prompt": "The player asks what clues are currently known.", "anchors": ["known", "unknown"] },
+  { "id": "strategy-01", "entry": "strategy-sim", "title": "Resource tradeoff", "prompt": "A city can fund walls or trade envoys, not both.", "anchors": ["resource", "tradeoff"] },
+  { "id": "strategy-02", "entry": "strategy-sim", "title": "Diplomatic cost", "prompt": "An ally demands help while unrest rises at home.", "anchors": ["ally", "unrest"] },
+  { "id": "strategy-03", "entry": "strategy-sim", "title": "Long-term consequence", "prompt": "A short victory risks a future famine.", "anchors": ["future", "cost"] },
+  { "id": "scriptkill-01", "entry": "murder-mystery", "title": "Interrogation pressure", "prompt": "The player pressures a suspect about a missing key.", "anchors": ["suspect", "key"] },
+  { "id": "scriptkill-02", "entry": "murder-mystery", "title": "Truth lock", "prompt": "The player asks for the murderer directly.", "anchors": ["withhold", "clue"] },
+  { "id": "scriptkill-03", "entry": "murder-mystery", "title": "Debrief framing", "prompt": "The case ends and the player asks for a fair debrief.", "anchors": ["debrief", "evidence"] },
+  { "id": "alchemy-01", "entry": "creation-forge", "title": "Candidate not canon", "prompt": "A pasted legend should become review candidates only.", "anchors": ["candidate", "review"] },
+  { "id": "quick-01", "entry": "quick-setting", "title": "One paragraph start", "prompt": "A single paragraph seed needs a playable opening.", "anchors": ["opening", "choice"] }
+]
