@@ -15,7 +15,7 @@
 | [plans/fable5-04-future-execution-revised.md](plans/fable5-04-future-execution-revised.md) | Active fable5 revised future execution plan |
 
 Current status: Full V2 is not complete. Selected V2 API/service loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; browser/UI entry flows remain PARTIAL or NOT PROVEN, and product-wide playable closure is not complete.
-Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure and blank template infrastructure are recorded as PASS; bundled story examples, tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
+Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure, blank template infrastructure, and `demo-world-cloud-steam-city` first-play smoke demo are recorded; role-card/scriptkill demo content packs, broader tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree 文档索引
@@ -35,10 +35,10 @@ Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy 
 
 - **Trusted tag**: `v0.4.2-v2-engineering-foundation-truth.0`
 - **Current branch**: `main`
-- **Latest audited commit**: `ecd8658d088b41a4e4a0ec212bb7f274709707b9`
-- **Latest productization merge commit**: `ecd8658d088b41a4e4a0ec212bb7f274709707b9`
+- **Latest audited commit**: `6a969fb5cf8975231224478f602d491c271c99b1`
+- **Latest productization merge commit**: `6a969fb5cf8975231224478f602d491c271c99b1`
 - **Remote CI**: `UNKNOWN` unless a concrete workflow run is referenced
-- **Productization merge CI**: PASS for merge commit `ecd8658d` in run `28389779734`
+- **Productization merge CI**: UNKNOWN for latest fable5 commit unless a concrete workflow run is referenced
 - **Status**: User-Created Content Product Closure PASS; Productization Closure PARTIAL by product decision
 - **Full V2**: Full product-wide V2 not complete; selected V2 API/service loops pass only for recorded user-provided/structural paths
 - **Browser QA**: user content browser smoke PASS; full product-wide browser QA NOT COMPLETE
@@ -124,7 +124,7 @@ Key entry points for the current baseline:
 |------|------|
 | [Asset Maturation Report](ASSET_MATURATION_REPORT.md) | ✅ 当前 |
 | [Real Play Productization Report](REAL_PLAY_PRODUCTIZATION_REPORT.md) | ✅ v0.3.1 当前 |
-| [Productization Closure Report](reports/productization-closure-report.md) | PARTIAL: user-created content PASS, blank templates PASS, story examples/tutorials deferred |
+| [Productization Closure Report](reports/productization-closure-report.md) | PARTIAL: user-created content PASS, blank templates PASS, first-play smoke demo implemented, role-card/scriptkill packs deferred |
 | [User-Created Content Closure Evidence](reports/user-created-content-closure-evidence.md) | PASS evidence for Flow A, Flow B, and browser smoke |
 | [User-Created Content Product Closure Final](reports/user-created-content-product-closure-final.md) | PASS for user-created Flow A/B and blank templates; Real LLM BLOCKED; Productization Closure PARTIAL |
 | [User Content Browser Smoke](reports/user-content-browser-smoke.md) | PASS browser/API hybrid smoke for Alchemy G1 Flow A/B |

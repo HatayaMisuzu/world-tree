@@ -144,7 +144,7 @@ http://127.0.0.1:3000
 
 Creation Forge / 炼金台 G1 的工程闭环已经接入：它可以生成创作地图、内容预览、本地文件夹草案，并在用户选择目标且确认后交付。当前 productization closure evidence 已记录用户自带内容 Flow A/Flow B PASS，以及空白结构模板 PASS。
 
-当前 Productization Closure 报告见 `docs/reports/productization-closure-report.md`，状态仍为 PARTIAL by product decision：User-Created Content Product Closure、空白模板基础设施、以及选定 V2 用户自带/结构化内容产品闭环为 PASS；当前只提供空白模板占位符，不包含剧情示例世界、教程或 onboarding demo 内容，也不声明 `v1.0.0` ready。真实 LLM smoke 若无凭据配置则记录为 BLOCKED，不用本地 fallback 或本地 prompt 合同审计冒充真实 LLM。
+当前 Productization Closure 报告见 `docs/reports/productization-closure-report.md`，状态仍为 PARTIAL by product decision：User-Created Content Product Closure、空白模板基础设施、选定 V2 用户自带/结构化内容产品闭环、以及内置首玩示例 `demo-world-cloud-steam-city`（云上蒸汽城）已记录；角色卡示例包和剧本杀示例包仍为 `DEFERRED_AFTER_FIRST_PLAY_CANDIDATE`，不声明 `v1.0.0` ready。真实 LLM smoke 若无凭据配置则记录为 `BLOCKED_BY_CREDENTIALS`，不用本地 fallback 或本地 prompt 合同审计冒充真实 LLM。
 
 Global product closure remains incomplete: the selected V2 API/service loops do not mean browser/UI entry closure or full product-wide product closure.
 

@@ -6,16 +6,16 @@ Audience: AI agents, maintainers, reviewers.
 
 Any AI agent taking over this repository must read this file and `docs/PROJECT_TRUTH_SOURCE.md` first.
 
-## Active fable5 productization run
+## fable5 productization run
 
-The current active execution scope is the fable5 revised four-file packet in `docs/plans/`:
+The fable5 revised four-file packet in `docs/plans/` was the execution scope for the batch-gated productization run:
 
 - `fable5-01-full-audit-revised.md`
 - `fable5-02-fix-plan-revised.md`
 - `fable5-03-optimization-plan-revised.md`
 - `fable5-04-future-execution-revised.md`
 
-This overlay does not itself mark new capability as complete. It defines the ordered batch plan for moving from the existing engineering/service closure toward a real first-play product closure. Batches must run sequentially, and every batch must pass targeted tests, required integration coverage, and `npm run preflight` before its commit can be used as the next batch baseline.
+This overlay does not itself mark PLAYABLE. It records the ordered batch plan used to move from the previous engineering/service closure toward a first-play candidate. Batch 00-11 engineering work is completed, but missing real LLM credentials, human playtest evidence, and screen recording evidence remain explicit blockers.
 
 ## Trusted baseline
 
@@ -24,8 +24,8 @@ This overlay does not itself mark new capability as complete. It defines the ord
 | Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
 | Trusted Baseline | `v0.4.2-v2-engineering-foundation-truth.0` |
 | Current branch | `main` |
-| Latest audited commit | `ecd8658d088b41a4e4a0ec212bb7f274709707b9` |
-| Latest productization merge commit | `ecd8658d088b41a4e4a0ec212bb7f274709707b9` |
+| Latest audited commit | `6a969fb5cf8975231224478f602d491c271c99b1` |
+| Latest productization merge commit | `6a969fb5cf8975231224478f602d491c271c99b1` |
 | V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI` |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
@@ -35,15 +35,21 @@ This overlay does not itself mark new capability as complete. It defines the ord
 | Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL by product decision |
 | User-Created Content Product Closure | PASS |
 | Blank template infrastructure | PASS |
-| Bundled story examples | DEFERRED BY PRODUCT DECISION |
-| Tutorial / onboarding content | DEFERRED BY PRODUCT DECISION |
-| Real LLM Flow | BLOCKED unless credentials/config are explicitly supplied |
+| Built-in first-play example | `demo-world-cloud-steam-city` implemented as first-play smoke demo |
+| `demo-character` / `demo-scriptkill` | DEFERRED_AFTER_FIRST_PLAY_CANDIDATE |
+| Tutorial / onboarding content | first-play smoke path exists; broader onboarding remains incomplete |
+| ENGINEERING_CLOSED | YES |
+| FIRST_PLAYABLE_CANDIDATE | YES |
+| PLAYABLE | NO |
+| Real LLM Flow | BLOCKED_BY_CREDENTIALS unless credentials/config are explicitly supplied |
+| Human playtest | HUMAN_VALIDATION_REQUIRED |
+| Screen recording | HUMAN_VALIDATION_REQUIRED |
 | Remote CI | UNKNOWN unless a concrete workflow run is referenced |
-| Productization merge CI | PASS for merge commit `ecd8658d` in run `28389779734` |
+| Productization merge CI | UNKNOWN for latest fable5 commit unless a concrete workflow run is referenced |
 | Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
 | Asset/function inventory role | preservation ledger / evidence index; not proof by itself |
-| Active fable5 batch run | Batch 00 reality check in progress; batches 01-11 pending until gated commits exist |
+| fable5 batch run | batch 00-11 engineering run completed |
 
 ## Definitions
 
@@ -82,8 +88,10 @@ This overlay does not itself mark new capability as complete. It defines the ord
 - Worldbook V2 engineering foundation is complete.
 - Strategy Sim V2 engineering foundation is complete.
 - Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
-- Productization Closure is PARTIAL by product decision; User-Created Content Product Closure and blank template infrastructure are recorded as PASS, while bundled story examples, tutorials, onboarding demo content, product-wide manual smoke, and release readiness remain incomplete or deferred.
-- Real LLM Flow is BLOCKED until real credentials/config are provided and a non-fallback smoke is recorded.
+- Productization Closure is PARTIAL by product decision; User-Created Content Product Closure, blank template infrastructure, and `demo-world-cloud-steam-city` first-play smoke demo are recorded, while `demo-character`, `demo-scriptkill`, broader tutorial/onboarding content, product-wide manual smoke, and release readiness remain incomplete or deferred.
+- fable5 batch 00-11 engineering run is completed. Current status is ENGINEERING_CLOSED: YES, FIRST_PLAYABLE_CANDIDATE: YES, PLAYABLE: NO.
+- Real LLM Flow is BLOCKED_BY_CREDENTIALS until real credentials/config are provided and a non-fallback smoke is recorded.
+- Human playtest and screen recording remain HUMAN_VALIDATION_REQUIRED.
 - fable5 smoke and PLAYABLE claims require real LLM evidence, human playtest evidence, and screen recording evidence; missing credentials or human validation must be labeled, not converted into PASS.
 - Selected V2 API/service closure is improved for user-provided/structural content across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill.
 - Browser/UI entry flows for these five entries remain PARTIAL or NOT PROVEN unless a dedicated UI smoke is recorded.
@@ -153,7 +161,9 @@ Product closure not complete:
 - `world-tree-console.js` remains the main browser UI script, but the browser utility/API client boundary has been extracted to `world-tree-client-core.js`.
 - No TypeScript migration.
 - Full product-wide browser QA remains incomplete unless a product entry browser smoke matrix is separately recorded.
-- `defaults/examples/manifest.json` currently contains blank structural placeholders only. They are install/readback test material and future replacement slots, not bundled story examples or tutorials.
+- Current built-in first-play example: `demo-world-cloud-steam-city` / 云上蒸汽城.
+- Later examples remain deferred after the first-play candidate: `demo-character` role-card content pack and `demo-scriptkill` scriptkill content pack.
+- Streaming abort currently guarantees frontend stop only; partial assistant text is not guaranteed to be persisted server-side unless a future `truncatedByUser` / `status: "partial"` path is implemented and tested.
 
 ## Required checks
 

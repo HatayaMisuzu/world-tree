@@ -25,7 +25,7 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | Tier-1 provider matrix | BLOCKED WITHOUT SECRETS | `.github/workflows/first-play-smoke.yml` supports workflow_dispatch and nightly matrix, but each provider needs its own secrets |
 | Tier-2 narrative eval | DRY RUN READY | `npm run narrative:eval` uses 20 fixed scenarios and mock playback; this is not real LLM quality evidence |
 | Anonymous self-report | READY | `npm run self-report` emits aggregate usage/chat counts without prompt or response content |
-| Bundled story examples | DEFERRED BY PRODUCT DECISION | no story/example world/tutorial/onboarding demo content added |
+| Built-in first-play example | FIRST_PLAYABLE_CANDIDATE EVIDENCE | `demo-world-cloud-steam-city` / 云上蒸汽城 is implemented for `smoke:first-play`; role-card and scriptkill packs remain deferred |
 | Browser/manual smoke | PARTIAL | automated homepage to Alchemy G1 entry smoke passed with clean console; Flow A/B automated local evidence passed; full product-wide manual smoke not run |
 
 ## Release Decision
@@ -34,10 +34,12 @@ Do not publish npm, Docker, or GitHub Release from this state.
 
 This branch is suitable as a productization closure evidence branch with PARTIAL status. A release candidate needs:
 
-1. Bundled story examples explicitly allowed, added, and tested.
-2. Full browser/manual smoke evidence for major entries.
-3. Final full validation after examples are restored.
-4. Explicit version decision.
+1. Real LLM `smoke:first-play` PASS with credentials/config.
+2. Human playtest evidence and a 60 second or longer screen recording for any entry claimed PLAYABLE.
+3. Role-card and scriptkill demo content packs completed and tested if they are advertised as built-in playable examples.
+4. Full browser/manual smoke evidence for major entries.
+5. Final full validation after examples are restored.
+6. Explicit version decision.
 
 ## Release Checklist
 

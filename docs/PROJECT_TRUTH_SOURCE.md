@@ -6,16 +6,16 @@ Audience: AI agents, maintainers, reviewers.
 
 This is the current truth-source index for repository status. Read this before using historical reports.
 
-## Active fable5 execution overlay
+## fable5 execution overlay
 
-The fable5 revised four-file packet is the active execution overlay for the productization closure run that started on 2026-07-06. For this run, these files are authoritative for batch order, acceptance gates, and blocked-status wording:
+The fable5 revised four-file packet was the execution overlay for the productization closure run that started on 2026-07-06. The batch-00 through batch-11 engineering run is completed. These files remain authoritative for the recorded batch order, acceptance gates, and blocked-status wording:
 
 1. `docs/plans/fable5-01-full-audit-revised.md`
 2. `docs/plans/fable5-02-fix-plan-revised.md`
 3. `docs/plans/fable5-03-optimization-plan-revised.md`
 4. `docs/plans/fable5-04-future-execution-revised.md`
 
-Batch execution must proceed in order from batch-00 through batch-11. Each batch requires targeted tests, necessary integration coverage, `npm run preflight`, and a commit before the next batch starts. Missing real LLM credentials, external services, human playtest evidence, or screen recording evidence must be recorded as `BLOCKED_BY_CREDENTIALS`, `BLOCKED_BY_BROWSER`, or `HUMAN_VALIDATION_REQUIRED`; no mock result may be reported as a real LLM or PLAYABLE pass.
+Batch execution proceeded in order from batch-00 through batch-11 with targeted tests, necessary integration coverage, `npm run preflight`, and gated commits. Missing real LLM credentials, external services, human playtest evidence, or screen recording evidence must be recorded as `BLOCKED_BY_CREDENTIALS`, `BLOCKED_BY_BROWSER`, or `HUMAN_VALIDATION_REQUIRED`; no mock result may be reported as a real LLM or PLAYABLE pass.
 
 ## Truth-source priority
 
@@ -40,21 +40,29 @@ Historical reports may describe past limitations or past completion claims. They
 |---|---|
 | Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
 | Branch | `main` |
-| Latest productization merge commit | `ecd8658d088b41a4e4a0ec212bb7f274709707b9` |
+| Latest productization merge commit | `6a969fb5cf8975231224478f602d491c271c99b1` |
+| fable5 engineering run | batch 00-11 engineering run completed |
+| ENGINEERING_CLOSED | YES |
+| FIRST_PLAYABLE_CANDIDATE | YES |
+| PLAYABLE | NO |
+| Real LLM | BLOCKED_BY_CREDENTIALS |
+| Human playtest | HUMAN_VALIDATION_REQUIRED |
+| Screen recording | HUMAN_VALIDATION_REQUIRED |
 | User-Created Content Product Closure | PASS |
 | Blank Template Infrastructure | PASS |
 | Productization Closure | PARTIAL by product decision |
-| Bundled Story Examples | DEFERRED BY PRODUCT DECISION |
-| Tutorial / Onboarding | DEFERRED BY PRODUCT DECISION |
+| Built-in first-play example | `demo-world-cloud-steam-city` implemented as first-play smoke demo |
+| `demo-character` / `demo-scriptkill` | DEFERRED_AFTER_FIRST_PLAY_CANDIDATE |
+| Tutorial / Onboarding | first-play smoke path exists; broader onboarding remains incomplete |
 | v1.0.0 | NOT READY |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
 | Selected V2 API/service loops | PASS for user-provided/structural paths |
 | Full-function LLM prompt entry audit | PASS for local prompt contract coverage; live LLM behavior remains BLOCKED without credentials |
 | Current documentation status | post-merge user-created content product closure alignment |
-| Remote CI | PASS for merge commit `ecd8658d` in run `28389779734` |
+| Remote CI | UNKNOWN for latest fable5 commit unless a concrete workflow run is referenced |
 | Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
-| Active execution overlay | fable5 revised four-file packet, batch-00 through batch-11 |
+| fable5 overlay | fable5 revised four-file packet, batch 00-11 engineering run completed |
 
 ## Current status summary
 
@@ -75,14 +83,22 @@ Historical reports may describe past limitations or past completion claims. They
 - Product-wide playable closure is not complete.
 - User-Created Content Product Closure is PASS for the recorded Flow A/Flow B paths.
 - Real LLM Flow is BLOCKED unless credentials/config are explicitly supplied and recorded.
+- fable5 batch 00-11 engineering run is completed.
+- ENGINEERING_CLOSED is YES.
+- FIRST_PLAYABLE_CANDIDATE is YES.
+- PLAYABLE is NO until real LLM smoke, human playtest, and screen recording evidence all exist and are human-signed.
+- Real LLM is BLOCKED_BY_CREDENTIALS until credentials/config are supplied and a non-fallback smoke is recorded.
+- Human playtest and screen recording are HUMAN_VALIDATION_REQUIRED.
 - Productization Closure remains PARTIAL by product decision.
 - Selected V2 API/service loops are PASS only for the recorded user-provided/structural API paths.
 - Browser/UI entry flows for the selected V2 loops are PARTIAL or NOT PROVEN unless a dedicated UI smoke is recorded.
 - Full-function LLM prompt entry audit is PASS for local contract coverage, not a live LLM behavior PASS.
 - v1.0.0 is NOT READY.
-- Bundled story examples, tutorial content, and onboarding demos are DEFERRED BY PRODUCT DECISION.
+- `demo-world-cloud-steam-city` is implemented as the current built-in first-play smoke demo.
+- `demo-character` and `demo-scriptkill` are DEFERRED_AFTER_FIRST_PLAY_CANDIDATE unless real content package files are added and validated.
 - Engineering foundation complete does not imply product closure complete.
 - Engineering/service closure complete does not imply full gameplay engine complete.
+- Streaming abort currently guarantees frontend stop only; partial assistant text is not guaranteed to be persisted server-side unless a future `truncatedByUser` / `status: "partial"` path is implemented and tested.
 - Historical archive documents must not override current truth-source files.
 - Asset/function inventory is a preservation ledger and evidence index; it is not by itself proof that a capability is implemented.
 

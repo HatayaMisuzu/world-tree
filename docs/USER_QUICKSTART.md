@@ -1,4 +1,4 @@
-# User Quickstart — World Tree v0.4.1 V2 Entry Closure Baseline
+# User Quickstart — World Tree v0.4.2 First-Playable Candidate
 
 > This guide describes the current implemented project, not future V2 plans.
 
@@ -30,7 +30,8 @@ Then open: `http://localhost:3000`
 5. Select a mode (world-rpg, character, quick-setting, etc.).
 6. Send a message and observe the response.
 7. Save state persists across reloads.
-8. If no bundled example is registered, prepare your own character/world/case/script material for entries that require content.
+8. Current built-in first-play example: `demo-world-cloud-steam-city` / 云上蒸汽城.
+9. Character-card and scriptkill demo content packs are not complete yet; prepare your own character/world/case/script material for entries that require content.
 
 ## Current Modes
 

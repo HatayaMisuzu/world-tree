@@ -1,4 +1,4 @@
 package: world-tree@0.4.2-v2-engineering-foundation-truth.0
-packedSize: 749220
-unpackedSize: 2748685
+packedSize: 748607
+unpackedSize: 2744936
 files: 573

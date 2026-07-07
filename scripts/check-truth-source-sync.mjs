@@ -20,6 +20,12 @@ const CURRENT_EVIDENCE_DOCS = [
   "docs/reports/productization-closure-report.md"
 ];
 
+const CURRENT_FABLE5_DOCS = [
+  ...ACTIVE_TRUTH_DOCS,
+  "docs/USER_QUICKSTART.md",
+  "docs/RELEASE_READINESS.md"
+];
+
 const requiredFiles = [
   "docs/PROJECT_TRUTH_SOURCE.md",
   "docs/CURRENT_PROJECT_STATE.md",
@@ -144,6 +150,29 @@ const falseCompletionPatterns = [
   }
 ];
 
+const staleFable5CloseoutPatterns = [
+  {
+    re: /Batch 00 reality check in progress/i,
+    msg: "fable5 closeout docs must say batch 00-11 engineering run completed"
+  },
+  {
+    re: /batches 01-11 pending/i,
+    msg: "fable5 closeout docs must not describe batches 01-11 as pending"
+  },
+  {
+    re: /defaults\/examples\/manifest\.json currently contains blank structural placeholders only/i,
+    msg: "current examples include demo-world-cloud-steam-city first-play smoke demo"
+  },
+  {
+    re: /Bundled story examples are DEFERRED BY PRODUCT DECISION/i,
+    msg: "current docs must distinguish demo-world-cloud-steam-city from deferred role-card/scriptkill packs"
+  },
+  {
+    re: /Latest productization merge commit\s*\|?\s*`?ecd8658/i,
+    msg: "latest productization merge commit must reference the fable5 engineering closeout commit"
+  }
+];
+
 for (const file of [...ACTIVE_TRUTH_DOCS, ...CURRENT_EVIDENCE_DOCS]) {
   if (!existsSync(join(ROOT, file))) {
     errors.push(`missing active truth/evidence doc: ${file}`);
@@ -151,6 +180,17 @@ for (const file of [...ACTIVE_TRUTH_DOCS, ...CURRENT_EVIDENCE_DOCS]) {
   }
   const text = read(file);
   for (const pattern of falseCompletionPatterns) {
+    if (pattern.re.test(text)) errors.push(`${file}: ${pattern.msg}`);
+  }
+}
+
+for (const file of CURRENT_FABLE5_DOCS) {
+  if (!existsSync(join(ROOT, file))) {
+    errors.push(`missing current fable5 doc: ${file}`);
+    continue;
+  }
+  const text = read(file);
+  for (const pattern of staleFable5CloseoutPatterns) {
     if (pattern.re.test(text)) errors.push(`${file}: ${pattern.msg}`);
   }
 }
