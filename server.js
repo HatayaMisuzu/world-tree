@@ -3200,6 +3200,7 @@ const PUBLIC_STATIC_FILES = new Map([
   ["/world-tree-console.html", "world-tree-console.html"],
   ["/world-tree-console.css", "world-tree-console.css"],
   ["/world-tree-client-core.js", "world-tree-client-core.js"],
+  ["/ui-labels.js", "ui-labels.js"],
   ["/world-tree-console.js", "world-tree-console.js"]
 ]);
 

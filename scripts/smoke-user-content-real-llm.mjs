@@ -67,6 +67,7 @@ function writeReport(result) {
     "",
     result.note || ""
   ];
+  while (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
   writeFileSync(reportPath, `${lines.join("\n")}\n`, "utf8");
   writeFileSync(resultPath, JSON.stringify(result, null, 2), "utf8");
 }
@@ -136,7 +137,7 @@ async function runFlow(server, options) {
     deliveryId: deliver.body.deliveryId,
     moduleKey: deliver.body.moduleKey,
     moduleId,
-    worldPath,
+    storage: "temp-world-module",
     worldbookEntries: Array.isArray(worldbook.entries) ? worldbook.entries.length : 0,
     chat: chat ? {
       status: chat.body.status,
@@ -187,7 +188,9 @@ if (!runEnabled) {
     const payload = [
       JSON.stringify(flowA),
       JSON.stringify(flowB),
-      existsSync(join(flowA.worldPath, "runtime", "chat.jsonl")) ? readFileSync(join(flowA.worldPath, "runtime", "chat.jsonl"), "utf8") : ""
+      existsSync(join(dataDir, "engine", "worlds", flowA.moduleId, "runtime", "chat.jsonl"))
+        ? readFileSync(join(dataDir, "engine", "worlds", flowA.moduleId, "runtime", "chat.jsonl"), "utf8")
+        : ""
     ].join("\n");
     const forbidden = [/hiddenTruth/i, /gm_only/i, /system_only/i, /api.?key/i, /secret/i, /authorization/i, /\b[A-Za-z]:\\/];
     const hit = forbidden.find((pattern) => pattern.test(payload));

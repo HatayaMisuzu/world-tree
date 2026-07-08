@@ -1,11 +1,33 @@
 {
-  "status": "BLOCKED",
-  "reason": "WORLD_TREE_RUN_REAL_LLM_SMOKE is not set to 1",
+  "status": "PASS",
   "provider": {
-    "baseUrl": "",
-    "model": ""
+    "baseUrl": "https://api.deepseek.com/v1",
+    "model": "deepseek-v4-flash"
   },
-  "safetyScan": "Not run because real LLM credentials/config are unavailable.",
-  "note": "Real LLM Flow: BLOCKED - missing LLM credentials/config. Local fallback is not counted as real LLM evidence.",
-  "generatedAt": "2026-06-29T18:02:22.756Z"
+  "flowA": {
+    "intakeType": "quick_create",
+    "previewMode": "quick_create",
+    "deliveryId": "delivery-1783491066961-kmfzk",
+    "moduleKey": "world:cyber_xian_dan_shi",
+    "moduleId": "cyber_xian_dan_shi",
+    "storage": "temp-world-module",
+    "worldbookEntries": 3,
+    "chat": {
+      "status": "ok",
+      "localFallback": false,
+      "persistedTurnId": "turn-1"
+    }
+  },
+  "flowB": {
+    "intakeType": "localize_existing",
+    "previewMode": "localize_existing",
+    "deliveryId": "delivery-1783491102150-g48ay",
+    "moduleKey": "world:浮群岛灵能潮汐世界",
+    "moduleId": "浮群岛灵能潮汐世界",
+    "storage": "temp-world-module",
+    "worldbookEntries": 1,
+    "chat": null
+  },
+  "safetyScan": "PASS: no hidden/system/secret/local-path payload detected in smoke evidence.",
+  "generatedAt": "2026-07-08T06:11:42.170Z"
 }

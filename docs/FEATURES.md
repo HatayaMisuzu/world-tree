@@ -42,11 +42,15 @@ Completed:
 Not completed:
 
 - complete product UI editor
-- V2 server API
-- persistent V2 worldbook runtime service
+- complete product UI editor/runtime closure
 - full review/growth-tree V2 unification
 - product-grade import/export
 - browser-proven first-run flow
+
+Selected product/API loop evidence:
+
+- V2 load/save/candidates/inject-preview/export API paths exist for user-provided or structural Worldbook V2 content.
+- A persisted V2 worldbook runtime service exists for the selected API loop.
 
 ### Strategy Sim V2
 
@@ -65,12 +69,15 @@ Completed:
 Not completed:
 
 - complete product UI
-- V2 start/turn/save/export API
-- persistent run service
-- Creation Forge spec generation/confirmation/seal product flow
 - archetype library
 - quick-start templates
 - complete strategy gameplay
+
+Selected product/API loop evidence:
+
+- V2 validate/seal/start/turn/save/load/export API paths exist for user-provided sealed StrategySimSpec content.
+- A persisted V2 run service exists for the selected API loop.
+- Creation Forge spec generation/confirmation/seal remains a broader product flow, not a completed end-to-end UI closure.
 
 ## Shared project features
 
@@ -82,6 +89,7 @@ Not completed:
 | Workflow layer | active | candidate-first; no direct canon writes unless approved |
 | Import/export | active where implemented | not universal product-grade compatibility for every V2 foundation |
 | Documentation truth source | active | current files override archive/historical reports |
+| DeepSeek V4 Flash compatibility | verified for selected smoke paths | provider compatibility fix uses disabled thinking support; product-wide Real LLM closure still requires broader evidence |
 
 ## Development / verification
 

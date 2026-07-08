@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "mode": "browser entry plus API-assisted delivery/readback",
-  "dataDir": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-browser-user-content-CRCWzm",
+  "tempDataRoot": "isolated",
   "browserStepsRun": [
     "homepage loaded",
     "blank template area visible",
@@ -10,7 +10,7 @@
     "Flow B browser plan/preview/localize clicked"
   ],
   "apiAssistedSteps": [
-    "Flow A module id/path/readback captured through API",
+    "Flow A module id/readback captured through API",
     "Flow A first-turn persistence verified through API",
     "Flow B deliver/readback captured through API"
   ],
@@ -18,10 +18,10 @@
   "flowA": {
     "intakeType": "quick_create",
     "previewMode": "quick_create",
-    "deliveryId": "delivery-1782756146915-w1asb",
+    "deliveryId": "delivery-1783491386753-vmpqd",
     "moduleKey": "world:快速创世计划-2",
     "moduleId": "快速创世计划-2",
-    "worldPath": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-browser-user-content-CRCWzm\\engine\\worlds\\快速创世计划-2",
+    "storage": "temp-world-module",
     "readback": {
       "moduleListed": true,
       "moduleLoadStatus": "ok",
@@ -40,10 +40,10 @@
   "flowB": {
     "intakeType": "localize_existing",
     "previewMode": "localize_existing",
-    "deliveryId": "delivery-1782756147911-62c0h",
+    "deliveryId": "delivery-1783491387636-g03wm",
     "moduleKey": "world:本地化导入计划",
     "moduleId": "本地化导入计划",
-    "worldPath": "C:\\Users\\Lenovo\\AppData\\Local\\Temp\\world-tree-browser-user-content-CRCWzm\\engine\\worlds\\本地化导入计划",
+    "storage": "temp-world-module",
     "readback": {
       "moduleListed": true,
       "moduleLoadStatus": "ok",
@@ -53,5 +53,5 @@
       "chat": null
     }
   },
-  "generatedAt": "2026-06-29T18:02:27.960Z"
+  "generatedAt": "2026-07-08T06:16:27.666Z"
 }

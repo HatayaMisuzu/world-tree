@@ -16,6 +16,7 @@
 
 Current status: Full V2 is not complete. Selected V2 API/service loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; browser/UI entry flows remain PARTIAL or NOT PROVEN, and product-wide playable closure is not complete.
 Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure, blank template infrastructure, and `demo-world-cloud-steam-city` first-play smoke demo are recorded; role-card/scriptkill demo content packs, broader tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
+Current closure sprint notes: `ui-labels.js` is a required console static/package asset, and DeepSeek V4 Flash provider compatibility is verified for selected smoke paths with disabled-thinking support. This is still not product-wide Real LLM closure or PLAYABLE evidence.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree 文档索引
@@ -42,6 +43,7 @@ Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy 
 - **Status**: User-Created Content Product Closure PASS; Productization Closure PARTIAL by product decision
 - **Full V2**: Full product-wide V2 not complete; selected V2 API/service loops pass only for recorded user-provided/structural paths
 - **Browser QA**: user content browser smoke PASS; full product-wide browser QA NOT COMPLETE
+- **DeepSeek V4 Flash**: provider compatibility verified for selected smoke paths; product-wide Real LLM closure remains incomplete
 
 Product feature identity:
 

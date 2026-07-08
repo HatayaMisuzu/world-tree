@@ -41,12 +41,14 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | ENGINEERING_CLOSED | YES |
 | FIRST_PLAYABLE_CANDIDATE | YES |
 | PLAYABLE | NO |
-| Real LLM Flow | BLOCKED_BY_CREDENTIALS unless credentials/config are explicitly supplied |
+| Real LLM Flow | DeepSeek selected smoke paths recorded; product-wide Real LLM closure remains incomplete |
+| DeepSeek V4 Flash provider compatibility | VERIFIED for current closure sprint |
 | Human playtest | HUMAN_VALIDATION_REQUIRED |
 | Screen recording | HUMAN_VALIDATION_REQUIRED |
 | Remote CI | UNKNOWN unless a concrete workflow run is referenced |
 | Productization merge CI | UNKNOWN for latest fable5 commit unless a concrete workflow run is referenced |
 | Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
+| Release package static assets | `ui-labels.js` is served by the local server and included in package verification |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
 | Asset/function inventory role | preservation ledger / evidence index; not proof by itself |
 | fable5 batch run | batch 00-11 engineering run completed |
@@ -90,7 +92,8 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 - Creation Forge / Alchemy G1 has an implemented engineering loop for plan, generate-preview, localize, deliver, and deliveries.
 - Productization Closure is PARTIAL by product decision; User-Created Content Product Closure, blank template infrastructure, and `demo-world-cloud-steam-city` first-play smoke demo are recorded, while `demo-character`, `demo-scriptkill`, broader tutorial/onboarding content, product-wide manual smoke, and release readiness remain incomplete or deferred.
 - fable5 batch 00-11 engineering run is completed. Current status is ENGINEERING_CLOSED: YES, FIRST_PLAYABLE_CANDIDATE: YES, PLAYABLE: NO.
-- Real LLM Flow is BLOCKED_BY_CREDENTIALS until real credentials/config are provided and a non-fallback smoke is recorded.
+- DeepSeek V4 Flash selected real smoke evidence is recorded for connection diagnostics, first-play, user-content Alchemy, selected key paths, and long-prefix cache hit behavior.
+- DeepSeek V4 Flash provider compatibility fix is implemented for the standard OpenAI-compatible request paths, including disabled thinking support from the DeepSeek profile; this does not by itself make product-wide Real LLM closure PASS.
 - Human playtest and screen recording remain HUMAN_VALIDATION_REQUIRED.
 - fable5 smoke and PLAYABLE claims require real LLM evidence, human playtest evidence, and screen recording evidence; missing credentials or human validation must be labeled, not converted into PASS.
 - Selected V2 API/service closure is improved for user-provided/structural content across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill.
@@ -161,6 +164,7 @@ Product closure not complete:
 - `world-tree-console.js` remains the main browser UI script, but the browser utility/API client boundary has been extracted to `world-tree-client-core.js`.
 - No TypeScript migration.
 - Full product-wide browser QA remains incomplete unless a product entry browser smoke matrix is separately recorded.
+- The console shell requires `ui-labels.js`; the current closure sprint serves it as a public static asset and verifies it in the package.
 - Current built-in first-play example: `demo-world-cloud-steam-city` / 云上蒸汽城.
 - Later examples remain deferred after the first-play candidate: `demo-character` role-card content pack and `demo-scriptkill` scriptkill content pack.
 - Streaming abort currently guarantees frontend stop only; partial assistant text is not guaranteed to be persisted server-side unless a future `truncatedByUser` / `status: "partial"` path is implemented and tested.

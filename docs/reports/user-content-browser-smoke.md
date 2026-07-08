@@ -1,6 +1,6 @@
 # User Content Browser Smoke
 
-Date: 2026-06-29
+Date: 2026-07-08
 
 Status: PASS
 
@@ -16,7 +16,7 @@ Mode: browser entry plus API-assisted delivery/readback.
 
 ## API-Assisted Steps
 
-- PASS: Flow A module id/path/readback captured through API
+- PASS: Flow A module id/readback captured through API
 - PASS: Flow A first-turn persistence verified through API
 - PASS: Flow B deliver/readback captured through API
 
@@ -26,8 +26,8 @@ Console error/warning count: 0
 
 ## Created Module IDs
 
-- Flow A browser/API evidence module: `world:快速创世计划-2` at `C:\Users\Lenovo\AppData\Local\Temp\world-tree-browser-user-content-CRCWzm\engine\worlds\快速创世计划-2`
-- Flow B browser/API evidence module: `world:本地化导入计划` at `C:\Users\Lenovo\AppData\Local\Temp\world-tree-browser-user-content-CRCWzm\engine\worlds\本地化导入计划`
+- Flow A browser/API evidence module: `world:快速创世计划-2` in temporary isolated data root
+- Flow B browser/API evidence module: `world:本地化导入计划` in temporary isolated data root
 
 ## Readback Result
 

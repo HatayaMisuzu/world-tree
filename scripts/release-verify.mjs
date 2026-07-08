@@ -36,6 +36,7 @@ if (blocked.length) errors.push(`forbidden files in npm pack: ${blocked.join(", 
 if (Number(pack.size || 0) > MAX_PACKED_BYTES) errors.push(`packed size ${pack.size} exceeds ${MAX_PACKED_BYTES}`);
 if (!files.includes("LICENSE")) errors.push("LICENSE missing from npm pack");
 if (!files.includes("server.js")) errors.push("server.js missing from npm pack");
+if (!files.includes("ui-labels.js")) errors.push("ui-labels.js missing from npm pack");
 if (!files.some((file) => file.startsWith("defaults/examples/"))) errors.push("defaults/examples missing from npm pack");
 
 const summary = [

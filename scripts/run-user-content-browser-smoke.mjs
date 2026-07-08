@@ -99,6 +99,17 @@ async function verifyReadback(server, result, firstTurnInput = "") {
   };
 }
 
+function publicFlowEvidence(flow = {}) {
+  return {
+    intakeType: flow.intakeType,
+    previewMode: flow.previewMode,
+    deliveryId: flow.deliveryId,
+    moduleKey: flow.moduleKey,
+    moduleId: flow.moduleId,
+    storage: "temp-world-module"
+  };
+}
+
 async function clickAndWait(page, buttonName, responsePath) {
   const responsePromise = page.waitForResponse((response) => response.url().includes(responsePath) && response.status() === 200, { timeout: 15000 });
   await page.getByRole("button", { name: buttonName }).click();
@@ -165,7 +176,7 @@ try {
   const result = {
     status: consoleEvents.length === 0 ? "PASS" : "FAIL",
     mode: "browser entry plus API-assisted delivery/readback",
-    dataDir,
+    tempDataRoot: "isolated",
     browserStepsRun: [
       "homepage loaded",
       "blank template area visible",
@@ -174,13 +185,13 @@ try {
       "Flow B browser plan/preview/localize clicked"
     ],
     apiAssistedSteps: [
-      "Flow A module id/path/readback captured through API",
+      "Flow A module id/readback captured through API",
       "Flow A first-turn persistence verified through API",
       "Flow B deliver/readback captured through API"
     ],
     consoleEvents,
-    flowA: { ...flowA, readback: flowAReadback },
-    flowB: { ...flowB, readback: flowBReadback },
+    flowA: { ...publicFlowEvidence(flowA), readback: flowAReadback },
+    flowB: { ...publicFlowEvidence(flowB), readback: flowBReadback },
     generatedAt: new Date().toISOString()
   };
 
@@ -207,8 +218,8 @@ try {
     "",
     "## Created Module IDs",
     "",
-    `- Flow A browser/API evidence module: \`${flowA.moduleKey}\` at \`${flowA.worldPath}\``,
-    `- Flow B browser/API evidence module: \`${flowB.moduleKey}\` at \`${flowB.worldPath}\``,
+    `- Flow A browser/API evidence module: \`${flowA.moduleKey}\` in temporary isolated data root`,
+    `- Flow B browser/API evidence module: \`${flowB.moduleKey}\` in temporary isolated data root`,
     "",
     "## Readback Result",
     "",

@@ -2,7 +2,8 @@
 set -e
 
 echo ""
-echo "  🌳 World Tree Desktop v2.3.1"
+WT_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || echo unknown)"
+echo "  🌳 World Tree Desktop v${WT_VERSION}"
 echo "  ════════════════════════════"
 echo ""
 

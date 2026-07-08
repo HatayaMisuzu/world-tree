@@ -45,7 +45,8 @@ Historical reports may describe past limitations or past completion claims. They
 | ENGINEERING_CLOSED | YES |
 | FIRST_PLAYABLE_CANDIDATE | YES |
 | PLAYABLE | NO |
-| Real LLM | BLOCKED_BY_CREDENTIALS |
+| Real LLM | DeepSeek first-play/user-content evidence recorded; product-wide Real LLM closure remains incomplete |
+| DeepSeek V4 Flash provider compatibility | VERIFIED for current closure sprint |
 | Human playtest | HUMAN_VALIDATION_REQUIRED |
 | Screen recording | HUMAN_VALIDATION_REQUIRED |
 | User-Created Content Product Closure | PASS |
@@ -58,10 +59,11 @@ Historical reports may describe past limitations or past completion claims. They
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
 | Selected V2 API/service loops | PASS for user-provided/structural paths |
-| Full-function LLM prompt entry audit | PASS for local prompt contract coverage; live LLM behavior remains BLOCKED without credentials |
+| Full-function LLM prompt entry audit | PASS for local prompt contract coverage; DeepSeek live provider smoke recorded for selected paths |
 | Current documentation status | post-merge user-created content product closure alignment |
 | Remote CI | UNKNOWN for latest fable5 commit unless a concrete workflow run is referenced |
 | Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
+| Release package static assets | `ui-labels.js` static serving and npm pack inclusion fixed in current closure sprint |
 | fable5 overlay | fable5 revised four-file packet, batch 00-11 engineering run completed |
 
 ## Current status summary
@@ -82,16 +84,18 @@ Historical reports may describe past limitations or past completion claims. They
 - Full product-wide V2 is not complete.
 - Product-wide playable closure is not complete.
 - User-Created Content Product Closure is PASS for the recorded Flow A/Flow B paths.
-- Real LLM Flow is BLOCKED unless credentials/config are explicitly supplied and recorded.
+- DeepSeek V4 Flash real provider evidence is recorded for `/api/llm/test`, first-play smoke, user-content Alchemy smoke, selected key paths, and long-prefix cache hit behavior; this remains provider/selected-path evidence, not product-wide Real LLM closure.
+- DeepSeek V4 Flash provider compatibility fix is implemented in the OpenAI-compatible request paths with `thinking: disabled` support for the DeepSeek profile.
 - fable5 batch 00-11 engineering run is completed.
 - ENGINEERING_CLOSED is YES.
 - FIRST_PLAYABLE_CANDIDATE is YES.
 - PLAYABLE is NO until real LLM smoke, human playtest, and screen recording evidence all exist and are human-signed.
-- Real LLM is BLOCKED_BY_CREDENTIALS until credentials/config are supplied and a non-fallback smoke is recorded.
+- Real LLM is no longer blocked for the DeepSeek V4 Flash selected smoke paths recorded in the current closure sprint; other providers and product-wide behavior remain unproven unless separately recorded.
 - Human playtest and screen recording are HUMAN_VALIDATION_REQUIRED.
 - Productization Closure remains PARTIAL by product decision.
 - Selected V2 API/service loops are PASS only for the recorded user-provided/structural API paths.
 - Browser/UI entry flows for the selected V2 loops are PARTIAL or NOT PROVEN unless a dedicated UI smoke is recorded.
+- `ui-labels.js` is a required public static asset and package file for the console shell.
 - Full-function LLM prompt entry audit is PASS for local contract coverage, not a live LLM behavior PASS.
 - v1.0.0 is NOT READY.
 - `demo-world-cloud-steam-city` is implemented as the current built-in first-play smoke demo.

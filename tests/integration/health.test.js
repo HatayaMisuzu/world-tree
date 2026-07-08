@@ -39,3 +39,25 @@ test("health defaults to lightweight local status and full detail computes size"
     await removeTempDir(dataDir);
   }
 });
+
+test("console public static assets include ui-labels", async () => {
+  const dataDir = await createTempDataDir("world-tree-static-assets-");
+  const server = await startWorldTreeServer({ dataDir });
+
+  try {
+    for (const path of [
+      "/world-tree-console.css",
+      "/world-tree-client-core.js",
+      "/ui-labels.js",
+      "/world-tree-console.js"
+    ]) {
+      const response = await fetch(`${server.baseUrl}${path}`);
+      assert.equal(response.status, 200, `${path} should be served`);
+      const text = await response.text();
+      assert.ok(text.length > 0, `${path} should not be empty`);
+    }
+  } finally {
+    await server.stop();
+    await removeTempDir(dataDir);
+  }
+});

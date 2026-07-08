@@ -20,6 +20,17 @@ test("ui-labels exposes public-facing terminology replacements", async () => {
   assert.equal(globalThis.WT_UI_LABELS.label("missing", "fallback"), "fallback");
 });
 
+test("release manifest and verifier keep ui-labels in the package", () => {
+  const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+  const releaseVerify = readFileSync("scripts/release-verify.mjs", "utf8");
+  const startSh = readFileSync("start.sh", "utf8");
+
+  assert.ok(pkg.files.includes("ui-labels.js"));
+  assert.match(releaseVerify, /ui-labels\.js missing from npm pack/);
+  assert.match(startSh, /package\.json/);
+  assert.doesNotMatch(startSh, /v2\.3\.1/);
+});
+
 test("route registry rejects duplicate routes and resolves method/path handlers", () => {
   const handler = () => ({ status: "ok" });
   const registry = createRouteRegistry([{ method: "get", path: "/api/demo", domain: "misc", handler }]);

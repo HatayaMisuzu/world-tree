@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 import { createTempDataDir, removeTempDir, startWorldTreeServer } from "../tests/integration/helpers/server-process.js";
 
 async function run() {
   const dataDir = await createTempDataDir("wt-v2-product-browser-smoke-");
-  const evidenceDir = join("audit", `v2-product-shell-browser-${Date.now()}`);
+  const evidenceDir = resolve(process.env.WT_BROWSER_MATRIX_REPORT_DIR || join("..", "world-tree-product-usable-closure-output"), `v2-product-shell-browser-${Date.now()}`);
   mkdirSync(evidenceDir, { recursive: true });
   const server = await startWorldTreeServer({ dataDir, env: { WORLD_TREE_DISABLE_LLM: "1" } });
   const browser = await chromium.launch();
