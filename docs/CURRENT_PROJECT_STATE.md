@@ -26,12 +26,12 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | Current branch | `main` |
 | Latest audited commit | `6a969fb5cf8975231224478f602d491c271c99b1` |
 | Latest productization merge commit | `6a969fb5cf8975231224478f602d491c271c99b1` |
-| V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI` |
+| V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI`; current remote CI evidence is verified through GitHub Actions check-runs, while legacy combined status may remain UNKNOWN/pending/0 |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
 | Global product closure | PRODUCT CLOSURE NOT COMPLETE |
 | Selected V2 API/service loops | PASS for user-provided/structural paths |
-| Full-function LLM prompt entry audit | PASS for local prompt contract coverage; live LLM behavior remains BLOCKED without credentials |
+| Full-function LLM prompt entry audit | PASS for local prompt contract coverage; selected DeepSeek live smoke recorded with exposed token usage |
 | Productization Closure report | `docs/reports/productization-closure-report.md` reports PARTIAL by product decision |
 | User-Created Content Product Closure | PASS |
 | Blank template infrastructure | PASS |
@@ -45,9 +45,9 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | DeepSeek V4 Flash provider compatibility | VERIFIED for current closure sprint |
 | Human playtest | HUMAN_VALIDATION_REQUIRED |
 | Screen recording | HUMAN_VALIDATION_REQUIRED |
-| Remote CI | UNKNOWN unless a concrete workflow run is referenced |
-| Productization merge CI | UNKNOWN for latest fable5 commit unless a concrete workflow run is referenced |
-| Browser QA | User content browser smoke PASS; full product-wide browser QA NOT COMPLETE |
+| Remote CI | GitHub Actions check-runs PASS when `npm run ci:github-actions-checks` records completed successful check-runs; legacy combined status may remain UNKNOWN/pending/0 |
+| Productization merge CI | Use check-runs evidence, not legacy combined status alone; legacy status may still report UNKNOWN |
+| Browser QA | 8/8 product entry browser matrix PASS for reachability, next-step clarity, and selected V2 API product loops; human/manual PLAYABLE QA NOT COMPLETE |
 | Release package static assets | `ui-labels.js` is served by the local server and included in package verification |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
 | Asset/function inventory role | preservation ledger / evidence index; not proof by itself |
@@ -71,11 +71,11 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | Prompt Orchestration Layer v1 | COMPLETE | Prompt infrastructure | `test:prompts` |
 | P3 M1-M11 Legacy Mechanism Kernel | COMPLETE | Module layer, not product entries | `test:legacy-mechanisms` |
 | Workflow Integration W0-W4 | COMPLETE | Workflow layer | `test:workflows`, `workflow:check` |
-| Tabletop V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED STRUCTURAL API/SERVICE LOOP PASS; BROWSER UI FLOW NOT PROVEN | `test:tabletop-v2-full`, `test:v2-product-playable` |
-| Detective V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED CASE API/SERVICE LOOP PASS; BROWSER UI FLOW NOT PROVEN | `test:detective-v2-full`, `test:v2-product-playable` |
+| Tabletop V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED STRUCTURAL API/SERVICE LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:tabletop-v2-full`, `test:v2-product-playable`, `smoke:product-entry-browser-matrix` |
+| Detective V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED CASE API/SERVICE LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:detective-v2-full`, `test:v2-product-playable`, `smoke:product-entry-browser-matrix` |
 | Character V2 Long-term | ENGINEERING/SERVICE CLOSURE COMPLETE | PRODUCT CLOSURE PARTIAL | `test:character-v2-long-term` |
-| Single Player ScriptKill V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED PACKAGE API/SERVICE LOOP PASS; BROWSER UI FLOW NOT PROVEN | `test:single-player-scriptkill-v2`, `test:v2-product-playable` |
-| Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | USER-PROVIDED SPEC API LOOP PASS; BROWSER UI FLOW NOT PROVEN | `test:strategy-sim-v2`, `test:strategy-sim-v2-product` |
+| Single Player ScriptKill V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED PACKAGE API/SERVICE LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:single-player-scriptkill-v2`, `test:v2-product-playable`, `smoke:product-entry-browser-matrix` |
+| Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | USER-PROVIDED SPEC API LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:strategy-sim-v2`, `test:strategy-sim-v2-product`, `smoke:product-entry-browser-matrix` |
 | Worldbook V2 | ENGINEERING FOUNDATION COMPLETE | USER-PROVIDED/STRUCTURAL API LOOP PASS; BROWSER UI EDITOR PARTIAL | `test:worldbook-v2`, `test:worldbook-v2-product` |
 | Quick Setting | USABLE THIN LOOP | PRODUCT CLOSURE PARTIAL | current project creation flow |
 | Creation Forge | G1 ENGINEERING LOOP IMPLEMENTED | PRODUCT CLOSURE IN PROGRESS | `test:alchemy-closure`, `docs/reports/productization-reality-check.md` |
@@ -97,9 +97,9 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 - Human playtest and screen recording remain HUMAN_VALIDATION_REQUIRED.
 - fable5 smoke and PLAYABLE claims require real LLM evidence, human playtest evidence, and screen recording evidence; missing credentials or human validation must be labeled, not converted into PASS.
 - Selected V2 API/service closure is improved for user-provided/structural content across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill.
-- Browser/UI entry flows for these five entries remain PARTIAL or NOT PROVEN unless a dedicated UI smoke is recorded.
+- Browser/UI entry flows for all 8 canonical entries now have a dedicated automated browser matrix PASS for reachability, next-step clarity, clean browser health, and selected V2 API product loops.
 - Full product-wide playable closure remains incomplete.
-- Full-function LLM prompt entry audit covers local prompt contracts for all 8 product entries; live LLM behavior remains blocked without credentials/config.
+- Full-function LLM prompt entry audit covers local prompt contracts for all 8 product entries. DeepSeek live behavior is selected-path only; exposed first-play/user-content chat token usage is now recorded, while some Alchemy endpoint usage remains not exposed by endpoint.
 - Full product-wide V2 is not complete.
 
 ## Entry-specific current facts

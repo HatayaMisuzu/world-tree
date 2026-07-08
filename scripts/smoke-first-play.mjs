@@ -8,6 +8,7 @@ import {
   removeTempDir,
   startWorldTreeServer
 } from "../tests/integration/helpers/server-process.js";
+import { summarizeUsageRecords } from "../src/core/llm/usage-meter.js";
 
 const root = resolve(".");
 const reportDir = resolve(process.env.WT_SMOKE_REPORT_DIR || join(root, "docs", "reports"));
@@ -59,6 +60,15 @@ function writeReport(result) {
     "## Turns",
     "",
     ...(result.turns || []).map(turn => `- Turn ${turn.turn}: status=${turn.status}; narrativeChars=${turn.narrativeChars}; persistedTurnId=${turn.persistedTurnId || ""}`),
+    "",
+    "## Usage",
+    "",
+    `- observed provider calls with usage: ${result.usage?.stageCount || 0}`,
+    `- prompt tokens: ${result.usage?.promptTokens || 0}`,
+    `- completion tokens: ${result.usage?.completionTokens || 0}`,
+    `- total tokens: ${result.usage?.totalTokens || 0}`,
+    `- cache hit tokens: ${result.usage?.cacheHitTokens || 0}`,
+    `- reasoning tokens: ${result.usage?.reasoningTokens || 0}`,
     "",
     "## Notes",
     "",
@@ -114,6 +124,7 @@ if (!provider.baseUrl || !provider.model || !apiKey) {
   const server = await startWorldTreeServer({ dataDir });
   const assertions = [];
   const turns = [];
+  const usageRecords = [];
   try {
     await api(server, "/api/config", {
       method: "POST",
@@ -157,8 +168,10 @@ if (!provider.baseUrl || !provider.model || !apiKey) {
         narrativeChars: narrative.length,
         localFallback: chat.body?.localFallback === true,
         persistedTurnId: chat.body?.persistedIds?.turnId || "",
+        usage: chat.body?.usage?.turn || null,
         contextContainsFirstTerm
       });
+      if (chat.body?.usage?.turn) usageRecords.push({ usage: chat.body.usage.turn });
       assertPass(assertions, `turn_${i + 1}_status_ok`, chat.body?.status === "ok", `status=${chat.body?.status}; code=${chat.body?.code || ""}`);
       assertPass(assertions, `turn_${i + 1}_not_local_fallback`, chat.body?.localFallback !== true, "local fallback is not real LLM evidence");
       assertPass(assertions, `turn_${i + 1}_narrative_length`, narrative.length >= 80, `narrative length ${narrative.length}`);
@@ -180,6 +193,8 @@ if (!provider.baseUrl || !provider.model || !apiKey) {
       moduleKey,
       assertions,
       turns,
+      usage: summarizeUsageRecords(usageRecords),
+      usageCompleteness: usageRecords.length === actions.length ? "complete_for_chat_turns" : "partial_usage_missing_from_some_chat_turns",
       note: "PASS requires a real provider key supplied through environment variables. Human playtest and screen recording are still HUMAN_VALIDATION_REQUIRED.",
       generatedAt: new Date().toISOString()
     };

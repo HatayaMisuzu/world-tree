@@ -110,6 +110,7 @@
     "self-report": "node scripts/self-report.mjs",
     "quality:governance": "npm run narrative:eval && node --test tests/unit/quality-governance.test.js",
     "truth:check": "node scripts/check-truth-source-sync.mjs",
+    "ci:github-actions-checks": "node scripts/verify-github-actions-checks.mjs",
     "test:v2-route-registry": "node --test tests/unit/v2-product-route-registry.test.js",
     "test:console-boundary": "node --check world-tree-client-core.js && node --check world-tree-console.js && node --test tests/unit/console-client-core.test.js",
     "docs:lifecycle:check": "node scripts/audit-doc-lifecycle.mjs"

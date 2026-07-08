@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 
@@ -22,6 +22,7 @@ function loadPlaywright() {
 const { chromium } = loadPlaywright();
 
 const reportDir = resolve(process.env.WT_BROWSER_MATRIX_REPORT_DIR || join("..", "world-tree-product-usable-closure-output"));
+const scriptkillFixture = JSON.parse(readFileSync(new URL("../tests/fixtures/single-player-scriptkill-v2/ready-package.json", import.meta.url), "utf8"));
 const entries = [
   {
     id: "quick-setting",
@@ -56,8 +57,9 @@ const entries = [
     title: /桌面叙事|Tabletop/,
     input: "#tabletopText",
     action: '[data-action="tabletop-start"]',
-    expectedStatus: "PARTIAL",
-    note: "大厅可见，可创建普通 Tabletop 草稿；不是完整 DND，Tabletop V2 导入需进入项目后使用。"
+    apiProbe: "tabletop",
+    expectedStatus: "PASS",
+    note: "大厅可见，可创建普通 Tabletop 草稿；V2 产品 API 可 start/turn/save/branch/export。"
   },
   {
     id: "mystery-puzzle",
@@ -65,8 +67,9 @@ const entries = [
     title: /解谜调查|Mystery Puzzle/,
     input: "#mysteryText",
     action: '[data-action="mystery-puzzle-start"]',
-    expectedStatus: "PARTIAL",
-    note: "大厅可见，可创建调查草稿；不是完整推理引擎。"
+    apiProbe: "detective",
+    expectedStatus: "PASS",
+    note: "大厅可见，可创建调查草稿；V2 产品 API 可 import/start/investigate/interrogate/deduction/export。"
   },
   {
     id: "strategy-sim",
@@ -74,8 +77,9 @@ const entries = [
     title: /策略模拟|Strategy Sim/,
     input: "#strategyText",
     action: '[data-action="strategy-sim-start"]',
-    expectedStatus: "PARTIAL",
-    note: "大厅可见，可创建策略草稿；不是完整 4X。"
+    apiProbe: "strategy",
+    expectedStatus: "PASS",
+    note: "大厅可见，可创建策略草稿；V2 产品 API 可 seal/start/turn/save/export。"
   },
   {
     id: "murder-mystery",
@@ -84,8 +88,9 @@ const entries = [
     input: "#murderText",
     action: '[data-action="murder-mystery-start"]',
     secondaryAction: '[data-action="single-player-scriptkill-v2-toggle-panel"]',
-    expectedStatus: "PARTIAL",
-    note: "大厅可见，V2 面板可触达；内置剧本杀内容包仍未完成。"
+    apiProbe: "scriptkill",
+    expectedStatus: "PASS",
+    note: "大厅可见，V2 面板可触达；V2 产品 API 可 import/start/read/talk/search/vote/debrief/export。"
   },
   {
     id: "creation-forge",
@@ -102,6 +107,129 @@ function statusFor(checks, expectedStatus) {
   return expectedStatus;
 }
 
+function strategySpec() {
+  return {
+    specId: "browser_matrix_strategy",
+    title: "Browser Matrix Strategy",
+    resources: [{ id: "supply", label: "Supply", min: 0, max: 10, initial: 5, visibility: "public", maxDeltaPerTurn: 2 }],
+    variables: [{ id: "secret_pressure", min: 0, max: 10, initial: 2, visibility: "secret" }],
+    mechanisms: [{ id: "ration", triggerTags: ["ration"], effects: [{ targetId: "supply", targetType: "resource", delta: -1 }] }],
+    probabilityRules: [{ id: "scout", triggerTags: ["scout"], baseChance: 0.5, visibility: "partial" }]
+  };
+}
+
+async function postJson(page, path, body) {
+  return page.evaluate(async ({ path, body }) => {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const text = await response.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch {
+      json = { status: "error", code: "INVALID_JSON_RESPONSE", bodyText: text.slice(0, 200) };
+    }
+    return { httpStatus: response.status, body: json };
+  }, { path, body });
+}
+
+function okCheck(id, response, predicate = (body) => body?.status === "ok") {
+  return {
+    id,
+    ok: response?.httpStatus === 200 && predicate(response.body),
+    detail: `http=${response?.httpStatus}; status=${response?.body?.status || "missing"}; code=${response?.body?.code || ""}`
+  };
+}
+
+async function probeTabletop(page) {
+  const checks = [];
+  const start = await postJson(page, "/api/tabletop-v2/start", { module: { title: "Browser Matrix Tabletop", sourceType: "quick_start" } });
+  checks.push(okCheck("api_tabletop_start", start));
+  const runId = start.body?.run?.runId || "";
+  checks.push(okCheck("api_tabletop_turn", await postJson(page, "/api/tabletop-v2/turn", { runId, playerIntent: "I inspect the room." })));
+  const save = await postJson(page, "/api/tabletop-v2/save", { runId, label: "browser matrix fork" });
+  checks.push(okCheck("api_tabletop_save", save));
+  const branch = await postJson(page, "/api/tabletop-v2/branch", { runId, saveId: save.body?.saveId, branchLabel: "alternate" });
+  checks.push(okCheck("api_tabletop_branch", branch));
+  checks.push(okCheck("api_tabletop_export", await postJson(page, "/api/tabletop-v2/export-run", { runId })));
+  return checks;
+}
+
+async function probeDetective(page) {
+  const checks = [];
+  const text = JSON.stringify({
+    title: "Browser Matrix Case",
+    truthLedger: { culpritIds: ["suspect_a"], motive: "hidden", method: "hidden" },
+    locations: [{ locationId: "room", name: "Room", isStartingLocation: true }],
+    evidence: [{ evidenceId: "note", name: "Public Note", locationId: "room", summary: "A public clue.", hiddenMeaning: "SECRET_SOLUTION" }],
+    characters: [{ characterId: "suspect_a", name: "Suspect A", isCulprit: true }],
+    testimony: [{ testimonyId: "t1", characterId: "suspect_a", publicText: "I was nearby.", deceptionReason: "SECRET_LIE" }]
+  });
+  const imported = await postJson(page, "/api/detective-v2/import-commit", { text });
+  checks.push(okCheck("api_detective_import", imported));
+  const started = await postJson(page, "/api/detective-v2/start", { caseId: imported.body?.caseId });
+  checks.push(okCheck("api_detective_start", started));
+  const runId = started.body?.run?.runId || "";
+  checks.push(okCheck("api_detective_investigate", await postJson(page, "/api/detective-v2/investigate", { runId, locationId: "room" })));
+  checks.push(okCheck("api_detective_interrogate", await postJson(page, "/api/detective-v2/interrogate", { runId, characterId: "suspect_a", question: "Where were you?" })));
+  const note = await postJson(page, "/api/detective-v2/notebook/extract", { runId, selection: { sourceType: "evidence", sourceId: "note" } });
+  checks.push(okCheck("api_detective_notebook_extract", note));
+  checks.push(okCheck("api_detective_deduction_submit", await postJson(page, "/api/detective-v2/deduction/submit", { runId, report: { culpritId: "suspect_a", method: "guess" } })));
+  const exported = await postJson(page, "/api/detective-v2/export-run", { runId });
+  checks.push(okCheck("api_detective_export_no_secret", exported, (body) => body?.status === "ok" && !JSON.stringify(body.report || {}).includes("SECRET_SOLUTION")));
+  return checks;
+}
+
+async function probeStrategy(page) {
+  const checks = [];
+  const sealed = await postJson(page, "/api/strategy-sim-v2/spec/seal", { spec: strategySpec() });
+  checks.push(okCheck("api_strategy_seal", sealed));
+  const started = await postJson(page, "/api/strategy-sim-v2/start", { runId: "browser_matrix_strategy", sealedSpec: sealed.body?.spec });
+  checks.push(okCheck("api_strategy_start", started));
+  const turn = await postJson(page, "/api/strategy-sim-v2/turn", { runId: "browser_matrix_strategy", action: "ration and scout" });
+  checks.push(okCheck("api_strategy_turn_no_secret", turn, (body) => body?.status === "ok" && !JSON.stringify(body.publicView || {}).includes("secret_pressure")));
+  checks.push(okCheck("api_strategy_save", await postJson(page, "/api/strategy-sim-v2/save", { runId: "browser_matrix_strategy" })));
+  checks.push(okCheck("api_strategy_export", await postJson(page, "/api/strategy-sim-v2/export-run", { runId: "browser_matrix_strategy" })));
+  return checks;
+}
+
+async function probeScriptkill(page) {
+  const checks = [];
+  const imported = await postJson(page, "/api/single-player-scriptkill-v2/import-commit", { package: scriptkillFixture });
+  checks.push(okCheck("api_scriptkill_import", imported));
+  const started = await postJson(page, "/api/single-player-scriptkill-v2/start", { scriptId: imported.body?.scriptId, runId: "browser_matrix_scriptkill", realPlayerRoleId: "role_writer" });
+  checks.push(okCheck("api_scriptkill_start", started));
+  const runId = started.body?.runId || "";
+  checks.push(okCheck("api_scriptkill_read_role", await postJson(page, "/api/single-player-scriptkill-v2/read-role-act", { runId })));
+  await postJson(page, "/api/single-player-scriptkill-v2/advance-phase", { runId, nextPhaseId: "phase_public" });
+  checks.push(okCheck("api_scriptkill_public_talk", await postJson(page, "/api/single-player-scriptkill-v2/public-talk", { runId, text: "I give my timeline." })));
+  await postJson(page, "/api/single-player-scriptkill-v2/advance-phase", { runId, nextPhaseId: "phase_search" });
+  checks.push(okCheck("api_scriptkill_search", await postJson(page, "/api/single-player-scriptkill-v2/search", { runId, clueId: "clue_watch", keepPrivate: true })));
+  await postJson(page, "/api/single-player-scriptkill-v2/advance-phase", { runId, nextPhaseId: "phase_vote" });
+  checks.push(okCheck("api_scriptkill_vote", await postJson(page, "/api/single-player-scriptkill-v2/vote", { runId, targetRoleId: "role_doctor" })));
+  await postJson(page, "/api/single-player-scriptkill-v2/advance-phase", { runId, nextPhaseId: "phase_debrief" });
+  checks.push(okCheck("api_scriptkill_debrief", await postJson(page, "/api/single-player-scriptkill-v2/debrief", { runId })));
+  const exported = await postJson(page, "/api/single-player-scriptkill-v2/export-run", { runId });
+  checks.push(okCheck("api_scriptkill_export_player_view", exported, (body) => {
+    const playerRun = body?.export?.playerRun || {};
+    const text = JSON.stringify(playerRun);
+    return body?.status === "ok" &&
+      playerRun.dmBook === undefined &&
+      playerRun.fullTruth === undefined &&
+      !/culpritRoleId|dmMeaning|debriefScript/.test(text);
+  }));
+  return checks;
+}
+
+async function runApiProbe(page, probe) {
+  if (probe === "tabletop") return probeTabletop(page);
+  if (probe === "detective") return probeDetective(page);
+  if (probe === "strategy") return probeStrategy(page);
+  if (probe === "scriptkill") return probeScriptkill(page);
+  return [];
+}
+
 function markdown(result) {
   const lines = [
     "# Product Entry Browser Matrix",
@@ -110,9 +238,9 @@ function markdown(result) {
     "",
     `Overall: ${result.status}`,
     "",
-    "| Entry | Status | Reachable | Empty/Next Step | LLM State | Notes |",
-    "|---|---|---:|---:|---|---|",
-    ...result.entries.map((entry) => `| ${entry.id} | ${entry.status} | ${entry.reachable ? "YES" : "NO"} | ${entry.nextStepClear ? "YES" : "NO"} | ${entry.llmState} | ${entry.note} |`),
+    "| Entry | Status | Reachable | Empty/Next Step | API Product Loop | LLM State | Notes |",
+    "|---|---|---:|---:|---:|---|---|",
+    ...result.entries.map((entry) => `| ${entry.id} | ${entry.status} | ${entry.reachable ? "YES" : "NO"} | ${entry.nextStepClear ? "YES" : "NO"} | ${entry.apiProductLoop} | ${entry.llmState} | ${entry.note} |`),
     "",
     "## Browser Health",
     "",
@@ -122,7 +250,7 @@ function markdown(result) {
     "",
     "## Boundary",
     "",
-    "This smoke proves lobby/navigation reachability and basic next-step clarity. It does not claim complete gameplay closure, product-wide PLAYABLE status, or v1.0 release readiness."
+    "This smoke proves lobby/navigation reachability, basic next-step clarity, and selected API product loops for V2 entries. It does not claim human-signed PLAYABLE status or v1.0 release readiness."
   ];
   return `${lines.join("\n")}\n`;
 }
@@ -164,6 +292,8 @@ async function run() {
         { id: "action_enabled", ok: actionEnabled },
         { id: "secondary_visible", ok: secondaryVisible }
       ];
+      const apiChecks = await runApiProbe(page, entry.apiProbe);
+      checks.push(...apiChecks);
 
       matrix.push({
         id: entry.id,
@@ -171,6 +301,7 @@ async function run() {
         status: statusFor(checks, entry.expectedStatus),
         reachable: titleVisible && actionEnabled,
         nextStepClear: inputVisible && actionEnabled && secondaryVisible,
+        apiProductLoop: entry.apiProbe ? (apiChecks.length > 0 && apiChecks.every((item) => item.ok) ? "PASS" : "FAIL") : "N/A",
         llmState,
         checks,
         note: entry.note
@@ -205,7 +336,7 @@ async function run() {
       consoleErrors: result.consoleErrors.length,
       failedResponses: result.failedResponses.length
     }, null, 2));
-    if (!["PASS", "PARTIAL"].includes(result.status)) process.exitCode = 1;
+    if (result.status !== "PASS") process.exitCode = 1;
   } finally {
     await browser.close();
     await server.stop();

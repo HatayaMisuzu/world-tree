@@ -7,27 +7,48 @@
   "flowA": {
     "intakeType": "quick_create",
     "previewMode": "quick_create",
-    "deliveryId": "delivery-1783491066961-kmfzk",
-    "moduleKey": "world:cyber_xian_dan_shi",
-    "moduleId": "cyber_xian_dan_shi",
+    "deliveryId": "delivery-1783492565269-zs6ah",
+    "moduleKey": "world:cyber_xian_dan_escape",
+    "moduleId": "cyber_xian_dan_escape",
     "storage": "temp-world-module",
     "worldbookEntries": 3,
     "chat": {
       "status": "ok",
       "localFallback": false,
-      "persistedTurnId": "turn-1"
+      "persistedTurnId": "turn-1",
+      "usage": {
+        "promptTokens": 3653,
+        "completionTokens": 540,
+        "totalTokens": 4193,
+        "cacheHitTokens": 2944,
+        "cacheMissTokens": 709,
+        "reasoningTokens": 0,
+        "estimatedCostCny": 0,
+        "stageCount": 2
+      }
     }
   },
   "flowB": {
     "intakeType": "localize_existing",
     "previewMode": "localize_existing",
-    "deliveryId": "delivery-1783491102150-g48ay",
-    "moduleKey": "world:浮群岛灵能潮汐世界",
-    "moduleId": "浮群岛灵能潮汐世界",
+    "deliveryId": "delivery-1783492602576-k5n3w",
+    "moduleKey": "world:浮空城邦与灵能潮汐",
+    "moduleId": "浮空城邦与灵能潮汐",
     "storage": "temp-world-module",
     "worldbookEntries": 1,
     "chat": null
   },
+  "usage": {
+    "promptTokens": 3653,
+    "completionTokens": 540,
+    "totalTokens": 4193,
+    "cacheHitTokens": 2944,
+    "cacheMissTokens": 709,
+    "reasoningTokens": 0,
+    "estimatedCostCny": 0,
+    "stageCount": 1
+  },
+  "usageCompleteness": "complete_for_exposed_chat_turn_usage; alchemy plan/preview usage not exposed by endpoint",
   "safetyScan": "PASS: no hidden/system/secret/local-path payload detected in smoke evidence.",
-  "generatedAt": "2026-07-08T06:11:42.170Z"
+  "generatedAt": "2026-07-08T06:36:42.595Z"
 }

@@ -8,6 +8,7 @@ import {
   removeTempDir,
   startWorldTreeServer
 } from "../tests/integration/helpers/server-process.js";
+import { summarizeUsageRecords } from "../src/core/llm/usage-meter.js";
 
 const root = resolve(".");
 const reportsDir = join(root, "docs", "reports");
@@ -58,6 +59,16 @@ function writeReport(result) {
     "## Safety Scan",
     "",
     `- ${result.safetyScan || "Not run."}`,
+    "",
+    "## Usage",
+    "",
+    `- observed provider calls with usage: ${result.usage?.stageCount || 0}`,
+    `- prompt tokens: ${result.usage?.promptTokens || 0}`,
+    `- completion tokens: ${result.usage?.completionTokens || 0}`,
+    `- total tokens: ${result.usage?.totalTokens || 0}`,
+    `- cache hit tokens: ${result.usage?.cacheHitTokens || 0}`,
+    `- reasoning tokens: ${result.usage?.reasoningTokens || 0}`,
+    `- completeness: ${result.usageCompleteness || "not available"}`,
     "",
     "## Commands Run",
     "",
@@ -142,7 +153,8 @@ async function runFlow(server, options) {
     chat: chat ? {
       status: chat.body.status,
       localFallback: chat.body.localFallback === true,
-      persistedTurnId: chat.body.persistedIds?.turnId || ""
+      persistedTurnId: chat.body.persistedIds?.turnId || "",
+      usage: chat.body.usage?.turn || null
     } : null
   };
 }
@@ -184,6 +196,7 @@ if (!runEnabled) {
       expectedIntakeTypes: ["localize_existing", "mixed"],
       selectedTargets: ["world_module", "worldbook"]
     });
+    const usageRecords = [flowA.chat?.usage, flowB.chat?.usage].filter(Boolean).map((usage) => ({ usage }));
 
     const payload = [
       JSON.stringify(flowA),
@@ -201,6 +214,8 @@ if (!runEnabled) {
       provider: { baseUrl, model },
       flowA,
       flowB,
+      usage: summarizeUsageRecords(usageRecords),
+      usageCompleteness: usageRecords.length > 0 ? "complete_for_exposed_chat_turn_usage; alchemy plan/preview usage not exposed by endpoint" : "not_exposed_by_endpoint",
       safetyScan: "PASS: no hidden/system/secret/local-path payload detected in smoke evidence.",
       generatedAt: new Date().toISOString()
     };

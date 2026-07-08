@@ -14,9 +14,9 @@
 | [plans/fable5-03-optimization-plan-revised.md](plans/fable5-03-optimization-plan-revised.md) | Active fable5 revised optimization plan |
 | [plans/fable5-04-future-execution-revised.md](plans/fable5-04-future-execution-revised.md) | Active fable5 revised future execution plan |
 
-Current status: Full V2 is not complete. Selected V2 API/service loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; browser/UI entry flows remain PARTIAL or NOT PROVEN, and product-wide playable closure is not complete.
+Current status: Full V2 is not complete. Selected V2 API/service loops are PASS for user-provided/structural paths across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill; the 8-entry automated browser matrix is PASS for reachability, next-step clarity, clean browser health, and selected V2 API product loops; product-wide playable closure is not complete.
 Productization Closure is PARTIAL by product decision. Creation Forge / Alchemy G1 user-created content product closure, blank template infrastructure, and `demo-world-cloud-steam-city` first-play smoke demo are recorded; role-card/scriptkill demo content packs, broader tutorials/onboarding content, product-wide manual smoke, full product-wide V2, and release readiness remain deferred or incomplete until recorded in closure reports.
-Current closure sprint notes: `ui-labels.js` is a required console static/package asset, and DeepSeek V4 Flash provider compatibility is verified for selected smoke paths with disabled-thinking support. This is still not product-wide Real LLM closure or PLAYABLE evidence.
+Current closure sprint notes: `ui-labels.js` is a required console static/package asset, DeepSeek V4 Flash provider compatibility is verified for selected smoke paths with disabled-thinking support, exposed first-play/user-content chat token usage is recorded, and GitHub Actions should be verified through check-runs rather than legacy combined status alone. This is still not product-wide Real LLM closure or PLAYABLE evidence.
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree 文档索引
@@ -38,11 +38,11 @@ Current closure sprint notes: `ui-labels.js` is a required console static/packag
 - **Current branch**: `main`
 - **Latest audited commit**: `6a969fb5cf8975231224478f602d491c271c99b1`
 - **Latest productization merge commit**: `6a969fb5cf8975231224478f602d491c271c99b1`
-- **Remote CI**: `UNKNOWN` unless a concrete workflow run is referenced
-- **Productization merge CI**: UNKNOWN for latest fable5 commit unless a concrete workflow run is referenced
+- **Remote CI**: verify through GitHub Actions check-runs; legacy combined status may remain UNKNOWN/pending/0
+- **Productization merge CI**: use concrete check-runs evidence, not legacy combined status alone; legacy status may still report UNKNOWN
 - **Status**: User-Created Content Product Closure PASS; Productization Closure PARTIAL by product decision
 - **Full V2**: Full product-wide V2 not complete; selected V2 API/service loops pass only for recorded user-provided/structural paths
-- **Browser QA**: user content browser smoke PASS; full product-wide browser QA NOT COMPLETE
+- **Browser QA**: 8/8 product entry browser matrix PASS for automated reachability, next-step clarity, and selected V2 API product loops; human/manual PLAYABLE QA NOT COMPLETE
 - **DeepSeek V4 Flash**: provider compatibility verified for selected smoke paths; product-wide Real LLM closure remains incomplete
 
 Product feature identity:
