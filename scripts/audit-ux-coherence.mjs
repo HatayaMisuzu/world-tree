@@ -116,7 +116,11 @@ if (progressLiteral && !(js.includes("chat-default") || js.includes("progressPro
 console.log("\n6. Current project state truth-source wording");
 expect(stateDoc.includes("UX_ENTRY_COHERENCE") || stateDoc.includes("UX Coherence") || stateDoc.includes("Browser QA"), "CURRENT_PROJECT_STATE mentions UX/browser QA limitations", "CURRENT_PROJECT_STATE lacks UX/browser QA truth source wording");
 expect(stateDoc.includes("LLM_ROUTING") || stateDoc.includes("Prompt") || stateDoc.includes("LLM"), "CURRENT_PROJECT_STATE mentions LLM/prompt routing state", "CURRENT_PROJECT_STATE lacks LLM/prompt routing state wording");
-if (/Prompt Orchestration Layer v1 \| COMPLETE/.test(stateDoc) && !stateDoc.includes("LLM_ROUTING_ALIGNMENT")) {
+const promptRuntimeBoundaryIsExplicit =
+  stateDoc.includes("| Prompt Orchestration Layer v1 | COMPLETE | Prompt infrastructure |") &&
+  stateDoc.includes("local prompt contract coverage") &&
+  stateDoc.includes("product-wide Real LLM closure remains incomplete");
+if (/Prompt Orchestration Layer v1 \| COMPLETE/.test(stateDoc) && !promptRuntimeBoundaryIsExplicit) {
   warn("Prompt layer still says COMPLETE; ensure docs distinguish prompt-block tests from runtime LLM routing");
 }
 

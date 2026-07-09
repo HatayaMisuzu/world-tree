@@ -140,7 +140,11 @@ Request:
   "projectId": "demo",
   "branchId": "main",
   "userInput": "前往酒馆",
-  "options": { "disableNetwork": false }
+  "options": {
+    "disableNetwork": false,
+    "runtime": { "wizardSessionId": "optional-session-id" },
+    "intent": { "userConfirmed": false }
+  }
 }
 ```
 
@@ -164,5 +168,6 @@ Response:
 
 重要规则：
 - 普通 workflow 不直接写 shared canon；写入必须走 candidate → proposal 或 initialization write
+- 多步创建流程通过 `options.runtime.wizardSessionId` 延续会话；需要确认的动作通过 `options.intent` 传递显式用户意图
 - debug 输出已 redact，不包含 hiddenTruth / private / system_only / 绝对路径
 - 真实 LLM 使用 server config，不可用时有安全 fallback

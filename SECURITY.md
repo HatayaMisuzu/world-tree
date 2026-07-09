@@ -28,7 +28,13 @@ LLM keys are stored in `userData/secrets.json` as local plaintext. This is inten
 Do not sync `userData/` with cloud drives, public backups, Git repositories, or shared folders. Treat `userData/secrets.json` as a local-only credential file.
 
 **ACL risk**: On multi-user systems, any process running as the same OS user can read `userData/secrets.json`. Protect the project directory with OS-level access controls:
-- **Windows**: Store the project under your user profile directory; avoid shared directories. The app skips POSIX mode changes on Windows.
+- **Windows**: Store the project under your user profile directory and avoid shared directories. The app skips POSIX mode changes on Windows. From PowerShell in the repository root, restrict `userData/` to the current user, `SYSTEM`, and local administrators:
+  ```powershell
+  $path = (Resolve-Path .\userData).Path
+  $account = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+  icacls $path /inheritance:r /grant:r "${account}:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F"
+  ```
+  Verify with `Get-Acl .\userData\secrets.json | Format-List`.
 - **Unix-like systems**: The app attempts to set `userData/secrets.json` to `0o600` after writing. You can also verify or repair it manually:
   ```bash
   chmod 600 userData/secrets.json

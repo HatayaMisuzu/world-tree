@@ -38,7 +38,7 @@ function refineCreation(envelope) {
     const gaps = session.gaps || [];
     if (gaps.length > 0) session.fields.hard[gaps[0].field] = envelope.userInput;
   }
-  advanceStage(session);
+  if (detectGaps(session).length === 0) advanceStage(session);
   const q = generateNextQuestion(session);
   const bp = buildBlueprintCandidate(session);
   return { visibleText: q.question, candidates: [bp], runtimeUpdates: [{ key: "wizard_session", sessionId: session.sessionId, stage: session.stage }], canonWrites: [], warnings: [] };

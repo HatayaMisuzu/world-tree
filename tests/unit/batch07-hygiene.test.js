@@ -4,10 +4,11 @@ import { readFileSync } from "node:fs";
 
 import { createRouteRegistry } from "../../src/server/routes/registry.js";
 
-test("SECURITY policy documents local plaintext secret storage and chmod behavior", () => {
+test("SECURITY policy documents local plaintext secret storage and OS permission hardening", () => {
   const text = readFileSync("SECURITY.md", "utf8");
   assert.match(text, /userData\/secrets\.json/);
   assert.match(text, /plaintext/i);
+  assert.match(text, /icacls/);
   assert.match(text, /chmod 600|0o600/);
   assert.match(text, /Do not sync|不要同步|请勿同步/i);
 });

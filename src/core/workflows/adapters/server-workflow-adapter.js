@@ -6,6 +6,13 @@ import { buildOpenAICompatibleChatBody } from "../../../adapters/providers/opena
 
 export async function handleWorkflowApiRequest(body = {}, deps = {}) {
   const { workflowType, modeId, projectId, branchId, userInput, options } = body || {};
+  const workflowOptions = options && typeof options === "object" && !Array.isArray(options) ? options : {};
+  const runtime = workflowOptions.runtime && typeof workflowOptions.runtime === "object" && !Array.isArray(workflowOptions.runtime)
+    ? workflowOptions.runtime
+    : {};
+  const intent = workflowOptions.intent && typeof workflowOptions.intent === "object" && !Array.isArray(workflowOptions.intent)
+    ? workflowOptions.intent
+    : workflowOptions;
   // Build real LLM adapter from server deps if available
   const workflowDeps = { ...deps };
   if (deps.llmConfig && deps.apiKey) {
@@ -51,7 +58,7 @@ export async function handleWorkflowApiRequest(body = {}, deps = {}) {
   const result = await runWorkflowAction({
     explicitWorkflowType: workflowType, modeId: modeId || "unknown",
     moduleKey: projectId, activeBranchId: branchId || "main", userInput: userInput || "",
-    options: options || {}, kernelContext: deps.kernelContext || null
+    options: workflowOptions, runtime, intent, kernelContext: deps.kernelContext || null
   }, workflowDeps);
   const safe = { ...result };
   if (safe.debugSummary) {

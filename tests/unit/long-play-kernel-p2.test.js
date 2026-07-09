@@ -33,7 +33,7 @@ test("P2 profile 5 unknown modules warn without crash", () => assert.ok(composeM
 test("P2 profile 6 unregistered modules never enter result", () => assert.equal(composeModulesForMode("world-rpg", "epic-war", { ...profile, enabledModules: ["unknown.x"] }).modules.includes("unknown.x"), false));
 test("P2 profile 7 mode mismatch blocks profile modules", () => assert.ok(composeModulesForMode("character", "urban-mystery", profile).warnings.some((item) => item.includes("profile_mode_mismatch"))));
 
-// Timeline / Branch: 8 focused tests
+// Timeline / Branch: 9 focused tests
 test("P2 branch 1 initializes main", async () => { const root=await project(); const tree=await initializeBranchTree(root); assert.equal(tree.activeBranchId,"main"); });
 test("P2 branch 2 creates metadata", async () => { const root=await project(); const b=await createBranch(root,{id:"alternate",label:"Alt"}); assert.equal(b.parentBranchId,"main"); });
 test("P2 branch 3 copies shared and runtime", async () => { const root=await project(); await createBranch(root,{id:"copy"}); await access(join(root,"branches","copy","shared","world_state.json")); await access(join(root,"branches","copy","runtime","tracking","conflicts.json")); });
@@ -42,6 +42,7 @@ test("P2 branch 5 lists branches", async () => { const root=await project(); awa
 test("P2 branch 6 isolates writes", async () => { const root=await project(); await createBranch(root,{id:"alt"}); await switchBranch(root,"alt"); const active=await resolveActiveBranchProjectRoot(root); await writeJson(join(active,"shared","world_state.json"),{states:{capital:{value:"fallen"}}}); const main=JSON.parse(await readFile(join(root,"branches","main","shared","world_state.json"),"utf8")); assert.equal(main.states.capital.value,"stable"); });
 test("P2 branch 7 creates diff without merge", async () => { const root=await project(); await createBranch(root,{id:"alt"}); await appendJsonl(join(root,"branches","alt","runtime","tracking","change-log.jsonl"),{id:"c1",reason:"different"}); const diff=await createBranchDiffSummary(root,"main","alt"); assert.deepEqual(diff.majorDifferences,["different"]); });
 test("P2 branch 8 archives inactive branch and exposes no merge API", async () => { const root=await project(); await createBranch(root,{id:"alt"}); assert.equal((await archiveBranch(root,"alt")).status,"archived"); const mod=await import("../../src/core/timeline/branch-manager.js"); assert.equal("mergeBranch" in mod,false); });
+test("P2 branch 9 serializes concurrent main initialization", async () => { const root=await project(); const trees=await Promise.all(Array.from({length:12},()=>initializeBranchTree(root))); assert.equal(trees.every((tree)=>tree.activeBranchId==="main"),true); await access(join(root,"branches","main","shared","world_state.json")); await access(join(root,"branches","main","runtime","tracking","conflicts.json")); });
 
 // Telemetry: 8 focused tests
 test("P2 telemetry 1 runs with missing optional files", async () => { const root=await mkdtemp(join(tmpdir(),"wt-tel-")); assert.equal((await collectWorldTelemetry(root,{}, {persist:false})).version,1); });
