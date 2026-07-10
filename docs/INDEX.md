@@ -78,6 +78,8 @@ Key entry points for the current baseline:
 | [CURRENT_PROJECT_STATE.md](CURRENT_PROJECT_STATE.md) | 当前项目真相源 |
 | [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md) | 项目全景 |
 | [FEATURES.md](FEATURES.md) | 功能清单 |
+| [PRODUCT_INFORMATION_ARCHITECTURE.md](product/PRODUCT_INFORMATION_ARCHITECTURE.md) | v0.5 五入口产品导航与八个规范能力归属 |
+| [UI_DESIGN_SYSTEM.md](product/UI_DESIGN_SYSTEM.md) | v0.5 视觉语言、设计令牌与响应式规则 |
 | [API_REFERENCE.md](API_REFERENCE.md) | API 文档 |
 | [API_ROUTE_INVENTORY.md](API_ROUTE_INVENTORY.md) | 当前真实 API 路由总表 |
 | [API_PRODUCT_CONTRACT.md](API_PRODUCT_CONTRACT.md) | 产品入口 API 合同草案 |

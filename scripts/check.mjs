@@ -19,6 +19,7 @@ const files = [
   "browser/components/product-components.js",
   "browser/views/core-views.js",
   "browser/views/creation-settings-views.js",
+  "browser/views/product-ia-views.js",
   "browser/controllers/navigation-controller.js",
   "browser/controllers/entry-controller.js",
   "browser/controllers/play-controller.js",

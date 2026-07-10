@@ -22,67 +22,78 @@ function loadPlaywright() {
 const { chromium } = loadPlaywright();
 
 const reportDir = resolve(process.env.WT_BROWSER_MATRIX_REPORT_DIR || join("..", "world-tree-product-usable-closure-output"));
+const progressPath = join(reportDir, "browser-smoke-progress.txt");
+function markProgress(message) {
+  writeFileSync(progressPath, `${new Date().toISOString()} ${message}\n`, { encoding: "utf8", flag: "a" });
+}
 const scriptkillFixture = JSON.parse(readFileSync(new URL("../tests/fixtures/single-player-scriptkill-v2/ready-package.json", import.meta.url), "utf8"));
 const entries = [
   {
     id: "quick-setting",
+    surface: "creation",
     label: "快速设定",
     title: /快速设定|Quick Setting/,
     input: "#quickStartText",
     action: '[data-action="quick-start-chat"]',
     expectedStatus: "PASS",
-    note: "大厅可见，可输入设定并创建草稿。"
+    note: "创作页可见，可输入设定并创建草稿。"
   },
   {
     id: "character",
+    surface: "experiences",
     label: "人物卡",
     title: /人物卡|Character/,
     input: "#charCardText",
     action: '[data-action="character-start-chat"]',
     expectedStatus: "PASS",
-    note: "大厅可见，可粘贴人物卡并开始对话。"
+    note: "体验页可见，可粘贴人物卡并开始对话。"
   },
   {
     id: "world-rpg",
+    surface: "experiences",
     label: "世界书大世界",
     title: /世界书大世界|World RPG/,
     input: "#wrpgText",
     action: '[data-action="world-rpg-start"]',
     expectedStatus: "PASS",
-    note: "大厅可见，可创建世界冒险；Worldbook V2 完整编辑器仍是部分完成。"
+    note: "体验页可见，可创建世界冒险；Worldbook V2 完整编辑器仍是部分完成。"
   },
   {
     id: "tabletop",
+    surface: "experiences",
     label: "桌面叙事",
     title: /桌面叙事|Tabletop/,
     input: "#tabletopText",
     action: '[data-action="tabletop-start"]',
     apiProbe: "tabletop",
     expectedStatus: "PASS",
-    note: "大厅可见，可创建普通 Tabletop 草稿；V2 产品 API 可 start/turn/save/branch/export。"
+    note: "体验页可见，可创建普通 Tabletop 草稿；V2 产品 API 可 start/turn/save/branch/export。"
   },
   {
     id: "mystery-puzzle",
+    surface: "experiences",
     label: "解谜调查",
     title: /解谜调查|Mystery Puzzle/,
     input: "#mysteryText",
     action: '[data-action="mystery-puzzle-start"]',
     apiProbe: "detective",
     expectedStatus: "PASS",
-    note: "大厅可见，可创建调查草稿；V2 产品 API 可 import/start/investigate/interrogate/deduction/export。"
+    note: "体验页可见，可创建调查草稿；V2 产品 API 可 import/start/investigate/interrogate/deduction/export。"
   },
   {
     id: "strategy-sim",
+    surface: "experiences",
     label: "策略模拟",
     title: /策略模拟|Strategy Sim/,
     input: "#strategyText",
     action: '[data-action="strategy-sim-start"]',
     apiProbe: "strategy",
     expectedStatus: "PASS",
-    note: "大厅可见，可创建策略草稿；V2 产品 API 可 seal/start/turn/save/export。"
+    note: "体验页可见，可创建策略草稿；V2 产品 API 可 seal/start/turn/save/export。"
   },
   {
     id: "murder-mystery",
+    surface: "experiences",
     label: "单人剧本杀",
     title: /单人剧本杀|Murder Mystery/,
     input: "#murderText",
@@ -90,15 +101,16 @@ const entries = [
     secondaryAction: '[data-action="single-player-scriptkill-v2-toggle-panel"]',
     apiProbe: "scriptkill",
     expectedStatus: "PASS",
-    note: "大厅可见，V2 面板可触达；V2 产品 API 可 import/start/read/talk/search/vote/debrief/export。"
+    note: "体验页可见，V2 面板可触达；V2 产品 API 可 import/start/read/talk/search/vote/debrief/export。"
   },
   {
     id: "creation-forge",
+    surface: "creation",
     label: "炼金台",
     title: /炼金台|Creation Forge/,
     action: '[data-action="library-alchemy"]',
     expectedStatus: "PASS",
-    note: "大厅可见，可打开炼金台 G1 创作闭环。"
+    note: "创作页可见，可打开炼金台 G1 创作闭环。"
   }
 ];
 
@@ -250,15 +262,18 @@ function markdown(result) {
     "",
     "## Boundary",
     "",
-    "This smoke proves lobby/navigation reachability, basic next-step clarity, and selected API product loops for V2 entries. It does not claim human-signed PLAYABLE status or v1.0 release readiness."
+    "This smoke proves product-surface/navigation reachability, basic next-step clarity, and selected API product loops for V2 entries. It does not claim human-signed PLAYABLE status or v1.0 release readiness."
   ];
   return `${lines.join("\n")}\n`;
 }
 
 async function run() {
   mkdirSync(reportDir, { recursive: true });
+  writeFileSync(progressPath, "", "utf8");
+  markProgress("starting server");
   const dataDir = await createTempDataDir("wt-product-entry-browser-");
   const server = await startWorldTreeServer({ dataDir, env: { WORLD_TREE_DISABLE_LLM: "1" } });
+  markProgress("starting browser");
   const browser = await chromium.launch({ headless: true });
   const consoleErrors = [];
   const failedResponses = [];
@@ -274,14 +289,20 @@ async function run() {
       if (status >= 400) failedResponses.push({ status, url: response.url().replace(server.baseUrl, "") });
     });
 
+    markProgress("opening application");
     await page.goto(server.baseUrl, { waitUntil: "networkidle" });
     await page.getByText("World Tree").first().waitFor({ timeout: 10000 });
+    markProgress("application ready");
 
     const health = await page.evaluate(async () => (await fetch("/api/health")).json());
     const llmState = await page.locator("#llmStatus").innerText().catch(() => "unknown");
     const matrix = [];
 
     for (const entry of entries) {
+      console.log(`[browser-matrix] checking ${entry.id} on ${entry.surface}`);
+      markProgress(`checking ${entry.id}`);
+      await page.locator(`[data-view="${entry.surface}"]`).first().click();
+      await page.locator("#main").waitFor({ state: "visible" });
       const titleVisible = await page.getByText(entry.title).first().isVisible().catch(() => false);
       const inputVisible = entry.input ? await page.locator(entry.input).isVisible().catch(() => false) : true;
       const actionEnabled = await page.locator(entry.action).first().isEnabled().catch(() => false);
@@ -306,6 +327,8 @@ async function run() {
         checks,
         note: entry.note
       });
+      console.log(`[browser-matrix] completed ${entry.id}`);
+      markProgress(`completed ${entry.id}`);
     }
 
     await page.locator('[data-action="library-alchemy"]').first().click();
@@ -338,9 +361,13 @@ async function run() {
     }, null, 2));
     if (result.status !== "PASS") process.exitCode = 1;
   } finally {
+    markProgress("closing browser");
     await browser.close();
+    markProgress("stopping server");
     await server.stop();
+    markProgress("removing temporary data");
     await removeTempDir(dataDir);
+    markProgress("complete");
   }
 }
 

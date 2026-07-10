@@ -105,6 +105,7 @@
     "smoke:user-content-api": "node scripts/smoke-user-content-api.mjs",
     "test:user-content-browser-smoke": "node scripts/run-user-content-browser-smoke.mjs",
     "smoke:product-entry-browser-matrix": "node scripts/smoke-product-entry-browser-matrix.mjs",
+    "qa:visual-shell": "node scripts/visual-qa-product-shell.mjs",
     "smoke:user-content-real-llm": "node scripts/smoke-user-content-real-llm.mjs",
     "smoke:first-play": "node scripts/smoke-first-play.mjs",
     "narrative:eval": "node scripts/narrative-eval.mjs --dry-run",

@@ -2,17 +2,17 @@
 
 // Navigation, view loading, project selection, and delegated DOM event binding.
 function renderNav() {
-  const nav = CFG.nav.map(n => `<button class="nav-btn ${AS.view === n.id ? "active" : ""}" data-view="${n.id}"><span class="nav-icon">${n.icon}</span><strong>${n.label}</strong><span class="nav-meta">${n.meta}</span></button>`).join("");
+  const activeView = window.WorldTreeNavigation?.activePrimary(AS.view) || AS.view;
+  const nav = CFG.nav.map(n => `<button class="nav-btn ${activeView === n.id ? "active" : ""}" data-view="${n.id}"><span class="nav-icon">${n.icon}</span><strong>${n.label}</strong><span class="nav-meta">${n.meta}</span></button>`).join("");
   U.qs("#primaryNav").innerHTML = nav;
-  const mobile = CFG.nav.slice(0, 5).map(n => `<button class="${AS.view === n.id ? "active" : ""}" data-view="${n.id}"><span>${n.icon}</span><span>${n.label}</span></button>`).join("");
+  const mobile = CFG.nav.map(n => `<button class="${activeView === n.id ? "active" : ""}" data-view="${n.id}"><span>${n.icon}</span><span>${n.label}</span></button>`).join("");
   U.qs("#mobileNav").innerHTML = mobile;
 }
 
 function render() {
   try {
     renderNav();
-    const viewDef = CFG.nav.find(v => v.id === AS.view) || CFG.nav[0];
-    U.qs("#viewTitle").textContent = viewDef.label;
+    U.qs("#viewTitle").textContent = window.WorldTreeNavigation?.labelFor(AS.view) || CFG.nav.find(v => v.id === AS.view)?.label || "首页";
     const currentName = AS.selectedModule ? (AS.selectedModule.displayName || AS.selectedModule.name) : "未选择世界";
     U.qs("#contextLine").textContent = currentName;
     U.qs("#sideWorldName").textContent = currentName;

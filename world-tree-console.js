@@ -6,11 +6,10 @@ const ENABLE_DEFERRED_PLUGINS = false;
 const CFG = {
   version: "unknown",
   nav: window.WorldTreeNavigation?.primaryNav || [
-    { id: "workbench", label: "大厅", icon: "□", meta: "开始" },
-    { id: "chat", label: "对话", icon: "◇", meta: "创作" },
-    { id: "library", label: "资料库", icon: "▦", meta: "素材" },
-    { id: "worlds", label: "世界管理", icon: "◎", meta: "项目" },
-    { id: "observe", label: "观测", icon: "◌", meta: "调试" },
+    { id: "workbench", label: "首页", icon: "⌂", meta: "继续" },
+    { id: "experiences", label: "体验", icon: "◇", meta: "探索" },
+    { id: "library", label: "我的内容", icon: "▦", meta: "管理" },
+    { id: "creation", label: "创作", icon: "✦", meta: "构建" },
     { id: "settings", label: "设置", icon: "⚙", meta: "配置" },
   ],
 };

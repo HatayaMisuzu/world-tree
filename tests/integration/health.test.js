@@ -56,6 +56,7 @@ test("console public static assets include ui-labels", async () => {
       "/browser/state/app-store.js",
       "/browser/components/product-components.js",
       "/browser/views/core-views.js",
+      "/browser/views/product-ia-views.js",
       "/browser/controllers/navigation-controller.js",
       "/world-tree-console.js"
     ]) {
