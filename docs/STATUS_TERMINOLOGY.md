@@ -1,6 +1,6 @@
 # Status Terminology
 
-Version: `0.4.2-v2-engineering-foundation-truth.0`  
+Version: `0.5.0-product-experience-rebuild.0`
 Audience: AI agents, maintainers, reviewers.
 
 This file defines status terms used across current-facing World Tree documentation.

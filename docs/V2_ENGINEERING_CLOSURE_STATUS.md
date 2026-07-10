@@ -1,6 +1,6 @@
 # V2 Engineering Closure Status
 
-Version: `0.4.2-v2-engineering-foundation-truth.0`  
+Version: `0.5.0-product-experience-rebuild.0`
 Truth-source role: current-facing status matrix for V2 engineering foundations and service closures.  
 Audience: AI agents, maintainers, reviewers.
 

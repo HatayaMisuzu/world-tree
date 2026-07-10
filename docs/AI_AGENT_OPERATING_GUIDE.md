@@ -1,6 +1,6 @@
 # AI Agent Detailed Operating Guide
 
-> Version: `0.4.2-v2-engineering-foundation-truth.0`
+> Version: `0.5.0-product-experience-rebuild.0`
 
 ## Mandatory Reading Order
 

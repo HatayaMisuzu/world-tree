@@ -1,6 +1,6 @@
 # World Tree V2 Entry / Engineering Closure Status
 
-Version: `0.4.2-v2-engineering-foundation-truth.0`  
+Version: `0.5.0-product-experience-rebuild.0`
 Status: CURRENT  
 Audience: AI agents, maintainers, reviewers.
 

@@ -33,6 +33,7 @@ check("docs/PROPOSAL", "docs/PROPOSAL_AND_REVIEW_SYSTEM.md", p => existsSync(p),
 check("docs/SCRIPTS", "docs/SCRIPTS_AND_CHECKS.md", p => existsSync(p), "missing");
 check("docs/AI_AGENT_GUIDE", "docs/AI_AGENT_OPERATING_GUIDE.md", p => existsSync(p), "missing");
 check("docs/STATUS", "docs/DOCUMENTATION_STATUS.md", p => existsSync(p), "missing");
+check("docs/PROJECT_FACTS", "docs/PROJECT_FACTS.md", p => existsSync(p), "missing");
 
 // Content checks
 try {
@@ -64,6 +65,24 @@ try {
 } catch (err) {
   failures++;
   console.error(`FAIL: test:unit includes system-closure — ${err.message}`);
+}
+
+try {
+  const pkgJson = JSON.parse(readFileSync(resolve(BASE, "package.json"), "utf-8"));
+  const factsDoc = readFileSync(resolve(BASE, "docs/PROJECT_FACTS.md"), "utf-8");
+  const architecture = readFileSync(resolve(BASE, "docs/ARCHITECTURE_MAP.md"), "utf-8");
+  check("project facts commands registered", "package.json",
+    () => Boolean(pkgJson.scripts?.["facts:generate"] && pkgJson.scripts?.["facts:check"] && pkgJson.scripts?.["snapshot:safe"]),
+    "facts and safe snapshot commands must be registered");
+  check("project facts document machine source", "docs/PROJECT_FACTS.md",
+    () => factsDoc.includes("output/project-facts.json") && factsDoc.includes("HUMAN_VALIDATION_REQUIRED"),
+    "project facts must document the generated evidence path and human-validation boundary");
+  check("architecture uses generated facts", "docs/ARCHITECTURE_MAP.md",
+    () => architecture.includes("PROJECT_FACTS.md") && !/test:unit\s+->\s+\d+ tests/.test(architecture),
+    "architecture must reference generated facts instead of hand-maintained counts");
+} catch (err) {
+  failures++;
+  console.error(`FAIL: generated project facts documentation — ${err.message}`);
 }
 
 // mode-runner 不包含 modeMeaning + "_v1" 猜测

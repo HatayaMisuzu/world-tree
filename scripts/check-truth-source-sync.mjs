@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
-const VERSION = "0.4.2-v2-engineering-foundation-truth.0";
+const VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
 const STALE_BASELINE = "v0.4.1-v2-entry-closure.0";
 
 const ACTIVE_TRUTH_DOCS = [
@@ -41,7 +41,7 @@ const requiredFiles = [
   "docs/DOCUMENTATION_STATUS.md",
   "docs/CURRENT_DOCUMENTATION_INVENTORY.md",
   "docs/DOCUMENT_RETENTION_POLICY.md",
-  "docs/TRUTH_SOURCE_SYNC_REPORT_v0.4.2.md"
+  "docs/PROJECT_FACTS.md"
 ];
 
 const errors = [];

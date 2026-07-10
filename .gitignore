@@ -58,3 +58,5 @@ docs/reports/self-report-latest.*
 # 本地浏览器烟测产物
 .playwright-cli/
 output/playwright/
+output/project-facts.json
+output/snapshots/

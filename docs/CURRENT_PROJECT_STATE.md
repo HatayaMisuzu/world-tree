@@ -1,6 +1,6 @@
 # Current Project State
 
-Version: `0.4.2-v2-engineering-foundation-truth.0`  
+Version: `0.5.0-product-experience-rebuild.0`
 Status: CURRENT TRUTH SOURCE  
 Audience: AI agents, maintainers, reviewers.
 
@@ -21,11 +21,11 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 
 | Item | Value |
 |---|---|
-| Current truth-source version | `0.4.2-v2-engineering-foundation-truth.0` |
-| Trusted Baseline | `v0.4.2-v2-engineering-foundation-truth.0` |
-| Current branch | `main` |
-| Latest audited commit | `6a969fb5cf8975231224478f602d491c271c99b1` |
-| Latest productization merge commit | `6a969fb5cf8975231224478f602d491c271c99b1` |
+| Current truth-source version | `0.5.0-product-experience-rebuild.0` |
+| Trusted Baseline | Machine facts from `npm run facts:generate` |
+| Current branch | Read from generated `output/project-facts.json` |
+| Latest audited commit | Read from generated `output/project-facts.json` |
+| Previous productization merge commit | `6a969fb5cf8975231224478f602d491c271c99b1` (historical baseline) |
 | V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI`; current remote CI evidence is verified through GitHub Actions check-runs, while legacy combined status may remain UNKNOWN/pending/0 |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |

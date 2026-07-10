@@ -1,6 +1,6 @@
 # Documentation Lifecycle
 
-Version: `0.4.2-v2-engineering-foundation-truth.0`
+Version: `0.5.0-product-experience-rebuild.0`
 Status: CURRENT
 
 All agent takeovers must read `docs/PROJECT_TRUTH_SOURCE.md` and `docs/CURRENT_PROJECT_STATE.md` before using historical reports, proposals, or archive files.
