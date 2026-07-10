@@ -57,7 +57,7 @@
         </div>
         <aside class="home-hero-status" aria-label="当前状态">
           <span>当前项目</span><strong>${current ? U.esc(current.displayName || current.name) : "尚未选择"}</strong>
-          <span>模型</span><strong class="${AS.llmConnected ? "status-good" : "status-attention"}">${AS.llmConnected ? U.esc(AS.config.llmModel || "已连接") : "需要配置"}</strong>
+          <span>模型</span><strong class="${getModelConnectionUiState().tone === "ok" ? "status-good" : "status-attention"}">${U.esc(getModelConnectionUiState().label)}</strong>
           <span>保存位置</span><strong>本机</strong>
         </aside>
       </section>
@@ -87,7 +87,7 @@
           <h2>${reviewCount ? `${reviewCount} 项待确认` : "一切就绪"}</h2>
           <div class="attention-list">
             <button data-view="library"><span>候选内容</span><strong>${reviewCount}</strong></button>
-            <button data-view="settings"><span>模型连接</span><strong>${AS.llmConnected ? "正常" : "未配置"}</strong></button>
+            <button data-view="settings"><span>模型连接</span><strong>${U.esc(getModelConnectionUiState().label)}</strong></button>
             <button data-view="library"><span>世界书条目</span><strong>${AS.worldbookEntries.length}</strong></button>
           </div>
         </aside>
@@ -190,7 +190,7 @@
     const allowed = ["connections", "narrative", "advanced"];
     if (!allowed.includes(AS.settingsTab)) AS.settingsTab = "connections";
     const tabs = [
-      { id: "connections", label: "模型连接", description: AS.llmConnected ? "当前模型可以使用" : AS.hasApiKey ? "密钥已保存，等待测试" : "配置服务、模型与密钥" },
+      { id: "connections", label: "模型连接", description: getModelConnectionUiState().label },
       { id: "narrative", label: "叙事与数据", description: "质量档位、本地数据与备份" },
       { id: "advanced", label: "高级诊断", description: "日志、原始状态与维护工具" }
     ];
@@ -198,8 +198,8 @@
     return `<div class="grid product-settings">
       <header class="catalog-intro content-intro"><div><span class="eyebrow">Settings</span><h1>设置</h1><p>先确认模型能连接，再开始体验。密钥、世界和运行记录默认只保存在本机。</p></div></header>
       <section class="settings-readiness">
-        <div><span>模型服务</span><strong class="${AS.llmConnected ? "status-good" : "status-attention"}">${AS.llmConnected ? "已连接" : "未连接"}</strong></div>
-        <div><span>API 密钥</span><strong>${AS.hasApiKey ? "已保存在本机" : "尚未配置"}</strong></div>
+        <div><span>模型服务</span><strong class="${getModelConnectionUiState().tone === "ok" ? "status-good" : "status-attention"}">${U.esc(getModelConnectionUiState().label)}</strong></div>
+        <div><span>API 密钥</span><strong>${getModelConnectionUiState().configured ? "已保存在本机" : "尚未配置"}</strong></div>
         <div><span>数据位置</span><strong>本机</strong></div>
       </section>
       <section class="settings-card-grid">${tabs.map(tab => `<button class="settings-card ${AS.settingsTab === tab.id ? "active" : ""}" data-action="settings-card-open" data-settings-tab="${tab.id}"><strong>${tab.label}</strong><span>${tab.description}</span></button>`).join("")}</section>

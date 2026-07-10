@@ -223,6 +223,7 @@ async function sendTabletopV2Turn(playerIntent) {
     AS.progressIndex = 4;
     if (progressTimer) clearInterval(progressTimer);
     progressTimer = null;
+    render();
   }
 }
 

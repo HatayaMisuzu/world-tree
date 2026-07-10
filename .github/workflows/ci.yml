@@ -35,3 +35,19 @@ jobs:
       - run: npm run truth:check
       - run: npm run audit
       - run: npm run interface-audit
+
+  browser-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run verify:coverage
+      - run: npm run smoke:product-entry-browser-matrix
+      - run: npm run smoke:experience-golden-path
+      - run: npm run smoke:v0.5-interaction-regressions
+      - run: npm run qa:visual-shell

@@ -110,9 +110,11 @@ export function createHttpApiRouter(deps = {}) {
   } = deps;
 
   async function handleAPI(req, res) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const path = url.pathname;
-    const method = req.method;
+    const requestUrl = req.url || "/api/unknown";
+    try {
+      const url = new URL(requestUrl, `http://${req.headers.host || "localhost"}`);
+      const path = url.pathname;
+      const method = req.method;
   
     // 速率限制（API 路由）
     if (!checkRateLimit(req.socket?.remoteAddress || "127.0.0.1", RATE_MAX_API)) {
@@ -630,7 +632,7 @@ export function createHttpApiRouter(deps = {}) {
       // ── 未知路由 ──
       jsonError(res, 404, "NOT_FOUND", "没有找到这个接口。请检查请求路径。", path);
   
-    } catch (err) {
+      } catch (err) {
       if (err instanceof HttpError) {
         return jsonError(res, err.status, err.code, err.userMsg, err.detail);
       }
@@ -639,6 +641,14 @@ export function createHttpApiRouter(deps = {}) {
       }
       console.error("[API]", path, err);
       jsonError(res, 500, "INTERNAL_ERROR", "服务端处理失败。请查看控制台日志获取技术细节。", err.message);
+      }
+    } catch (err) {
+      console.error("[API:FATAL]", requestUrl, err);
+      if (res.headersSent) {
+        if (!res.writableEnded) res.destroy(err);
+        return;
+      }
+      jsonError(res, 500, "INTERNAL_ERROR", "服务端处理失败。请查看控制台日志获取技术细节。", err?.message || String(err));
     }
   }
   

@@ -8,7 +8,7 @@ Any AI agent taking over this repository must read this file and `docs/PROJECT_T
 
 ## v0.5 product-experience rebuild
 
-The `codex/v0.5-product-experience-rebuild` branch rebuilds the user-facing product without adding a ninth feature or changing the candidate/proposal/canon authority boundary. The global IA is now 首页、体验、我的内容、创作、设置. Automated evidence includes the 8/8 product entry matrix, four-viewport visual QA, and a browser golden path covering three streamed turns, explicit proposal confirmation, automatic save, Home return/continue, world-pack preparation, partial-stream abort, input restoration, and mobile workspace layout.
+The `main` branch contains the v0.5 user-facing product rebuild without adding a ninth feature or changing the candidate/proposal/canon authority boundary. The global IA is now 首页、体验、我的内容、创作、设置. Automated evidence includes the 8/8 product entry matrix, four-viewport visual QA, the browser golden path, and the v0.5 interaction regression gate for character search, Tabletop busy cleanup, model connection states, and API async boundaries.
 
 The same tracked source was synchronized without deletion into `D:\工作台\新建文件夹` for a real DeepSeek V4 Flash smoke on 2026-07-10. Three turns passed with no local fallback, six persisted chat records, third-turn context continuity, and 16,115 exposed tokens total (7,296 cache-hit). The key was supplied only by process environment and prefix scans found zero persisted occurrences in the repository, test copy, and smoke report directory.
 
@@ -53,7 +53,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | Screen recording | HUMAN_VALIDATION_REQUIRED |
 | Remote CI | GitHub Actions check-runs PASS when `npm run ci:github-actions-checks` records completed successful check-runs; legacy combined status may remain UNKNOWN/pending/0 |
 | Productization merge CI | Use check-runs evidence, not legacy combined status alone; legacy status may still report UNKNOWN |
-| Browser QA | 8/8 entry matrix PASS; 1440/1024/768/390 visual QA PASS; shared experience golden path PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
+| Browser QA | 8/8 entry matrix PASS; 1440/1024/768/390 visual QA PASS; shared experience golden path and v0.5 interaction regression gate PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
 | Release package static assets | `ui-labels.js` is served by the local server and included in package verification |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
 | Asset/function inventory role | preservation ledger / evidence index; not proof by itself |
@@ -103,7 +103,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 - Human playtest and screen recording remain HUMAN_VALIDATION_REQUIRED.
 - fable5 smoke and PLAYABLE claims require real LLM evidence, human playtest evidence, and screen recording evidence; missing credentials or human validation must be labeled, not converted into PASS.
 - Selected V2 API/service closure is improved for user-provided/structural content across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill.
-- Browser/UI entry flows for all 8 canonical entries have a dedicated automated browser matrix PASS, and the shared experience has a three-turn browser golden path with save/continue/export/abort evidence.
+- Browser/UI entry flows for all 8 canonical entries have a dedicated automated browser matrix PASS, and the shared experience has a three-turn browser golden path with save/continue/export/abort evidence. `verify:release` now gates coverage, browser matrix, golden path, interaction regressions, visual QA, and safe snapshot generation.
 - Full product-wide playable closure remains incomplete.
 - Full-function LLM prompt entry audit covers local prompt contracts for all 8 product entries. DeepSeek live behavior is selected-path only; exposed first-play/user-content chat token usage is now recorded, while some Alchemy endpoint usage remains not exposed by endpoint.
 - Full product-wide V2 is not complete.

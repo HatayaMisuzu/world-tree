@@ -1,146 +1,25 @@
 {
-  "status": "PASS",
+  "status": "BLOCKED_BY_CREDENTIALS",
+  "reason": "missing WT_SMOKE_BASE_URL/WT_SMOKE_MODEL/WT_SMOKE_KEY",
   "provider": {
-    "id": "deepseek",
-    "baseUrl": "https://api.deepseek.com/v1",
-    "model": "deepseek-v4-flash"
+    "id": "openai-compatible",
+    "baseUrl": "",
+    "model": ""
   },
   "exampleId": "demo-world-cloud-steam-city",
-  "moduleKey": "demo-world-cloud-steam-city",
   "assertions": [
     {
-      "id": "install_demo_world",
-      "ok": true,
-      "detail": "install status ok"
+      "id": "credentials",
+      "ok": false,
+      "detail": "missing WT_SMOKE_BASE_URL/WT_SMOKE_MODEL/WT_SMOKE_KEY"
     },
     {
-      "id": "turn_1_status_ok",
+      "id": "no_fake_pass",
       "ok": true,
-      "detail": "status=ok; code="
-    },
-    {
-      "id": "turn_1_not_local_fallback",
-      "ok": true,
-      "detail": "local fallback is not real LLM evidence"
-    },
-    {
-      "id": "turn_1_narrative_length",
-      "ok": true,
-      "detail": "narrative length 671"
-    },
-    {
-      "id": "turn_2_status_ok",
-      "ok": true,
-      "detail": "status=ok; code="
-    },
-    {
-      "id": "turn_2_not_local_fallback",
-      "ok": true,
-      "detail": "local fallback is not real LLM evidence"
-    },
-    {
-      "id": "turn_2_narrative_length",
-      "ok": true,
-      "detail": "narrative length 655"
-    },
-    {
-      "id": "turn_3_status_ok",
-      "ok": true,
-      "detail": "status=ok; code="
-    },
-    {
-      "id": "turn_3_not_local_fallback",
-      "ok": true,
-      "detail": "local fallback is not real LLM evidence"
-    },
-    {
-      "id": "turn_3_narrative_length",
-      "ok": true,
-      "detail": "narrative length 1022"
-    },
-    {
-      "id": "third_turn_context_memory_minimum",
-      "ok": true,
-      "detail": "messages before turn 3 include 雾铃塔"
-    },
-    {
-      "id": "chat_jsonl_six_records",
-      "ok": true,
-      "detail": "chat.jsonl record count 6"
-    },
-    {
-      "id": "no_hidden_truth_or_secret_leak",
-      "ok": true,
-      "detail": "no forbidden evidence markers"
+      "detail": "No real LLM PASS claimed without WT_SMOKE_BASE_URL/WT_SMOKE_MODEL/WT_SMOKE_KEY."
     }
   ],
-  "turns": [
-    {
-      "turn": 1,
-      "status": "ok",
-      "narrativeChars": 671,
-      "localFallback": false,
-      "persistedTurnId": "turn-1",
-      "usage": {
-        "promptTokens": 3731,
-        "completionTokens": 758,
-        "totalTokens": 4489,
-        "cacheHitTokens": 2944,
-        "cacheMissTokens": 787,
-        "reasoningTokens": 0,
-        "estimatedCostCny": 0,
-        "stageCount": 2
-      },
-      "contextContainsFirstTerm": true
-    },
-    {
-      "turn": 2,
-      "status": "ok",
-      "narrativeChars": 655,
-      "localFallback": false,
-      "persistedTurnId": "turn-2",
-      "usage": {
-        "promptTokens": 4438,
-        "completionTokens": 928,
-        "totalTokens": 5366,
-        "cacheHitTokens": 2176,
-        "cacheMissTokens": 2262,
-        "reasoningTokens": 0,
-        "estimatedCostCny": 0,
-        "stageCount": 2
-      },
-      "contextContainsFirstTerm": true
-    },
-    {
-      "turn": 3,
-      "status": "ok",
-      "narrativeChars": 1022,
-      "localFallback": false,
-      "persistedTurnId": "turn-3",
-      "usage": {
-        "promptTokens": 4886,
-        "completionTokens": 981,
-        "totalTokens": 5867,
-        "cacheHitTokens": 2176,
-        "cacheMissTokens": 2710,
-        "reasoningTokens": 0,
-        "estimatedCostCny": 0,
-        "stageCount": 2
-      },
-      "contextContainsFirstTerm": true
-    }
-  ],
-  "usage": {
-    "promptTokens": 13055,
-    "completionTokens": 2667,
-    "totalTokens": 15722,
-    "cacheHitTokens": 7296,
-    "cacheMissTokens": 5759,
-    "reasoningTokens": 0,
-    "estimatedCostCny": 0,
-    "stageCount": 3
-  },
-  "usageCompleteness": "complete_for_chat_turns",
-  "note": "PASS requires a real provider key supplied through environment variables. Human playtest and screen recording are still HUMAN_VALIDATION_REQUIRED.",
-  "generatedAt": "2026-07-08T06:36:38.408Z"
+  "turns": [],
+  "note": "Real LLM Flow remains BLOCKED_BY_CREDENTIALS. This report is a gate record, not a PASS.",
+  "generatedAt": "2026-07-10T14:14:55.319Z"
 }

@@ -37,7 +37,7 @@ Historical reports may describe past limitations or past completion claims. They
 ## v0.5 product-experience evidence
 
 - Five global roots: 首页、体验、我的内容、创作、设置.
-- Eight canonical entries preserved; browser matrix PASS 8/8 with zero console errors or failed responses.
+- Eight canonical entries preserved; browser matrix PASS 8/8 with zero console errors or failed responses; v0.5 interaction regression gate PASS for character search, Tabletop busy cleanup, model connection states, and API async boundaries.
 - Visual shell PASS at 1440, 1024, 768, and 390 pixels with no horizontal overflow.
 - Shared experience golden path PASS for three streamed turns, proposal confirmation, automatic save, return/continue, world-pack preparation, partial abort/retry boundary, and mobile layout.
 - DeepSeek V4 Flash isolated test-copy smoke PASS on 2026-07-10 for three turns with no local fallback; 16,115 exposed tokens, including 7,296 cache-hit tokens. Key not recorded.
@@ -71,7 +71,7 @@ Historical reports may describe past limitations or past completion claims. They
 | Full-function LLM prompt entry audit | PASS for local prompt contract coverage; DeepSeek live provider smoke recorded for selected paths |
 | Current documentation status | post-merge user-created content product closure alignment |
 | Remote CI | GitHub Actions check-runs PASS when `npm run ci:github-actions-checks` records completed successful check-runs; legacy combined status may remain pending/0 |
-| Browser QA | 8/8 entry matrix, four-viewport visual shell, and shared experience golden path PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
+| Browser QA | 8/8 entry matrix, four-viewport visual shell, shared experience golden path, and v0.5 interaction regression gate PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
 | Release package static assets | `ui-labels.js` static serving and npm pack inclusion fixed in current closure sprint |
 | fable5 overlay | fable5 revised four-file packet, batch 00-11 engineering run completed |
 

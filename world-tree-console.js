@@ -272,9 +272,6 @@ async function init() {
     API.alchemyReview().then(d => { AS.reviewItems = d.items || []; }).catch(() => {}),
     updateHealth(),
   ]);
-  if (AS.hasApiKey && AS.config.llmBaseUrl) {
-    API.testLlm({ config: AS.config }).then(res => { AS.llmConnected = res.status === "ok"; render(); }).catch(() => {});
-  }
   if (AS.selectedModule) {
     await Promise.all([CH.loadServer(AS.selectedModule), loadLatestStatusFrame()]);
     await loadWorldbookIfPossible().catch(() => {});

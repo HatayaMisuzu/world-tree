@@ -108,6 +108,12 @@ expect(updateHealth.includes("AS.health?.llm?.status") || updateHealth.includes(
 expect(updateHealth.includes("dataWritable") || updateHealth.includes("writable"), "updateHealth handles data writable status", "updateHealth ignores data writable status");
 expect(!deriveLlmUiStatus.includes("llmConfigured &&"), "configured credentials are not mislabeled as a tested connection", "configured credentials are still shown as connected before a successful test");
 
+console.log("\n4b. Interaction regression boundaries");
+expect(js.includes("applyCharacterSearchFilter") && js.includes("characterSearch"), "character search uses local DOM filtering", "character search still depends on full-page rerender");
+expect(tabletopTurn.includes("finally") && tabletopTurn.includes("render()"), "Tabletop V2 renders after busy cleanup", "Tabletop V2 can leave stale busy UI after a turn");
+expect(js.includes("authoritativeConnection") && js.includes("已保存"), "model state distinguishes saved from connected", "model state collapses saved credentials into connected");
+expect(server.includes("[API:FATAL]") && server.includes("res.writableEnded"), "API async boundary guards rejected handlers", "API async boundary lacks a final rejected-handler guard");
+
 console.log("\n5. Progress copy truthfulness");
 expect(js.includes("progressProfile") || js.includes("getProgressStages") || js.includes("setProgressProfile"), "dynamic progress profile exists", "progress copy is still globally fixed");
 const progressLiteral = js.includes("Guardian 正在审核") && js.includes("导演正在分析你的行动");

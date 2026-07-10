@@ -17,11 +17,12 @@ function render() {
     U.qs("#contextLine").textContent = currentName;
     U.qs("#sideWorldName").textContent = currentName;
     U.qs("#sideWorldMeta").textContent = `${AS.messages.length} 条消息 · ${AS.modules.length} 个模块`;
+    const modelState = getModelConnectionUiState();
     const llm = U.qs("#llmStatus");
-    llm.textContent = AS.llmConnected ? "已连接" : "未连接";
-    llm.className = `badge ${AS.llmConnected ? "ok" : "pending"}`;
+    llm.textContent = modelState.label;
+    llm.className = `badge ${modelState.tone === "ok" ? "ok" : modelState.tone === "bad" ? "bad" : "pending"}`;
     const sideModel = U.qs("#sideModelMeta");
-    if (sideModel) sideModel.textContent = AS.llmConnected ? `${AS.config.llmModel || "模型"} · 已连接` : (AS.hasApiKey ? "等待连接" : "未配置");
+    if (sideModel) sideModel.textContent = modelState.connected ? `${AS.config.llmModel || "模型"} · ${modelState.label}` : modelState.label;
     const save = U.qs("#saveStatus");
     if (save) {
       save.textContent = AS.busy ? "保存中" : (AS.selectedModule ? "已保存" : "本地就绪");
@@ -29,6 +30,7 @@ function render() {
     }
     U.qs("#main").innerHTML = Views[AS.view] ? Views[AS.view]() : C.empty("未知页面");
     bindEvents();
+    if (AS.view === "library" && AS.libraryTab === "characters") applyCharacterSearchFilter(AS.characterQuery);
     const overlay = U.qs('[role="dialog"][aria-modal="true"]');
     if (overlay) requestAnimationFrame(() => overlay.focus());
   } catch (err) {
@@ -293,7 +295,7 @@ function bindEvents() {
   });
 
   const search = U.qs("#characterSearch");
-  if (search) search.oninput = () => { AS.characterQuery = search.value; render(); };
+  if (search) search.oninput = () => applyCharacterSearchFilter(search.value);
 
   U.qsa("[data-pack-option]").forEach(input => {
     input.onchange = () => {

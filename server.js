@@ -2822,8 +2822,16 @@ const { handleAPI } = createHttpApiRouter({
 });
 
 const server = createServer((req, res) => {
-  if (req.url.startsWith("/api/")) {
-    handleAPI(req, res);
+  const requestUrl = req.url || "/";
+  if (requestUrl.startsWith("/api/")) {
+    void handleAPI(req, res).catch((err) => {
+      console.error("[API:FATAL]", requestUrl, err);
+      if (!res.headersSent) {
+        jsonError(res, 500, "INTERNAL_ERROR", "服务端处理失败。请查看控制台日志获取技术细节。", err?.message || String(err));
+      } else if (!res.writableEnded) {
+        res.destroy(err);
+      }
+    });
     return;
   }
   // 静态资源也走本地访问校验（防御纵深：即使误绑 0.0.0.0 也不暴露 UI）

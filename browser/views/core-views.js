@@ -43,7 +43,7 @@ const Views = {
       ${C.lobbyEntryDetails(firstRunDemo)}
 
       <section class="cols-4">
-        ${C.stat("模型连接", AS.llmConnected ? "已连接" : "未连接", AS.config.llmModel || "")}
+        ${C.stat("模型连接", getModelConnectionUiState().label, AS.config.llmModel || "")}
         ${C.stat("当前回合", current?.turnCount || 0)}
         ${C.stat("世界书条目", AS.worldbookEntries.length)}
         ${C.stat("待审核", reviewCount, reviewCount ? "等待确认" : "无")}
@@ -234,8 +234,7 @@ const Views = {
 };
 
 function renderCharacters() {
-  const q = (AS.characterQuery || "").toLowerCase();
-  const list = (AS.characters || []).filter(c => !q || [c.name, c.description, (c.tags || []).join(" ")].join(" ").toLowerCase().includes(q));
+  const list = AS.characters || [];
   return `<section class="layout-2">
     <div class="panel">
       <div class="panel-head"><div><h2>角色库</h2><p class="sub">支持 ST v2/v3 JSON，PNG metadata 会尝试解析。</p></div><button class="small" data-action="refresh-characters">刷新</button></div>
@@ -265,6 +264,31 @@ ${AS.currentV2RuntimeMvp?.available ? `<div class="character-v2-create-summary" 
     <div class="panel-head"><h3>高级设置</h3><span class="tiny muted">Character Capsule V2 — 已启用 Text-first Runtime</span></div>
     <p class="tiny muted">此处将展示完整字段编辑、表现指纹、记忆详细管理、关系详细管理、Lore 管理、CHARACTER.md 预览/导出、Prompt 预览、模块调用摘要、OOC/drift 分数、Dialogue regression、Token budget、来源映射等高级功能。当前这些模块尚未实现。</p>
   </section>`;
+}
+
+function applyCharacterSearchFilter(rawQuery = "") {
+  const query = String(rawQuery || "").trim().toLowerCase();
+  AS.characterQuery = String(rawQuery || "");
+  const cards = U.qsa("[data-character-id]");
+  let visibleCount = 0;
+  cards.forEach(card => {
+    const visible = !query || String(card.textContent || "").toLowerCase().includes(query);
+    card.hidden = !visible;
+    card.style.display = visible ? "" : "none";
+    if (visible) visibleCount += 1;
+  });
+  let empty = U.qs("[data-character-search-empty]");
+  if (!empty && cards.length) {
+    empty = document.createElement("p");
+    empty.className = "tiny muted";
+    empty.dataset.characterSearchEmpty = "true";
+    const grid = cards[0].parentElement;
+    grid?.parentElement?.appendChild(empty);
+  }
+  if (empty) {
+    empty.textContent = cards.length ? "没有匹配的角色。请尝试名称、描述或标签。" : "暂无角色卡。导入角色卡后会显示在这里。";
+    empty.hidden = visibleCount !== 0;
+  }
 }
 
 function renderWorldbook() {

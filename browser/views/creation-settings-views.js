@@ -313,8 +313,8 @@ function renderHealth() {
   const h = AS.health;
   return `<section class="grid"><div class="auto-grid">
     ${C.stat("控制台版本", h?.version || CFG.version)}
-    ${C.stat("LLM 连接", AS.llmConnected ? "已连接" : "未连接")}
-    ${C.stat("API Key", AS.hasApiKey ? "已配置" : "缺失")}
+    ${C.stat("LLM 连接", getModelConnectionUiState().label)}
+    ${C.stat("API Key", getModelConnectionUiState().configured ? "已配置" : "缺失")}
     ${C.stat("数据目录", h?.data?.writable ? "可写" : "未知")}
     ${C.stat("世界数量", h?.data?.worldsCount ?? AS.modules.length)}
     ${C.stat("对话回合", h?.data?.totalTurns ?? 0)}

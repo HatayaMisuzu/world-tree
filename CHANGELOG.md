@@ -12,6 +12,16 @@
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree · CHANGELOG
+## 0.5.0-product-experience-rebuild.1
+
+### Interaction and release verification fixes
+
+- Fixed character-library search to filter existing cards in place, preserving focus and caret while matching names, descriptions, and tags.
+- Fixed Tabletop V2 to render its final non-busy state after successful, blocked, and failed turns.
+- Unified model connection states into unconfigured, saved/waiting, connected, partial, and failed; health refresh no longer erases an authoritative test result.
+- Added a final API Promise/error boundary and structured fallback for rejected request parsing or handler work.
+- Added browser interaction regressions and made coverage, browser matrix, golden path, visual QA, and the regression gate part of release verification and GitHub Actions.
+
 ## 0.5.0-product-experience-rebuild.0
 
 ### Product experience rebuild

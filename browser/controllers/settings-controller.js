@@ -79,6 +79,9 @@ async function saveConnection() {
     provider: template?.provider || templateId || "openai-compatible"
   };
   AS.connections = await API.connections({ action: "upsert", profile, setDefault: true });
+  const active = AS.connections?.items?.find(item => item.active) || AS.connections?.items?.[0];
+  AS.hasApiKey = Boolean(active?.hasApiKey || profile.apiKey);
+  AS.llmConnected = false;
   AS.llmDiagnostics = null;
   createToast("连接档案已保存");
   render();
@@ -90,10 +93,18 @@ async function connectionAction(action, id) {
   if (action === "test-connection") {
     AS.llmDiagnostics = res;
     AS.llmConnected = res.status === "ok";
+    AS.hasApiKey = AS.hasApiKey || Boolean(res.hasApiKey || res.safeToSave);
     createToast(res.status === "ok" || res.status === "partial" ? `诊断完成 ${res.latencyMs || 0}ms` : (res.errorMsg || "连接失败"), res.status === "ok" ? "" : res.status === "partial" ? "warn" : "bad");
     render();
   }
-  else { AS.connections = res; render(); }
+  else {
+    AS.connections = res;
+    const active = AS.connections?.items?.find(item => item.active) || AS.connections?.items?.[0];
+    AS.hasApiKey = Boolean(active?.hasApiKey);
+    AS.llmConnected = false;
+    AS.llmDiagnostics = null;
+    render();
+  }
 }
 
 async function pluginAction(action, id) {
@@ -153,8 +164,8 @@ async function updateHealth() {
     const legacyLlmStatus = AS.health?.llm?.status;
     const llmStatus = deriveLlmUiStatus(AS.health, AS.config, AS.hasApiKey);
     const dataWritable = llmStatus.dataWritable;
-    AS.llmConnected = llmStatus.connected;
     AS.hasApiKey = llmStatus.llmConfigured || AS.hasApiKey;
+    if (llmStatus.authoritativeConnection) AS.llmConnected = llmStatus.connected;
     AS.health.dataWritable = dataWritable;
     AS.health.legacyLlmStatus = legacyLlmStatus || llmStatus.status || "";
     const debug = U.qs("#debugToggle");
@@ -165,7 +176,20 @@ async function updateHealth() {
 function deriveLlmUiStatus(health = {}, config = {}, hasApiKey = false) {
   const llmConfigured = Boolean(health?.llmConfigured ?? health?.llm?.configured ?? hasApiKey);
   const status = String(health?.llm?.status || "").toLowerCase();
-  const connected = status === "connected" || Boolean(health?.llm?.connected);
+  const authoritativeConnection = Boolean(health?.llm && ("status" in health.llm || "connected" in health.llm));
+  const connected = status === "connected" || health?.llm?.connected === true;
   const dataWritable = Boolean(health?.data?.writable ?? health?.dataWritable ?? health?.writable);
-  return { connected, llmConfigured, dataWritable, status };
+  return { connected, llmConfigured, dataWritable, status, authoritativeConnection };
 }
+
+function getModelConnectionUiState() {
+  const diagnosticsStatus = String(AS.llmDiagnostics?.status || "").toLowerCase();
+  const configured = Boolean(AS.hasApiKey || AS.health?.llmConfigured || AS.health?.llm?.configured);
+  if (AS.llmConnected) return { id: "connected", label: "已连接", tone: "ok", configured: true, connected: true };
+  if (diagnosticsStatus === "partial") return { id: "partial", label: "已保存，部分响应", tone: "warn", configured: true, connected: false };
+  if (diagnosticsStatus === "error" || diagnosticsStatus === "fail") return { id: "failed", label: "已保存，测试失败", tone: "bad", configured, connected: false };
+  if (configured) return { id: "saved", label: "已保存，待测试", tone: "pending", configured: true, connected: false };
+  return { id: "unconfigured", label: "未配置", tone: "warn", configured: false, connected: false };
+}
+
+globalThis.WorldTreeConnectionState = Object.freeze({ deriveLlmUiStatus });
