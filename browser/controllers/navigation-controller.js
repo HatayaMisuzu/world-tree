@@ -20,8 +20,17 @@ function render() {
     const llm = U.qs("#llmStatus");
     llm.textContent = AS.llmConnected ? "已连接" : "未连接";
     llm.className = `badge ${AS.llmConnected ? "ok" : "pending"}`;
+    const sideModel = U.qs("#sideModelMeta");
+    if (sideModel) sideModel.textContent = AS.llmConnected ? `${AS.config.llmModel || "模型"} · 已连接` : (AS.hasApiKey ? "等待连接" : "未配置");
+    const save = U.qs("#saveStatus");
+    if (save) {
+      save.textContent = AS.busy ? "保存中" : (AS.selectedModule ? "已保存" : "本地就绪");
+      save.className = `badge ${AS.busy ? "pending" : "ok"}`;
+    }
     U.qs("#main").innerHTML = Views[AS.view] ? Views[AS.view]() : C.empty("未知页面");
     bindEvents();
+    const overlay = U.qs('[role="dialog"][aria-modal="true"]');
+    if (overlay) requestAnimationFrame(() => overlay.focus());
   } catch (err) {
     console.error(err);
     U.qs("#main").innerHTML = `<div class="panel">${C.noticeHtml(`页面渲染失败：${U.esc(err.message)}`, "bad")}<button onclick="location.reload()">刷新页面</button></div>`;

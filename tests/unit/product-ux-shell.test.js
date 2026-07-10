@@ -4,7 +4,14 @@ import { readFileSync } from "node:fs";
 import { readBrowserSource } from "../../scripts/lib/browser-source.mjs";
 
 const consoleJs = readBrowserSource();
-const consoleCss = readFileSync("world-tree-console.css", "utf8");
+const consoleCss = [
+  "world-tree-console.css",
+  "browser/styles/tokens.css",
+  "browser/styles/shell.css",
+  "browser/styles/components.css",
+  "browser/styles/views.css",
+  "browser/styles/responsive.css"
+].map(file => readFileSync(file, "utf8")).join("\n");
 
 test("default console shell is productized as a game lobby", () => {
   assert.match(consoleJs, /id:\s*"workbench",\s*label:\s*"大厅"/);
@@ -63,13 +70,13 @@ test("settings IA is grouped into connection, narrative, and advanced cards", ()
   }
 });
 
-test("visual language defines paper forest tokens and dark theme", () => {
+test("visual language defines Living Archive tokens, responsive shell, and reduced motion", () => {
   for (const marker of [
-    "--paper",
-    "--forest",
-    "--forest-soft",
-    "--border",
-    "prefers-color-scheme: dark",
+    "--wt-bg-canvas",
+    "--wt-accent-forest",
+    "--wt-font-reading",
+    "--wt-focus-ring",
+    "prefers-reduced-motion:reduce",
     ".entry-grid",
     ".opening-suggestions",
     ".settings-card-grid"

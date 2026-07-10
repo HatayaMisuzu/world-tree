@@ -407,5 +407,5 @@ function renderDrawer() {
     saves: ["存档 · 快速切换", `<div class="list">${AS.modules.slice(0, 8).map(m => `<div class="item"><strong>${U.esc(m.displayName || m.name)}</strong><span class="tiny muted">${m.turnCount || 0} 回合</span><button class="small" data-module-id="${U.esc(m.id)}" data-action="load-module-from-list">切换</button></div>`).join("")}</div>`]
   };
   const [title, body] = configs[AS.activeDrawer] || configs.saves;
-  return `<div class="overlay-backdrop open" data-action="close-drawer"><div class="drawer" onclick="event.stopPropagation()"><div class="overlay-head"><h3>${title}</h3><button data-action="close-drawer">关闭</button></div>${body}</div></div>`;
+  return `<div class="overlay-backdrop open" data-action="close-drawer"><div class="drawer" role="dialog" aria-modal="true" aria-label="${U.esc(title)}" tabindex="-1" onclick="event.stopPropagation()"><div class="overlay-head"><h3>${title}</h3><button data-action="close-drawer" aria-label="关闭${U.esc(title)}">关闭</button></div>${body}</div></div>`;
 }

@@ -288,6 +288,11 @@ U.qs("#refreshBtn").onclick = async () => { await refreshModules(); await loadVi
 U.qs("#settingsBtn").onclick = async () => { AS.view = "settings"; APP_STORE?.dispatch({ type: "navigation/view", view: AS.view }); await loadViewData(); render(); };
 U.qs("#debugToggle").onclick = toggleDebugPanel;
 document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && AS.activeDrawer) {
+    AS.activeDrawer = "";
+    render();
+    return;
+  }
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
     e.preventDefault();
     toggleDebugPanel();

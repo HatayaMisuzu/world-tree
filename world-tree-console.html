@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>World Tree 控制台</title>
+  <title>World Tree · 生长中的世界档案</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="world-tree-console.css">
 </head>
@@ -14,7 +14,8 @@
         <div class="brand-mark">WT</div>
         <div>
           <h1>World Tree</h1>
-          <p id="appVersion">叙事引擎 vunknown</p>
+          <p class="brand-tagline">生长中的世界档案</p>
+          <p id="appVersion" class="brand-version">vunknown</p>
         </div>
       </div>
       <nav id="primaryNav" class="primary-nav" aria-label="主导航"></nav>
@@ -22,6 +23,9 @@
         <span class="label">当前世界</span>
         <strong id="sideWorldName">未选择</strong>
         <span id="sideWorldMeta">等待加载</span>
+        <span class="sidebar-divider" aria-hidden="true"></span>
+        <span class="label">模型服务</span>
+        <span id="sideModelMeta">未配置</span>
       </div>
     </aside>
 
@@ -33,6 +37,7 @@
         </div>
         <div class="toolbar">
           <span id="llmStatus" class="badge pending">未连接</span>
+          <span id="saveStatus" class="badge pending" aria-live="polite">本地就绪</span>
           <button id="refreshBtn" class="ghost">刷新</button>
           <button id="settingsBtn" class="ghost">设置</button>
         </div>
@@ -54,7 +59,7 @@
     <div id="debugLogContent"></div>
   </div>
 
-  <div id="toastHost" class="toast-host"></div>
+  <div id="toastHost" class="toast-host" role="status" aria-live="polite" aria-atomic="true"></div>
   <script src="world-tree-client-core.js"></script>
   <script src="ui-labels.js"></script>
   <script src="browser/app/product-registry.js"></script>

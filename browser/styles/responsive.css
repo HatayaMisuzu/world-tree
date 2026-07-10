@@ -1,0 +1,41 @@
+@media (max-width:1100px){
+  .app-shell{grid-template-columns:208px minmax(0,1fr)}
+  .layout-3,.layout-2,.chat-layout,.alchemy-workbench{grid-template-columns:1fr}
+  .status-panel,.status-panel--hidden,.mechanism-library-panel{position:static;max-height:none}
+  .cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:760px){
+  .app-shell{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .topbar{position:sticky;padding:10px 12px;min-height:64px}
+  .topbar h2{font-size:18px}
+  .main-content{padding:14px 12px 92px}
+  .hero-row{display:grid}
+  .hero-title{font-size:24px}
+  .cols-2,.cols-3,.cols-4{grid-template-columns:1fr}
+  .chat-card{min-height:calc(100vh - 170px)}
+  .chat-message{max-width:100%}
+  .composer{grid-template-columns:1fr}
+  .chat-layout{gap:10px;min-width:0}
+  .status-panel{order:-1;max-height:42vh}
+  .status-panel .panel-head{align-items:flex-start}
+  .status-panel .actions{width:100%}
+  .inventory-grid{grid-template-columns:1fr}
+  .developer-observability-sheet{inset:0;width:100%;max-width:none;padding:12px 12px 84px}
+  .developer-observability-tabs{top:-12px;overflow-x:auto;flex-wrap:nowrap}
+  .mechanism-search{grid-template-columns:1fr}
+  .settings-card-grid{grid-template-columns:1fr}
+  .mobile-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--wt-border-subtle);background:rgba(255,253,247,.97);backdrop-filter:blur(16px);box-shadow:0 -8px 28px rgba(28,45,36,.08);padding-bottom:env(safe-area-inset-bottom)}
+  .mobile-nav button{display:grid;gap:2px;place-items:center;min-height:62px;border:0;border-radius:0;background:transparent;color:var(--muted);font-size:11px}
+  .mobile-nav button.active{color:var(--primary);font-weight:700}
+  .toolbar button#refreshBtn{display:none}
+  .debug-entry{grid-template-columns:1fr}
+}
+.character-v2-advanced-panel[hidden]{display:none!important}
+.character-v2-advanced-panel{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:var(--radius)}
+.character-v2-create-summary{line-height:1.5}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
