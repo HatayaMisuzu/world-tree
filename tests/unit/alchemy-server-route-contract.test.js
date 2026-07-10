@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readServerSource } from "../../scripts/lib/server-source.mjs";
 
-const server = readFileSync("server.js", "utf8");
+const server = readServerSource();
 
 test("server wires alchemy planner to real LLM JSON adapter", () => {
   assert.match(server, /function parseAlchemyLlmJson/);

@@ -6,6 +6,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readBrowserSource } from "./lib/browser-source.mjs";
+import { readServerSource } from "./lib/server-source.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => existsSync(join(root, p)) ? readFileSync(join(root, p), "utf-8") : "";
@@ -14,14 +15,7 @@ const json = (p) => {
 };
 
 const pkg = json("package.json");
-const server = [
-  read("server.js"),
-  read("src/server/v2-product-playable-routes.js"),
-  read("src/server/tabletop-v2-routes.js"),
-  read("src/server/detective-v2-routes.js"),
-  read("src/server/character-v2-routes.js"),
-  read("src/server/single-player-scriptkill-v2-routes.js"),
-].join("\n");
+const server = readServerSource(root);
 const ui = readBrowserSource(root);
 const readme = read("README.md");
 const changelog = read("CHANGELOG.md");

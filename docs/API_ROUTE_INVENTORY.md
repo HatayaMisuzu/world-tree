@@ -1,12 +1,12 @@
 # API Route Inventory — World Tree Current Baseline
 
-> This inventory reflects the current `server.js`. It is not a future router design.
+> This inventory reflects the current `http-api-router.js`, bounded V2 route modules, and handlers assembled by `server.js`.
 > This inventory is **partial but source-grounded** — not every handler is fully categorized.
 > This inventory includes current route groups and known V2 service route groups where documented. It is not a full router redesign.
 
 ## Status
 
-`server.js` still owns API route dispatch for non-V2 routes. Three infrastructure modules were extracted: `http-response.js`, `http-request.js`, `local-access.js`.
+`src/server/http-api-router.js` owns API dispatch for legacy and non-V2 routes. `server.js` assembles its dependencies and retains several domain handlers. Infrastructure and product runtime boundaries include `http-response.js`, `http-request.js`, `local-access.js`, `config-runtime.js`, `connection-runtime.js`, and `static-shell.js`.
 
 Selected V2 product route dispatch now uses `src/server/v2-product-playable-routes.js`. This is bounded dispatch extraction, not a full server router rewrite.
 
@@ -14,7 +14,7 @@ Selected V2 product route dispatch now uses `src/server/v2-product-playable-rout
 
 | Group | Purpose | Current Owner |
 |---|---|---|
-| config | local config, secrets, LLM setup checks | `server.js` |
+| config | local config, secrets, LLM setup checks | `http-api-router.js` -> `config-runtime.js`, `connection-runtime.js` |
 | examples/import | built-in examples and file import | `server.js`, import services |
 | modules | module list/create/delete/finalize/build model | `server.js`, `module-service` |
 | workflow | workflow status/readiness/adapters | `server.js`, `src/core/workflows` |
@@ -25,7 +25,7 @@ Selected V2 product route dispatch now uses `src/server/v2-product-playable-rout
 | turn | turn debug, status frames | `server.js` |
 | export/import | world-pack, data export/import | `server.js` |
 | debug/diagnostics | health, status, engine manifest | `server.js` |
-| static | console and static assets | `server.js` |
+| static | console and static assets | `static-shell.js` |
 | worldbook-v2 product | selected Worldbook V2 product API loop | `src/server/v2-product-playable-routes.js` -> `worldbook-v2-product-service.js` |
 | strategy-sim-v2 product | selected Strategy Sim V2 product API loop | `src/server/v2-product-playable-routes.js` -> `strategy-sim-v2-product-service.js` |
 | tabletop-v2 product | selected Tabletop V2 product API loop | `src/server/v2-product-playable-routes.js` -> `tabletop-v2-routes.js` |
@@ -171,4 +171,4 @@ The V2 route adapter now covers:
 
 This is bounded dispatch extraction, not a full server router rewrite.
 
-Deferred: non-V2 route groups still remain in `server.js` until a separate route inventory and router split pass is approved.
+Non-V2 dispatch is now centralized in `http-api-router.js`. Several domain handler implementations still remain in `server.js`; future extraction should move those handlers only when their persistence and proposal/canon dependencies can stay explicit.

@@ -160,7 +160,7 @@ Product closure not complete:
 - Worldbook V2 is not a complete product editor/runtime experience.
 - Character V2 advanced editor is not complete.
 - Single Player ScriptKill V2 does not include bundled product content unless separately documented.
-- `server.js` remains the main HTTP entry and still owns non-V2 route dispatch, but selected V2 product route dispatch has been partially extracted through `src/server/v2-product-playable-routes.js`.
+- `server.js` remains the HTTP entry and dependency assembly point. Non-V2 dispatch now lives in `src/server/http-api-router.js`; configuration, connection diagnostics, static shell serving, and selected V2 route groups are bounded modules. Several legacy domain handlers remain in the entry for later service extraction.
 - `world-tree-console.js` is now a small compatibility bootstrap; product registry, store, components, views, and controllers live under `browser/`. `world-tree-client-core.js` remains the stable utility/API client boundary.
 - No TypeScript migration.
 - Full product-wide browser QA remains incomplete unless a product entry browser smoke matrix is separately recorded.

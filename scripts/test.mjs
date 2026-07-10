@@ -51,6 +51,8 @@ console.log("\n📝 语法检查");
 
 const CORE_FILES = [
   "server.js",
+  "src/server/config-runtime.js", "src/server/connection-runtime.js", "src/server/static-shell.js",
+  "src/server/http-api-router.js", "src/server/debug-log.js",
   "world-tree-console.js",
   "browser/app/product-registry.js", "browser/app/navigation.js", "browser/state/app-store.js",
   "browser/components/feedback.js", "browser/components/forms.js", "browser/components/product-components.js",

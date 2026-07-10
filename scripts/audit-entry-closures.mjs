@@ -3,11 +3,12 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readBrowserSource } from "./lib/browser-source.mjs";
+import { readServerSource } from "./lib/server-source.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 
-const serverContent = readFileSync(join(root, "server.js"), "utf-8");
+const serverContent = readServerSource(root);
 const routeContents = [
   "src/server/v2-product-playable-routes.js",
   "src/server/tabletop-v2-routes.js",

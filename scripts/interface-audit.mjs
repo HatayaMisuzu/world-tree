@@ -10,6 +10,7 @@ import { resolve, join, dirname } from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { readBrowserSource } from "./lib/browser-source.mjs";
+import { readServerSource } from "./lib/server-source.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let errors = 0, warnings = 0, passes = 0;
@@ -26,7 +27,7 @@ console.log("\n📁 文件 IO 校准");
 
 const readIfExists = (file) => existsSync(join(ROOT, file)) ? readFileSync(join(ROOT, file), "utf-8") : "";
 const serverCode = [
-  readIfExists("server.js"),
+  readServerSource(ROOT),
   readIfExists("src/server/v2-product-playable-routes.js"),
   readIfExists("src/server/tabletop-v2-routes.js"),
   readIfExists("src/server/detective-v2-routes.js"),
@@ -112,8 +113,7 @@ if (existsSync(linkageContract)) combinedCode += "\n" + readFileSync(linkageCont
 const saveBranch = join(ROOT, "src/core/tabletop/tabletop-v2-save-branch.js");
 if (existsSync(saveBranch)) combinedCode += "\n" + readFileSync(saveBranch, "utf-8");
 // Server-side files for route/namespace audit
-const serverJsCode = join(ROOT, "server.js");
-if (existsSync(serverJsCode)) combinedCode += "\n" + readFileSync(serverJsCode, "utf-8");
+combinedCode += "\n" + readServerSource(ROOT);
 const detectiveSvc = join(ROOT, "src/server/detective-v2-service.js");
 if (existsSync(detectiveSvc)) combinedCode += "\n" + readFileSync(detectiveSvc, "utf-8");
 

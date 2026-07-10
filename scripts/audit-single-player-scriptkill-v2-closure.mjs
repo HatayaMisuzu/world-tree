@@ -5,12 +5,13 @@ import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readBrowserSource } from "./lib/browser-source.mjs";
+import { readServerSource } from "./lib/server-source.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = p => existsSync(join(root, p)) ? readFileSync(join(root, p), "utf-8") : "";
 const pkg = JSON.parse(read("package.json") || "{}");
 const ui = readBrowserSource(root);
-const server = `${read("server.js")}\n${read("src/server/single-player-scriptkill-v2-routes.js")}`;
+const server = readServerSource(root);
 const service = read("src/server/single-player-scriptkill-v2-service.js");
 const packageCore = read("src/core/single-player-scriptkill/single-player-scriptkill-package.js");
 const importer = read("src/core/single-player-scriptkill/single-player-scriptkill-importer.js");

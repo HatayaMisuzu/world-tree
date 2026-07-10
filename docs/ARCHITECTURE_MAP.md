@@ -44,21 +44,27 @@ local JSON / JSONL persistence
 
 ## Current Server Boundary
 
-Stage 6 extracted three stable server runtime boundaries:
+The server entry now composes stable runtime boundaries:
 
 ```text
 src/server/http-response.js
 src/server/http-request.js
 src/server/local-access.js
+src/server/config-runtime.js
+src/server/connection-runtime.js
+src/server/static-shell.js
+src/server/http-api-router.js
+src/server/debug-log.js
 ```
 
-`server.js` still owns the HTTP entry, non-V2 route dispatch, and broad API orchestration. This is intentional.
+`server.js` retains startup, dependency assembly, lifecycle, persistence orchestration, and domain handlers that still need a later bounded service pass. Non-V2 HTTP dispatch, static shell serving, configuration/secrets diagnostics, and connection-profile orchestration are no longer inline in the entry file.
 
-Selected V2 product route dispatch now flows through `src/server/v2-product-playable-routes.js`:
+API dispatch now flows through a bounded router and selected V2 adapter:
 
 ```text
 server.js
-  -> src/server/v2-product-playable-routes.js
+  -> src/server/http-api-router.js
+    -> src/server/v2-product-playable-routes.js
     -> worldbook-v2-product-service.js
     -> strategy-sim-v2-product-service.js
     -> tabletop-v2-routes.js
@@ -67,7 +73,7 @@ server.js
     -> character-v2-routes.js
 ```
 
-Worldbook V2 and Strategy Sim V2 still use their product service handlers. Tabletop V2, Detective V2, Single Player ScriptKill V2, and Character V2 dispatch now lives in bounded route modules. This is a bounded dispatch extraction, not a full router rewrite.
+Worldbook V2 and Strategy Sim V2 still use their product service handlers. Tabletop V2, Detective V2, Single Player ScriptKill V2, and Character V2 dispatch lives in bounded route modules. Legacy paths retain the same request and response contracts through the new adapter.
 
 ## Current Frontend Boundary
 
@@ -93,7 +99,7 @@ Version, Git HEAD, unit/integration test counts, and npm package counts are gene
 - Full V2 is not implemented.
 - Product-wide playable closure is not complete.
 - Full mode-specific gameplay engines are not implemented.
-- `server.js` route dispatch is not fully split.
+- Several legacy domain handlers still live in `server.js`; route dispatch itself is extracted, while later service extraction remains backlog.
 - Legacy globals remain for route, DOM, and `data-action` compatibility; a future pass may narrow them after the new controllers are stable.
 - Persistence format has not been redesigned.
 - Proposal/canon authority model has not been rewritten.

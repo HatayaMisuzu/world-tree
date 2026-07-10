@@ -76,6 +76,11 @@ import { handleV2ProductPlayableRoute } from "./src/server/v2-product-playable-r
 import { extractJsonValue, validateAlchemyJson } from "./src/core/llm/json-extract.js";
 import { mapLlmError } from "./src/server/llm-error-mapper.js";
 import { buildOpenAICompatibleChatBody } from "./src/adapters/providers/openai-compatible.js";
+import { createConfigRuntime } from "./src/server/config-runtime.js";
+import { createConnectionRuntime } from "./src/server/connection-runtime.js";
+import { createStaticShell } from "./src/server/static-shell.js";
+import { createHttpApiRouter } from "./src/server/http-api-router.js";
+import { createDebugLogger } from "./src/server/debug-log.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
@@ -132,283 +137,32 @@ if (process.env.WORLD_TREE_ENABLE_UPDATE_CHECK === "1") {
   })();
 }
 
-function debugLog(category, message, data = null) {
-  if (!DEBUG_MODE) return;
-  const entry = {
-    ts: new Date().toISOString(),
-    category,
-    message,
-    ...(data ? { data: typeof data === "object" ? JSON.stringify(data).slice(0, 500) : String(data).slice(0, 500) } : {})
-  };
-  DEBUG_LOG.push(entry);
-  if (DEBUG_LOG.length > DEBUG_MAX) DEBUG_LOG.shift();
-  console.log(`[${category}] ${message}`);
-}
+const debugLog = createDebugLogger({ enabled: DEBUG_MODE, buffer: DEBUG_LOG, max: DEBUG_MAX });
 
 // ═══════════════════════════════════════════════════════════════
 //  路径与默认配置
 // ═══════════════════════════════════════════════════════════════
 
-function dataRoot() {
-  return DATA_ROOT_OVERRIDE || join(ROOT, "data");
-}
-
-function configPath() {
-  return userDataPath("config.json");
-}
-
-function secretsPath() {
-  return userDataPath("secrets.json");
-}
-
-const DEFAULT_CONFIG = {
-  llmBaseUrl: "https://api.deepseek.com/v1",
-  llmModel: "deepseek-v4-flash",
-  llmProvider: "deepseek",
-  llmThinking: "auto",
-  llmTimeoutMs: 60000,
-  pipelineProfileId: "balanced",
-  connectionProfileId: "deepseek",
-  lastModuleKey: "",
-  moduleHistory: [],
-  theme: "dark",
-  language: "zh-CN",
-  firstRun: true
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  配置管理
-// ═══════════════════════════════════════════════════════════════
-
-async function loadConfig() {
-  return { ...DEFAULT_CONFIG, ...readJson(configPath(), {}) };
-}
-
-async function saveConfig(update) {
-  const current = await loadConfig();
-  const next = { ...current, ...update };
-  delete next.llmApiKey;
-  await writeJson(configPath(), next);
-  return next;
-}
-
-function maskSecret(value) {
-  if (!value) return "";
-  if (value.length <= 4) return "****";
-  // 短密钥仅保留最后1位
-  if (value.length <= 8) return `${"*".repeat(value.length - 1)}${value.slice(-1)}`;
-  return `${"*".repeat(6)}${value.slice(-4)}`;
-}
-
-async function loadSecrets() {
-  const s = readJson(secretsPath(), {});
-  const llm = s.llm || {};
-  return { llm: { active: llm.active || "default", items: Array.isArray(llm.items) ? llm.items : [] } };
-}
-
-async function saveSecrets(secrets) {
-  await writeJson(secretsPath(), secrets);
-  if (process.platform !== "win32") {
-    try {
-      await chmod(secretsPath(), 0o600);
-    } catch (err) {
-      console.warn("[secrets] chmod 0600 failed:", err?.message || "unknown error");
-    }
-  }
-  return getSecretState();
-}
-
-async function getSecretState() {
-  const secrets = await loadSecrets();
-  const active = secrets.llm.items.find(i => i.id === secrets.llm.active) || secrets.llm.items[0] || null;
-  return {
-    llm: {
-      active: active?.id || "",
-      items: secrets.llm.items.map(i => ({ id: i.id, label: i.label || i.id, masked: maskSecret(i.value || ""), active: i.id === (active?.id || "") }))
-    }
-  };
-}
-
-async function getActiveLlmValue() {
-  const secrets = await loadSecrets();
-  const active = secrets.llm.items.find(i => i.id === secrets.llm.active) || secrets.llm.items[0] || null;
-  return active?.value || "";
-}
-
-async function saveLlmSecret(payload) {
-  const label = String(payload?.label || "Default").trim() || "Default";
-  const value = String(payload?.value || "").trim();
-  // 拒绝保存掩码格式的 key（防止旧掩码被写回）
-  // 检测4个及以上连续 * 号，或全 * 号字符串
-  if (/\*{4,}/.test(value) || /^\*+$/.test(value)) {
-    return await getSecretState();
-  }
-  const id = String(payload?.id || "default").replace(/[^\w.-]/g, "-") || "default";
-  const secrets = await loadSecrets();
-  const nextItem = { id, label, value };
-  const items = [nextItem, ...secrets.llm.items.filter(i => i.id !== id)];
-  return saveSecrets({ ...secrets, llm: { active: id, items } });
-}
-
-const LLM_CONNECTION_SENTINEL = "WORLD_TREE_CONNECTION_OK";
-
-function llmProbeMessages() {
-  return [{ role: "user", content: `Reply exactly with this token and nothing else: ${LLM_CONNECTION_SENTINEL}` }];
-}
-
-function parseChatCompletionProbe(text = "") {
-  let data = {};
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    data = { rawText: text };
-  }
-  const choice = data?.choices?.[0] || {};
-  const message = choice.message || {};
-  const content = String(message.content || "").trim();
-  const reasoningContent = String(message.reasoning_content || message.reasoningContent || "").trim();
-  const finishReason = choice.finish_reason || choice.finishReason || "";
-  return { data, content, reasoningContent, finishReason };
-}
-
-function strictProbeFailure(probe) {
-  if (!probe.content) {
-    return {
-      status: "fail",
-      detail: probe.reasoningContent
-        ? `empty content; reasoning_content present; finish_reason=${probe.finishReason || "unknown"}`
-        : `empty content; finish_reason=${probe.finishReason || "unknown"}`,
-      suggestion: "chat/completions 返回成功但没有可显示 content。DeepSeek V4 Flash 请关闭 thinking，或在启用 thinking 时提高 max_tokens。"
-    };
-  }
-  if (!probe.content.includes(LLM_CONNECTION_SENTINEL)) {
-    return {
-      status: "fail",
-      detail: `sentinel missing; content=${probe.content.slice(0, 80)}`,
-      suggestion: "连接测试没有返回指定 sentinel，说明模型/参数可用性仍需确认。"
-    };
-  }
-  return null;
-}
-
-function partialProbeResult({ latencyMs, checks, suggestions, detail }) {
-  if (detail) suggestions.push(detail);
-  return { status: "partial", latencyMs, checks, suggestions, safeToSave: false };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  LLM 测试连接
-// ═══════════════════════════════════════════════════════════════
-
-async function testLlmConnection(payload) {
-  const started = Date.now();
-  const config = { ...DEFAULT_CONFIG, ...(payload?.config || {}) };
-  // 从本地 secrets.json 读取密钥（不信任前端传递的明文 key）
-  const apiKey = await getActiveLlmValue();
-  const baseUrl = String(config.llmBaseUrl || payload?.baseUrl || "").replace(/\/$/, "");
-  const model = String(config.llmModel || payload?.model || "").trim();
-  const checks = [];
-  const suggestions = [];
-  const add = (id, label, status, detail = "") => checks.push({ id, label, status, detail });
-  const fail = (code, userMsg, detail = "") => ({ ...errorPayload(code, userMsg, detail), checks, suggestions, safeToSave: false });
-
-  if (!baseUrl) {
-    add("base_url", "Base URL", "fail", "missing");
-    suggestions.push("请填写 OpenAI-compatible Base URL，例如 https://api.deepseek.com/v1。");
-    return fail("LLM_BASE_URL_MISSING", "还没有填写 AI 服务地址。请在设置中填写 OpenAI 兼容接口地址。", "llmBaseUrl is empty");
-  }
-  if (!/^https?:\/\//.test(baseUrl)) {
-    add("base_url", "Base URL", "fail", baseUrl);
-    suggestions.push("Base URL 应以 http:// 或 https:// 开头。");
-    return fail("LLM_BASE_URL_INVALID", "AI 服务地址格式不正确。地址应以 http:// 或 https:// 开头。", `Invalid base URL: ${baseUrl}`);
-  }
-  add("base_url", "Base URL", "ok", baseUrl);
-  if (!baseUrl.endsWith("/v1")) suggestions.push("如果服务返回 404，请检查 Base URL 是否需要以 /v1 结尾。");
-
-  if (!apiKey) {
-    add("api_key", "API Key", "fail", "missing");
-    suggestions.push("请先保存 API Key。本地 Ollama 等无鉴权服务也可以保存一个占位 key。");
-    return fail("LLM_API_KEY_MISSING", "还没有填写 API Key。请先在设置中保存你的 LLM 访问密钥。", "active LLM secret is empty");
-  }
-  add("api_key", "API Key", "ok", "saved");
-  if (!model) {
-    add("model", "Model", "fail", "missing");
-    suggestions.push("请填写模型名，例如 deepseek-v4-flash 或本地服务暴露的模型。");
-    return fail("LLM_MODEL_MISSING", "还没有填写模型名。请在设置中选择或输入一个模型。", "llmModel is empty");
-  }
-  add("model", "Model", "ok", model);
-
-  try {
-    const modelsStarted = Date.now();
-    const response = await fetch(`${baseUrl}/models`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(Number(config.llmTimeoutMs || 60000))
-    });
-    const text = await response.text();
-    if (!response.ok) {
-      add("models", "/models", "fail", `HTTP ${response.status}`);
-      if (response.status === 401 || response.status === 403) suggestions.push("API Key 无效或权限不足，请检查密钥是否复制完整。");
-      if (response.status === 404) suggestions.push("Base URL 可能不正确，检查是否需要 /v1。");
-      return { ...llmHttpError(response.status, text), checks, suggestions, safeToSave: false };
-    }
-    add("models", "/models", "ok", `${Date.now() - modelsStarted}ms`);
-
-    let modelMayExist = "unknown";
-    try {
-      const parsed = text ? JSON.parse(text) : {};
-      const ids = Array.isArray(parsed.data) ? parsed.data.map(item => item?.id || item?.name).filter(Boolean) : [];
-      if (ids.length) modelMayExist = ids.includes(model) ? "ok" : "warn";
-    } catch {
-      add("models_format", "Models JSON", "warn", "服务返回的 /models 不是标准 OpenAI-compatible JSON。");
-      suggestions.push("服务返回的 /models 不是标准格式，但仍会继续测试 chat/completions。");
-    }
-    if (modelMayExist === "warn") suggestions.push("当前模型名没有出现在 /models 列表中，可能需要检查模型名。");
-    add("model_exists", "Model exists", modelMayExist, modelMayExist === "ok" ? model : "not confirmed");
-
-    const chatStarted = Date.now();
-    const chat = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify(buildOpenAICompatibleChatBody({
-        baseUrl,
-        providerId: config.llmProvider || config.provider || "openai-compatible",
-        model,
-        messages: llmProbeMessages(),
-        maxTokens: 64,
-        temperature: 0,
-        thinking: config.llmThinking ?? config.thinking ?? "auto"
-      })),
-      signal: AbortSignal.timeout(Math.min(Number(config.llmTimeoutMs || 60000), 60000))
-    });
-    const chatText = await chat.text();
-    if (!chat.ok) {
-      add("chat_completions", "chat/completions", "fail", `HTTP ${chat.status}`);
-      if (chat.status === 404) suggestions.push("chat/completions 不可用，Base URL 可能错误，或模型名不存在。");
-      if (chat.status === 401 || chat.status === 403) suggestions.push("API Key 无效或权限不足。");
-      return { ...llmHttpError(chat.status, chatText), checks, suggestions, safeToSave: false };
-    }
-    add("chat_completions", "chat/completions", "ok", `${Date.now() - chatStarted}ms`);
-    const probe = parseChatCompletionProbe(chatText);
-    const probeFailure = strictProbeFailure(probe);
-    if (probeFailure) {
-      add("chat_content", "Non-empty sentinel content", probeFailure.status, probeFailure.detail);
-      return partialProbeResult({ latencyMs: Date.now() - started, checks, suggestions, detail: probeFailure.suggestion });
-    }
-    add("chat_content", "Non-empty sentinel content", "ok", LLM_CONNECTION_SENTINEL);
-
-    return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, safeToSave: true };
-  } catch (error) {
-    const timedOut = error?.name === "TimeoutError" || /timeout/i.test(String(error?.message || ""));
-    add(timedOut ? "timeout" : "network", timedOut ? "Timeout" : "Network", "fail", error?.message || "fetch failed");
-    suggestions.push(timedOut ? "服务响应超时，请检查网络、模型服务或 llmTimeoutMs 配置。" : "无法连接到模型服务；如果使用本地 Ollama，请确认服务已经启动。");
-    return { ...errorPayload(timedOut ? "LLM_TIMEOUT" : "LLM_NETWORK_ERROR", timedOut ? "LLM 响应超时，请检查网络、模型服务或 llmTimeoutMs 配置。" : "无法连接到 AI 服务。请检查网络、API 地址，或确认本地模型服务已经启动。", error?.message || "fetch failed"), checks, suggestions, safeToSave: false };
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  引擎模块管理
-// ═══════════════════════════════════════════════════════════════
+const {
+  dataRoot,
+  configPath,
+  secretsPath,
+  DEFAULT_CONFIG,
+  loadConfig,
+  saveConfig,
+  maskSecret,
+  loadSecrets,
+  saveSecrets,
+  getSecretState,
+  getActiveLlmValue,
+  saveLlmSecret,
+  LLM_CONNECTION_SENTINEL,
+  llmProbeMessages,
+  parseChatCompletionProbe,
+  strictProbeFailure,
+  partialProbeResult,
+  testLlmConnection
+} = createConfigRuntime({ ROOT, DATA_ROOT_OVERRIDE, join, userDataPath, readJson, writeJson, chmod, buildOpenAICompatibleChatBody, llmHttpError, errorPayload });
 
 const WORLDS_DIR = () => join(dataRoot(), "engine", "worlds");
 const CHARACTERS_DIR = () => join(dataRoot(), "engine", "characters");
@@ -2025,242 +1779,15 @@ async function handleCharacterUpdate(body = {}) {
   return { status: "ok", character: publicCharacterFromDir(id), card: next };
 }
 
-function connectionTemplates() {
-  return [
-    { id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-v4-flash", provider: "deepseek", thinking: "disabled" },
-    { id: "openai-compatible", label: "OpenAI-compatible", baseUrl: "https://api.openai.com/v1", model: "gpt-4.1-mini", provider: "openai-compatible", thinking: "auto" },
-    { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openrouter/auto", provider: "openai-compatible", thinking: "auto" },
-    { id: "ollama", label: "Ollama", baseUrl: "http://127.0.0.1:11434/v1", model: "llama3.1", provider: "ollama", thinking: "auto" },
-    { id: "claude-openrouter", label: "Claude via OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "anthropic/claude-sonnet-4.5", provider: "openai-compatible", thinking: "auto" },
-    { id: "anthropic", label: "Anthropic native", baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-5", provider: "anthropic" },
-    { id: "google", label: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta", model: "gemini-2.5-flash", provider: "google" },
-    { id: "mock", label: "Mock provider", baseUrl: "mock://local", model: "mock-model", provider: "mock" }
-  ];
-}
-
-function loadConnectionsRaw() {
-  const fallback = {
-    active: "deepseek",
-    items: [
-      { id: "deepseek", label: "DeepSeek", provider: "deepseek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-v4-flash", thinking: "disabled", apiKeySecretId: "deepseek", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    ]
-  };
-  const raw = readJsonSync(CONNECTIONS_PATH(), fallback);
-  return { active: raw.active || raw.items?.[0]?.id || "deepseek", items: Array.isArray(raw.items) ? raw.items : fallback.items };
-}
-
-async function saveConnectionsRaw(next) {
-  await writeJson(CONNECTIONS_PATH(), next);
-  return publicConnections(next);
-}
-
-async function secretValueById(secretId = "") {
-  const secrets = await loadSecrets();
-  return secrets.llm.items.find(i => i.id === secretId)?.value || "";
-}
-
-function publicConnections(raw = loadConnectionsRaw()) {
-  const secrets = readJsonSync(secretsPath(), { llm: { items: [] } });
-  const items = raw.items.map((item) => {
-    const secret = (secrets.llm?.items || []).find(i => i.id === (item.apiKeySecretId || item.id));
-    return { ...item, hasApiKey: Boolean(secret?.value), maskedKey: maskSecret(secret?.value || ""), active: item.id === raw.active };
-  });
-  return { status: "ok", active: raw.active, templates: connectionTemplates(), pipelineProfiles: loadPipelineProfiles(), items };
-}
-
-async function testConnectionProfile(profile) {
-  const started = Date.now();
-  const baseUrl = String(profile.baseUrl || "").replace(/\/$/, "");
-  const model = String(profile.model || "").trim();
-  const providerId = String(profile.provider || "openai-compatible");
-  const apiKey = await secretValueById(profile.apiKeySecretId || profile.id);
-  const checks = [];
-  const suggestions = [];
-  const add = (id, label, status, detail = "") => checks.push({ id, label, status, detail });
-  const fail = (payload) => ({ ...payload, checks, suggestions, safeToSave: false });
-  if (!baseUrl) {
-    add("base_url", "Base URL", "fail", "missing");
-    suggestions.push("请填写 OpenAI-compatible Base URL。");
-    return fail(errorPayload("CONNECTION_BASE_URL_MISSING", "连接地址为空。", "baseUrl is empty"));
-  }
-  if (providerId !== "mock" && !/^https?:\/\//.test(baseUrl)) {
-    add("base_url", "Base URL", "fail", baseUrl);
-    suggestions.push("Base URL 应以 http:// 或 https:// 开头。");
-    return fail(errorPayload("CONNECTION_BASE_URL_INVALID", "连接地址必须以 http:// 或 https:// 开头。", baseUrl));
-  }
-  add("base_url", "Base URL", "ok", baseUrl);
-  if (providerId !== "mock" && !baseUrl.endsWith("/v1")) suggestions.push("如果服务返回 404，请确认 Base URL 是否需要以 /v1 结尾。");
-  if (providerId !== "mock" && !apiKey && !baseUrl.includes("127.0.0.1") && !baseUrl.includes("localhost")) {
-    add("api_key", "API Key", "fail", "missing");
-    suggestions.push("远程服务通常需要保存 API Key。");
-    return fail(errorPayload("CONNECTION_API_KEY_MISSING", "这个连接还没有保存 API Key。", "secret missing"));
-  }
-  add("api_key", "API Key", apiKey ? "ok" : "warn", apiKey ? "saved" : "local/no key");
-  if (!model) {
-    add("model", "Model", "fail", "missing");
-    suggestions.push("请填写模型名。");
-    return fail(errorPayload("CONNECTION_MODEL_MISSING", "这个连接还没有填写模型名。", "model missing"));
-  }
-  add("model", "Model", "ok", model);
-  add("provider", "Provider", "ok", providerId);
-  try {
-    const { resolveProvider } = await import("./src/adapters/providers/index.js");
-    const provider = resolveProvider(providerId);
-    const probe = await provider.chat({
-      baseUrl,
-      providerId,
-      model,
-      apiKey,
-      messages: llmProbeMessages(),
-      temperature: 0,
-      maxTokens: 64,
-      thinking: profile.thinking || "auto",
-      timeoutMs: 5000
-    });
-    add("chat", "Provider chat", "ok", probe.provider || provider.id);
-    const strictProviderProbe = ["openai-compatible", "deepseek", "openrouter", "ollama"].includes(providerId);
-    if (strictProviderProbe) {
-      const providerProbeFailure = strictProbeFailure({
-        content: String(probe.text || "").trim(),
-        reasoningContent: String(probe.reasoningContent || probe.raw?.choices?.[0]?.message?.reasoning_content || "").trim(),
-        finishReason: probe.raw?.choices?.[0]?.finish_reason || ""
-      });
-      if (providerProbeFailure) {
-        add("provider_chat_content", "Provider non-empty sentinel content", "fail", providerProbeFailure.detail);
-        suggestions.push(providerProbeFailure.suggestion);
-      } else {
-        add("provider_chat_content", "Provider non-empty sentinel content", "ok", LLM_CONNECTION_SENTINEL);
-      }
-    }
-    if (providerId !== "openai-compatible" && providerId !== "deepseek" && providerId !== "openrouter" && providerId !== "ollama") {
-      return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, provider: provider.id, safeToSave: true };
-    }
-  } catch (providerError) {
-    if (providerId !== "openai-compatible" && providerId !== "deepseek" && providerId !== "openrouter" && providerId !== "ollama") {
-      const mapped = mapLlmError(providerError);
-      add("chat", "Provider chat", "fail", providerError?.message || "provider failed");
-      return { ...mapped, checks, suggestions, safeToSave: false };
-    }
-  }
-  try {
-    const response = await fetch(`${baseUrl}/models`, {
-      method: "GET",
-      headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
-      signal: AbortSignal.timeout(5000)
-    });
-    const text = await response.text();
-    if (!response.ok) {
-      add("models", "/models", "fail", `HTTP ${response.status}`);
-      return { ...llmHttpError(response.status, text), checks, suggestions, safeToSave: false };
-    }
-    add("models", "/models", "ok");
-    try {
-      const parsed = text ? JSON.parse(text) : {};
-      const ids = Array.isArray(parsed.data) ? parsed.data.map(item => item?.id || item?.name).filter(Boolean) : [];
-      if (ids.length && !ids.includes(model)) {
-        add("model_exists", "Model exists", "warn", "not listed");
-        suggestions.push("模型名没有出现在 /models 列表中，可能需要修正。");
-      } else {
-        add("model_exists", "Model exists", ids.length ? "ok" : "unknown", ids.length ? model : "not confirmed");
-      }
-    } catch {
-      add("models_format", "Models JSON", "warn", "non-standard response");
-    }
-    const chat = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
-      body: JSON.stringify(buildOpenAICompatibleChatBody({
-        baseUrl,
-        providerId,
-        model,
-        messages: llmProbeMessages(),
-        maxTokens: 64,
-        temperature: 0,
-        thinking: profile.thinking || "auto"
-      })),
-      signal: AbortSignal.timeout(5000)
-    });
-    const chatText = await chat.text();
-    if (!chat.ok) {
-      add("chat_completions", "chat/completions", "fail", `HTTP ${chat.status}`);
-      return { ...llmHttpError(chat.status, chatText), checks, suggestions, safeToSave: false };
-    }
-    add("chat_completions", "chat/completions", "ok");
-    const strictProbe = parseChatCompletionProbe(chatText);
-    const probeFailure = strictProbeFailure(strictProbe);
-    if (probeFailure) {
-      add("chat_content", "Non-empty sentinel content", probeFailure.status, probeFailure.detail);
-      return partialProbeResult({ latencyMs: Date.now() - started, checks, suggestions, detail: probeFailure.suggestion });
-    }
-    add("chat_content", "Non-empty sentinel content", "ok", LLM_CONNECTION_SENTINEL);
-    return { status: suggestions.length ? "partial" : "ok", latencyMs: Date.now() - started, checks, suggestions, safeToSave: true };
-  } catch (error) {
-    const timedOut = error?.name === "TimeoutError" || /timeout/i.test(String(error?.message || ""));
-    add(timedOut ? "timeout" : "network", timedOut ? "Timeout" : "Network", "fail", error?.message || "fetch failed");
-    suggestions.push(timedOut ? "服务响应超时，请检查模型服务是否繁忙。" : "无法连接到模型服务；本地服务请确认已经启动。");
-    return { ...errorPayload(timedOut ? "CONNECTION_TIMEOUT" : "CONNECTION_NETWORK_ERROR", timedOut ? "连接测试超时。请检查模型服务状态。" : "无法连接到这个模型服务。请检查地址、网络或本地模型是否已启动。", error?.message || "fetch failed"), checks, suggestions, safeToSave: false };
-  }
-}
-
-async function handleConnections(body = {}, method = "GET") {
-  if (method === "GET") return publicConnections();
-  const action = body.action || "upsert";
-  const raw = loadConnectionsRaw();
-  const now = new Date().toISOString();
-  if (action === "delete") {
-    const id = String(body.id || "");
-    const items = raw.items.filter(i => i.id !== id);
-    return saveConnectionsRaw({ active: raw.active === id ? (items[0]?.id || "") : raw.active, items });
-  }
-  if (action === "duplicate") {
-    const source = raw.items.find(i => i.id === body.id);
-    if (!source) return { status: "error", errorMsg: "连接档案不存在。" };
-    const existing = new Set(raw.items.map(i => i.id));
-    let id = slugName(`${source.id}-copy`, "connection-copy");
-    let n = 2;
-    while (existing.has(id)) id = slugName(`${source.id}-copy-${n++}`, "connection-copy");
-    const copy = { ...source, id, label: `${source.label || source.id} Copy`, apiKeySecretId: id, createdAt: now, updatedAt: now };
-    return saveConnectionsRaw({ ...raw, items: [copy, ...raw.items] });
-  }
-  if (action === "setDefault") {
-    const id = String(body.id || "");
-    const item = raw.items.find(i => i.id === id);
-    if (!item) return { status: "error", errorMsg: "连接档案不存在。" };
-    await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible", llmThinking: item.thinking || "auto" });
-    const secrets = await loadSecrets();
-    await saveSecrets({ ...secrets, llm: { ...secrets.llm, active: item.apiKeySecretId || item.id } });
-    return saveConnectionsRaw({ ...raw, active: id });
-  }
-  if (action === "test") {
-    const item = raw.items.find(i => i.id === body.id) || body.profile;
-    if (!item) return { status: "error", errorMsg: "连接档案不存在。" };
-    return testConnectionProfile(item);
-  }
-
-  const profile = body.profile || body;
-  const id = slugName(profile.id || profile.label || profile.provider || "connection", "connection");
-  const item = {
-    id,
-    label: String(profile.label || id).trim() || id,
-    provider: profile.provider || "openai-compatible",
-    baseUrl: String(profile.baseUrl || "").trim(),
-    model: String(profile.model || "").trim(),
-    thinking: ["auto", "disabled", "enabled"].includes(String(profile.thinking || "").trim()) ? String(profile.thinking || "auto").trim() : "auto",
-    temperature: profile.temperature === "" || profile.temperature === undefined ? undefined : Number(profile.temperature),
-    maxTokens: profile.maxTokens === "" || profile.maxTokens === undefined ? undefined : Number(profile.maxTokens),
-    topP: profile.topP === "" || profile.topP === undefined ? undefined : Number(profile.topP),
-    apiKeySecretId: profile.apiKeySecretId || id,
-    notes: String(profile.notes || "").trim(),
-    createdAt: raw.items.find(i => i.id === id)?.createdAt || now,
-    updatedAt: now
-  };
-  const key = String(profile.apiKey || "").trim();
-  if (key && !/\*{4,}/.test(key)) await saveLlmSecret({ id: item.apiKeySecretId, label: item.label, value: key });
-  const items = [item, ...raw.items.filter(i => i.id !== id)];
-  const active = body.setDefault ? id : raw.active;
-  if (body.setDefault) await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible", llmThinking: item.thinking || "auto" });
-  return saveConnectionsRaw({ active, items });
-}
+const {
+  connectionTemplates,
+  loadConnectionsRaw,
+  saveConnectionsRaw,
+  secretValueById,
+  publicConnections,
+  testConnectionProfile,
+  handleConnections
+} = createConnectionRuntime({ readJsonSync, CONNECTIONS_PATH, writeJson, loadSecrets, secretsPath, maskSecret, loadPipelineProfiles, errorPayload, llmProbeMessages, strictProbeFailure, LLM_CONNECTION_SENTINEL, mapLlmError, llmHttpError, parseChatCompletionProbe, partialProbeResult, buildOpenAICompatibleChatBody, slugName, saveConfig, saveSecrets, saveLlmSecret });
 
 async function handleWorldbook(body = {}, method = "GET", url = null) {
   const moduleKey = body.moduleKey || url?.searchParams?.get("moduleKey") || "";
@@ -3178,617 +2705,116 @@ async function handleDashboardNarrative(moduleId) {
 //  HTTP 路由
 // ═══════════════════════════════════════════════════════════════
 
-const MIME = {
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".json": "application/json",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".svg": "image/svg+xml",
-  ".ico": "image/x-icon",
-  ".woff2": "font/woff2",
-  ".woff": "font/woff",
-  ".ttf": "font/ttf"
-};
+const { PUBLIC_STATIC_FILES, serveStatic, serveConsoleShell } = createStaticShell({ checkRateLimit, RATE_MAX_STATIC, jsonError, ROOT, join, existsSync, extname, createReadStream, readFileSync });
 
-const PUBLIC_STATIC_FILES = new Map([
-  ["/", "world-tree-console.html"],
-  ["/world-tree-console.html", "world-tree-console.html"],
-  ["/world-tree-console.css", "world-tree-console.css"],
-  ["/world-tree-client-core.js", "world-tree-client-core.js"],
-  ["/ui-labels.js", "ui-labels.js"],
-  ["/browser/app/product-registry.js", "browser/app/product-registry.js"],
-  ["/browser/app/navigation.js", "browser/app/navigation.js"],
-  ["/browser/state/app-store.js", "browser/state/app-store.js"],
-  ["/browser/components/feedback.js", "browser/components/feedback.js"],
-  ["/browser/components/forms.js", "browser/components/forms.js"],
-  ["/browser/components/product-components.js", "browser/components/product-components.js"],
-  ["/browser/views/core-views.js", "browser/views/core-views.js"],
-  ["/browser/views/creation-settings-views.js", "browser/views/creation-settings-views.js"],
-  ["/browser/controllers/navigation-controller.js", "browser/controllers/navigation-controller.js"],
-  ["/browser/controllers/entry-controller.js", "browser/controllers/entry-controller.js"],
-  ["/browser/controllers/play-controller.js", "browser/controllers/play-controller.js"],
-  ["/browser/controllers/content-controller.js", "browser/controllers/content-controller.js"],
-  ["/browser/controllers/settings-controller.js", "browser/controllers/settings-controller.js"],
-  ["/browser/controllers/character-v2-controller.js", "browser/controllers/character-v2-controller.js"],
-  ["/world-tree-console.js", "world-tree-console.js"]
-]);
-
-async function serveStatic(req, res) {
-  // 速率限制
-  if (!checkRateLimit(req.socket?.remoteAddress || "127.0.0.1", RATE_MAX_STATIC)) {
-    res.writeHead(429, { "Content-Type": "text/plain" });
-    return res.end("Too Many Requests");
-  }
-  const pathname = (() => {
-    try { return decodeURIComponent(new URL(req.url, "http://localhost").pathname); }
-    catch { return "/"; }
-  })();
-  const publicFile = PUBLIC_STATIC_FILES.get(pathname);
-  if (!publicFile) {
-    if (extname(pathname)) return jsonError(res, 404, "STATIC_NOT_FOUND", "静态资源不存在。");
-    return serveConsoleShell(res);
-  }
-  const filePath = join(ROOT, publicFile);
-  if (!existsSync(filePath)) return serveConsoleShell(res);
-  const ext = extname(filePath).toLowerCase();
-  res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
-  createReadStream(filePath).pipe(res);
-}
-
-function serveConsoleShell(res) {
-  const filePath = join(ROOT, "world-tree-console.html");
-  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  createReadStream(filePath).pipe(res);
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  HTTP 请求体解析
-// ═══════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════
-//  API 路由处理器
-// ═══════════════════════════════════════════════════════════════
-
-async function handleAPI(req, res) {
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const path = url.pathname;
-  const method = req.method;
-
-  // 速率限制（API 路由）
-  if (!checkRateLimit(req.socket?.remoteAddress || "127.0.0.1", RATE_MAX_API)) {
-    return jsonError(res, 429, "RATE_LIMITED", "请求太频繁了。请稍等一分钟再试。", "API rate limit exceeded");
-  }
-
-  // CORS — 仅允许本地来源，不反射攻击者 Origin
-  const origin = req.headers.origin || "";
-  const originHost = parseOriginHost(origin);
-  // OPTIONS 预检也必须走本地来源判断
-  if (method === "OPTIONS") {
-    if (!isLocalRequest(req)) {
-      return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。", "Forbidden: non-local preflight");
-    }
-    res.setHeader("Access-Control-Allow-Origin", origin || "http://localhost:3000");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    return res.writeHead(204).end();
-  }
-  // 非法 Origin → 403，不设置 ACAO
-  if (originHost && !LOCAL_HOSTS.has(originHost)) {
-    return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。请不要从公网或其他设备调用此服务。", `Forbidden: non-local Origin ${originHost}`);
-  }
-  // 本地 Origin 或无 Origin（CLI 请求）→ 设置正确的 CORS 头
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  }
-  if (!isLocalRequest(req)) {
-    return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。请不要从公网或其他设备调用此服务。", "Forbidden: non-local request");
-  }
-
-  try {
-    const handledV2ProductRoute = await handleV2ProductPlayableRoute({
-      path,
-      method,
-      url,
-      readBody: () => readBody(req),
-      jsonResponse: (payload) => jsonResponse(res, payload),
-      jsonError: (...args) => jsonError(res, ...args),
-      deps: { dataRoot, loadConfig, getActiveLlmValue, moduleWorldDir, pathWithinRoot, safeEntityId }
-    });
-    if (handledV2ProductRoute !== false) return handledV2ProductRoute;
-
-    // ── 配置 ──
-    if (path === "/api/config" && method === "GET") return jsonResponse(res, await loadConfig());
-    if (path === "/api/config" && method === "POST") return jsonResponse(res, await saveConfig(await readBody(req)));
-
-    // ── 密钥 ──
-    if (path === "/api/secrets" && method === "GET") return jsonResponse(res, await getSecretState());
-    if (path === "/api/secrets/llm" && method === "POST") return jsonResponse(res, await saveLlmSecret(await readBody(req)));
-    // 密钥值端点 — 仅供内部 LLM 调用使用，不返回明文
-    if (path === "/api/secrets/llm-value" && method === "GET") {
-      return jsonResponse(res, { value: maskSecret(await getActiveLlmValue()), masked: true });
-    }
-
-    // ── LLM ──
-    if (path === "/api/llm/test" && method === "POST") return jsonResponse(res, await testLlmConnection(await readBody(req)));
-    if (path === "/api/llm/chat/stream" && method === "POST") return handleLlmChatStream(req, res);
-    if (path === "/api/llm/chat" && method === "POST") return jsonResponse(res, await handleLlmChat(await readBody(req)));
-    if (path === "/api/llm/chat/retry" && method === "POST") return jsonResponse(res, await handleLlmChatRetry(await readBody(req)));
-
-    // ── 连接档案 ──
-    if (path === "/api/connections" && method === "GET") return jsonResponse(res, await handleConnections({}, "GET"));
-    if (path === "/api/connections" && method === "POST") return jsonResponse(res, await handleConnections(await readBody(req), "POST"));
-
-    // ── 模组管理 ──
-    if (path === "/api/modules" && method === "GET") return jsonResponse(res, listModules());
-    if (path === "/api/modules/create" && method === "POST") {
-      const result = await createModule(await readBody(req));
-      const httpStatus = Number(result?.httpStatus || 200);
-      if (result && typeof result === "object") delete result.httpStatus;
-      return jsonResponse(res, result, httpStatus);
-    }
-    if (path === "/api/modules/finalize-draft" && method === "POST") return jsonResponse(res, await finalizeDraftModule(await readBody(req)));
-    if (path === "/api/modules/delete" && method === "POST") return jsonResponse(res, await deleteModule((await readBody(req)).id));
-    if (path === "/api/modules/load" && method === "POST") {
-      const { id } = await readBody(req);
-      if (!id) return jsonError(res, 400, "MODULE_ID_MISSING", "缺少模组 ID。请重新选择模组后再试。");
-      if (!moduleWorldDir(id)) return jsonError(res, 400, "MODULE_ID_INVALID", "模组 ID 无效。");
-      const model = await buildModuleModel(id);
-      return jsonResponse(res, { status: "ok", model: toPublicModuleModel(model) });
-    }
-
-    // ── P0-P2 unified kernel completion APIs ──
-    const kernelMatch = path.match(/^\/api\/projects\/([^/]+)(?:\/(.*))?$/);
-    if (kernelMatch) {
-      const project = resolveKernelProject(kernelMatch[1]);
-      if (!project) return jsonError(res, 404, "KERNEL_PROJECT_NOT_FOUND", "没有找到对应的世界项目。");
-      const tail = kernelMatch[2] || "kernel/summary";
-      if (tail === "kernel/summary" && method === "GET") return jsonResponse(res, await getKernelSummary(project.projectRoot, { modeId: project.modeId }));
-      if (tail === "branches" && method === "GET") return jsonResponse(res, await handleBranchOperation(project.projectRoot, "list"));
-      if (tail === "branches/create" && method === "POST") return jsonResponse(res, await handleBranchOperation(project.projectRoot, "create", await readBody(req)));
-      let match = tail.match(/^branches\/([^/]+)\/(switch|archive|diff)$/);
-      if (match && method === "POST") return jsonResponse(res, await handleBranchOperation(project.projectRoot, match[2], { ...(await readBody(req)), branchId: decodeURIComponent(match[1]) }));
-      if (match && match[2] === "diff" && method === "GET") return jsonResponse(res, await handleBranchOperation(project.projectRoot, "diff", { branchId: decodeURIComponent(match[1]), fromBranchId: url.searchParams.get("from") || "main" }));
-      if (tail === "telemetry/latest" && method === "GET") return jsonResponse(res, await getLatestKernelTelemetry(project.projectRoot));
-      if (tail === "telemetry/refresh" && method === "POST") return jsonResponse(res, await refreshKernelTelemetry(project.projectRoot, await readBody(req)));
-      if (tail === "advance/auto-light" && method === "POST") return jsonResponse(res, await previewAutoLight(project.projectRoot, { ...(await readBody(req)), modeId: project.modeId }));
-      if (tail === "proposals/stop-loss" && method === "GET") return jsonResponse(res, await getKernelStopLoss(project.projectRoot));
-      match = tail.match(/^proposals\/([^/]+)\/(approve|reject|reverse)$/);
-      if (match && match[2] === "approve" && method === "POST") return jsonResponse(res, await approveKernelProposal(project.projectRoot, decodeURIComponent(match[1]), await readBody(req)));
-      if (match && match[2] === "reject" && method === "POST") return jsonResponse(res, await rejectKernelProposal(project.projectRoot, decodeURIComponent(match[1])));
-      if (match && match[2] === "reverse" && method === "POST") return jsonResponse(res, await reverseKernelProposal(project.projectRoot, decodeURIComponent(match[1])));
-      if (tail === "processing/ingest" && method === "POST") return jsonResponse(res, await ingestProcessingMaterial(project.projectRoot, await readBody(req)));
-      if (tail === "processing/candidates" && method === "GET") return jsonResponse(res, await listProcessingCandidates(project.projectRoot));
-      match = tail.match(/^processing\/candidates\/([^/]+)\/deliver$/);
-      if (match && method === "POST") return jsonResponse(res, await deliverProcessingById(project.projectRoot, decodeURIComponent(match[1])));
-      return jsonError(res, 404, "KERNEL_ROUTE_NOT_FOUND", "没有找到对应的 Kernel 操作。");
-    }
-
-    // ── Workflow Integration API ──
-    if (path === "/api/workflow/run" && method === "POST") {
-      const body = await readBody(req);
-      const config = await loadConfig();
-      const apiKey = await getActiveLlmValue();
-      const deps = {
-        kernelContext: null,
-        llmConfig: config,
-        apiKey
-      };
-      if (body.projectId) {
-        const pj = resolveKernelProject(body.projectId);
-        if (pj) deps.kernelContext = { projectRoot: pj.projectRoot, modeId: pj.modeId, activeBranchId: body.branchId || "main" };
-      }
-      const result = await handleWorkflowApiRequest(body, deps);
-      return jsonResponse(res, result);
-    }
-    if (path === "/api/workflow/types" && method === "GET") return jsonResponse(res, getWorkflowTypesResponse());
-    if (path === "/api/workflow/status" && method === "GET") return jsonResponse(res, getWorkflowStatus());
-
-    // ── 内置示例 ──
-    if (path === "/api/examples" && method === "GET") return jsonResponse(res, { status: "ok", examples: listExamples() });
-    if (path === "/api/examples/install" && method === "POST") {
-      const result = await installExample(await readBody(req));
-      if (result.status === "error") {
-        const status = result.code === "EXAMPLE_NOT_FOUND" || result.code === "EXAMPLE_SOURCE_MISSING" ? 404 : 400;
-        return jsonError(res, status, result.code || "EXAMPLE_INSTALL_FAILED", result.errorMsg || "安装示例失败。");
-      }
-      return jsonResponse(res, result);
-    }
-
-    // ── 炼金台 ──
-    if (path === "/api/alchemy/import" && method === "POST") return jsonResponse(res, await handleAlchemyImport(await readBody(req)));
-    if (path === "/api/alchemy/preview" && method === "POST") return jsonResponse(res, await handleAlchemyPreviewAction("create", await readBody(req)));
-    if (path === "/api/alchemy/refine" && method === "POST") return jsonResponse(res, await handleAlchemyPreviewAction("refine", await readBody(req)));
-    if (path === "/api/alchemy/commit" && method === "POST") return jsonResponse(res, await handleAlchemyPreviewAction("commit", await readBody(req)));
-    if (path === "/api/alchemy/digest" && method === "POST") return jsonResponse(res, await handleAlchemyDigest(await readBody(req)));
-    if (path === "/api/alchemy/review" && method === "GET") return jsonResponse(res, await handleAlchemyReview({}, "GET"));
-    if (path === "/api/alchemy/review" && method === "POST") return jsonResponse(res, await handleAlchemyReview(await readBody(req), "POST"));
-    // ── 炼金台 G1：新路由 ──
-    if (path === "/api/alchemy/capabilities" && method === "GET") return jsonResponse(res, getAlchemyCapabilities());
-    if (path === "/api/alchemy/plan" && method === "POST") return jsonResponse(res, await alchemyPlannerService.plan(await readBody(req)));
-    if (path === "/api/alchemy/generate-preview" && method === "POST") return jsonResponse(res, await alchemyGenerationService.generate(await readBody(req)));
-    if (path === "/api/alchemy/localize" && method === "POST") {
-      const body = await readBody(req);
-      const preview = body.preview || body.editedPreview || {};
-      return jsonResponse(res, alchemyLocalizerService.buildInstallableFolderDraft(preview, {
-        selectedTargets: body.selectedTargets || []
-      }));
-    }
-    if (path === "/api/alchemy/deliver" && method === "POST") return jsonResponse(res, await alchemyDeliveryService.deliver(await readBody(req)));
-    if (path === "/api/alchemy/deliveries" && method === "GET") return jsonResponse(res, await alchemyDeliveryService.listDeliveries({
-      moduleKey: url.searchParams.get("moduleKey") || ""
-    }));
-    if (path === "/api/mechanisms/draft/from-alchemy" && method === "POST") return jsonResponse(res, await handleMechanismDraftFromAlchemy(await readBody(req)));
-    if (path === "/api/mechanisms/library" && method === "GET") return jsonResponse(res, await handleMechanismLibrary(url));
-    if (path === "/api/mechanisms/world" && method === "GET") return jsonResponse(res, await handleMechanismWorld(url));
-    if (path === "/api/mechanisms/world/commit-drafts" && method === "POST") return jsonResponse(res, await handleMechanismCommitDrafts(await readBody(req)));
-    if (path === "/api/review/pending" && method === "GET") return jsonResponse(res, await handleReviewFacts({}, "GET", url));
-    if (path === "/api/review/pending" && method === "POST") return jsonResponse(res, await handleReviewFacts(await readBody(req), "POST", url));
-    if (path === "/api/review/adopt" && method === "POST") return jsonResponse(res, await handleReviewFacts({ ...(await readBody(req)), action: "adopt" }, "POST", url));
-    if (path === "/api/review/edit-and-adopt" && method === "POST") return jsonResponse(res, await handleReviewFacts({ ...(await readBody(req)), action: "edit-and-adopt" }, "POST", url));
-    if (path === "/api/review/reject" && method === "POST") return jsonResponse(res, await handleReviewFacts({ ...(await readBody(req)), action: "reject" }, "POST", url));
-    if (path === "/api/review/log" && method === "GET") return jsonResponse(res, await handleReviewLog(url));
-
-    // ── 模组历史 ──
-    if (path.startsWith("/api/modules/") && path.endsWith("/history") && method === "GET") {
-      const moduleId = decodeURIComponent(path.replace("/api/modules/", "").replace("/history", ""));
-      const limit = parseInt(url.searchParams.get("limit") || "50");
-      return jsonResponse(res, await handleModuleHistory(moduleId, limit));
-    }
-
-    // ── 角色卡 ──
-    if (path === "/api/characters" && method === "GET") return jsonResponse(res, listCharacters());
-    if (path === "/api/characters/import" && method === "POST") return jsonResponse(res, await handleCharacterImport(await readBody(req)));
-    if (path === "/api/characters/update" && method === "POST") return jsonResponse(res, await handleCharacterUpdate(await readBody(req)));
-    if (path === "/api/characters/load" && method === "POST") {
-      const body = await readBody(req);
-      const id = safeEntityId(body.id || "", "");
-      if (!id) return jsonError(res, 400, "CHARACTER_ID_MISSING", "缺少角色卡 ID。请重新选择角色卡后再试。");
-      const { parseCharacterCard } = await import("./src/core/data/character-card.js");
-      const cardJsonPath = join(dataRoot(), "engine", "characters", id, "card.json");
-      const card = existsSync(cardJsonPath) ? readJsonSync(cardJsonPath, null) : null;
-      if (!card) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "没有找到这张角色卡。它可能已被删除或移动。");
-      const parsed = parseCharacterCard(card);
-      let v2Capsule = null;
-      let v2RuntimeContext = null;
-      let v2RuntimeMvp = null;
-      try {
-        const { loadCharacterCapsuleSummary, loadCharacterCapsuleRuntimeContext, loadCharacterCapsuleRuntimeMvp } = await import("./src/server/character-capsule-service.js");
-        const charactersRoot = join(dataRoot(), "engine", "characters");
-        v2Capsule = loadCharacterCapsuleSummary(charactersRoot, id);
-        v2RuntimeContext = loadCharacterCapsuleRuntimeContext(charactersRoot, id);
-        v2RuntimeMvp = loadCharacterCapsuleRuntimeMvp(charactersRoot, id);
-      } catch { /* V2 capsule unavailable; legacy-only */ }
-      return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}), ...(v2RuntimeContext ? { v2RuntimeContext } : {}), ...(v2RuntimeMvp ? { v2RuntimeMvp } : {}) });
-    }
-    if (path === "/api/characters/delete" && method === "POST") {
-      const body = await readBody(req);
-      const id = safeEntityId(body.id || "", "");
-      if (!id) return jsonError(res, 400, "CHARACTER_ID_MISSING", "缺少角色卡 ID。请重新选择角色卡后再试。");
-      const targetDir = join(dataRoot(), "engine", "characters", id);
-      if (!pathWithinRoot(CHARACTERS_DIR(), targetDir)) return jsonError(res, 400, "CHARACTER_ID_INVALID", "角色卡 ID 无效。");
-      if (!existsSync(targetDir)) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "角色卡不存在，可能已经被删除。");
-      try {
-        rmSync(targetDir, { recursive: true, force: true });
-        return jsonResponse(res, { status: "ok" });
-      } catch (err) {
-        return jsonError(res, 500, "CHARACTER_DELETE_FAILED", "删除角色卡失败。请检查文件是否被其他程序占用。", err.message);
-      }
-    }
-    if (path === "/api/characters/backup" && method === "POST") {
-      // 角色卡备份：复制 data/engine/characters/ 到 data/characters-archive/
-      const body = await readBody(req);
-      const id = safeEntityId(body.id || "", "");
-      if (!id) return jsonError(res, 400, "CHARACTER_ID_MISSING", "缺少角色卡 ID。请重新选择角色卡后再试。");
-      const srcDir = join(dataRoot(), "engine", "characters", id);
-      if (!pathWithinRoot(CHARACTERS_DIR(), srcDir)) return jsonError(res, 400, "CHARACTER_ID_INVALID", "角色卡 ID 无效。");
-      if (!existsSync(srcDir)) return jsonError(res, 404, "CHARACTER_NOT_FOUND", "角色卡不存在，无法备份。");
-      try {
-        const archiveDir = join(dataRoot(), "characters-archive");
-        ensureDir(archiveDir);
-        const backupId = `${id}_${Date.now()}`;
-        const destDir = join(archiveDir, backupId);
-        mkdirSync(destDir, { recursive: true });
-        const srcCard = join(srcDir, "card.json");
-        if (existsSync(srcCard)) {
-          const content = readFileSync(srcCard, "utf-8");
-          writeFileSync(join(destDir, "card.json"), content, "utf-8");
-        }
-        return jsonResponse(res, { status: "ok", backupId, location: "characters-archive" });
-      } catch (err) {
-        return jsonError(res, 500, "CHARACTER_BACKUP_FAILED", "备份角色卡失败。请检查数据目录是否可写。", err.message);
-      }
-    }
-
-    // Legacy worldbook edit/test routes remain owned by server.js.
-    if (path === "/api/worldbook" && method === "GET") return jsonResponse(res, await handleWorldbook({}, "GET", url));
-    if (path === "/api/worldbook" && method === "POST") return jsonResponse(res, await handleWorldbook(await readBody(req), "POST", url));
-    if (path === "/api/worldbook/import" && method === "POST") return jsonResponse(res, await handleWorldbookImport(await readBody(req)));
-    if (path === "/api/worldbook/test" && method === "POST") return jsonResponse(res, await handleWorldbookTest(await readBody(req)));
-
-    // ── 聊天消息操作 ──
-    if (path === "/api/chat/message-op" && method === "POST") return jsonResponse(res, await handleChatMessage(await readBody(req)));
-    if (path === "/api/chat/message" && method === "POST") {
-      res.setHeader("Deprecation", "true");
-      res.setHeader("Link", "</api/chat/message-op>; rel=\"successor-version\"");
-      return jsonResponse(res, await handleChatMessage(await readBody(req)));
-    }
-
-    // ── 叙事黑盒 ──
-    if (path === "/api/turn/debug" && method === "GET") return jsonResponse(res, await handleTurnDebug(url));
-
-    // ── 已确认回合状态帧 ──
-    if (path === "/api/status/turn/latest" && method === "GET") return jsonResponse(res, await handleLatestTurnState(url));
-    if (path === "/api/status/turns" && method === "GET") return jsonResponse(res, await handleTurnStateIndex(url));
-    if (path.startsWith("/api/status/turn/") && method === "GET") {
-      const turnId = decodeURIComponent(path.slice("/api/status/turn/".length));
-      return jsonResponse(res, await handleTurnStateById(url, turnId));
-    }
-
-    // ── 世界包 ──
-    if (path === "/api/world-pack/export" && method === "GET") return jsonResponse(res, await handleWorldPackExport({}, url));
-    if (path === "/api/world-pack/export" && method === "POST") return jsonResponse(res, await handleWorldPackExport(await readBody(req), url));
-    if (path === "/api/world-pack/import" && method === "POST") return jsonResponse(res, await handleWorldPackImport(await readBody(req)));
-    if (path === "/api/wtpack/export" && method === "GET") return jsonResponse(res, await handleWtpackExport({}, url));
-    if (path === "/api/wtpack/export" && method === "POST") return jsonResponse(res, await handleWtpackExport(await readBody(req), url));
-    if (path === "/api/wtpack/import" && method === "POST") return jsonResponse(res, await handleWtpackImport(await readBody(req)));
-
-    // ── 本地插件 (Deferred/internal API. Plugin system is not part of v0.3.0 public product scope.) ──
-    if (path === "/api/plugins" && (method === "GET" || method === "POST")) {
-      if (!ENABLE_DEFERRED_PLUGINS && !DEBUG_MODE) return jsonError(res, 403, "PLUGINS_DISABLED", "插件接口当前未启用。");
-      return jsonResponse(res, await handlePlugins(method === "POST" ? await readBody(req) : {}, method));
-    }
-
-    // ── Overlay pending 队列 ──
-    if (path === "/api/overlay/pending" && method === "GET") return jsonResponse(res, await handleOverlayPending({}, "GET", url));
-    if (path === "/api/overlay/pending" && method === "POST") return jsonResponse(res, await handleOverlayPending(await readBody(req), "POST", url));
-
-    // ── Dashboard ──
-    if (path === "/api/dashboard/telemetry" && method === "GET") {
-      const moduleKey = url.searchParams.get("moduleKey") || "";
-      if (!moduleKey) return jsonError(res, 400, "MODULE_KEY_MISSING", "缺少模组标识。请先选择一个模组。");
-      return jsonResponse(res, await handleDashboardTelemetry(moduleKey));
-    }
-    if (path === "/api/dashboard/entities" && method === "GET") {
-      const moduleKey = url.searchParams.get("moduleKey") || "";
-      if (!moduleKey) return jsonError(res, 400, "MODULE_KEY_MISSING", "缺少模组标识。请先选择一个模组。");
-      return jsonResponse(res, await handleDashboardEntities(moduleKey));
-    }
-    if (path === "/api/dashboard/narrative" && method === "GET") {
-      const moduleKey = url.searchParams.get("moduleKey") || "";
-      if (!moduleKey) return jsonError(res, 400, "MODULE_KEY_MISSING", "缺少模组标识。请先选择一个模组。");
-      return jsonResponse(res, await handleDashboardNarrative(moduleKey));
-    }
-
-    // ── 引擎 ──
-    if (path === "/api/engine/manifest" && method === "GET") {
-      const { ENGINE_VERSION, MODULES } = await import("./src/core/engine/modules.js");
-      return jsonResponse(res, { engineVersion: ENGINE_VERSION, modules: MODULES.map(m => ({ id: m.id, name: m.name })) });
-    }
-
-    // ── 世界列表（兼容旧版） ──
-    if (path === "/api/worlds" && method === "GET") {
-      const worlds = [];
-      const worldsDir = WORLDS_DIR();
-      if (existsSync(worldsDir)) {
-        for (const entry of readdirSync(worldsDir, { withFileTypes: true })) {
-          if (entry.isDirectory()) {
-            const meta = readJsonSync(join(worldsDir, entry.name, "world.json"), {});
-            worlds.push({ name: entry.name, displayName: meta.displayName || entry.name, subType: meta.subType || "classic", turnCount: meta.turnCount || 0 });
-          }
-        }
-      }
-      return jsonResponse(res, worlds);
-    }
-
-    // ── 运行状态 ──
-    if (path === "/api/status" && method === "GET") {
-      const fullDetail = url.searchParams.get("detail") === "full" || DEBUG_MODE;
-      const base = {
-        version: PKG_VERSION,
-        uptime: Math.round(process.uptime()),
-        profiles: listModules().length
-      };
-      if (fullDetail) {
-        base.dataRoot = dataRoot();
-        base.memory = process.memoryUsage().rss;
-      }
-      return jsonResponse(res, base);
-    }
-
-    // ── 健康检查 ──
-    if (path === "/api/health" && method === "GET") {
-      const fullDetail = url.searchParams.get("detail") === "full";
-      const checkLlmRemote = fullDetail && url.searchParams.get("checkLlm") !== "false";
-      const config = await loadConfig();
-      const apiKey = await getActiveLlmValue();
-      const llmConfigured = Boolean(config.llmBaseUrl && config.llmModel && apiKey);
-      let llmStatus = llmConfigured ? "configured" : "not_configured";
-      let llmDetail = "";
-      if (llmConfigured && checkLlmRemote) {
-        try {
-          const resp = await fetch(`${config.llmBaseUrl.replace(/\/$/, "")}/models`, {
-            method: "GET", headers: { Authorization: `Bearer ${apiKey}` },
-            signal: AbortSignal.timeout(800)
-          });
-          llmStatus = resp.ok ? "connected" : "error";
-          if (!resp.ok) llmDetail = `HTTP ${resp.status}`;
-        } catch (err) {
-          llmStatus = "disconnected";
-          llmDetail = err?.message || "fetch failed";
-        }
-      }
-
-      let writable = false;
-      let writableDetail = "";
-      try {
-        const probe = userDataPath(`.write-probe-${Date.now()}.tmp`);
-        writeFileSync(probe, "ok", "utf8");
-        rmSync(probe, { force: true });
-        writable = true;
-      } catch (err) {
-        writableDetail = err?.message || "write probe failed";
-      }
-
-      let dataSize = null;
-      if (fullDetail) {
-        try {
-          const sizeInfo = await calcDirectorySizeLimited(dataRoot());
-          dataSize = { sizeBytes: sizeInfo.sizeBytes, sizeTruncated: sizeInfo.truncated, entries: sizeInfo.entries };
-        } catch {
-          dataSize = { sizeBytes: 0, sizeTruncated: true, entries: 0 };
-        }
-      }
-
-      const worlds = listModules().filter(m => m.type === "world");
-      const totalTurns = worlds.reduce((s, w) => s + (w.turnCount || 0), 0);
-
-      const hasUpdate = latestVersion && latestVersion !== PKG_VERSION;
-
-      // 默认只返回必要状态；detail=full 才返回详细信息
-      if (fullDetail) {
-        return jsonResponse(res, {
-          status: "ok",
-          version: PKG_VERSION,
-          latestVersion: hasUpdate ? latestVersion : null,
-          uptime: Math.round(process.uptime()),
-          llm: {
-            status: llmStatus,
-            configured: llmConfigured,
-            hasApiKey: Boolean(apiKey),
-            model: config.llmModel,
-            baseUrl: config.llmBaseUrl,
-            detail: llmDetail
-          },
-          data: { root: dataRoot(), writable, writableDetail, worldsCount: worlds.length, totalTurns, ...(dataSize || {}) },
-          debugMode: DEBUG_MODE
-        });
-      }
-
-      return jsonResponse(res, {
-        status: "ok",
-        version: PKG_VERSION,
-        uptime: Math.round(process.uptime()),
-        llmConfigured,
-        dataWritable: writable,
-        latestVersion: hasUpdate ? latestVersion : null,
-        debug: DEBUG_MODE ? { debugMode: true } : undefined
-      });
-    }
-
-    // ── 数据导出 ──
-    if (path === "/api/data/export" && method === "GET") {
-      const moduleKey = url.searchParams.get("moduleKey") || "";
-      if (!moduleKey) return jsonError(res, 400, "MODULE_KEY_MISSING", "缺少模组标识。请先选择一个模组。");
-      const worldName = safeEntityId(moduleKey.replace(/^world:/, ""), "");
-      const worldDir = moduleWorldDir(moduleKey);
-      if (!worldDir || !pathWithinRoot(WORLDS_DIR(), worldDir)) return jsonError(res, 400, "MODULE_KEY_INVALID", "模组标识无效。");
-      if (!existsSync(worldDir)) return jsonError(res, 404, "MODULE_NOT_FOUND", "模组不存在，可能已经被删除或移动。");
-      try {
-        // 收集所有数据文件（默认排除 runtime/ 敏感数据）
-        const DEFAULT_EXPORT_EXCLUDES = [
-          /^runtime\/chat\.jsonl$/i,
-          /^runtime\/memory\.jsonl$/i,
-          /^runtime\/state\.json$/i,
-          /^runtime\/overlay(?:\/|$)/i,
-          /^runtime\/backups(?:\/|$)/i,
-          /^runtime\/pending\.jsonl$/i,
-          /^runtime\/manual\.jsonl$/i,
-          /^runtime\/review-log\.jsonl$/i,
-          /^runtime\/snapshots(?:\/|$)/i,
-          /^runtime\/alchemy-previews(?:\/|$)/i,
-          /^runtime\/status(?:\/|$)/i,
-          /^runtime\/mechanisms(?:\/|$)/i,
-          /^runtime\/(?:debug|proposal|proposals|session|sessions)(?:\/|$)/i,
-          /^runtime\/source\.txt$/i,
-          /^shared\/secrets\.json$/i,
-        ];
-        const includeRuntime = url.searchParams.get("includeRuntime") === "true";
-        const shouldExcludeFromSafeExport = (relativePath) => {
-          const normalized = relativePath.replace(/\\/g, "/");
-          return DEFAULT_EXPORT_EXCLUDES.some((rule) => rule.test(normalized));
-        };
-        const bundle = { exportedAt: new Date().toISOString(), worldName, files: {} };
-        const collectDir = (dir, prefix = "") => {
-          for (const entry of readdirSync(dir, { withFileTypes: true })) {
-            const full = join(dir, entry.name);
-            const key = prefix + entry.name;
-            if (entry.isDirectory()) {
-              if (!includeRuntime && shouldExcludeFromSafeExport(key + "/")) continue;
-              collectDir(full, key + "/");
-            }
-            else if (entry.name.endsWith(".json") || entry.name.endsWith(".jsonl")) {
-              if (!includeRuntime && shouldExcludeFromSafeExport(key)) continue;
-              try { bundle.files[key] = readFileSync(full, "utf-8"); } catch (err) { console.warn("[legacyExport] skipped unreadable data file (non-fatal):", err?.message || "unknown error"); }
-            }
-          }
-        };
-        collectDir(worldDir);
-        res.writeHead(200, {
-          "Content-Type": "application/json",
-          "Content-Disposition": `attachment; filename="${worldName}-export.json"`
-        });
-        res.end(JSON.stringify(bundle, null, 2));
-      } catch (err) {
-        return jsonError(res, 500, "EXPORT_FAILED", "导出失败。请检查模组文件是否完整。", err.message);
-      }
-      return;
-    }
-
-    // ── 数据导入 ──
-    if (path === "/api/data/import" && method === "POST") {
-      try {
-        const body = await readBody(req);
-        if (!body.worldName || !body.files) return jsonError(res, 400, "IMPORT_PAYLOAD_INVALID", "导入包缺少必要字段，无法导入。");
-        const worldName = safeEntityId(sanitizeWorldName(body.worldName), "");
-        if (!worldName) return jsonError(res, 400, "IMPORT_WORLD_NAME_INVALID", "导入世界名无效。");
-        const worldDir = join(WORLDS_DIR(), worldName);
-        if (!pathWithinRoot(WORLDS_DIR(), worldDir)) return jsonError(res, 400, "IMPORT_WORLD_NAME_INVALID", "导入世界名无效。");
-        if (existsSync(worldDir)) return jsonError(res, 409, "IMPORT_NAME_CONFLICT", "目标模组名称已存在。请先重命名导入内容或删除旧模组。");
-        const filesToWrite = prepareImportFiles(worldDir, body.files);
-        mkdirSync(worldDir, { recursive: true });
-        for (const { targetPath, content } of filesToWrite) {
-          ensureDir(dirname(targetPath));
-          writeFileSync(targetPath, String(content), "utf-8");
-        }
-        return jsonResponse(res, { status: "ok", worldName });
-      } catch (err) {
-        const status = String(err.code || "").startsWith("IMPORT_") ? 400 : 500;
-        return jsonError(res, status, err.code || "IMPORT_FAILED", "导入失败。请确认文件结构完整且内容合法。", err.message);
-      }
-    }
-
-    // ── 调试日志 ──
-    if (path === "/api/debug/logs" && method === "GET") {
-      if (!DEBUG_MODE) return jsonError(res, 403, "DEBUG_DISABLED", "调试模式未启用。请用 node server.js --debug 启动。");
-      const limit = parseInt(url.searchParams.get("limit") || "50");
-      return jsonResponse(res, { logs: DEBUG_LOG.slice(-limit), totalLogs: DEBUG_LOG.length });
-    }
-
-    // ── 未知路由 ──
-    jsonError(res, 404, "NOT_FOUND", "没有找到这个接口。请检查请求路径。", path);
-
-  } catch (err) {
-    if (err instanceof HttpError) {
-      return jsonError(res, err.status, err.code, err.userMsg, err.detail);
-    }
-    if (err?.code === "BODY_TOO_LARGE") {
-      return jsonError(res, 413, "BODY_TOO_LARGE", "请求内容太大。请拆分素材或减少导入包体积。", err.message);
-    }
-    console.error("[API]", path, err);
-    jsonError(res, 500, "INTERNAL_ERROR", "服务端处理失败。请查看控制台日志获取技术细节。", err.message);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  启动服务器
-// ═══════════════════════════════════════════════════════════════
+const { handleAPI } = createHttpApiRouter({
+  checkRateLimit,
+  RATE_MAX_API,
+  jsonError,
+  parseOriginHost,
+  isLocalRequest,
+  LOCAL_HOSTS,
+  handleV2ProductPlayableRoute,
+  readBody,
+  jsonResponse,
+  dataRoot,
+  loadConfig,
+  getActiveLlmValue,
+  moduleWorldDir,
+  pathWithinRoot,
+  safeEntityId,
+  saveConfig,
+  getSecretState,
+  saveLlmSecret,
+  maskSecret,
+  testLlmConnection,
+  handleLlmChatStream,
+  handleLlmChat,
+  handleLlmChatRetry,
+  handleConnections,
+  listModules,
+  createModule,
+  finalizeDraftModule,
+  deleteModule,
+  buildModuleModel,
+  toPublicModuleModel,
+  resolveKernelProject,
+  getKernelSummary,
+  handleBranchOperation,
+  getLatestKernelTelemetry,
+  refreshKernelTelemetry,
+  previewAutoLight,
+  getKernelStopLoss,
+  approveKernelProposal,
+  rejectKernelProposal,
+  reverseKernelProposal,
+  ingestProcessingMaterial,
+  listProcessingCandidates,
+  deliverProcessingById,
+  handleWorkflowApiRequest,
+  getWorkflowTypesResponse,
+  getWorkflowStatus,
+  listExamples,
+  installExample,
+  handleAlchemyImport,
+  handleAlchemyPreviewAction,
+  handleAlchemyDigest,
+  handleAlchemyReview,
+  getAlchemyCapabilities,
+  alchemyPlannerService,
+  alchemyGenerationService,
+  alchemyLocalizerService,
+  alchemyDeliveryService,
+  handleMechanismDraftFromAlchemy,
+  handleMechanismLibrary,
+  handleMechanismWorld,
+  handleMechanismCommitDrafts,
+  handleReviewFacts,
+  handleReviewLog,
+  handleModuleHistory,
+  listCharacters,
+  handleCharacterImport,
+  handleCharacterUpdate,
+  join,
+  existsSync,
+  readJsonSync,
+  rmSync,
+  CHARACTERS_DIR,
+  ensureDir,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  handleWorldbook,
+  handleWorldbookImport,
+  handleWorldbookTest,
+  handleChatMessage,
+  handleTurnDebug,
+  handleLatestTurnState,
+  handleTurnStateIndex,
+  handleTurnStateById,
+  handleWorldPackExport,
+  handleWorldPackImport,
+  handleWtpackExport,
+  handleWtpackImport,
+  ENABLE_DEFERRED_PLUGINS,
+  DEBUG_MODE,
+  handlePlugins,
+  handleOverlayPending,
+  handleDashboardTelemetry,
+  handleDashboardEntities,
+  handleDashboardNarrative,
+  WORLDS_DIR,
+  readdirSync,
+  PKG_VERSION,
+  userDataPath,
+  calcDirectorySizeLimited,
+  getLatestVersion: () => latestVersion,
+  sanitizeWorldName,
+  prepareImportFiles,
+  dirname,
+  DEBUG_LOG,
+  HttpError
+});
 
 const server = createServer((req, res) => {
   if (req.url.startsWith("/api/")) {

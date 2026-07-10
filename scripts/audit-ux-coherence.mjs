@@ -10,6 +10,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readBrowserSource } from "./lib/browser-source.mjs";
+import { readServerSource } from "./lib/server-source.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let errors = 0;
@@ -47,7 +48,7 @@ function functionBody(code, name) {
 console.log("\n🧭 UX Coherence Audit");
 
 const js = readBrowserSource(ROOT);
-const server = read("server.js");
+const server = readServerSource(ROOT);
 const v2RouteContent = [
   "src/server/v2-product-playable-routes.js",
   "src/server/tabletop-v2-routes.js",

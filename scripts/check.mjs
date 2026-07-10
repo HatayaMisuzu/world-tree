@@ -5,6 +5,11 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const files = [
   "server.js",
+  "src/server/config-runtime.js",
+  "src/server/connection-runtime.js",
+  "src/server/static-shell.js",
+  "src/server/http-api-router.js",
+  "src/server/debug-log.js",
   "world-tree-console.html",
   "world-tree-console.css",
   "world-tree-console.js",

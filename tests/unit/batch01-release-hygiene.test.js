@@ -1,9 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
+import { readServerSource } from "../../scripts/lib/server-source.mjs";
 
 test("Claude presets keep OpenRouter compatibility and expose native Anthropic adapter", () => {
-  const server = readFileSync("server.js", "utf8");
+  const server = readServerSource();
   assert.match(server, /claude-openrouter/);
   assert.match(server, /https:\/\/openrouter\.ai\/api\/v1/);
   assert.match(server, /anthropic\/claude-sonnet-4\.5/);
@@ -25,7 +26,7 @@ test("start.bat reads package version instead of hardcoding stale v2 version", (
 });
 
 test("Hermes dead config is removed from active server diagnostics", () => {
-  const server = readFileSync("server.js", "utf8");
+  const server = readServerSource();
   const diagnostics = readFileSync("src/core/diagnostics.js", "utf8");
   assert.doesNotMatch(server, /hermesBaseUrl/);
   assert.doesNotMatch(diagnostics, /hermes-config|hermesBaseUrl/);
