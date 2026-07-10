@@ -84,7 +84,7 @@ export function createConfigRuntime(deps = {}) {
   
   async function getSecretState() {
     const secrets = await loadSecrets();
-    const active = secrets.llm.items.find(i => i.id === secrets.llm.active) || secrets.llm.items[0] || null;
+    const active = secrets.llm.items.find(i => i.id === secrets.llm.active) || null;
     return {
       llm: {
         active: active?.id || "",
@@ -95,7 +95,7 @@ export function createConfigRuntime(deps = {}) {
   
   async function getActiveLlmValue() {
     const secrets = await loadSecrets();
-    const active = secrets.llm.items.find(i => i.id === secrets.llm.active) || secrets.llm.items[0] || null;
+    const active = secrets.llm.items.find(i => i.id === secrets.llm.active) || null;
     return active?.value || "";
   }
   

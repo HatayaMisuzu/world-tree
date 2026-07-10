@@ -107,6 +107,7 @@ expect(updateHealth.includes("llmConfigured"), "updateHealth handles default /ap
 expect(updateHealth.includes("AS.health?.llm?.status") || updateHealth.includes("health.llm"), "updateHealth still supports full llm.status shape", "updateHealth no longer supports full health llm.status shape");
 expect(updateHealth.includes("dataWritable") || updateHealth.includes("writable"), "updateHealth handles data writable status", "updateHealth ignores data writable status");
 expect(updateHealth.includes("before") && updateHealth.includes("after") && updateHealth.includes("render()"), "health refresh updates the visible UI when state changes", "health refresh mutates state without rendering");
+expect(updateHealth.includes("AS.hasApiKey = llmStatus.hasApiKey"), "health refresh treats server key state as authoritative", "health refresh preserves stale local key state");
 expect(!deriveLlmUiStatus.includes("llmConfigured &&"), "configured credentials are not mislabeled as a tested connection", "configured credentials are still shown as connected before a successful test");
 
 console.log("\n4b. Interaction regression boundaries");

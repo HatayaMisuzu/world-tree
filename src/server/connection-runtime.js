@@ -44,7 +44,10 @@ export function createConnectionRuntime(deps = {}) {
       ]
     };
     const raw = readJsonSync(CONNECTIONS_PATH(), fallback);
-    return { active: raw.active || raw.items?.[0]?.id || "deepseek", items: Array.isArray(raw.items) ? raw.items : fallback.items };
+    const active = raw && Object.prototype.hasOwnProperty.call(raw, "active")
+      ? String(raw.active || "")
+      : (raw.items?.[0]?.id || "deepseek");
+    return { active, items: Array.isArray(raw.items) ? raw.items : fallback.items };
   }
   
   async function saveConnectionsRaw(next) {
@@ -207,8 +210,31 @@ export function createConnectionRuntime(deps = {}) {
     const now = new Date().toISOString();
     if (action === "delete") {
       const id = String(body.id || "");
+      const removed = raw.items.find(i => i.id === id);
       const items = raw.items.filter(i => i.id !== id);
-      return saveConnectionsRaw({ active: raw.active === id ? (items[0]?.id || "") : raw.active, items });
+      const nextActiveId = raw.active === id
+        ? (items[0]?.id || "")
+        : (items.some(i => i.id === raw.active) ? raw.active : (items[0]?.id || ""));
+      const nextActive = items.find(i => i.id === nextActiveId) || null;
+      await saveConfig(nextActive ? {
+        connectionProfileId: nextActive.id,
+        llmBaseUrl: nextActive.baseUrl || "",
+        llmModel: nextActive.model || "",
+        llmProvider: nextActive.provider || "openai-compatible",
+        llmThinking: nextActive.thinking || "auto"
+      } : {
+        connectionProfileId: "",
+        llmBaseUrl: "",
+        llmModel: "",
+        llmProvider: "",
+        llmThinking: "auto"
+      });
+      const secrets = await loadSecrets();
+      const removedSecretId = removed?.apiKeySecretId || removed?.id || "";
+      const referencedSecretIds = new Set(items.map(item => item.apiKeySecretId || item.id));
+      const remainingSecrets = (secrets.llm.items || []).filter(secret => secret.id !== removedSecretId || referencedSecretIds.has(secret.id));
+      await saveSecrets({ ...secrets, llm: { ...secrets.llm, active: nextActive ? (nextActive.apiKeySecretId || nextActive.id) : "", items: remainingSecrets } });
+      return saveConnectionsRaw({ active: nextActiveId, items });
     }
     if (action === "duplicate") {
       const source = raw.items.find(i => i.id === body.id);

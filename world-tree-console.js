@@ -261,7 +261,7 @@ async function init() {
   try { Object.assign(AS.config, await API.loadConfig()); } catch (err) { console.warn("[init] config load failed (non-fatal):", err?.message || "unknown error"); }
   try {
     const secrets = await API.getSecrets();
-    AS.hasApiKey = !!secrets?.llm?.items?.length;
+    AS.hasApiKey = Boolean(secrets?.llm?.items?.some(item => item.active));
   } catch (err) { console.warn("[init] secret state unavailable (non-fatal):", err?.message || "unknown error"); }
   try {
     const ex = await API.loadExamples();

@@ -174,7 +174,7 @@ async function updateHealth() {
     const dataWritable = llmStatus.dataWritable;
     AS.health.legacyLlmConfigured = llmStatus.llmConfigured;
     AS.profileConfigured = llmStatus.profileConfigured;
-    AS.hasApiKey = AS.hasApiKey || llmStatus.hasApiKey;
+    AS.hasApiKey = llmStatus.hasApiKey;
     if (llmStatus.authoritativeConnection) AS.llmConnected = llmStatus.connected;
     AS.health.dataWritable = dataWritable;
     AS.health.legacyLlmStatus = legacyLlmStatus || llmStatus.status || "";

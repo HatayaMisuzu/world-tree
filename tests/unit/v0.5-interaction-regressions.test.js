@@ -77,6 +77,7 @@ test("model state keeps profile, key, connection, and diagnostics separate", asy
   assert.equal(runtime.getModelConnectionUiState().id, "connected");
   await runtime.updateHealth();
   assert.equal(runtime.AS.llmConnected, true, "basic health refresh must not erase a successful explicit test");
+  assert.equal(runtime.AS.hasApiKey, false, "health key state is authoritative and cannot stay stale");
 
   runtime.AS.llmConnected = true;
   await runtime.connectionAction("set-default-connection", "local");
