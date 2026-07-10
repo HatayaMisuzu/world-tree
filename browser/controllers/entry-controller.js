@@ -304,6 +304,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "export-module") return legacyExport(btn.closest("[data-module-id]")?.dataset.moduleId);
     if (action === "create-world") return showCreateDialog("worldbook", "世界");
     if (action === "create-from-material" || action === "library-alchemy") { AS.view = "library"; AS.libraryTab = "alchemy"; return render(); }
+    if (action === "library-review") { AS.view = "library"; AS.libraryTab = "review"; await loadViewData(); return render(); }
     if (action === "refresh-characters") { AS.characters = await API.loadCharacters(); return render(); }
     if (action === "import-character-json") return importCharacterFile();
     if (action === "preview-character") return previewCharacter(btn.closest("[data-character-id]")?.dataset.characterId);
@@ -365,7 +366,7 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (["enable-plugin", "disable-plugin"].includes(action)) return pluginAction(action, btn.closest("[data-plugin-id]")?.dataset.pluginId);
     if (action === "run-plugin") return runPlugin(btn.closest("[data-plugin-id]")?.dataset.pluginId);
     if (action === "open-settings") { AS.view = "settings"; AS.settingsTab = "connections"; await loadViewData(); return render(); }
-    if (["copy-message", "edit-message", "favorite-message", "delete-message", "regen-message", "candidate-prev", "candidate-next", "retry-message"].includes(action)) return messageAction(action, btn.closest("[data-message-id]")?.dataset.messageId);
+    if (["copy-message", "edit-message", "favorite-message", "delete-message", "regen-message", "candidate-prev", "candidate-next", "retry-message", "retry-partial"].includes(action)) return messageAction(action, btn.closest("[data-message-id]")?.dataset.messageId);
     if (action === "legacy-export") return legacyExport(AS.selectedModule?.id);
     if (action === "legacy-import") return createToast("旧版 JSON 导入入口已保留在高级工具中，当前演示未自动覆盖数据。", "warn");
   } catch (err) {

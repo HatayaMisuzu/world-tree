@@ -2575,12 +2575,17 @@ async function handleTurnStateIndex(url = null) {
 
 /** 加载模组对话历史 */
 async function handleModuleHistory(moduleId, limit = 50) {
-  const rtDir = moduleRuntimeDir(moduleId);
+  const rootRuntime = moduleRuntimeDir(moduleId);
+  const projectRoot = String(moduleId || "").startsWith("char:") ? null : moduleWorldDir(moduleId);
+  const timeline = projectRoot ? readJsonSync(join(projectRoot, "timeline-tree.json"), null) : null;
+  const activeBranchId = safeEntityId(timeline?.activeBranchId || "", "");
+  const branchRuntime = activeBranchId ? join(projectRoot, "branches", activeBranchId, "runtime") : null;
+  const rtDir = branchRuntime && pathWithinRoot(projectRoot, branchRuntime) && existsSync(branchRuntime) ? branchRuntime : rootRuntime;
   if (!rtDir) return { status: "ok", messages: [], turnCount: 0, engineState: {}, lastScene: "" };
   const chatPath = join(rtDir, "chat.jsonl");
   const state = readJsonSync(join(rtDir, "state.json"), {});
   const messages = await readJsonlTail(chatPath, limit);
-  return { status: "ok", messages, turnCount: state.turnCount || 0, engineState: state.engineState || {}, lastScene: state.lastScene || "" };
+  return { status: "ok", messages, turnCount: state.turnCount || 0, engineState: state.engineState || {}, lastScene: state.lastScene || "", activeBranch: activeBranchId || state.activeBranch || "main" };
 }
 
 // ═══════════════════════════════════════════════════════════════

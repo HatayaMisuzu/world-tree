@@ -40,13 +40,21 @@ const C = {
   chatMsg(m) {
     const role = m.role || "assistant";
     const tone = role === "user" ? "user" : role === "error" ? "error" : role === "system" ? "system" : "assistant";
+    const partial = Boolean(m.aborted || m.turnStatus === "partial");
+    const proposal = Boolean(m.proposal || m.turnStatus === "proposal");
+    const confirmed = Boolean(m.confirmed || m.turnStatus === "confirmed");
+    const roleLabel = role === "user" ? "你的行动" : role === "assistant" ? (partial ? "未完成片段" : m.retryOf ? "重试回应" : "世界回应") : role === "error" ? "生成失败" : "系统提示";
     const candidates = Array.isArray(m.candidates) ? m.candidates : [];
     const selectedIndex = Math.max(0, candidates.findIndex(c => c.selected));
     const turnId = m.turnId || (m.round ? `turn-${m.round}` : "");
     const displayText = role === "error" ? (m.userMessage || m.content || "AI 调用失败") : (m.content || "");
-    return `<div class="chat-message ${tone} ${m.id && AS.selectedMessageId === m.id ? "selected-message" : ""}" data-message-id="${U.esc(m.id || "")}" data-turn-id="${U.esc(turnId)}">
+    return `<div class="chat-message ${tone} ${partial ? "partial" : ""} ${proposal ? "proposal" : ""} ${confirmed ? "confirmed" : ""} ${m.id && AS.selectedMessageId === m.id ? "selected-message" : ""}" data-message-id="${U.esc(m.id || "")}" data-turn-id="${U.esc(turnId)}" data-message-kind="${partial ? "partial" : proposal ? "proposal" : confirmed ? "confirmed" : tone}">
       <div class="chat-meta">
-        <strong>${role === "user" ? "你" : role === "assistant" ? "叙事引擎" : role === "error" ? "错误" : role}</strong>
+        <strong>${roleLabel}</strong>
+        ${m.streaming ? C.badge("正在生成", "pending") : ""}
+        ${partial ? C.badge("已中止 · 未保存", "warn") : ""}
+        ${proposal ? C.badge("等待确认", "warn") : ""}
+        ${confirmed ? C.badge("已确认", "ok") : ""}
         ${m.favorite ? C.badge("收藏", "warn") : ""}
         ${role === "error" && m.code ? C.badge(m.code, m.retryable === false ? "warn" : "bad") : ""}
         ${role === "error" && m.retryOf ? C.badge("重试失败", "warn") : ""}
@@ -54,6 +62,7 @@ const C = {
         ${m.ts ? `<span>${U.date(m.ts)}</span>` : ""}
       </div>
       <div class="chat-text">${U.md(displayText)}</div>
+      ${partial ? `<div class="partial-message-note">这是停止前收到的可见片段，仅在当前页面保留；服务端没有把它记为完成回合。</div>` : ""}
       ${role === "error" && m.detail ? `<details class="tiny"><summary>技术细节</summary><pre>${U.esc(U.compact(m.detail, 1200))}</pre></details>` : ""}
       ${candidates.length > 1 ? `<div class="candidate-row">
         <button class="small" data-action="candidate-prev">上一个</button>
@@ -65,6 +74,7 @@ const C = {
         <button data-action="edit-message">编辑</button>
         <button data-action="favorite-message">${m.favorite ? "取消收藏" : "收藏"}</button>
         ${role === "assistant" ? `<button data-action="regen-message">重生成</button>` : ""}
+        ${partial ? `<button data-action="retry-partial">把原问题放回输入框</button>` : ""}
         ${role === "error" && m.retryable !== false ? `<button data-action="retry-message">重试</button>` : ""}
         ${role === "error" ? `<button data-action="open-settings">设置</button>` : ""}
         <button class="danger" data-action="delete-message">删除</button>
@@ -76,22 +86,26 @@ const C = {
     const title = AS.isQuickStart ? "快速对话" : (m ? (m.displayName || m.name) : "未选择世界");
     const usage = C.usageBadge();
     const proposalCount = (AS.kernel?.pendingProposals || []).length + (AS.reviewItems || []).length;
-    return `<div class="chat-layout">
+    const round = m?.turnCount || AS.messages.filter(message => message.role === "user").length || 0;
+    return `<div class="chat-layout experience-workspace">
       <section class="panel chat-card">
         <div class="panel-head">
           <div>
+            <span class="eyebrow">Experience Workspace</span>
             <h2>${U.esc(title)}</h2>
             <p class="sub">${AS.isQuickStart ? "快速项目草稿 · 已保存到本地 runtime" : m ? `${C.dataModeLabel(m)} · ${m.turnCount || 0} 回合${m.draft ? " · 草稿" : ""}` : "请先在工作台或世界管理中加载一个世界"}</p>
             ${usage}
           </div>
           <div class="actions">
-            <button class="small" data-action="toggle-developer-observability">开发者观测</button>
-            <button class="small proposal-dot-button ${proposalCount ? "has-dot" : ""}" data-action="library-review">提案审阅${proposalCount ? `<span>${proposalCount}</span>` : ""}</button>
+            <button class="small proposal-dot-button ${proposalCount ? "has-dot" : ""}" data-action="library-review">待确认${proposalCount ? `<span>${proposalCount}</span>` : ""}</button>
             <button class="small" data-action="drawer-branches">分支</button>
-            <button class="small" data-action="open-command-panel">命令</button>
+            ${AS.worldPack?.pack ? `<button class="small primary" data-action="download-worldpack">下载世界包</button>` : `<button class="small" data-action="export-worldpack">导出</button>`}
+            <button class="small" data-action="open-command-panel">快捷命令</button>
+            <button class="small ghost" data-action="toggle-developer-observability">诊断</button>
             <button class="small danger" data-action="clear-chat">清空</button>
           </div>
         </div>
+        <div class="experience-phase" aria-label="当前体验进度"><span class="done">世界已载入</span><span class="${AS.busy ? "active" : round ? "done" : ""}">第 ${round + (AS.busy ? 1 : 0)} 回合</span><span class="${proposalCount ? "attention" : ""}">${proposalCount ? `${proposalCount} 项待确认` : "状态已同步"}</span></div>
         <div id="chatMessages" class="chat-messages">${AS.messages.length ? AS.messages.map(C.chatMsg).join("") : C.openingSuggestions()}</div>
         ${renderProgressPanel()}
         <div class="composer">
@@ -203,8 +217,8 @@ function renderWorkflowPanel() {
   if (!AS.selectedModule || String(AS.selectedModule.id || "").startsWith("char:") || AS.selectedModule.id === "__quick__") return "";
   const wf = AS.workflowStatus;
   const types = AS.workflowTypes || [];
-  return `<details class="kernel-panel" data-workflow-panel open>
-    <summary><strong>Workflow</strong><span class="tiny muted">${wf ? `${wf.workflowLayer || "active"} · ${wf.services?.length || 8} services` : "点击加载"}</span></summary>
+  return `<details class="kernel-panel" data-workflow-panel>
+    <summary><strong>高级运行信息</strong><span class="tiny muted">${wf ? "服务正常 · 展开诊断" : "需要时展开"}</span></summary>
     <div class="kernel-grid" style="grid-template-columns:1fr 1fr">
       <section><strong>状态</strong><p class="tiny">${wf ? `preflightProtected: ${wf.preflightProtected} · layer: ${wf.workflowLayer}` : "未加载"}</p>
         <button class="small" data-action="workflow-refresh">刷新</button></section>
@@ -353,7 +367,7 @@ function renderModePlayPanel() {
   }
   const narrative = play.narrative;
   if (narrative?.rhythmTag || narrative?.goals?.activeQuests?.length || narrative?.latestRecap) sections.push(`<section><strong>旅程</strong><p class="tiny">节奏：${U.esc(narrative.rhythmTag || "breath")}</p>${narrative.latestRecap ? `<p>${U.esc(narrative.latestRecap.summary)}</p>` : ""}${(narrative.goals?.activeQuests || []).map(item => `<p class="tiny">目标：${U.esc(item.name)} · ${U.esc(item.progress)}%</p>`).join("")}</section>`);
-  return sections.length ? `<details class="kernel-panel mode-play-panel" open><summary><strong>真实游玩状态</strong><span class="tiny muted">runtime / candidate only</span></summary><div class="kernel-grid">${sections.join("")}</div></details>` : "";
+  return sections.length ? `<details class="kernel-panel mode-play-panel"><summary><strong>玩法详情</strong><span class="tiny muted">需要时展开</span></summary><div class="kernel-grid">${sections.join("")}</div></details>` : "";
 }
 
 function renderChangeMark(value, status = "") {
@@ -383,9 +397,11 @@ function renderInventoryGrid(card) {
 }
 
 function renderStatusList(card) {
-  const items = Array.isArray(card.items) ? card.items : [];
+  const labels = { world: "世界", status: "当前状态", dataMode: "内容来源", directorMode: "叙事方式", worldSubType: "体验类型", storyteller: "叙事预设" };
+  const values = { true: "可用", false: "不可用", idle: "平稳", worldbook: "世界书", hybrid: "协同", classic: "经典", epic: "史诗" };
+  const items = (Array.isArray(card.items) ? card.items : []).filter(item => item.label !== "activeModules");
   return `<article class="status-card"><strong>${U.esc(card.title || "状态")}</strong>
-    <div class="status-list">${items.map(item => `<div><span>${U.esc(item.label || "状态")}</span><strong>${U.esc(item.value ?? "")}</strong>${renderChangeMark(item.delta || (item.status === "new" ? "NEW" : item.status === "changed" ? "CHANGED" : ""), item.status)}</div>`).join("") || `<span class="tiny muted">暂无状态</span>`}</div>
+    <div class="status-list">${items.map(item => `<div><span>${U.esc(labels[item.label] || item.label || "状态")}</span><strong>${U.esc(values[String(item.value)] ?? item.value ?? "")}</strong>${renderChangeMark(item.delta || (item.status === "new" ? "新增" : item.status === "changed" ? "已变化" : ""), item.status)}</div>`).join("") || `<span class="tiny muted">当前没有需要展示的变化</span>`}</div>
   </article>`;
 }
 
@@ -421,18 +437,18 @@ function renderStatusPanel() {
   if (!AS.statusPanelVisible) return `<aside class="status-panel status-panel--hidden"><button class="small" data-action="show-status-panel">显示状态</button></aside>`;
   const frame = currentTurnStateFrame();
   const historical = Boolean(AS.selectedTurnId);
-  const title = historical ? `状态快照 · 第 ${frame?.round || "?"} 轮` : "状态 · 最新";
+  const title = historical ? `第 ${frame?.round || "?"} 回合的变化` : "当前世界状态";
   return `<aside class="panel status-panel ${AS.statusPanelCollapsed ? "status-panel--collapsed" : ""}">
     <div class="panel-head">
       <div><h3>${U.esc(title)}</h3>${frame?.createdAt ? `<span class="tiny muted">${U.date(frame.createdAt)}</span>` : ""}</div>
       <div class="actions">
         ${historical ? `<button class="small" data-action="status-latest">返回最新</button>` : ""}
         <button class="small" data-action="status-density">${AS.statusPanelDensity === "simple" ? "详细" : "简洁"}</button>
-        <button class="small" data-action="toggle-status-collapse">${AS.statusPanelCollapsed ? "展开" : "收敛"}</button>
+        <button class="small" data-action="toggle-status-collapse">${AS.statusPanelCollapsed ? "展开" : "收起"}</button>
         <button class="small ghost" data-action="hide-status-panel">隐藏</button>
       </div>
     </div>
-    ${AS.statusPanelCollapsed ? `<span class="tiny muted">${frame?.changes?.length || 0} 项最新变化</span>` : frame ? (AS.statusPanelDensity === "detailed" ? renderStatusFrameDetailed(frame) : renderStatusFrameSimple(frame)) : C.empty("暂无状态帧", "完成一轮对话后，这里会显示已确认状态。")}
+    ${AS.statusPanelCollapsed ? `<span class="tiny muted">${frame?.changes?.length || 0} 项最新变化</span>` : frame ? (AS.statusPanelDensity === "detailed" ? renderStatusFrameDetailed(frame) : renderStatusFrameSimple(frame)) : C.empty("还没有状态变化", "完成一次行动后，角色、物品、任务和世界变化会显示在这里。")}
   </aside>`;
 }
 

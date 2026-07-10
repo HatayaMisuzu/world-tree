@@ -275,7 +275,7 @@ function bindEvents() {
     btn.onclick = async () => {
       AS.view = btn.dataset.view;
       APP_STORE?.dispatch({ type: "navigation/view", view: AS.view });
-      AS.workbenchMode = AS.view === "workbench" ? AS.workbenchMode : AS.workbenchMode;
+      if (AS.view === "workbench") AS.workbenchMode = "overview";
       await loadViewData();
       render();
     };

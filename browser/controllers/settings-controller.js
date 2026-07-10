@@ -5,6 +5,7 @@ async function exportWorldpack() {
   if (!AS.selectedModule) return createToast("请先选择世界", "warn");
   AS.worldPack = await API.worldPackExport({ moduleKey: AS.selectedModule.id, ...AS.worldPackOptions });
   AS.importPreview = null;
+  createToast("世界包已准备好；确认后可下载。", "ok");
   render();
 }
 

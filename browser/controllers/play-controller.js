@@ -397,7 +397,7 @@ async function sendChatNonStreaming(text, userMessage, messages) {
 function stopChatStream() {
   if (!activeChatAbortController) return;
   activeChatAbortController.abort();
-  createToast("已停止生成。本地只保留当前可见片段；服务端仅在 done 后落盘。", "warn");
+  createToast("已停止生成。当前页面保留可见片段；服务端仅在完成后保存。", "warn");
 }
 
 async function sendChat() {
@@ -428,6 +428,7 @@ async function sendChat() {
   try {
     const messages = currentChatHistory();
     const assistantMessage = CH.add("assistant", "", { streaming: true });
+    assistantMessage.sourceInput = text;
     render();
     activeChatAbortController = new AbortController();
     let donePayload = null;
@@ -470,6 +471,8 @@ async function sendChat() {
       if (streamingAssistant) {
         streamingAssistant.streaming = false;
         streamingAssistant.aborted = true;
+        streamingAssistant.turnStatus = "partial";
+        streamingAssistant.sourceInput = text;
         streamingAssistant.content = streamingAssistant.content || "（已停止，未完成落盘）";
         CH.persist();
       }
@@ -579,6 +582,13 @@ async function messageAction(action, id) {
   const msg = AS.messages.find(m => m.id === id);
   if (!msg) return;
   if (action === "retry-message") return retryFailedMessage(id);
+  if (action === "retry-partial") {
+    AS.chatDraft = msg.sourceInput || [...AS.messages].slice(0, AS.messages.indexOf(msg)).reverse().find(item => item.role === "user")?.content || "";
+    CH.persist();
+    render();
+    setTimeout(() => U.qs("#chatInput")?.focus(), 0);
+    return createToast("原问题已放回输入框；确认后可重新发送。", "ok");
+  }
   if (action === "open-settings") {
     AS.view = "settings";
     AS.settingsTab = "connections";
