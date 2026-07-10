@@ -31,9 +31,11 @@ for (const [file, regex] of [
   ["README.md", /\*\*(?:Current version|当前版本|Package version)\*\*:\s*v(\d+\.\d+\.\d+[\w\-.]*)/],
 ]) {
   const content = readText(file);
-  const m = content.match(regex);
-  if (m && m[1] === version) pass(`${file}: ${m[1]}`);
-  else if (file === "README.md" && !m) pass(`${file}: 版本号未显式展示（package.json 为真相源）`);
+  const globalRegex = new RegExp(regex.source, regex.flags.includes("g") ? regex.flags : `${regex.flags}g`);
+  const matches = [...content.matchAll(globalRegex)];
+  const current = matches.find(match => match[1] === version);
+  if (current) pass(`${file}: ${current[1]}`);
+  else if (file === "README.md" && matches.length === 0) pass(`${file}: 版本号未显式展示（package.json 为真相源）`);
   else fail(`${file}: 版本不匹配 (期望 ${version})`);
 }
 

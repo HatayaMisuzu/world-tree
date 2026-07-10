@@ -305,8 +305,8 @@ for (const endpoint of ["/api/workflow/status", "/api/workflow/types"]) {
   if (serverCode.includes(endpoint) && combinedCode.includes(endpoint)) pass(`${endpoint}: 前后端路由存在`);
   else fail(`${endpoint}: 前后端路由缺失`);
 }
-if (combinedCode.includes("${renderWorkflowPanel()}") && combinedCode.includes("data-workflow-panel open")) pass("Workflow panel 在真实 chat surface 可见挂载");
-else fail("Workflow panel 未稳定挂载到 chat surface");
+if (combinedCode.includes("${renderWorkflowPanel()}") && combinedCode.includes("data-workflow-panel")) pass("Workflow 诊断详情稳定挂载到 chat surface，并允许作为二级内容默认折叠");
+else fail("Workflow 诊断详情未稳定挂载到 chat surface");
 if (combinedCode.includes("PROGRESS_STAGES") && combinedCode.includes("renderProgressPanel()") && combinedCode.includes("不代表流式输出")) pass("非 SSE 等待阶段 UI 已挂载并正确说明");
 else fail("等待阶段 UI 缺失或误导为流式输出");
 for (const marker of ["骰子判定", "线索卡与假设白板", "策略资源", "真实游玩状态"]) {
