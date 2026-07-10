@@ -3201,6 +3201,20 @@ const PUBLIC_STATIC_FILES = new Map([
   ["/world-tree-console.css", "world-tree-console.css"],
   ["/world-tree-client-core.js", "world-tree-client-core.js"],
   ["/ui-labels.js", "ui-labels.js"],
+  ["/browser/app/product-registry.js", "browser/app/product-registry.js"],
+  ["/browser/app/navigation.js", "browser/app/navigation.js"],
+  ["/browser/state/app-store.js", "browser/state/app-store.js"],
+  ["/browser/components/feedback.js", "browser/components/feedback.js"],
+  ["/browser/components/forms.js", "browser/components/forms.js"],
+  ["/browser/components/product-components.js", "browser/components/product-components.js"],
+  ["/browser/views/core-views.js", "browser/views/core-views.js"],
+  ["/browser/views/creation-settings-views.js", "browser/views/creation-settings-views.js"],
+  ["/browser/controllers/navigation-controller.js", "browser/controllers/navigation-controller.js"],
+  ["/browser/controllers/entry-controller.js", "browser/controllers/entry-controller.js"],
+  ["/browser/controllers/play-controller.js", "browser/controllers/play-controller.js"],
+  ["/browser/controllers/content-controller.js", "browser/controllers/content-controller.js"],
+  ["/browser/controllers/settings-controller.js", "browser/controllers/settings-controller.js"],
+  ["/browser/controllers/character-v2-controller.js", "browser/controllers/character-v2-controller.js"],
   ["/world-tree-console.js", "world-tree-console.js"]
 ]);
 

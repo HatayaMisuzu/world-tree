@@ -15,6 +15,7 @@
     "world-tree-client-core.js",
     "ui-labels.js",
     "world-tree-console.js",
+    "browser/",
     "src/",
     "defaults/engine-profile/",
     "defaults/world-profiles/",
@@ -120,7 +121,7 @@
     "verify:nightly": "node scripts/verify-nightly.mjs",
     "ci:github-actions-checks": "node scripts/verify-github-actions-checks.mjs",
     "test:v2-route-registry": "node --test tests/unit/v2-product-route-registry.test.js",
-    "test:console-boundary": "node --check world-tree-client-core.js && node --check world-tree-console.js && node --test tests/unit/console-client-core.test.js",
+    "test:console-boundary": "node scripts/check-browser-boundaries.mjs && node --test tests/unit/console-client-core.test.js tests/unit/browser-architecture.test.js",
     "docs:lifecycle:check": "node scripts/audit-doc-lifecycle.mjs"
   },
   "keywords": [

@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readBrowserSource } from "../../scripts/lib/browser-source.mjs";
 
-const consoleCode = readFileSync(new URL("../../world-tree-console.js", import.meta.url), "utf8");
+const consoleCode = readBrowserSource();
 
 test("chat history uses server records as the source of truth and localStorage only for drafts", () => {
   const chBlock = consoleCode.slice(consoleCode.indexOf("const CH ="), consoleCode.indexOf("const Views ="));

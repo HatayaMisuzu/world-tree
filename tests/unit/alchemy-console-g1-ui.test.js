@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readBrowserSource } from "../../scripts/lib/browser-source.mjs";
 
-const ui = readFileSync("world-tree-console.js", "utf8");
+const ui = readBrowserSource();
 const clientCore = readFileSync("world-tree-client-core.js", "utf8");
 
 test("client core exposes G1 alchemy API methods", () => {

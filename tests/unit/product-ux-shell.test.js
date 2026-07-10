@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readBrowserSource } from "../../scripts/lib/browser-source.mjs";
 
-const consoleJs = readFileSync("world-tree-console.js", "utf8");
+const consoleJs = readBrowserSource();
 const consoleCss = readFileSync("world-tree-console.css", "utf8");
 
 test("default console shell is productized as a game lobby", () => {

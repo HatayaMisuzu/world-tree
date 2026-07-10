@@ -52,6 +52,12 @@ console.log("\n📝 语法检查");
 const CORE_FILES = [
   "server.js",
   "world-tree-console.js",
+  "browser/app/product-registry.js", "browser/app/navigation.js", "browser/state/app-store.js",
+  "browser/components/feedback.js", "browser/components/forms.js", "browser/components/product-components.js",
+  "browser/views/core-views.js", "browser/views/creation-settings-views.js",
+  "browser/controllers/navigation-controller.js", "browser/controllers/entry-controller.js",
+  "browser/controllers/play-controller.js", "browser/controllers/content-controller.js",
+  "browser/controllers/settings-controller.js", "browser/controllers/character-v2-controller.js",
   "scripts/audit.mjs",
   "scripts/interface-audit.mjs",
   "src/adapters/llm.js",

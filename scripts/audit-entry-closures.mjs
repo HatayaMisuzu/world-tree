@@ -2,6 +2,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readBrowserSource } from "./lib/browser-source.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
@@ -14,10 +15,7 @@ const routeContents = [
   "src/server/character-v2-routes.js",
   "src/server/single-player-scriptkill-v2-routes.js"
 ].map((file) => readFileSync(join(root, file), "utf-8")).join("\n");
-const uiContent = [
-  readFileSync(join(root, "world-tree-console.js"), "utf-8"),
-  readFileSync(join(root, "world-tree-client-core.js"), "utf-8")
-].join("\n");
+const uiContent = readBrowserSource(root);
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"));
 
 const results = { tabletop: [], detective: [], character: [], isolation: [] };

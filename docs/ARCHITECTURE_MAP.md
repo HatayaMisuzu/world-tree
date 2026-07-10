@@ -29,7 +29,7 @@ local JSON / JSONL persistence
 
 | Layer | Current Location | Owns | Must Not Own |
 |---|---|---|---|
-| Browser UI | `world-tree-console.js`, `world-tree-client-core.js`, static files | User interaction, panels, client utility/API requests | Server persistence rules, canon authority |
+| Browser UI | `browser/`, `world-tree-console.js`, `world-tree-client-core.js`, static files | User interaction, views, controllers, local UI state, client API requests | Server persistence rules, canon authority |
 | HTTP entry | `server.js` | server boot, non-V2 route dispatch, API orchestration | Large reusable helpers already moved to `src/server/*` |
 | HTTP response boundary | `src/server/http-response.js` | JSON response and error payload contract | Route business logic |
 | HTTP request boundary | `src/server/http-request.js` | JSON body parsing, request-size failure | Route business logic |
@@ -71,11 +71,18 @@ Worldbook V2 and Strategy Sim V2 still use their product service handlers. Table
 
 ## Current Frontend Boundary
 
-`world-tree-console.js` still owns main UI state, rendering, and event handlers.
+`world-tree-console.js` is now a compatibility bootstrap: runtime seed state, app startup, top-level health refresh, and legacy global wiring. Product rendering and interaction code lives in bounded classic-script modules so existing no-build/static delivery remains compatible:
 
-`world-tree-client-core.js` owns the low-risk browser utility helpers and API client wrapper formerly embedded in `world-tree-console.js`.
+```text
+browser/
+├─ app/          canonical product presentation registry and navigation
+├─ state/        reducer/store for navigation, project, save, and model state
+├─ components/   feedback, forms, shared render primitives
+├─ views/        core and creation/settings view composition
+└─ controllers/  navigation, entry, play, content, settings, Character V2
+```
 
-The frontend is still not fully split, and there is no TypeScript migration.
+`world-tree-client-core.js` remains the compatibility API/utility client boundary. The browser source manifest lets static audits inspect every extracted file without copying source back into the bootstrap. There is no TypeScript or framework migration.
 
 ## Current Machine Baseline
 
@@ -87,7 +94,7 @@ Version, Git HEAD, unit/integration test counts, and npm package counts are gene
 - Product-wide playable closure is not complete.
 - Full mode-specific gameplay engines are not implemented.
 - `server.js` route dispatch is not fully split.
-- `world-tree-console.js` still owns main UI rendering and event handlers.
+- Legacy globals remain for route, DOM, and `data-action` compatibility; a future pass may narrow them after the new controllers are stable.
 - Persistence format has not been redesigned.
 - Proposal/canon authority model has not been rewritten.
 - LLM adapter has not been deeply split.

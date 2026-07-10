@@ -9,6 +9,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { readBrowserSource } from "./lib/browser-source.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let errors = 0;
@@ -45,7 +46,7 @@ function functionBody(code, name) {
 
 console.log("\n🧭 UX Coherence Audit");
 
-const js = read("world-tree-console.js");
+const js = readBrowserSource(ROOT);
 const server = read("server.js");
 const v2RouteContent = [
   "src/server/v2-product-playable-routes.js",

@@ -4,6 +4,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readBrowserSource } from "./lib/browser-source.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => existsSync(join(root, p)) ? readFileSync(join(root, p), "utf-8") : "";
@@ -21,7 +22,7 @@ const detectiveValidator = read("src/core/detective/detective-case-quality-valid
 const charLiveService = read("src/server/character-v2-live-turn-service.js");
 const charCapsuleService = read("src/server/character-capsule-service.js");
 const charRuntimeContext = read("src/core/character/character-v2-runtime-context.js");
-const ui = `${read("world-tree-console.js")}\n${read("world-tree-client-core.js")}`;
+const ui = readBrowserSource(root);
 const tabletopService = read("src/server/tabletop-v2-service.js");
 
 check("script test:world-tree-v2-entries exists", !!pkg.scripts?.["test:world-tree-v2-entries"]);

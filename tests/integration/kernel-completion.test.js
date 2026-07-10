@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { api, createTempDataDir, removeTempDir, startWorldTreeServer } from "./helpers/server-process.js";
 import { appendJsonl } from "../../src/server/fs-utils.js";
 import { createProposal } from "../../src/core/system/proposal-bus.js";
+import { readBrowserSource } from "../../scripts/lib/browser-source.mjs";
 
 test("kernel completion APIs cover summary, branches, telemetry, auto-light, and processing", async () => {
   const dataDir = await createTempDataDir("world-tree-kernel-");
@@ -72,7 +73,7 @@ test("kernel completion APIs cover summary, branches, telemetry, auto-light, and
 });
 
 test("console exposes minimal kernel controls and keeps critical approval explicit", async () => {
-  const source = await readFile(resolve("world-tree-console.js"), "utf8");
+  const source = readBrowserSource();
   assert.match(source, /data-kernel-panel/);
   assert.match(source, /kernel-create-branch/);
   assert.match(source, /kernel-auto-light/);

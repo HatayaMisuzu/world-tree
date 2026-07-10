@@ -1,4 +1,4 @@
 package: world-tree@0.5.0-product-experience-rebuild.0
-packedSize: 752080
-unpackedSize: 2758744
-files: 574
+packedSize: 760266
+unpackedSize: 2769623
+files: 588

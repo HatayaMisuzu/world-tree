@@ -161,7 +161,7 @@ Product closure not complete:
 - Character V2 advanced editor is not complete.
 - Single Player ScriptKill V2 does not include bundled product content unless separately documented.
 - `server.js` remains the main HTTP entry and still owns non-V2 route dispatch, but selected V2 product route dispatch has been partially extracted through `src/server/v2-product-playable-routes.js`.
-- `world-tree-console.js` remains the main browser UI script, but the browser utility/API client boundary has been extracted to `world-tree-client-core.js`.
+- `world-tree-console.js` is now a small compatibility bootstrap; product registry, store, components, views, and controllers live under `browser/`. `world-tree-client-core.js` remains the stable utility/API client boundary.
 - No TypeScript migration.
 - Full product-wide browser QA remains incomplete unless a product entry browser smoke matrix is separately recorded.
 - The console shell requires `ui-labels.js`; the current closure sprint serves it as a public static asset and verifies it in the package.

@@ -49,6 +49,12 @@ test("console public static assets include ui-labels", async () => {
       "/world-tree-console.css",
       "/world-tree-client-core.js",
       "/ui-labels.js",
+      "/browser/app/product-registry.js",
+      "/browser/app/navigation.js",
+      "/browser/state/app-store.js",
+      "/browser/components/product-components.js",
+      "/browser/views/core-views.js",
+      "/browser/controllers/navigation-controller.js",
       "/world-tree-console.js"
     ]) {
       const response = await fetch(`${server.baseUrl}${path}`);

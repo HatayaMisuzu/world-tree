@@ -9,6 +9,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
+import { readBrowserSource } from "./lib/browser-source.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let errors = 0, warnings = 0, passes = 0;
@@ -101,10 +102,7 @@ console.log("\n🔌 API 契约检查");
 
 const htmlCode = readFileSync(join(ROOT, "world-tree-console.html"), "utf-8");
 // JS 已拆分为独立文件，合并搜索上下文避免假阳性
-const jsCode = [
-  readIfExists("world-tree-console.js"),
-  readIfExists("world-tree-client-core.js"),
-].join("\n");
+const jsCode = readBrowserSource(ROOT);
 let combinedCode = htmlCode + "\n" + jsCode;
 // 附加文档和契约文件用于静态审计（模式契约、隔离文档等）
 const linkageDoc = join(ROOT, "docs/MODE_ASSET_LINKAGE_AND_RUNTIME_ISOLATION.md");

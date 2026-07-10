@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readBrowserSource } from "../../scripts/lib/browser-source.mjs";
 
 import {
   commitMechanismDrafts,
@@ -171,7 +172,7 @@ test("TurnStateFrame strips secrets, proposals, sessions and local paths", () =>
 });
 
 test("status renderers escape dynamic fields and candidate selection does not mutate frames", () => {
-  const code = readFileSync(new URL("../../world-tree-console.js", import.meta.url), "utf8");
+  const code = readBrowserSource();
   const statusBlock = code.slice(code.indexOf("function renderStatBar"), code.indexOf("function renderNarrativeContextDebug"));
   const candidateBlock = code.slice(code.indexOf("async function messageAction"), code.indexOf("async function importCharacterFile"));
   assert.ok(statusBlock.includes("U.esc(card.title"));
@@ -182,7 +183,7 @@ test("status renderers escape dynamic fields and candidate selection does not mu
 });
 
 test("mechanism draft editor is inline and validates numeric bounds", () => {
-  const code = readFileSync(new URL("../../world-tree-console.js", import.meta.url), "utf8");
+  const code = readBrowserSource();
   const editorBlock = code.slice(code.indexOf("function editMechanismDraft"), code.indexOf("function removeMechanismDraft"));
   assert.equal(editorBlock.includes("prompt("), false);
   assert.ok(code.includes('data-mechanism-field="stateSchema"') === false);
