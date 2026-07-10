@@ -155,7 +155,61 @@
     </div>`;
   }
 
+  function projectsPanel() {
+    return `<section class="grid content-projects">
+      <div class="panel-head"><div><h2>项目</h2><p class="sub">继续、导出或管理保存在本机的世界。</p></div><button class="small" data-action="refresh-modules">刷新</button></div>
+      <div class="module-grid">${AS.modules.length ? AS.modules.map(C.moduleCard).join("") : C.empty("还没有项目", "从体验或创作页开始，项目会出现在这里。")}</div>
+    </section>`;
+  }
+
+  function libraryView() {
+    const allowed = ["projects", "characters", "worldbook", "review", "alchemy", "worlddata"];
+    if (!allowed.includes(AS.libraryTab)) AS.libraryTab = "projects";
+    const tabs = [
+      { id: "projects", label: "项目", count: AS.modules.length },
+      { id: "characters", label: "人物", count: AS.characters.length },
+      { id: "worldbook", label: "世界设定", count: AS.worldbookEntries.length },
+      { id: "review", label: "待确认", count: AS.reviewItems.length },
+      { id: "alchemy", label: "创作候选" },
+      { id: "worlddata", label: "世界数据" }
+    ];
+    const body = ({ projects: projectsPanel, characters: renderCharacters, worldbook: renderWorldbook, review: renderReview, alchemy: renderAlchemy, worlddata: renderWorldData })[AS.libraryTab]();
+    return `<div class="grid content-library">
+      <header class="catalog-intro content-intro">
+        <div><span class="eyebrow">Your Library</span><h1>我的内容</h1><p>项目、人物、世界设定和候选变化都保存在这里。正式内容与待确认内容始终分开。</p></div>
+      </header>
+      <section class="content-summary">
+        <div><span>项目</span><strong>${AS.modules.length}</strong></div><div><span>人物</span><strong>${AS.characters.length}</strong></div><div><span>世界设定</span><strong>${AS.worldbookEntries.length}</strong></div><div class="${AS.reviewItems.length ? "attention" : ""}"><span>待确认</span><strong>${AS.reviewItems.length}</strong></div>
+      </section>
+      ${C.tabs(tabs, AS.libraryTab, "data-library-tab")}
+      ${body}
+    </div>`;
+  }
+
+  function settingsView() {
+    const allowed = ["connections", "narrative", "advanced"];
+    if (!allowed.includes(AS.settingsTab)) AS.settingsTab = "connections";
+    const tabs = [
+      { id: "connections", label: "模型连接", description: AS.llmConnected ? "当前模型可以使用" : AS.hasApiKey ? "密钥已保存，等待测试" : "配置服务、模型与密钥" },
+      { id: "narrative", label: "叙事与数据", description: "质量档位、本地数据与备份" },
+      { id: "advanced", label: "高级诊断", description: "日志、原始状态与维护工具" }
+    ];
+    const body = ({ connections: renderConnections, narrative: renderNarrativeSettings, advanced: renderAdvancedSettingsCard })[AS.settingsTab]();
+    return `<div class="grid product-settings">
+      <header class="catalog-intro content-intro"><div><span class="eyebrow">Settings</span><h1>设置</h1><p>先确认模型能连接，再开始体验。密钥、世界和运行记录默认只保存在本机。</p></div></header>
+      <section class="settings-readiness">
+        <div><span>模型服务</span><strong class="${AS.llmConnected ? "status-good" : "status-attention"}">${AS.llmConnected ? "已连接" : "未连接"}</strong></div>
+        <div><span>API 密钥</span><strong>${AS.hasApiKey ? "已保存在本机" : "尚未配置"}</strong></div>
+        <div><span>数据位置</span><strong>本机</strong></div>
+      </section>
+      <section class="settings-card-grid">${tabs.map(tab => `<button class="settings-card ${AS.settingsTab === tab.id ? "active" : ""}" data-action="settings-card-open" data-settings-tab="${tab.id}"><strong>${tab.label}</strong><span>${tab.description}</span></button>`).join("")}</section>
+      ${body}
+    </div>`;
+  }
+
   Views.workbench = homeView;
   Views.experiences = experiencesView;
   Views.creation = creationView;
+  Views.library = libraryView;
+  Views.settings = settingsView;
 })();

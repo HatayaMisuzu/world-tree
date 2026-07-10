@@ -102,9 +102,11 @@ for (const field of ["lastNarrative", "currentScene", "publicClocks", "resources
 
 console.log("\n4. Health / LLM status truthfulness");
 const updateHealth = functionBody(js, "updateHealth");
+const deriveLlmUiStatus = functionBody(js, "deriveLlmUiStatus");
 expect(updateHealth.includes("llmConfigured"), "updateHealth handles default /api/health llmConfigured shape", "updateHealth ignores default health llmConfigured shape");
 expect(updateHealth.includes("AS.health?.llm?.status") || updateHealth.includes("health.llm"), "updateHealth still supports full llm.status shape", "updateHealth no longer supports full health llm.status shape");
 expect(updateHealth.includes("dataWritable") || updateHealth.includes("writable"), "updateHealth handles data writable status", "updateHealth ignores data writable status");
+expect(!deriveLlmUiStatus.includes("llmConfigured &&"), "configured credentials are not mislabeled as a tested connection", "configured credentials are still shown as connected before a successful test");
 
 console.log("\n5. Progress copy truthfulness");
 expect(js.includes("progressProfile") || js.includes("getProgressStages") || js.includes("setProgressProfile"), "dynamic progress profile exists", "progress copy is still globally fixed");

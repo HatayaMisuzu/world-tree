@@ -15,6 +15,12 @@
   .creation-steps{grid-template-columns:repeat(2,1fr)}
   .creation-steps span:nth-child(2){border-right:0}
   .creation-steps span:nth-child(-n+2){border-bottom:1px solid var(--line-soft)}
+  .content-summary{grid-template-columns:repeat(2,1fr)}
+  .content-summary>div:nth-child(2){border-right:0}
+  .content-summary>div:nth-child(-n+2){border-bottom:1px solid var(--line-soft)}
+  .settings-readiness{grid-template-columns:1fr}
+  .settings-readiness>div{border-right:0;border-bottom:1px solid var(--line-soft)}
+  .settings-readiness>div:last-child{border-bottom:0}
   .app-shell{grid-template-columns:1fr}
   .sidebar{display:none}
   .topbar{position:sticky;padding:10px 12px;min-height:64px}

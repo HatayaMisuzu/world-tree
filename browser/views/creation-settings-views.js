@@ -327,26 +327,26 @@ function renderConnections() {
   const diag = AS.llmDiagnostics;
   return `<section class="layout-2">
     <div class="panel">
-      <div class="panel-head"><h2>连接档案</h2><button class="small" data-action="load-connections">刷新</button></div>
-      <div class="list">${(data.items || []).map(c => `<div class="item" data-connection-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.label || c.name)}</strong>${C.badge(c.active ? "默认" : "档案", c.active ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(c.provider || "openai-compatible")} · ${U.esc(c.model || "")}</span><div class="chip-row"><span class="chip">temp ${c.temperature ?? "-"}</span><span class="chip">max ${c.maxTokens ?? "-"}</span><span class="chip">top_p ${c.topP ?? "-"}</span><span class="chip">thinking ${U.esc(c.thinking || "auto")}</span>${c.hasApiKey ? `<span class="chip ok">key ${U.esc(c.maskedKey || "saved")}</span>` : `<span class="chip warn">no key</span>`}</div><div class="actions"><button class="small" data-action="set-default-connection">设为默认</button><button class="small" data-action="test-connection">测试</button><button class="small" data-action="duplicate-connection">复制</button><button class="small danger" data-action="delete-connection">删除</button></div></div>`).join("") || C.empty("暂无连接档案")}</div>
+      <div class="panel-head"><div><h2>已保存的模型连接</h2><p class="sub">测试成功后再用于体验；密钥正文不会显示在页面中。</p></div><button class="small" data-action="load-connections">刷新</button></div>
+      <div class="list">${(data.items || []).map(c => `<div class="item" data-connection-id="${U.esc(c.id)}"><div class="item-head"><strong>${U.esc(c.label || c.name)}</strong>${C.badge(c.active ? "当前使用" : "备用", c.active ? "ok" : "pending")}</div><span class="tiny muted">${U.esc(c.provider || "兼容服务")} · ${U.esc(c.model || "未填写模型")}</span><div class="chip-row"><span class="chip">温度 ${c.temperature ?? "默认"}</span><span class="chip">输出上限 ${c.maxTokens ?? "默认"}</span><span class="chip">Top P ${c.topP ?? "默认"}</span><span class="chip">思考 ${U.esc(c.thinking || "自动")}</span>${c.hasApiKey ? `<span class="chip ok">密钥 ${U.esc(c.maskedKey || "已保存")}</span>` : `<span class="chip warn">未配置密钥</span>`}</div><div class="actions"><button class="small" data-action="set-default-connection">设为当前</button><button class="small primary" data-action="test-connection">测试连接</button><button class="small" data-action="duplicate-connection">复制</button><button class="small danger" data-action="delete-connection">删除</button></div></div>`).join("") || C.empty("还没有模型连接", "在右侧填写服务地址、模型和密钥。")}</div>
       <div class="panel tight" style="margin-top:12px"><h3>叙事档位</h3><div class="list">${profiles.map(p => `<div class="item"><div class="item-head"><strong>${U.esc(p.label)}</strong>${C.badge(p.id === data.pipelineProfiles?.default ? "默认" : "档位", p.id === data.pipelineProfiles?.default ? "ok" : "pending")}</div><div class="chip-row"><span class="chip">质量 ${U.esc(p.quality)}</span><span class="chip">速度 ${U.esc(p.speed)}</span><span class="chip">成本 ${U.esc(p.cost)}</span></div></div>`).join("") || C.empty("暂无叙事档位")}</div></div>
       ${diag ? `<div class="panel tight" style="margin-top:12px"><div class="panel-head"><h3>最近诊断</h3>${C.badge(diag.safeToSave ? "可保存" : "需修正", diag.safeToSave ? "ok" : "bad")}</div><div class="list">${(diag.checks || []).map(c => `<div class="item"><div class="item-head"><strong>${U.esc(c.label || c.id)}</strong>${C.badge(c.status || "unknown", c.status === "ok" ? "ok" : c.status === "fail" ? "bad" : "warn")}</div><span class="tiny muted">${U.esc(c.detail || "")}</span></div>`).join("")}</div>${diag.suggestions?.length ? C.notice(U.esc(diag.suggestions.join("；")), diag.safeToSave ? "warn" : "bad") : ""}</div>` : ""}
     </div>
     <aside class="panel">
-      <h3>新增 / 更新连接</h3>
+      <h3>配置模型连接</h3>
       <label>模板<select id="connTemplate">${(data.templates || []).map(t => `<option value="${U.esc(t.id)}">${U.esc(t.label)}</option>`).join("")}</select></label>
       <label>名称<input id="connLabel" placeholder="DeepSeek / Local Ollama"></label>
-      <label>Base URL<input id="connBaseUrl" placeholder="https://api.deepseek.com/v1"></label>
-      <label>模型<input id="connModel" placeholder="deepseek-v4-flash"></label>
+      <label>服务地址（Base URL）<input id="connBaseUrl" placeholder="https://api.deepseek.com/v1"></label>
+      <label>模型名称<input id="connModel" placeholder="填写服务实际支持的模型名"></label>
       <div class="cols-3">
         <label>Temperature<input id="connTemperature" type="number" step="0.1" min="0" max="2" placeholder="0.7"></label>
         <label>Max tokens<input id="connMaxTokens" type="number" min="1" placeholder="4096"></label>
         <label>Top P<input id="connTopP" type="number" step="0.05" min="0" max="1" placeholder="1"></label>
       </div>
-      <label>Thinking<select id="connThinking"><option value="auto">Auto</option><option value="disabled">Disabled</option><option value="enabled">Enabled</option></select></label>
-      <label>API Key<input id="connKey" type="password" placeholder="留空则不覆盖"></label>
-      <div class="actions"><button class="primary" data-action="save-connection">保存档案</button><button data-action="apply-connection-template">套用模板</button></div>
-      ${C.notice("API Key 只写入本机 secrets，不进入仓库或 .worldtree。", "ok")}
+      <label>思考模式<select id="connThinking"><option value="auto">自动</option><option value="disabled">关闭</option><option value="enabled">开启</option></select></label>
+      <label>API 密钥<input id="connKey" type="password" autocomplete="off" placeholder="留空不会覆盖已保存密钥"></label>
+      <div class="actions"><button class="primary" data-action="save-connection">保存连接</button><button data-action="apply-connection-template">套用模板</button></div>
+      ${C.notice("密钥只写入本机 secrets，不进入仓库、世界包、页面日志或截图。", "ok")}
     </aside>
   </section>`;
 }
@@ -371,8 +371,8 @@ function renderNarrativeSettings() {
       </div>
       <aside class="panel settings-visual-card">
         <h2>视觉语言</h2>
-        <p class="sub">保留纸张、森林绿、手记式工作台气质，并跟随系统深色主题切换。</p>
-        <div class="chip-row"><span class="chip">cream paper</span><span class="chip ok">forest green</span><span class="chip">dark theme</span></div>
+        <p class="sub">保留纸张、森林绿与手记式工作台气质。当前版本固定使用浅色内容面与深色侧栏，避免系统主题导致信息层级漂移。</p>
+        <div class="chip-row"><span class="chip">cream paper</span><span class="chip ok">forest green</span><span class="chip">fixed product theme</span></div>
       </aside>
     </div>
     ${renderDataSettings()}

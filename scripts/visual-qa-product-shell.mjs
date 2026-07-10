@@ -56,6 +56,14 @@ async function run() {
     await page.getByText("把灵感变成可继续的世界").waitFor();
     await capture(page, "creation-desktop-1440");
 
+    await page.locator('[data-view="library"]').first().click();
+    await page.getByText("我的内容", { exact: true }).first().waitFor();
+    await capture(page, "library-desktop-1440");
+
+    await page.locator('[data-view="settings"]').first().click();
+    await page.locator(".settings-readiness").waitFor();
+    await capture(page, "settings-desktop-1440");
+
     await page.locator('[data-view="workbench"]').first().click();
     const viewports = [];
     for (const [width, height] of [[1440, 1000], [1024, 800], [768, 900], [390, 844]]) {

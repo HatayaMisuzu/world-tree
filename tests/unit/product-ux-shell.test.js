@@ -13,29 +13,35 @@ const consoleCss = [
   "browser/styles/responsive.css"
 ].map(file => readFileSync(file, "utf8")).join("\n");
 
-test("default console shell is productized as a game lobby", () => {
-  assert.match(consoleJs, /id:\s*"workbench",\s*label:\s*"大厅"/);
+test("default console shell exposes five stable product roots", () => {
+  for (const marker of [
+    'id: "workbench", label: "首页"',
+    'id: "experiences", label: "体验"',
+    'id: "library", label: "我的内容"',
+    'id: "creation", label: "创作"',
+    'id: "settings", label: "设置"'
+  ]) assert.ok(consoleJs.includes(marker), `${marker} should be present`);
   for (const phrase of [
-    "冒险大厅",
-    "继续冒险",
-    "最近世界",
-    "开始新的冒险",
-    "示例/新建"
+    "你的世界仍在生长",
+    "从目标开始",
+    "进入一个世界",
+    "与人物相遇",
+    "使用自己的内容"
   ]) {
     assert.ok(consoleJs.includes(phrase), `${phrase} should be present`);
   }
 });
 
-test("lobby entry detail exposes required first-run paths", () => {
-  for (const phrase of ["这是什么", "示例回放", "用示例开始", "导入素材", "空白开始"]) {
+test("home, experience, and creation surfaces expose first-run paths without eight-entry home clutter", () => {
+  for (const phrase of ["从示例开始", "选择一种体验", "把灵感变成可继续的世界", "快速设定", "炼金台"]) {
     assert.ok(consoleJs.includes(phrase), `${phrase} should be present`);
   }
   for (const action of [
     'data-action="install-first-run-demo"',
-    'data-action="install-example"',
     'data-action="library-alchemy"',
-    'data-action="create-world"',
-    'data-action="open-settings"'
+    'data-action="quick-start-chat"',
+    'data-view="experiences"',
+    'data-view="creation"'
   ]) {
     assert.ok(consoleJs.includes(action), `${action} should be wired`);
   }
@@ -64,7 +70,9 @@ test("settings IA is grouped into connection, narrative, and advanced cards", ()
     "settings-card-grid",
     "renderNarrativeSettings",
     "renderAdvancedSettingsCard",
-    "test-connection"
+    "test-connection",
+    "我的内容",
+    "settings-readiness"
   ]) {
     assert.ok(consoleJs.includes(marker), `${marker} should be present`);
   }

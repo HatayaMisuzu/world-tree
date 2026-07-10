@@ -89,6 +89,7 @@ async function connectionAction(action, id) {
   const res = await API.connections({ action: map[action], id });
   if (action === "test-connection") {
     AS.llmDiagnostics = res;
+    AS.llmConnected = res.status === "ok";
     createToast(res.status === "ok" || res.status === "partial" ? `诊断完成 ${res.latencyMs || 0}ms` : (res.errorMsg || "连接失败"), res.status === "ok" ? "" : res.status === "partial" ? "warn" : "bad");
     render();
   }
@@ -164,7 +165,7 @@ async function updateHealth() {
 function deriveLlmUiStatus(health = {}, config = {}, hasApiKey = false) {
   const llmConfigured = Boolean(health?.llmConfigured ?? health?.llm?.configured ?? hasApiKey);
   const status = String(health?.llm?.status || "").toLowerCase();
-  const connected = status === "connected" || Boolean(health?.llm?.connected) || (llmConfigured && Boolean(config?.llmBaseUrl || config?.llmModel));
+  const connected = status === "connected" || Boolean(health?.llm?.connected);
   const dataWritable = Boolean(health?.data?.writable ?? health?.dataWritable ?? health?.writable);
   return { connected, llmConfigured, dataWritable, status };
 }

@@ -138,7 +138,7 @@ function strategySimV2DefaultSpec() {
 const AS = {
   view: "workbench",
   workbenchMode: "overview",
-  libraryTab: "characters",
+  libraryTab: "projects",
   observeTab: "summary",
   settingsTab: "connections",
   activeDrawer: "",

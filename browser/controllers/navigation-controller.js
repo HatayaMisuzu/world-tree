@@ -276,6 +276,7 @@ function bindEvents() {
       AS.view = btn.dataset.view;
       APP_STORE?.dispatch({ type: "navigation/view", view: AS.view });
       if (AS.view === "workbench") AS.workbenchMode = "overview";
+      if (AS.view === "library") AS.libraryTab = "projects";
       await loadViewData();
       render();
     };
