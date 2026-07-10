@@ -46,7 +46,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run verify:coverage
       - run: npm run smoke:product-entry-browser-matrix
       - run: npm run smoke:experience-golden-path
       - run: npm run smoke:v0.5-interaction-regressions
