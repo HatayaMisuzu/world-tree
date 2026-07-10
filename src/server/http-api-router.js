@@ -465,7 +465,9 @@ export function createHttpApiRouter(deps = {}) {
         const checkLlmRemote = fullDetail && url.searchParams.get("checkLlm") !== "false";
         const config = await loadConfig();
         const apiKey = await getActiveLlmValue();
-        const llmConfigured = Boolean(config.llmBaseUrl && config.llmModel && apiKey);
+        const llmProfileConfigured = Boolean(config.llmBaseUrl && config.llmModel);
+        const hasApiKey = Boolean(apiKey);
+        const llmConfigured = llmProfileConfigured && hasApiKey;
         let llmStatus = llmConfigured ? "configured" : "not_configured";
         let llmDetail = "";
         if (llmConfigured && checkLlmRemote) {
@@ -519,7 +521,8 @@ export function createHttpApiRouter(deps = {}) {
             llm: {
               status: llmStatus,
               configured: llmConfigured,
-              hasApiKey: Boolean(apiKey),
+              profileConfigured: llmProfileConfigured,
+              hasApiKey,
               model: config.llmModel,
               baseUrl: config.llmBaseUrl,
               detail: llmDetail
@@ -534,6 +537,8 @@ export function createHttpApiRouter(deps = {}) {
           version: PKG_VERSION,
           uptime: Math.round(process.uptime()),
           llmConfigured,
+          llmProfileConfigured,
+          llmHasApiKey: hasApiKey,
           dataWritable: writable,
           latestVersion: hasUpdate ? latestVersion : null,
           debug: DEBUG_MODE ? { debugMode: true } : undefined

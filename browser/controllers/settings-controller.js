@@ -80,6 +80,7 @@ async function saveConnection() {
   };
   AS.connections = await API.connections({ action: "upsert", profile, setDefault: true });
   const active = AS.connections?.items?.find(item => item.active) || AS.connections?.items?.[0];
+  AS.profileConfigured = Boolean(active?.baseUrl && active?.model);
   AS.hasApiKey = Boolean(active?.hasApiKey || profile.apiKey);
   AS.llmConnected = false;
   AS.llmDiagnostics = null;
@@ -93,14 +94,20 @@ async function connectionAction(action, id) {
   if (action === "test-connection") {
     AS.llmDiagnostics = res;
     AS.llmConnected = res.status === "ok";
-    AS.hasApiKey = AS.hasApiKey || Boolean(res.hasApiKey || res.safeToSave);
+    AS.hasApiKey = AS.hasApiKey || Boolean(res.hasApiKey);
     createToast(res.status === "ok" || res.status === "partial" ? `诊断完成 ${res.latencyMs || 0}ms` : (res.errorMsg || "连接失败"), res.status === "ok" ? "" : res.status === "partial" ? "warn" : "bad");
     render();
   }
   else {
     AS.connections = res;
     const active = AS.connections?.items?.find(item => item.active) || AS.connections?.items?.[0];
+    AS.profileConfigured = Boolean(active?.baseUrl && active?.model);
     AS.hasApiKey = Boolean(active?.hasApiKey);
+    if (!active) {
+      AS.config.llmBaseUrl = "";
+      AS.config.llmModel = "";
+      if (AS.health) AS.health.llmProfileConfigured = false;
+    }
     AS.llmConnected = false;
     AS.llmDiagnostics = null;
     render();
@@ -150,6 +157,7 @@ function createToast(msg, tone = "") {
 }
 
 async function updateHealth() {
+  const before = `${AS.profileConfigured}:${AS.hasApiKey}:${AS.llmConnected}`;
   try {
     AS.health = await API.health();
     const [workflowStatus, workflowTypes] = await Promise.all([
@@ -164,32 +172,46 @@ async function updateHealth() {
     const legacyLlmStatus = AS.health?.llm?.status;
     const llmStatus = deriveLlmUiStatus(AS.health, AS.config, AS.hasApiKey);
     const dataWritable = llmStatus.dataWritable;
-    AS.hasApiKey = llmStatus.llmConfigured || AS.hasApiKey;
+    AS.health.legacyLlmConfigured = llmStatus.llmConfigured;
+    AS.profileConfigured = llmStatus.profileConfigured;
+    AS.hasApiKey = AS.hasApiKey || llmStatus.hasApiKey;
     if (llmStatus.authoritativeConnection) AS.llmConnected = llmStatus.connected;
     AS.health.dataWritable = dataWritable;
     AS.health.legacyLlmStatus = legacyLlmStatus || llmStatus.status || "";
     const debug = U.qs("#debugToggle");
     if (debug && AS.health?.debugMode) debug.style.display = "block";
+    const after = `${AS.profileConfigured}:${AS.hasApiKey}:${AS.llmConnected}`;
+    if (before !== after && typeof render === "function") render();
   } catch (err) { console.warn("[health] status refresh failed (non-fatal):", err?.message || "unknown error"); }
 }
 
 function deriveLlmUiStatus(health = {}, config = {}, hasApiKey = false) {
-  const llmConfigured = Boolean(health?.llmConfigured ?? health?.llm?.configured ?? hasApiKey);
+  const profileConfigured = Boolean(
+    health?.llmProfileConfigured
+    ?? health?.llm?.profileConfigured
+    ?? (health?.llmConfigured ?? Boolean(config?.llmBaseUrl && config?.llmModel))
+  );
+  const actualHasApiKey = Boolean(health?.llmHasApiKey ?? health?.llm?.hasApiKey ?? hasApiKey);
+  const llmConfigured = profileConfigured && actualHasApiKey;
   const status = String(health?.llm?.status || "").toLowerCase();
   const authoritativeConnection = Boolean(health?.llm && ("status" in health.llm || "connected" in health.llm));
   const connected = status === "connected" || health?.llm?.connected === true;
   const dataWritable = Boolean(health?.data?.writable ?? health?.dataWritable ?? health?.writable);
-  return { connected, llmConfigured, dataWritable, status, authoritativeConnection };
+  return { connected, profileConfigured, hasApiKey: actualHasApiKey, llmConfigured, dataWritable, status, authoritativeConnection };
 }
 
 function getModelConnectionUiState() {
   const diagnosticsStatus = String(AS.llmDiagnostics?.status || "").toLowerCase();
-  const configured = Boolean(AS.hasApiKey || AS.health?.llmConfigured || AS.health?.llm?.configured);
-  if (AS.llmConnected) return { id: "connected", label: "已连接", tone: "ok", configured: true, connected: true };
-  if (diagnosticsStatus === "partial") return { id: "partial", label: "已保存，部分响应", tone: "warn", configured: true, connected: false };
-  if (diagnosticsStatus === "error" || diagnosticsStatus === "fail") return { id: "failed", label: "已保存，测试失败", tone: "bad", configured, connected: false };
-  if (configured) return { id: "saved", label: "已保存，待测试", tone: "pending", configured: true, connected: false };
-  return { id: "unconfigured", label: "未配置", tone: "warn", configured: false, connected: false };
+  const profileConfigured = typeof AS.profileConfigured === "boolean"
+    ? AS.profileConfigured
+    : Boolean(AS.health?.llmProfileConfigured || AS.health?.llm?.profileConfigured || (AS.config?.llmBaseUrl && AS.config?.llmModel));
+  const hasApiKey = Boolean(AS.hasApiKey);
+  const base = { profileConfigured, hasApiKey, connected: false };
+  if (AS.llmConnected) return { ...base, id: "connected", label: "\u5df2\u8fde\u63a5", tone: "ok", connected: true };
+  if (diagnosticsStatus === "partial") return { ...base, id: "partial", label: "\u5df2\u4fdd\u5b58\uff0c\u90e8\u5206\u54cd\u5e94", tone: "warn" };
+  if (diagnosticsStatus === "error" || diagnosticsStatus === "fail") return { ...base, id: "failed", label: "\u5df2\u4fdd\u5b58\uff0c\u6d4b\u8bd5\u5931\u8d25", tone: "bad" };
+  if (profileConfigured) return { ...base, id: "saved", label: "\u5df2\u4fdd\u5b58\uff0c\u5f85\u6d4b\u8bd5", tone: "pending" };
+  return { ...base, id: "unconfigured", label: "\u672a\u914d\u7f6e", tone: "warn" };
 }
 
 globalThis.WorldTreeConnectionState = Object.freeze({ deriveLlmUiStatus });

@@ -20,7 +20,7 @@ test("project facts parse final TAP count and npm pack metadata", () => {
 test("project facts reject stale head, counts, package metadata, and playable claims", () => {
   const valid = {
     schemaVersion: 1,
-    version: "0.5.0-product-experience-rebuild.0",
+    version: "0.5.0-product-experience-rebuild.1",
     head: "a".repeat(40),
     generatedAt: new Date().toISOString(),
     unitTests: 1,

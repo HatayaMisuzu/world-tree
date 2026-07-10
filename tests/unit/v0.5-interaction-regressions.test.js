@@ -33,27 +33,69 @@ test("character search filters existing cards without rerendering and restores t
   assert.equal(runtime.AS.characterQuery, "");
 });
 
-test("model connection state distinguishes saved, connected, partial, and authoritative health", () => {
+test("model state keeps profile, key, connection, and diagnostics separate", async () => {
+  let renderCount = 0;
   const runtime = load("browser/controllers/settings-controller.js", {
-    AS: { hasApiKey: true, llmConnected: false, llmDiagnostics: null, health: { llmConfigured: true } }
+    AS: {
+      profileConfigured: true,
+      hasApiKey: false,
+      llmConnected: false,
+      llmDiagnostics: null,
+      health: { llmProfileConfigured: true, llmHasApiKey: false },
+      config: { llmBaseUrl: "mock://local", llmModel: "mock-model" },
+      workflowStatus: null,
+      workflowTypes: []
+    },
+    U: { qs: () => null },
+    CFG: { version: "test" },
+    render: () => { renderCount += 1; },
+    API: {
+      health: async () => ({ llmProfileConfigured: true, llmHasApiKey: false, dataWritable: true }),
+      workflowStatus: async () => null,
+      workflowTypes: async () => ({ types: [] }),
+      connections: async ({ action }) => action === "delete" ? { items: [] } : { items: [{ id: "local", baseUrl: "mock://local", model: "mock-model", active: true, hasApiKey: false }] }
+    },
+    setTimeout,
+    console
   });
-  const saved = runtime.WorldTreeConnectionState.deriveLlmUiStatus({ llmConfigured: true }, {}, true);
-  assert.equal(saved.connected, false);
-  assert.equal(saved.llmConfigured, true);
-  assert.equal(saved.authoritativeConnection, false);
-  assert.equal(runtime.WorldTreeConnectionState.deriveLlmUiStatus({ llm: { configured: true, status: "connected" } }, {}, true).authoritativeConnection, true);
-  assert.equal(runtime.getModelConnectionUiState().id, "saved");
+
+  const state = runtime.getModelConnectionUiState();
+  assert.equal(state.id, "saved");
+  assert.equal(state.profileConfigured, true);
+  assert.equal(state.hasApiKey, false);
+  assert.equal(state.connected, false);
+  assert.equal(runtime.WorldTreeConnectionState.deriveLlmUiStatus({ llmProfileConfigured: true, llmHasApiKey: false }, {}, false).hasApiKey, false);
+
   runtime.AS.llmDiagnostics = { status: "partial" };
   assert.equal(runtime.getModelConnectionUiState().id, "partial");
+  assert.equal(runtime.getModelConnectionUiState().connected, false);
   runtime.AS.llmDiagnostics = { status: "error" };
   assert.equal(runtime.getModelConnectionUiState().id, "failed");
+  assert.equal(runtime.getModelConnectionUiState().connected, false);
+
   runtime.AS.llmConnected = true;
   assert.equal(runtime.getModelConnectionUiState().id, "connected");
+  await runtime.updateHealth();
+  assert.equal(runtime.AS.llmConnected, true, "basic health refresh must not erase a successful explicit test");
+
+  runtime.AS.llmConnected = true;
+  await runtime.connectionAction("set-default-connection", "local");
+  assert.equal(runtime.AS.llmConnected, false, "switching default returns to waiting-to-test");
+  runtime.AS.profileConfigured = true;
+  runtime.AS.hasApiKey = true;
+  await runtime.connectionAction("delete-connection", "local");
+  assert.equal(runtime.getModelConnectionUiState().id, "unconfigured", "deleting the last profile resets state");
+  assert.equal(runtime.AS.hasApiKey, false);
+  assert.ok(renderCount >= 2, "state transitions and health changes refresh the UI");
 });
 
-test("release scripts expose the interaction regression gate", () => {
+test("release and CI gates include browser regressions and independent coverage", () => {
   const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+  const ci = readFileSync(".github/workflows/ci.yml", "utf8");
   assert.match(packageJson.scripts["verify:release"], /verify:coverage/);
   assert.match(packageJson.scripts["verify:browser"], /smoke:v0\.5-interaction-regressions/);
-  assert.match(readFileSync(".github/workflows/ci.yml", "utf8"), /browser-quality:/);
+  assert.match(ci, /browser-quality:/);
+  assert.match(ci, /coverage:/);
+  assert.match(ci, /node-version: 22\.x/);
+  assert.match(ci, /npm run verify:coverage/);
 });

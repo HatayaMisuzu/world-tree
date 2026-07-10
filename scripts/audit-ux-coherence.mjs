@@ -106,6 +106,7 @@ const deriveLlmUiStatus = functionBody(js, "deriveLlmUiStatus");
 expect(updateHealth.includes("llmConfigured"), "updateHealth handles default /api/health llmConfigured shape", "updateHealth ignores default health llmConfigured shape");
 expect(updateHealth.includes("AS.health?.llm?.status") || updateHealth.includes("health.llm"), "updateHealth still supports full llm.status shape", "updateHealth no longer supports full health llm.status shape");
 expect(updateHealth.includes("dataWritable") || updateHealth.includes("writable"), "updateHealth handles data writable status", "updateHealth ignores data writable status");
+expect(updateHealth.includes("before") && updateHealth.includes("after") && updateHealth.includes("render()"), "health refresh updates the visible UI when state changes", "health refresh mutates state without rendering");
 expect(!deriveLlmUiStatus.includes("llmConfigured &&"), "configured credentials are not mislabeled as a tested connection", "configured credentials are still shown as connected before a successful test");
 
 console.log("\n4b. Interaction regression boundaries");
@@ -113,6 +114,9 @@ expect(js.includes("applyCharacterSearchFilter") && js.includes("characterSearch
 expect(tabletopTurn.includes("finally") && tabletopTurn.includes("render()"), "Tabletop V2 renders after busy cleanup", "Tabletop V2 can leave stale busy UI after a turn");
 expect(js.includes("authoritativeConnection") && js.includes("已保存"), "model state distinguishes saved from connected", "model state collapses saved credentials into connected");
 expect(server.includes("[API:FATAL]") && server.includes("res.writableEnded"), "API async boundary guards rejected handlers", "API async boundary lacks a final rejected-handler guard");
+
+expect(js.includes("Boolean(res.hasApiKey)") && !js.includes("res.safeToSave"), "safeToSave is not treated as an API key", "safeToSave still contaminates API key state");
+expect(js.includes("data-model-api-key-status") && js.includes("hasApiKey"), "settings API key copy uses actual key state", "settings API key copy still uses profile/configured state");
 
 console.log("\n5. Progress copy truthfulness");
 expect(js.includes("progressProfile") || js.includes("getProgressStages") || js.includes("setProgressProfile"), "dynamic progress profile exists", "progress copy is still globally fixed");
@@ -138,6 +142,8 @@ console.log("\n7. Audit wiring");
 expect(pkg.includes("ux:check"), "package.json has ux:check", "package.json missing ux:check script");
 expect(pkg.includes("test:feature-alias"), "package.json has test:feature-alias", "package.json missing test:feature-alias script");
 expect(pkg.includes("audit-ux-coherence.mjs"), "ux audit script wired in package.json", "audit-ux-coherence.mjs not wired in package.json");
+const ci = read(".github/workflows/ci.yml");
+expect(ci.includes("coverage:") && ci.includes("node-version: 22.x") && ci.includes("npm run verify:coverage"), "GitHub Actions has an independent Node 22 coverage job", "GitHub Actions coverage job is missing or uses an unsupported Node version");
 
 console.log("\n8. V2 runtime service route aliases are not product-count aliases");
 const routeSource = `${server}\n${v2RouteContent}`;

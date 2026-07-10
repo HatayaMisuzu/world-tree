@@ -232,7 +232,9 @@ export function createConnectionRuntime(deps = {}) {
     if (action === "test") {
       const item = raw.items.find(i => i.id === body.id) || body.profile;
       if (!item) return { status: "error", errorMsg: "连接档案不存在。" };
-      return testConnectionProfile(item);
+      const result = await testConnectionProfile(item);
+      const apiKey = await secretValueById(item.apiKeySecretId || item.id);
+      return { ...result, hasApiKey: Boolean(apiKey) };
     }
   
     const profile = body.profile || body;

@@ -20,9 +20,11 @@ test("health defaults to lightweight local status and full detail computes size"
     const basic = await api(server, "/api/health");
     assert.equal(basic.status, 200);
     assert.equal(basic.body.status, "ok");
-    assert.equal(basic.body.version, "0.5.0-product-experience-rebuild.0");
+    assert.equal(basic.body.version, "0.5.0-product-experience-rebuild.1");
     assert.equal(typeof basic.body.uptime, "number");
     assert.equal(typeof basic.body.llmConfigured, "boolean");
+    assert.equal(typeof basic.body.llmProfileConfigured, "boolean");
+    assert.equal(typeof basic.body.llmHasApiKey, "boolean");
     assert.equal(typeof basic.body.dataWritable, "boolean");
     // 默认不包含 data、llm 详细信息
     assert.equal("data" in basic.body, false);
@@ -34,6 +36,8 @@ test("health defaults to lightweight local status and full detail computes size"
     assert.equal(typeof full.body.data.sizeBytes, "number");
     assert.equal(typeof full.body.data.sizeTruncated, "boolean");
     assert.equal(typeof full.body.data.entries, "number");
+    assert.equal(typeof full.body.llm.profileConfigured, "boolean");
+    assert.equal(typeof full.body.llm.hasApiKey, "boolean");
   } finally {
     await server.stop();
     await removeTempDir(dataDir);

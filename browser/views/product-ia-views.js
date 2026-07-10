@@ -199,7 +199,7 @@
       <header class="catalog-intro content-intro"><div><span class="eyebrow">Settings</span><h1>设置</h1><p>先确认模型能连接，再开始体验。密钥、世界和运行记录默认只保存在本机。</p></div></header>
       <section class="settings-readiness">
         <div><span>模型服务</span><strong class="${getModelConnectionUiState().tone === "ok" ? "status-good" : "status-attention"}">${U.esc(getModelConnectionUiState().label)}</strong></div>
-        <div><span>API 密钥</span><strong>${getModelConnectionUiState().configured ? "已保存在本机" : "尚未配置"}</strong></div>
+        <div><span>API 密钥</span><strong data-model-api-key-status>${getModelConnectionUiState().hasApiKey ? "已保存在本机" : getModelConnectionUiState().profileConfigured ? "未保存密钥" : "尚未配置"}</strong></div>
         <div><span>数据位置</span><strong>本机</strong></div>
       </section>
       <section class="settings-card-grid">${tabs.map(tab => `<button class="settings-card ${AS.settingsTab === tab.id ? "active" : ""}" data-action="settings-card-open" data-settings-tab="${tab.id}"><strong>${tab.label}</strong><span>${tab.description}</span></button>`).join("")}</section>

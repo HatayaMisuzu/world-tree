@@ -5,13 +5,13 @@
 
 World Tree is a local-first AI narrative engine with a browser-based web console. It runs as a plain Node.js HTTP server: no Electron, no build step, and no external runtime service beyond the LLM endpoint you configure.
 
-Current version: `v0.5.0-product-experience-rebuild.0`.
+Current version: `v0.5.0-product-experience-rebuild.1`.
 
 **Full V2 is not complete.** V2 Entry Closure is engineering/service closure for selected entries, not product-wide playable closure. Several entries are experimental slices or service-level closures.
 
 Chinese documentation: [README.md](README.md)
 
-> Current truth-source version: `0.5.0-product-experience-rebuild.0`.
+> Current truth-source version: `0.5.0-product-experience-rebuild.1`.
 > Read first: `docs/PROJECT_TRUTH_SOURCE.md`, `docs/CURRENT_PROJECT_STATE.md`, `docs/V2_ENGINEERING_CLOSURE_STATUS.md`.
 > Full product-wide V2 and product-wide playable closure are not complete.
 > Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is incomplete.

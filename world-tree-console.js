@@ -143,6 +143,7 @@ const AS = {
   settingsTab: "connections",
   activeDrawer: "",
   config: {},
+  profileConfigured: false,
   hasApiKey: false,
   llmConnected: false,
   llmTestResult: "",
@@ -268,7 +269,12 @@ async function init() {
   } catch (err) { console.warn("[init] examples unavailable (non-fatal):", err?.message || "unknown error"); }
   await refreshModules().catch(err => createToast(`模块加载失败：${err.message}`, "bad"));
   await Promise.all([
-    API.connections().then(d => { AS.connections = d; }).catch(() => {}),
+    API.connections().then(d => {
+      AS.connections = d;
+      const active = d?.items?.find(item => item.active) || d?.items?.[0];
+      AS.profileConfigured = Boolean(active?.baseUrl && active?.model) || Boolean(AS.config.llmBaseUrl && AS.config.llmModel);
+      AS.hasApiKey = Boolean(active?.hasApiKey) || AS.hasApiKey;
+    }).catch(() => {}),
     API.alchemyReview().then(d => { AS.reviewItems = d.items || []; }).catch(() => {}),
     updateHealth(),
   ]);

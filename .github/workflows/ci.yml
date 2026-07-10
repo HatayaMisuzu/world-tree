@@ -50,3 +50,14 @@ jobs:
       - run: npm run smoke:experience-golden-path
       - run: npm run smoke:v0.5-interaction-regressions
       - run: npm run qa:visual-shell
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:coverage

@@ -65,13 +65,17 @@ try {
   await page.locator("#connLabel").fill("Local regression model");
   await page.locator("#connBaseUrl").fill("mock://local");
   await page.locator("#connModel").fill("mock-model");
-  await page.locator("#connKey").fill("fake-local-key");
+  await page.locator("#connKey").fill("");
   await page.locator('[data-action="save-connection"]').click();
   await page.locator(".settings-readiness strong.status-attention").first().waitFor();
   record("model_saved_state", await page.locator(".settings-readiness strong.status-attention").first().count() === 1, "saved credentials wait for an explicit test");
+  const keyStatus = page.locator("[data-model-api-key-status]");
+  record("local_provider_key_not_saved", (await keyStatus.textContent()).trim() === "未保存密钥", `status=${await keyStatus.textContent()}`);
   await page.locator('[data-action="test-connection"]').first().click();
   await page.locator(".settings-readiness strong.status-good").first().waitFor();
   record("model_connected_state", await page.locator(".settings-readiness strong.status-good").first().count() === 1, "successful connection test becomes connected");
+  await page.evaluate(() => updateHealth());
+  record("model_connected_survives_health_refresh", (await page.locator(".settings-readiness strong").first().textContent()).trim() === "已连接", "health refresh preserves the authoritative test result");
 
   await page.locator('#primaryNav [data-view="experiences"]').click();
   await page.locator("#tabletopText").fill("A quiet tavern beside a foggy road.");

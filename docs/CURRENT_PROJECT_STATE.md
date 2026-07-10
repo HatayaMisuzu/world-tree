@@ -1,6 +1,6 @@
 # Current Project State
 
-Version: `0.5.0-product-experience-rebuild.0`
+Version: `0.5.0-product-experience-rebuild.1`
 Status: CURRENT TRUTH SOURCE  
 Audience: AI agents, maintainers, reviewers.
 
@@ -27,7 +27,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 
 | Item | Value |
 |---|---|
-| Current truth-source version | `0.5.0-product-experience-rebuild.0` |
+| Current truth-source version | `0.5.0-product-experience-rebuild.1` |
 | Trusted Baseline | Machine facts from `npm run facts:generate` |
 | Current branch | Read from generated `output/project-facts.json` |
 | Latest audited commit | Read from generated `output/project-facts.json` |
