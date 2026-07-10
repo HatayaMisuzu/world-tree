@@ -1,0 +1,146 @@
+{
+  "status": "PASS",
+  "provider": {
+    "id": "openai-compatible",
+    "baseUrl": "https://api.deepseek.com/v1",
+    "model": "deepseek-v4-flash"
+  },
+  "exampleId": "demo-world-cloud-steam-city",
+  "moduleKey": "demo-world-cloud-steam-city",
+  "assertions": [
+    {
+      "id": "install_demo_world",
+      "ok": true,
+      "detail": "install status ok"
+    },
+    {
+      "id": "turn_1_status_ok",
+      "ok": true,
+      "detail": "status=ok; code="
+    },
+    {
+      "id": "turn_1_not_local_fallback",
+      "ok": true,
+      "detail": "local fallback is not real LLM evidence"
+    },
+    {
+      "id": "turn_1_narrative_length",
+      "ok": true,
+      "detail": "narrative length 839"
+    },
+    {
+      "id": "turn_2_status_ok",
+      "ok": true,
+      "detail": "status=ok; code="
+    },
+    {
+      "id": "turn_2_not_local_fallback",
+      "ok": true,
+      "detail": "local fallback is not real LLM evidence"
+    },
+    {
+      "id": "turn_2_narrative_length",
+      "ok": true,
+      "detail": "narrative length 756"
+    },
+    {
+      "id": "turn_3_status_ok",
+      "ok": true,
+      "detail": "status=ok; code="
+    },
+    {
+      "id": "turn_3_not_local_fallback",
+      "ok": true,
+      "detail": "local fallback is not real LLM evidence"
+    },
+    {
+      "id": "turn_3_narrative_length",
+      "ok": true,
+      "detail": "narrative length 1223"
+    },
+    {
+      "id": "third_turn_context_memory_minimum",
+      "ok": true,
+      "detail": "messages before turn 3 include 雾铃塔"
+    },
+    {
+      "id": "chat_jsonl_six_records",
+      "ok": true,
+      "detail": "chat.jsonl record count 6"
+    },
+    {
+      "id": "no_hidden_truth_or_secret_leak",
+      "ok": true,
+      "detail": "no forbidden evidence markers"
+    }
+  ],
+  "turns": [
+    {
+      "turn": 1,
+      "status": "ok",
+      "narrativeChars": 839,
+      "localFallback": false,
+      "persistedTurnId": "turn-1",
+      "usage": {
+        "promptTokens": 3725,
+        "completionTokens": 889,
+        "totalTokens": 4614,
+        "cacheHitTokens": 2944,
+        "cacheMissTokens": 781,
+        "reasoningTokens": 0,
+        "estimatedCostCny": 0,
+        "stageCount": 2
+      },
+      "contextContainsFirstTerm": true
+    },
+    {
+      "turn": 2,
+      "status": "ok",
+      "narrativeChars": 756,
+      "localFallback": false,
+      "persistedTurnId": "turn-2",
+      "usage": {
+        "promptTokens": 4512,
+        "completionTokens": 883,
+        "totalTokens": 5395,
+        "cacheHitTokens": 2176,
+        "cacheMissTokens": 2336,
+        "reasoningTokens": 0,
+        "estimatedCostCny": 0,
+        "stageCount": 2
+      },
+      "contextContainsFirstTerm": true
+    },
+    {
+      "turn": 3,
+      "status": "ok",
+      "narrativeChars": 1223,
+      "localFallback": false,
+      "persistedTurnId": "turn-3",
+      "usage": {
+        "promptTokens": 5020,
+        "completionTokens": 1086,
+        "totalTokens": 6106,
+        "cacheHitTokens": 2176,
+        "cacheMissTokens": 2844,
+        "reasoningTokens": 0,
+        "estimatedCostCny": 0,
+        "stageCount": 2
+      },
+      "contextContainsFirstTerm": true
+    }
+  ],
+  "usage": {
+    "promptTokens": 13257,
+    "completionTokens": 2858,
+    "totalTokens": 16115,
+    "cacheHitTokens": 7296,
+    "cacheMissTokens": 5961,
+    "reasoningTokens": 0,
+    "estimatedCostCny": 0,
+    "stageCount": 3
+  },
+  "usageCompleteness": "complete_for_chat_turns",
+  "note": "PASS requires a real provider key supplied through environment variables. Human playtest and screen recording are still HUMAN_VALIDATION_REQUIRED.",
+  "generatedAt": "2026-07-10T06:52:57.161Z"
+}

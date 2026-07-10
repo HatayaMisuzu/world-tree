@@ -34,6 +34,15 @@ Batch execution proceeded in order from batch-00 through batch-11 with targeted 
 
 Historical reports may describe past limitations or past completion claims. They are not current truth if they conflict with the files above.
 
+## v0.5 product-experience evidence
+
+- Five global roots: 首页、体验、我的内容、创作、设置.
+- Eight canonical entries preserved; browser matrix PASS 8/8 with zero console errors or failed responses.
+- Visual shell PASS at 1440, 1024, 768, and 390 pixels with no horizontal overflow.
+- Shared experience golden path PASS for three streamed turns, proposal confirmation, automatic save, return/continue, world-pack preparation, partial abort/retry boundary, and mobile layout.
+- DeepSeek V4 Flash isolated test-copy smoke PASS on 2026-07-10 for three turns with no local fallback; 16,115 exposed tokens, including 7,296 cache-hit tokens. Key not recorded.
+- These are automated and selected-provider path facts. Human playtest and screen recording remain `HUMAN_VALIDATION_REQUIRED`; `PLAYABLE` remains `NO`.
+
 ## Current version baseline
 
 | Item | Value |
@@ -62,7 +71,7 @@ Historical reports may describe past limitations or past completion claims. They
 | Full-function LLM prompt entry audit | PASS for local prompt contract coverage; DeepSeek live provider smoke recorded for selected paths |
 | Current documentation status | post-merge user-created content product closure alignment |
 | Remote CI | GitHub Actions check-runs PASS when `npm run ci:github-actions-checks` records completed successful check-runs; legacy combined status may remain pending/0 |
-| Browser QA | 8/8 product entry browser matrix PASS for reachability, next-step clarity, and selected V2 API product loops; human/manual PLAYABLE QA NOT COMPLETE |
+| Browser QA | 8/8 entry matrix, four-viewport visual shell, and shared experience golden path PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
 | Release package static assets | `ui-labels.js` static serving and npm pack inclusion fixed in current closure sprint |
 | fable5 overlay | fable5 revised four-file packet, batch 00-11 engineering run completed |
 
@@ -102,7 +111,7 @@ Historical reports may describe past limitations or past completion claims. They
 - `demo-character` and `demo-scriptkill` are DEFERRED_AFTER_FIRST_PLAY_CANDIDATE unless real content package files are added and validated.
 - Engineering foundation complete does not imply product closure complete.
 - Engineering/service closure complete does not imply full gameplay engine complete.
-- Streaming abort currently guarantees frontend stop only; partial assistant text is not guaranteed to be persisted server-side unless a future `truncatedByUser` / `status: "partial"` path is implemented and tested.
+- Streaming abort keeps a labeled partial fragment only in the current page and never claims a completed server turn; input restoration is tested. Durable truncated-turn persistence is not implemented or claimed.
 - Historical archive documents must not override current truth-source files.
 - Asset/function inventory is a preservation ledger and evidence index; it is not by itself proof that a capability is implemented.
 

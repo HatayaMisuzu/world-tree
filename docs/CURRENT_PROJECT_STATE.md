@@ -6,6 +6,12 @@ Audience: AI agents, maintainers, reviewers.
 
 Any AI agent taking over this repository must read this file and `docs/PROJECT_TRUTH_SOURCE.md` first.
 
+## v0.5 product-experience rebuild
+
+The `codex/v0.5-product-experience-rebuild` branch rebuilds the user-facing product without adding a ninth feature or changing the candidate/proposal/canon authority boundary. The global IA is now 首页、体验、我的内容、创作、设置. Automated evidence includes the 8/8 product entry matrix, four-viewport visual QA, and a browser golden path covering three streamed turns, explicit proposal confirmation, automatic save, Home return/continue, world-pack preparation, partial-stream abort, input restoration, and mobile workspace layout.
+
+The same tracked source was synchronized without deletion into `D:\工作台\新建文件夹` for a real DeepSeek V4 Flash smoke on 2026-07-10. Three turns passed with no local fallback, six persisted chat records, third-turn context continuity, and 16,115 exposed tokens total (7,296 cache-hit). The key was supplied only by process environment and prefix scans found zero persisted occurrences in the repository, test copy, and smoke report directory.
+
 ## fable5 productization run
 
 The fable5 revised four-file packet in `docs/plans/` was the execution scope for the batch-gated productization run:
@@ -47,7 +53,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | Screen recording | HUMAN_VALIDATION_REQUIRED |
 | Remote CI | GitHub Actions check-runs PASS when `npm run ci:github-actions-checks` records completed successful check-runs; legacy combined status may remain UNKNOWN/pending/0 |
 | Productization merge CI | Use check-runs evidence, not legacy combined status alone; legacy status may still report UNKNOWN |
-| Browser QA | 8/8 product entry browser matrix PASS for reachability, next-step clarity, and selected V2 API product loops; human/manual PLAYABLE QA NOT COMPLETE |
+| Browser QA | 8/8 entry matrix PASS; 1440/1024/768/390 visual QA PASS; shared experience golden path PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
 | Release package static assets | `ui-labels.js` is served by the local server and included in package verification |
 | Truth-source priority | `PROJECT_TRUTH_SOURCE` > `CURRENT_PROJECT_STATE` > `V2_ENGINEERING_CLOSURE_STATUS` > `V2_ENTRY_COMPLETION_STATUS` > current-facing docs > archive |
 | Asset/function inventory role | preservation ledger / evidence index; not proof by itself |
@@ -97,7 +103,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 - Human playtest and screen recording remain HUMAN_VALIDATION_REQUIRED.
 - fable5 smoke and PLAYABLE claims require real LLM evidence, human playtest evidence, and screen recording evidence; missing credentials or human validation must be labeled, not converted into PASS.
 - Selected V2 API/service closure is improved for user-provided/structural content across Worldbook V2, Strategy Sim V2, Tabletop, Detective, and ScriptKill.
-- Browser/UI entry flows for all 8 canonical entries now have a dedicated automated browser matrix PASS for reachability, next-step clarity, clean browser health, and selected V2 API product loops.
+- Browser/UI entry flows for all 8 canonical entries have a dedicated automated browser matrix PASS, and the shared experience has a three-turn browser golden path with save/continue/export/abort evidence.
 - Full product-wide playable closure remains incomplete.
 - Full-function LLM prompt entry audit covers local prompt contracts for all 8 product entries. DeepSeek live behavior is selected-path only; exposed first-play/user-content chat token usage is now recorded, while some Alchemy endpoint usage remains not exposed by endpoint.
 - Full product-wide V2 is not complete.
@@ -163,11 +169,11 @@ Product closure not complete:
 - `server.js` remains the HTTP entry and dependency assembly point. Non-V2 dispatch now lives in `src/server/http-api-router.js`; configuration, connection diagnostics, static shell serving, and selected V2 route groups are bounded modules. Several legacy domain handlers remain in the entry for later service extraction.
 - `world-tree-console.js` is now a small compatibility bootstrap; product registry, store, components, views, and controllers live under `browser/`. `world-tree-client-core.js` remains the stable utility/API client boundary.
 - No TypeScript migration.
-- Full product-wide browser QA remains incomplete unless a product entry browser smoke matrix is separately recorded.
+- Automated product-shell QA is recorded for the five global roots, eight canonical entries, four responsive widths, and the shared experience golden path. Human exploratory playtest and screen recording remain incomplete.
 - The console shell requires `ui-labels.js`; the current closure sprint serves it as a public static asset and verifies it in the package.
 - Current built-in first-play example: `demo-world-cloud-steam-city` / 云上蒸汽城.
 - Later examples remain deferred after the first-play candidate: `demo-character` role-card content pack and `demo-scriptkill` scriptkill content pack.
-- Streaming abort currently guarantees frontend stop only; partial assistant text is not guaranteed to be persisted server-side unless a future `truncatedByUser` / `status: "partial"` path is implemented and tested.
+- Streaming abort stops the browser request, labels the visible fragment `partial` / “已中止 · 未保存”, keeps it only in the current page, restores the original input on request, and is verified not to appear as a completed server turn. A durable server-side truncated-turn model is intentionally not claimed.
 
 ## Required checks
 

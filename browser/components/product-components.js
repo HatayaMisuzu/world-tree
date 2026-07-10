@@ -401,7 +401,7 @@ function renderStatusList(card) {
   const values = { true: "可用", false: "不可用", idle: "平稳", worldbook: "世界书", hybrid: "协同", classic: "经典", epic: "史诗" };
   const items = (Array.isArray(card.items) ? card.items : []).filter(item => item.label !== "activeModules");
   return `<article class="status-card"><strong>${U.esc(card.title || "状态")}</strong>
-    <div class="status-list">${items.map(item => `<div><span>${U.esc(labels[item.label] || item.label || "状态")}</span><strong>${U.esc(values[String(item.value)] ?? item.value ?? "")}</strong>${renderChangeMark(item.delta || (item.status === "new" ? "新增" : item.status === "changed" ? "已变化" : ""), item.status)}</div>`).join("") || `<span class="tiny muted">当前没有需要展示的变化</span>`}</div>
+    <div class="status-list">${items.map(item => { const safeLabel = labels[item.label] ? U.esc(labels[item.label]) : U.esc(item.label || "状态"); return `<div><span>${safeLabel}</span><strong>${U.esc(values[String(item.value)] ?? item.value ?? "")}</strong>${renderChangeMark(item.delta || (item.status === "new" ? "新增" : item.status === "changed" ? "已变化" : ""), item.status)}</div>`; }).join("") || `<span class="tiny muted">当前没有需要展示的变化</span>`}</div>
   </article>`;
 }
 

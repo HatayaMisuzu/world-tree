@@ -1,11 +1,11 @@
-# User Quickstart — World Tree v0.4.2 First-Playable Candidate
+# User Quickstart — World Tree v0.5 Product Experience Rebuild
 
 > This guide describes the current implemented project, not future V2 plans.
 
 ## What This Is
 
 World Tree is a local-first browser console for AI-assisted world, character, workflow, and mode exploration.
-Current status: **v0.4.2-v2-engineering-foundation-truth.0**. Full V2 is not complete. Several entries have engineering/service closure, while product-wide playable closure is still incomplete.
+Current status: **v0.5.0-product-experience-rebuild.0**. Full V2 is not complete. Automated product-shell and selected provider paths pass; human-signed playable closure is still incomplete.
 
 ## Install
 
@@ -24,14 +24,13 @@ Then open: `http://localhost:3000`
 ## First Use Checklist
 
 1. Open `http://localhost:3000` in a browser.
-2. Configure LLM settings (Settings panel → API Key, Base URL, Model).
-3. Test LLM connection via the UI or `POST /api/llm/test`.
-4. Create a world or load a character.
-5. Select a mode (world-rpg, character, quick-setting, etc.).
-6. Send a message and observe the response.
-7. Save state persists across reloads.
-8. Current built-in first-play example: `demo-world-cloud-steam-city` / 云上蒸汽城.
-9. Character-card and scriptkill demo content packs are not complete yet; prepare your own character/world/case/script material for entries that require content.
+2. Open 设置 → 模型连接, configure API Key, Base URL, and model, then test the connection.
+3. Return to 首页 and choose “从示例开始”, or open 体验 / 创作.
+4. Send an action and observe the streamed world response and current-world state.
+5. Review pending changes before allowing them into formal world state.
+6. Completed turns save automatically; return Home and continue to verify history.
+7. Current built-in first-play example: `demo-world-cloud-steam-city` / 云上蒸汽城.
+8. Character-card and ScriptKill demo packs remain incomplete; bring your own lawful content for entries that require it.
 
 ## Current Modes
 
@@ -53,8 +52,8 @@ See `docs/PLAY_MODE_GUIDE.md` for mode details and limitations.
 - Full V2 is not implemented.
 - Product-wide playable closure is not complete.
 - V2 Entry Closure means engineering/service closure, not full product closure.
-- Browser UI is monolithic (`world-tree-console.js`).
-- Server routes are monolithic (`server.js` if-chain).
+- Advanced editors and complete game systems remain incomplete for several modes.
+- Human playtest and screen recording are still required before `PLAYABLE` can be human-signed.
 
 ## If Something Fails
 

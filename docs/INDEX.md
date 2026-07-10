@@ -67,6 +67,7 @@ Key entry points for the current baseline:
 | [API_ROUTE_INVENTORY.md](API_ROUTE_INVENTORY.md) | API route inventory |
 | [MODE_BOUNDARY_MAP.md](MODE_BOUNDARY_MAP.md) | Mode boundary map |
 | [Productization Reality Check](reports/productization-reality-check.md) | R0 Productization Closure reality check |
+| [v0.5 Product Experience Rebuild](reports/v0.5-product-experience-rebuild-report.md) | Five-root IA, shared experience golden path, visual QA, and delivery evidence |
 
 ---
 

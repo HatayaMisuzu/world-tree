@@ -1,17 +1,17 @@
 # World Tree
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
-![Version](https://img.shields.io/badge/version-v0.4.2-v2-engineering-foundation-truth.0-blue.svg)
+![Version](https://img.shields.io/badge/version-v0.5.0-product--experience--rebuild.0-blue.svg)
 
 World Tree is a local-first AI narrative engine with a browser-based web console. It runs as a plain Node.js HTTP server: no Electron, no build step, and no external runtime service beyond the LLM endpoint you configure.
 
-Current version: `v0.4.2-v2-engineering-foundation-truth.0`.
+Current version: `v0.5.0-product-experience-rebuild.0`.
 
 **Full V2 is not complete.** V2 Entry Closure is engineering/service closure for selected entries, not product-wide playable closure. Several entries are experimental slices or service-level closures.
 
 Chinese documentation: [README.md](README.md)
 
-> Current truth-source version: `0.4.2-v2-engineering-foundation-truth.0`.
+> Current truth-source version: `0.5.0-product-experience-rebuild.0`.
 > Read first: `docs/PROJECT_TRUTH_SOURCE.md`, `docs/CURRENT_PROJECT_STATE.md`, `docs/V2_ENGINEERING_CLOSURE_STATUS.md`.
 > Full product-wide V2 and product-wide playable closure are not complete.
 > Strategy Sim V2 and Worldbook V2 are engineering foundation complete; product closure is incomplete.
@@ -26,11 +26,11 @@ Chinese documentation: [README.md](README.md)
 - Future AI-driven text game players and builders, including AI text RPGs, mystery games, romance sims, world exploration, and tabletop-like experiences.
 - Developers and researchers exploring worldbooks, state machines, and LLM narrative pipelines.
 
-You do not need a complete worldbook to start. In v0.4.2-v2-engineering-foundation-truth.0, you can paste material first, create a draft world, and later organize characters, worldbook entries, review records, and export packages.
+You do not need a complete worldbook to start. In v0.5, use Home, Experience, My Content, Creation, and Settings to move from a first-run example or pasted material into a persistent world.
 
-This version does not bundle a complete example world. Example worlds are a separate follow-up project and will be added only after the worldbook content and content provenance are confirmed.
+This version bundles the provenance-safe first-play example `demo-world-cloud-steam-city`; character-card and ScriptKill content packs remain deferred.
 
-> The plugin system is deferred and is not part of the v0.4.2-v2-engineering-foundation-truth.0 product scope. Some internal scaffolding may remain in the repository, but the default UI should not expose plugin entry points, and users should not rely on plugin functionality in this version.
+> The plugin system is deferred and is not part of the v0.5 product scope. Some internal scaffolding may remain, but the default UI does not expose plugin entry points.
 
 ## Quickstart
 

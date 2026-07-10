@@ -12,6 +12,27 @@
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree · CHANGELOG
+## 0.5.0-product-experience-rebuild.0
+
+### Product experience rebuild
+
+- Replaced the six engineering-oriented global destinations with five product roots: 首页、体验、我的内容、创作、设置；all eight canonical capabilities remain registered and browser-reachable.
+- Added the Living Archive design system, fixed light-content/dark-sidebar theme, responsive mobile navigation, actual UI screenshots, and an image-generated concept board.
+- Rebuilt Home around continue, first-run example, three user goals, recent projects, pending changes, and honest model status.
+- Added a shared experience workspace with readable message roles, proposal/state context, automatic-save feedback, export preparation, partial-stream labeling, and input restoration after abort.
+- Added source-backed browser QA: 8/8 entry matrix, 1440/1024/768/390 visual shell checks, and an automated three-turn experience golden path.
+- Fixed active-branch chat history loading so returning Home and continuing restores the persisted branch timeline.
+- Unified projects, characters, world settings, candidates, and review into “我的内容”; clarified model/key/data state and secret handling in Settings.
+- Split the browser console into bounded modules and extracted server configuration, connections, static shell, and HTTP routing boundaries; `world-tree-console.js` is now about 300 lines and `server.js` about 2,827 lines.
+- Added tiered verification, machine project facts, coverage thresholds, nightly verification, and safe repository snapshots.
+- Verified a three-turn DeepSeek V4 Flash smoke in the isolated test copy on 2026-07-10: no local fallback, six persisted records, context continuity, and no recorded key/hidden-truth leak. This is selected-path provider evidence, not human-signed PLAYABLE proof.
+
+### Boundaries
+
+- `PLAYABLE` remains `NO` pending human playtest and screen recording sign-off.
+- Full product-wide V2 and complete editors for every advanced mode remain out of scope for this rebuild.
+- No credential is stored in the repository, world packs, screenshots, or generated reports.
+
 ## 0.4.2-v2-engineering-foundation-truth.0
 
 ### Truth-source alignment
