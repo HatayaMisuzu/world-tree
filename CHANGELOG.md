@@ -18,7 +18,7 @@
 
 - Fixed same-millisecond JSON write collisions with UUID temp files, per-path queues, durable file/directory sync, and locked read-modify-write updates.
 - Added recoverable three-file transactions for connection/config/secret changes with startup roll-forward recovery and injected-failure coverage at every target write.
-- Enforced one health-verified server instance per data root, with stale-lock recovery, fail-safe handling for unverifiable live locks, and no data-root paths in startup logs.
+- Enforced one health-verified server instance across both the engine data root and user-data root, with stale-lock recovery only after a valid record confirms the PID is gone; incomplete or unreadable locks fail safe without deletion.
 - Unified config, secrets, and connection mutations behind the same transaction coordinator so concurrent read-modify-write flows cannot overwrite one another.
 - Replaced the Windows port-killing launcher with safe dynamic port selection, health-gated browser opening, and a reusable server runtime boundary.
 - Moved shared persistence below core/server layers, added architecture debt caps, and removed core-to-server reverse dependencies.

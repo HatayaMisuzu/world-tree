@@ -181,7 +181,7 @@ const REVIEW_QUEUE_PATH = () => DATA_ROOT_OVERRIDE
   : userDataPath("alchemy-review.json");
 const PLUGINS_DIR = () => userDataPath("plugins");
 const TURN_DEBUG_DIR = (moduleId = "global") => userDataPath("turn-debug", slugName(moduleId, "global"));
-const singleInstanceRuntime = createSingleInstanceRuntime({ dataRoot: dataRoot(), host: LOCAL_HOSTS.has(HOST) ? HOST : HOST === "::" ? "::1" : "127.0.0.1" });
+const singleInstanceRuntime = createSingleInstanceRuntime({ dataRoot: dataRoot(), userDataRoot: getUserDataRoot(), host: LOCAL_HOSTS.has(HOST) ? HOST : HOST === "::" ? "::1" : "127.0.0.1" });
 
 // ═══════════════════════════════════════════════════════════════
 //  Module Service（工厂函数注入）
@@ -2861,17 +2861,17 @@ try {
   });
   if (startup.acquisition?.status === "existing") {
     console.log(`WORLD_TREE_EXISTING_INSTANCE_URL=${startup.acquisition.url}`);
-    process.exit(0);
-  }
-  if (startup.acquisition) {
+    process.exitCode = 0;
+  } else if (startup.acquisition) {
     console.error(`WORLD_TREE_INSTANCE_LOCK_UNVERIFIED=${startup.acquisition.reason || "unknown"}`);
-    process.exit(1);
+    process.exitCode = 1;
+  } else {
+    const { port: p, requestedPort, usedFallback } = startup;
+    console.log(`🌳 World Tree Web 服务启动`);
+    console.log(`   URL: http://${HOST}:${p}`);
+    if (usedFallback) console.log(`   端口 ${requestedPort} 已占用，已安全改用 ${p}（未终止其他程序）`);
   }
-  const { port: p, requestedPort, usedFallback } = startup;
-  console.log(`🌳 World Tree Web 服务启动`);
-  console.log(`   URL: http://${HOST}:${p}`);
-  if (usedFallback) console.log(`   端口 ${requestedPort} 已占用，已安全改用 ${p}（未终止其他程序）`);
 } catch (err) {
   console.error(err.message);
-  process.exit(1);
+  process.exitCode = 1;
 }

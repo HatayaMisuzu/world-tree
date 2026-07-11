@@ -41,7 +41,7 @@ local JSON / JSONL persistence
 | Persistence | local `userData` / `engine/worlds` / `branches` JSON/JSONL | save/load, runtime state, shared files | Direct canon mutation outside approved path |
 | Shared infrastructure | `src/shared/` | durable JSON primitives and cross-layer utilities | HTTP routing or domain orchestration |
 | Transactions | `src/server/transactions/` | recoverable multi-file commit journals, startup recovery, and the shared config/secrets/connections coordinator | UI state or domain policy |
-| Instance runtime | `src/server/app-runtime.js`, `src/server/single-instance-runtime.js` | per-data-root lease, health-verified existing-instance reuse, safe port startup, and graceful lock release | full data-root disclosure or arbitrary process control |
+| Instance runtime | `src/server/app-runtime.js`, `src/server/single-instance-runtime.js` | ordered data-root and user-data-root leases, health-verified existing-instance reuse, safe port startup, and graceful lock release | full root disclosure or arbitrary process control |
 | LLM integration | currently routed through server-side config/test/LLM calls | provider call and diagnostics | storage format ownership |
 | Tests/scripts | `tests/`, `scripts/` | safety checks, smoke tests, audits | feature implementation |
 
@@ -63,7 +63,7 @@ src/server/single-instance-runtime.js
 src/server/transactions/json-file-transaction.js
 ```
 
-`server.js` retains dependency assembly and domain handlers that still need a later bounded service pass. Per-data-root instance leases, safe port selection, recoverable connection-state transactions, non-V2 HTTP dispatch, static shell serving, configuration/secrets diagnostics, and connection-profile orchestration are bounded runtime modules. The connection transaction coordinator serializes config, secrets, and connection mutations; startup first recovers its journal, and a second process only reuses an instance whose local health identity matches the lock. Architecture gates prevent the known hotspot files, import fan-out, route filesystem debt, and cross-layer imports from growing beyond the audited baseline.
+`server.js` retains dependency assembly and domain handlers that still need a later bounded service pass. Ordered data-root and user-data-root instance leases, safe port selection, recoverable connection-state transactions, non-V2 HTTP dispatch, static shell serving, configuration/secrets diagnostics, and connection-profile orchestration are bounded runtime modules. The connection transaction coordinator serializes config, secrets, and connection mutations; startup first recovers its journal, only removes a stale lock after parsing a valid record and confirming its PID is gone, and otherwise fails safe for incomplete or unverifiable locks. Architecture gates prevent the known hotspot files, import fan-out, route filesystem debt, and cross-layer imports from growing beyond the audited baseline.
 
 API dispatch now flows through a bounded router and selected V2 adapter:
 
