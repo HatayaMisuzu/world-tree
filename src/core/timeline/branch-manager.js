@@ -1,6 +1,6 @@
 import { cp, mkdir, access } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { readJson, writeJson } from "../../server/fs-utils.js";
+import { readJson, writeJson } from "../../shared/fs-utils.js";
 import { ensureTimelineTree, writeTimelineTree } from "./timeline-tree.js";
 import { assertBranchId } from "./branch-policy.js";
 

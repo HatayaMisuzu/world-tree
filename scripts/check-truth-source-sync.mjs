@@ -61,6 +61,19 @@ if (existsSync(join(ROOT, "package.json"))) {
   if (!pkg.scripts?.["truth:check"]) errors.push("package.json missing scripts.truth:check");
 }
 
+const readmeEn = read("README.en.md");
+const badgeVersion = VERSION.replace("product-experience-rebuild", "product--experience--rebuild");
+if (!readmeEn.includes(`version-v${badgeVersion}-blue.svg`)) {
+  errors.push("README.en.md version badge does not match package.json");
+}
+const release = read("RELEASE.md");
+if (!release.includes(`Current version: \`${VERSION}\``) || /Electron|v2\.2\.0|13 tabs/i.test(release)) {
+  errors.push("RELEASE.md is stale or does not match the current Web release");
+}
+for (const staleRootDoc of ["DELIVERY.md", "IMPLEMENTATION_NOTES.md"]) {
+  if (existsSync(join(ROOT, staleRootDoc))) errors.push(`${staleRootDoc} must live under docs/archive/legacy-electron`);
+}
+
 const mustContain = {
   "README.md": ["PROJECT_TRUTH_SOURCE", "engineering foundation", "product closure"],
   "AI-GUIDE.md": ["PROJECT_TRUTH_SOURCE", "V2_ENGINEERING_CLOSURE_STATUS"],

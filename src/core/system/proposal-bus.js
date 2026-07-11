@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import { readFile, appendFile } from "node:fs/promises";
 import { join } from "node:path";
-import { readJsonSync, writeJson, appendJsonl } from "../../server/fs-utils.js";
-import { pathWithinRoot } from "../../server/path-security.js";
+import { readJsonSync, writeJson, appendJsonl } from "../../shared/fs-utils.js";
+import { pathWithinRoot } from "./path-boundary.js";
 import { openStopLossWindow } from "../content/stop-loss-window.js";
 
 /**

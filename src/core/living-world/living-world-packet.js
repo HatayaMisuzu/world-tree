@@ -1,4 +1,4 @@
-import { readJson } from "../../server/fs-utils.js";
+import { readJson } from "../../shared/fs-utils.js";
 import { join } from "node:path";
 import { readCurrentScene, readRecentSceneSummaries } from "../scene/scene-summary-chain.js";
 import { readTrackingDigest } from "../tracking/tracking-digest.js";

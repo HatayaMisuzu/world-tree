@@ -41,6 +41,10 @@
     "test:prompt-contracts": "node --test tests/unit/prompt-task-contracts.test.js tests/unit/prompt-runtime-identity.test.js tests/unit/llm-task-gateway.test.js",
     "test:feature-alias": "node --test tests/unit/feature-alias-registry.test.js",
     "ux:check": "node scripts/audit-ux-coherence.mjs",
+    "test:accessibility": "node scripts/accessibility-audit.mjs",
+    "soak:persistence-local": "node scripts/soak-local-state.mjs",
+    "test:soak": "npm run soak:persistence-local",
+    "test:reliability": "node --test tests/unit/fs-utils.test.js tests/unit/json-file-transaction.test.js tests/reliability/connection-state-coordinator.test.js tests/reliability/single-instance-runtime.test.js",
     "test:llm-routing": "node --test tests/unit/prompt-task-contracts.test.js tests/unit/prompt-runtime-identity.test.js tests/unit/llm-task-gateway.test.js tests/unit/tabletop-v2-llm-polish.test.js tests/unit/detective-v2-llm-narration.test.js tests/unit/single-player-scriptkill-llm-dialogue.test.js",
     "test:legacy-mechanisms": "node --test tests/unit/creation-wizard.test.js tests/integration/legacy-mechanism-expansion.test.js",
     "test:assets": "node --test tests/unit/asset-status-matrix.test.js",
@@ -121,7 +125,7 @@
     "verify:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=tests/** --test-coverage-exclude=scripts/** --test-coverage-lines=70 --test-coverage-functions=70 --test-coverage-branches=60 tests/unit/*.test.js tests/integration/*.test.js",
     "verify:fast": "npm run check && npm run test:p0 && npm run test:feature-alias && npm run docs:check && npm run truth:check",
     "verify:pr": "npm run verify:fast && npm run test:unit && npm run test:integration && npm run test:console-boundary && npm run release:verify",
-    "verify:browser": "npm run smoke:product-entry-browser-matrix && npm run smoke:experience-golden-path && npm run smoke:v0.5-interaction-regressions && npm run qa:visual-shell",
+    "verify:browser": "npm run smoke:product-entry-browser-matrix && npm run smoke:experience-golden-path && npm run smoke:v0.5-interaction-regressions && npm run qa:visual-shell && npm run test:accessibility",
     "verify:release": "npm run preflight && npm run verify:coverage && npm run facts:generate && npm run release:verify && npm run smoke:first-play && npm run verify:browser && npm run snapshot:safe",
     "verify:nightly": "node scripts/verify-nightly.mjs",
     "ci:github-actions-checks": "node scripts/verify-github-actions-checks.mjs",
@@ -143,6 +147,7 @@
     "url": "https://github.com/HatayaMisuzu/world-tree.git"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "playwright": "^1.61.1"
   }
 }

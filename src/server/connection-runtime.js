@@ -3,7 +3,8 @@ export function createConnectionRuntime(deps = {}) {
   const {
     readJsonSync,
     CONNECTIONS_PATH,
-    writeJson,
+    loadConfig,
+    configPath,
     loadSecrets,
     secretsPath,
     maskSecret,
@@ -18,9 +19,7 @@ export function createConnectionRuntime(deps = {}) {
     partialProbeResult,
     buildOpenAICompatibleChatBody,
     slugName,
-    saveConfig,
-    saveSecrets,
-    saveLlmSecret
+    connectionStateTransaction
   } = deps;
 
   function connectionTemplates() {
@@ -48,11 +47,6 @@ export function createConnectionRuntime(deps = {}) {
       ? String(raw.active || "")
       : (raw.items?.[0]?.id || "deepseek");
     return { active, items: Array.isArray(raw.items) ? raw.items : fallback.items };
-  }
-  
-  async function saveConnectionsRaw(next) {
-    await writeJson(CONNECTIONS_PATH(), next);
-    return publicConnections(next);
   }
   
   async function secretValueById(secretId = "") {
@@ -206,87 +200,111 @@ export function createConnectionRuntime(deps = {}) {
   async function handleConnections(body = {}, method = "GET") {
     if (method === "GET") return publicConnections();
     const action = body.action || "upsert";
-    const raw = loadConnectionsRaw();
-    const now = new Date().toISOString();
-    if (action === "delete") {
-      const id = String(body.id || "");
-      const removed = raw.items.find(i => i.id === id);
-      const items = raw.items.filter(i => i.id !== id);
-      const nextActiveId = raw.active === id
-        ? (items[0]?.id || "")
-        : (items.some(i => i.id === raw.active) ? raw.active : (items[0]?.id || ""));
-      const nextActive = items.find(i => i.id === nextActiveId) || null;
-      await saveConfig(nextActive ? {
-        connectionProfileId: nextActive.id,
-        llmBaseUrl: nextActive.baseUrl || "",
-        llmModel: nextActive.model || "",
-        llmProvider: nextActive.provider || "openai-compatible",
-        llmThinking: nextActive.thinking || "auto"
-      } : {
-        connectionProfileId: "",
-        llmBaseUrl: "",
-        llmModel: "",
-        llmProvider: "",
-        llmThinking: "auto"
-      });
-      const secrets = await loadSecrets();
-      const removedSecretId = removed?.apiKeySecretId || removed?.id || "";
-      const referencedSecretIds = new Set(items.map(item => item.apiKeySecretId || item.id));
-      const remainingSecrets = (secrets.llm.items || []).filter(secret => secret.id !== removedSecretId || referencedSecretIds.has(secret.id));
-      await saveSecrets({ ...secrets, llm: { ...secrets.llm, active: nextActive ? (nextActive.apiKeySecretId || nextActive.id) : "", items: remainingSecrets } });
-      return saveConnectionsRaw({ active: nextActiveId, items });
-    }
-    if (action === "duplicate") {
-      const source = raw.items.find(i => i.id === body.id);
-      if (!source) return { status: "error", errorMsg: "连接档案不存在。" };
-      const existing = new Set(raw.items.map(i => i.id));
-      let id = slugName(`${source.id}-copy`, "connection-copy");
-      let n = 2;
-      while (existing.has(id)) id = slugName(`${source.id}-copy-${n++}`, "connection-copy");
-      const copy = { ...source, id, label: `${source.label || source.id} Copy`, apiKeySecretId: id, createdAt: now, updatedAt: now };
-      return saveConnectionsRaw({ ...raw, items: [copy, ...raw.items] });
-    }
-    if (action === "setDefault") {
-      const id = String(body.id || "");
-      const item = raw.items.find(i => i.id === id);
-      if (!item) return { status: "error", errorMsg: "连接档案不存在。" };
-      await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible", llmThinking: item.thinking || "auto" });
-      const secrets = await loadSecrets();
-      await saveSecrets({ ...secrets, llm: { ...secrets.llm, active: item.apiKeySecretId || item.id } });
-      return saveConnectionsRaw({ ...raw, active: id });
-    }
     if (action === "test") {
+      const raw = loadConnectionsRaw();
       const item = raw.items.find(i => i.id === body.id) || body.profile;
       if (!item) return { status: "error", errorMsg: "连接档案不存在。" };
       const result = await testConnectionProfile(item);
       const apiKey = await secretValueById(item.apiKeySecretId || item.id);
       return { ...result, hasApiKey: Boolean(apiKey) };
     }
-  
-    const profile = body.profile || body;
-    const id = slugName(profile.id || profile.label || profile.provider || "connection", "connection");
-    const item = {
-      id,
-      label: String(profile.label || id).trim() || id,
-      provider: profile.provider || "openai-compatible",
-      baseUrl: String(profile.baseUrl || "").trim(),
-      model: String(profile.model || "").trim(),
-      thinking: ["auto", "disabled", "enabled"].includes(String(profile.thinking || "").trim()) ? String(profile.thinking || "auto").trim() : "auto",
-      temperature: profile.temperature === "" || profile.temperature === undefined ? undefined : Number(profile.temperature),
-      maxTokens: profile.maxTokens === "" || profile.maxTokens === undefined ? undefined : Number(profile.maxTokens),
-      topP: profile.topP === "" || profile.topP === undefined ? undefined : Number(profile.topP),
-      apiKeySecretId: profile.apiKeySecretId || id,
-      notes: String(profile.notes || "").trim(),
-      createdAt: raw.items.find(i => i.id === id)?.createdAt || now,
-      updatedAt: now
-    };
-    const key = String(profile.apiKey || "").trim();
-    if (key && !/\*{4,}/.test(key)) await saveLlmSecret({ id: item.apiKeySecretId, label: item.label, value: key });
-    const items = [item, ...raw.items.filter(i => i.id !== id)];
-    const active = body.setDefault ? id : raw.active;
-    if (body.setDefault) await saveConfig({ connectionProfileId: id, llmBaseUrl: item.baseUrl, llmModel: item.model, llmProvider: item.provider || "openai-compatible", llmThinking: item.thinking || "auto" });
-    return saveConnectionsRaw({ active, items });
+
+    const result = await connectionStateTransaction.transact(async () => {
+      const raw = loadConnectionsRaw();
+      const config = await loadConfig();
+      const secrets = await loadSecrets();
+      const now = new Date().toISOString();
+      const configFor = (item) => {
+        const next = item ? {
+          ...config,
+          connectionProfileId: item.id,
+          llmBaseUrl: item.baseUrl || "",
+          llmModel: item.model || "",
+          llmProvider: item.provider || "openai-compatible",
+          llmThinking: item.thinking || "auto"
+        } : {
+          ...config,
+          connectionProfileId: "",
+          llmBaseUrl: "",
+          llmModel: "",
+          llmProvider: "",
+          llmThinking: "auto"
+        };
+        delete next.llmApiKey;
+        return next;
+      };
+      const entriesFor = (nextConfig, nextSecrets, nextConnections) => [
+        { path: configPath(), data: nextConfig },
+        { path: secretsPath(), data: nextSecrets },
+        { path: CONNECTIONS_PATH(), data: nextConnections }
+      ];
+
+      if (action === "delete") {
+        const id = String(body.id || "");
+        const removed = raw.items.find(i => i.id === id);
+        const items = raw.items.filter(i => i.id !== id);
+        const nextActiveId = raw.active === id
+          ? (items[0]?.id || "")
+          : (items.some(i => i.id === raw.active) ? raw.active : (items[0]?.id || ""));
+        const nextActive = items.find(i => i.id === nextActiveId) || null;
+        const removedSecretId = removed?.apiKeySecretId || removed?.id || "";
+        const referencedSecretIds = new Set(items.map(item => item.apiKeySecretId || item.id));
+        const remainingSecrets = (secrets.llm.items || []).filter(secret => secret.id !== removedSecretId || referencedSecretIds.has(secret.id));
+        const nextSecrets = { ...secrets, llm: { ...secrets.llm, active: nextActive ? (nextActive.apiKeySecretId || nextActive.id) : "", items: remainingSecrets } };
+        return { entries: entriesFor(configFor(nextActive), nextSecrets, { active: nextActiveId, items }) };
+      }
+
+      if (action === "duplicate") {
+        const source = raw.items.find(i => i.id === body.id);
+        if (!source) return { entries: [], result: { status: "error", errorMsg: "连接档案不存在。" } };
+        const existing = new Set(raw.items.map(i => i.id));
+        let id = slugName(`${source.id}-copy`, "connection-copy");
+        let n = 2;
+        while (existing.has(id)) id = slugName(`${source.id}-copy-${n++}`, "connection-copy");
+        const copy = { ...source, id, label: `${source.label || source.id} Copy`, apiKeySecretId: id, createdAt: now, updatedAt: now };
+        return { entries: [{ path: CONNECTIONS_PATH(), data: { ...raw, items: [copy, ...raw.items] } }] };
+      }
+
+      if (action === "setDefault") {
+        const id = String(body.id || "");
+        const item = raw.items.find(i => i.id === id);
+        if (!item) return { entries: [], result: { status: "error", errorMsg: "连接档案不存在。" } };
+        const nextSecrets = { ...secrets, llm: { ...secrets.llm, active: item.apiKeySecretId || item.id } };
+        return { entries: entriesFor(configFor(item), nextSecrets, { ...raw, active: id }) };
+      }
+
+      const profile = body.profile || body;
+      const id = slugName(profile.id || profile.label || profile.provider || "connection", "connection");
+      const item = {
+        id,
+        label: String(profile.label || id).trim() || id,
+        provider: profile.provider || "openai-compatible",
+        baseUrl: String(profile.baseUrl || "").trim(),
+        model: String(profile.model || "").trim(),
+        thinking: ["auto", "disabled", "enabled"].includes(String(profile.thinking || "").trim()) ? String(profile.thinking || "auto").trim() : "auto",
+        temperature: profile.temperature === "" || profile.temperature === undefined ? undefined : Number(profile.temperature),
+        maxTokens: profile.maxTokens === "" || profile.maxTokens === undefined ? undefined : Number(profile.maxTokens),
+        topP: profile.topP === "" || profile.topP === undefined ? undefined : Number(profile.topP),
+        apiKeySecretId: profile.apiKeySecretId || id,
+        notes: String(profile.notes || "").trim(),
+        createdAt: raw.items.find(i => i.id === id)?.createdAt || now,
+        updatedAt: now
+      };
+      const key = String(profile.apiKey || "").trim();
+      const existingSecrets = secrets.llm.items || [];
+      const secretItems = key && !/\*{4,}/.test(key)
+        ? [{ id: item.apiKeySecretId, label: item.label, value: key }, ...existingSecrets.filter(secret => secret.id !== item.apiKeySecretId)]
+        : existingSecrets;
+      const nextSecrets = {
+        ...secrets,
+        llm: { ...secrets.llm, active: body.setDefault ? item.apiKeySecretId : secrets.llm.active, items: secretItems }
+      };
+      const items = [item, ...raw.items.filter(i => i.id !== id)];
+      const active = body.setDefault ? id : raw.active;
+      return { entries: entriesFor(body.setDefault ? configFor(item) : config, nextSecrets, { active, items }) };
+    });
+    return result || publicConnections();
   }
 
-  return { connectionTemplates, loadConnectionsRaw, saveConnectionsRaw, secretValueById, publicConnections, testConnectionProfile, handleConnections };
+  return { connectionTemplates, loadConnectionsRaw, secretValueById, publicConnections, testConnectionProfile, handleConnections };
 }

@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { appendJsonl, readJsonlTail, readJson, writeJson } from "../../server/fs-utils.js";
+import { appendJsonl, readJsonlTail, readJson, writeJson } from "../../shared/fs-utils.js";
 
 const trackingPath = (projectRoot, name) => join(projectRoot, "runtime", "tracking", name);
 const envelope = () => ({ version: 1, updatedAt: null, items: [] });

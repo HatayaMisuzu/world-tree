@@ -1,6 +1,6 @@
 {
   "version": "0.5.0-product-experience-rebuild.1",
-  "updatedAt": "2026-07-01T00:00:00.000Z",
+  "updatedAt": "2026-07-11T00:00:00.000Z",
   "truthSourcePriority": [
     "docs/PROJECT_TRUTH_SOURCE.md",
     "docs/CURRENT_PROJECT_STATE.md",
@@ -122,6 +122,13 @@
       "notes": "Current English user-facing entry document."
     },
     {
+      "path": "RELEASE.md",
+      "lifecycle": "active_operating",
+      "owner": "release",
+      "replacement": null,
+      "notes": "Current release readiness summary and verification boundary."
+    },
+    {
       "path": "AI-GUIDE.md",
       "lifecycle": "active_operating",
       "owner": "agent-ops",
@@ -162,6 +169,27 @@
       "owner": "archive",
       "replacement": "docs/PROJECT_TRUTH_SOURCE.md",
       "notes": "Historical Pre-V2 closure report."
+    },
+    {
+      "path": "docs/archive/legacy-electron/DELIVERY.md",
+      "lifecycle": "historical_archive",
+      "owner": "archive",
+      "replacement": "README.md",
+      "notes": "Historical Electron delivery notes; not current setup guidance."
+    },
+    {
+      "path": "docs/archive/legacy-electron/IMPLEMENTATION_NOTES.md",
+      "lifecycle": "historical_archive",
+      "owner": "archive",
+      "replacement": "docs/ARCHITECTURE_MAP.md",
+      "notes": "Historical Electron implementation notes."
+    },
+    {
+      "path": "docs/archive/legacy-electron/RELEASE-v2.2.0.md",
+      "lifecycle": "historical_archive",
+      "owner": "archive",
+      "replacement": "RELEASE.md",
+      "notes": "Historical v2.2.0 release checklist."
     }
   ]
 }

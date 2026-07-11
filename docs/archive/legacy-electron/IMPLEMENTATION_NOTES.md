@@ -1,4 +1,6 @@
-# Implementation Notes
+# Historical Electron Implementation Notes
+
+> Archived legacy Electron implementation notes. See `docs/PROJECT_TRUTH_SOURCE.md` for the current Web application architecture.
 
 ## What is implemented
 

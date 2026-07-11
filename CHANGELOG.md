@@ -16,11 +16,21 @@
 
 ### Interaction and release verification fixes
 
+- Fixed same-millisecond JSON write collisions with UUID temp files, per-path queues, durable file/directory sync, and locked read-modify-write updates.
+- Added recoverable three-file transactions for connection/config/secret changes with startup roll-forward recovery and injected-failure coverage at every target write.
+- Enforced one health-verified server instance across both the engine data root and user-data root, with stale-lock recovery only after a valid record confirms the PID is gone; incomplete or unreadable locks fail safe without deletion.
+- Unified config, secrets, and connection mutations behind the same transaction coordinator so concurrent read-modify-write flows cannot overwrite one another.
+- Replaced the Windows port-killing launcher with safe dynamic port selection, health-gated browser opening, and a reusable server runtime boundary.
+- Moved shared persistence below core/server layers, added architecture debt caps, and removed core-to-server reverse dependencies.
+- Added single-H1 semantics, a skip link, view/dialog focus management, progressive message actions, improved contrast, and an axe WCAG browser gate.
+- Added JSONL truncation recovery coverage and a 100/500/1000-iteration local persistence soak verification (not a full gameplay soak).
+- Archived stale Electron delivery/release notes and strengthened current release/version truth checks.
 - Fixed character-library search to filter existing cards in place, preserving focus and caret while matching names, descriptions, and tags.
 - Fixed Tabletop V2 to render its final non-busy state after successful, blocked, and failed turns.
 - Unified model connection states into unconfigured, saved/waiting, connected, partial, and failed; health refresh no longer erases an authoritative test result.
 - Added a final API Promise/error boundary and structured fallback for rejected request parsing or handler work.
 - Added browser interaction regressions and made coverage, browser matrix, golden path, visual QA, and the regression gate part of release verification and GitHub Actions.
+- Added CI accessibility execution, PR reliability checks, nightly CI scheduling, and a Windows launcher smoke test that verifies an unrelated occupied port is preserved.
 
 ## 0.5.0-product-experience-rebuild.0
 

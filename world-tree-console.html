@@ -8,12 +8,13 @@
   <link rel="stylesheet" href="world-tree-console.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">WT</div>
         <div>
-          <h1>World Tree</h1>
+          <p class="brand-title">World Tree</p>
           <p class="brand-tagline">生长中的世界档案</p>
           <p id="appVersion" class="brand-version">vunknown</p>
         </div>
@@ -32,7 +33,7 @@
     <section class="app-main">
       <header class="topbar">
         <div>
-          <h2 id="viewTitle">首页</h2>
+          <h1 id="viewTitle">首页</h1>
           <p id="contextLine">启动中...</p>
         </div>
         <div class="toolbar">
@@ -43,7 +44,7 @@
         </div>
       </header>
 
-      <main id="main" class="main-content"></main>
+      <main id="main" class="main-content" tabindex="-1"></main>
 
       <nav id="mobileNav" class="mobile-nav" aria-label="移动端导航"></nav>
     </section>

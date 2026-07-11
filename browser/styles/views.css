@@ -67,6 +67,11 @@
 .partial-message-note{border-top:1px dashed #d7bd7c;padding-top:7px;color:#856728;font-size:11px;line-height:1.55}
 .message-tools{display:flex;gap:4px;flex-wrap:wrap;border-top:1px solid var(--line-soft);padding-top:6px}
 .message-tools button{min-height:26px;padding:2px 7px;font-size:11px}
+.message-more{position:relative}
+.message-more>summary{cursor:pointer;list-style:none;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:11px}
+.message-more>summary::-webkit-details-marker{display:none}
+.message-more-menu{position:absolute;z-index:20;right:0;top:calc(100% + 4px);display:grid;min-width:132px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:5px;box-shadow:var(--wt-shadow-md)}
+.message-more-menu button{width:100%;justify-content:flex-start;border-color:transparent;background:transparent}
 .candidate-row{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:12px}
 .composer{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
 .composer textarea{min-height:76px}

@@ -70,14 +70,23 @@ const C = {
         <button class="small" data-action="candidate-next">下一个</button>
       </div>` : ""}
       <div class="message-tools">
-        <button data-action="copy-message">复制</button>
-        <button data-action="edit-message">编辑</button>
-        <button data-action="favorite-message">${m.favorite ? "取消收藏" : "收藏"}</button>
-        ${role === "assistant" ? `<button data-action="regen-message">重生成</button>` : ""}
-        ${partial ? `<button data-action="retry-partial">把原问题放回输入框</button>` : ""}
-        ${role === "error" && m.retryable !== false ? `<button data-action="retry-message">重试</button>` : ""}
-        ${role === "error" ? `<button data-action="open-settings">设置</button>` : ""}
-        <button class="danger" data-action="delete-message">删除</button>
+        ${role === "error" && m.retryable !== false
+          ? `<button data-action="retry-message">重试</button>`
+          : partial
+            ? `<button data-action="retry-partial">放回输入框</button>`
+          : role === "assistant"
+            ? `<button data-action="regen-message">再写一次</button>`
+            : `<button data-action="edit-message">修改</button>`}
+        <details class="message-more">
+          <summary aria-label="更多消息操作">更多</summary>
+          <div class="message-more-menu">
+            <button data-action="copy-message">复制</button>
+            ${role !== "user" ? `<button data-action="edit-message">编辑</button>` : ""}
+            <button data-action="favorite-message">${m.favorite ? "取消收藏" : "收藏"}</button>
+            ${role === "error" ? `<button data-action="open-settings">检查设置</button>` : ""}
+            <button class="danger" data-action="delete-message">删除</button>
+          </div>
+        </details>
       </div>
     </div>`;
   },
