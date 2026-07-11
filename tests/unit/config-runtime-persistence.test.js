@@ -91,14 +91,26 @@ test("config runtime coordinates config and secret persistence without storing m
       globalThis.fetch = async () => ({ ok: false, status: 401, text: async () => "unauthorized" });
       assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).safeToSave, false);
 
+      globalThis.fetch = async () => ({ ok: false, status: 404, text: async () => "not found" });
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).safeToSave, false);
+
       globalThis.fetch = async () => ({
         ok: true,
         text: async () => JSON.stringify({ choices: [{ message: { reasoning_content: "thinking" }, finish_reason: "length" }] })
       });
       assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).status, "partial");
 
+      globalThis.fetch = async () => ({ ok: true, text: async () => JSON.stringify({ choices: [{ message: { content: "wrong token" } }] }) });
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).status, "partial");
+
+      globalThis.fetch = async () => ({ ok: true, text: async () => JSON.stringify({ choices: [{ message: { content: runtime.LLM_CONNECTION_SENTINEL } }] }) });
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/api", llmModel: "model" } })).status, "partial");
+
       globalThis.fetch = async () => { const error = new Error("timeout"); error.name = "TimeoutError"; throw error; };
       assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).code, "LLM_TIMEOUT");
+
+      globalThis.fetch = async () => { throw new Error("offline"); };
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).code, "LLM_NETWORK_ERROR");
     } finally {
       globalThis.fetch = originalFetch;
     }
