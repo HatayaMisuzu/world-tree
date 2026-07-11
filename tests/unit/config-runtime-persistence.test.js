@@ -22,7 +22,7 @@ test("config runtime coordinates config and secret persistence without storing m
     chmod,
     buildOpenAICompatibleChatBody: () => ({}),
     llmHttpError: () => ({}),
-    errorPayload: () => ({})
+    errorPayload: (code) => ({ code })
   });
   try {
     await runtime.saveConfig({ theme: "light", llmApiKey: "must-not-persist" });
@@ -54,12 +54,31 @@ test("config runtime coordinates config and secret persistence without storing m
       chmod,
       buildOpenAICompatibleChatBody: () => ({}),
       llmHttpError: () => ({}),
-      errorPayload: () => ({})
+      errorPayload: (code) => ({ code })
     });
     await directRuntime.saveConfig({ language: "en-US" });
     await directRuntime.saveSecrets({ llm: { active: "direct", items: [] } });
     await directRuntime.saveLlmSecret({ id: "direct", value: "direct-key" });
     assert.equal((await directRuntime.loadConfig()).language, "en-US");
+
+    assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "", llmModel: "model" } })).code, "LLM_BASE_URL_MISSING");
+    assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "ftp://invalid", llmModel: "model" } })).code, "LLM_BASE_URL_INVALID");
+    assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "" } })).code, "LLM_MODEL_MISSING");
+
+    const emptyRuntime = createConfigRuntime({
+      ROOT: root,
+      DATA_ROOT_OVERRIDE: root,
+      join,
+      userDataPath: (...parts) => join(root, "empty-userData", ...parts),
+      readJson,
+      writeJson,
+      updateJson,
+      chmod,
+      buildOpenAICompatibleChatBody: () => ({}),
+      llmHttpError: () => ({}),
+      errorPayload: (code) => ({ code })
+    });
+    assert.equal((await emptyRuntime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).code, "LLM_API_KEY_MISSING");
   } finally {
     await rm(root, { recursive: true, force: true });
   }
