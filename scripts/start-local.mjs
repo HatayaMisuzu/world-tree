@@ -67,6 +67,6 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 child.on("exit", (code, signal) => {
-  if (signal) process.exitCode = 1;
+  if (signal) process.exitCode = probeFinished ? 0 : 1;
   else process.exitCode = code ?? 1;
 });
