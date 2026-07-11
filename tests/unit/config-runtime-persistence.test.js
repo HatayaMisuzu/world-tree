@@ -42,6 +42,24 @@ test("config runtime coordinates config and secret persistence without storing m
 
     assert.equal(runtime.strictProbeFailure(runtime.parseChatCompletionProbe("not json")).status, "fail");
     assert.equal(runtime.strictProbeFailure(runtime.parseChatCompletionProbe(JSON.stringify({ choices: [{ message: { content: runtime.LLM_CONNECTION_SENTINEL } }] }))), null);
+
+    const directRuntime = createConfigRuntime({
+      ROOT: root,
+      DATA_ROOT_OVERRIDE: root,
+      join,
+      userDataPath: (...parts) => join(root, "direct-userData", ...parts),
+      readJson,
+      writeJson,
+      updateJson,
+      chmod,
+      buildOpenAICompatibleChatBody: () => ({}),
+      llmHttpError: () => ({}),
+      errorPayload: () => ({})
+    });
+    await directRuntime.saveConfig({ language: "en-US" });
+    await directRuntime.saveSecrets({ llm: { active: "direct", items: [] } });
+    await directRuntime.saveLlmSecret({ id: "direct", value: "direct-key" });
+    assert.equal((await directRuntime.loadConfig()).language, "en-US");
   } finally {
     await rm(root, { recursive: true, force: true });
   }
