@@ -79,7 +79,7 @@ import { buildOpenAICompatibleChatBody } from "./src/adapters/providers/openai-c
 import { createConfigRuntime } from "./src/server/config-runtime.js";
 import { createConnectionRuntime } from "./src/server/connection-runtime.js";
 import { createJsonFileTransaction } from "./src/server/transactions/json-file-transaction.js";
-import { listenOnAvailablePort } from "./src/server/app-runtime.js";
+import { createSingleInstanceRuntime, listenOnAvailablePort, startSingleInstanceServer } from "./src/server/app-runtime.js";
 import { createStaticShell } from "./src/server/static-shell.js";
 import { createHttpApiRouter } from "./src/server/http-api-router.js";
 import { createDebugLogger } from "./src/server/debug-log.js";
@@ -141,6 +141,10 @@ if (process.env.WORLD_TREE_ENABLE_UPDATE_CHECK === "1") {
 
 const debugLog = createDebugLogger({ enabled: DEBUG_MODE, buffer: DEBUG_LOG, max: DEBUG_MAX });
 
+const connectionStateTransaction = createJsonFileTransaction({
+  journalPath: userDataPath(".transactions", "connection-state.json")
+});
+
 // ═══════════════════════════════════════════════════════════════
 //  路径与默认配置
 // ═══════════════════════════════════════════════════════════════
@@ -164,7 +168,7 @@ const {
   strictProbeFailure,
   partialProbeResult,
   testLlmConnection
-} = createConfigRuntime({ ROOT, DATA_ROOT_OVERRIDE, join, userDataPath, readJson, writeJson, updateJson, chmod, buildOpenAICompatibleChatBody, llmHttpError, errorPayload });
+} = createConfigRuntime({ ROOT, DATA_ROOT_OVERRIDE, join, userDataPath, readJson, writeJson, updateJson, stateCoordinator: connectionStateTransaction, chmod, buildOpenAICompatibleChatBody, llmHttpError, errorPayload });
 
 const WORLDS_DIR = () => join(dataRoot(), "engine", "worlds");
 const CHARACTERS_DIR = () => join(dataRoot(), "engine", "characters");
@@ -177,10 +181,7 @@ const REVIEW_QUEUE_PATH = () => DATA_ROOT_OVERRIDE
   : userDataPath("alchemy-review.json");
 const PLUGINS_DIR = () => userDataPath("plugins");
 const TURN_DEBUG_DIR = (moduleId = "global") => userDataPath("turn-debug", slugName(moduleId, "global"));
-const connectionStateTransaction = createJsonFileTransaction({
-  journalPath: userDataPath(".transactions", "connection-state.json")
-});
-await connectionStateTransaction.recover();
+const singleInstanceRuntime = createSingleInstanceRuntime({ dataRoot: dataRoot(), host: LOCAL_HOSTS.has(HOST) ? HOST : HOST === "::" ? "::1" : "127.0.0.1" });
 
 // ═══════════════════════════════════════════════════════════════
 //  Module Service（工厂函数注入）
@@ -2816,6 +2817,7 @@ const { handleAPI } = createHttpApiRouter({
   WORLDS_DIR,
   readdirSync,
   PKG_VERSION,
+  getInstanceInfo: () => singleInstanceRuntime.publicInfo(),
   userDataPath,
   calcDirectorySizeLimited,
   getLatestVersion: () => latestVersion,
@@ -2847,20 +2849,29 @@ const server = createServer((req, res) => {
   serveStatic(req, res);
 });
 
-ensureDir(getUserDataRoot());
-ensureDir(join(dataRoot(), "engine", "worlds"));
-ensureDir(join(dataRoot(), "engine", "runs"));
-ensureDir(join(dataRoot(), "engine", "global-memory"));
-ensureDir(CHARACTERS_DIR());
-ensureDir(PLUGINS_DIR());
-
-listenOnAvailablePort(server, { port: PORT, host: HOST }).then(({ port: p, requestedPort, usedFallback }) => {
+try {
+  const startup = await startSingleInstanceServer({
+    server,
+    singleInstanceRuntime,
+    recoverState: () => connectionStateTransaction.recover(),
+    directories: [getUserDataRoot(), join(dataRoot(), "engine", "worlds"), join(dataRoot(), "engine", "runs"), join(dataRoot(), "engine", "global-memory"), CHARACTERS_DIR(), PLUGINS_DIR()],
+    port: PORT,
+    host: HOST,
+    listen: listenOnAvailablePort
+  });
+  if (startup.acquisition?.status === "existing") {
+    console.log(`WORLD_TREE_EXISTING_INSTANCE_URL=${startup.acquisition.url}`);
+    process.exit(0);
+  }
+  if (startup.acquisition) {
+    console.error(`WORLD_TREE_INSTANCE_LOCK_UNVERIFIED=${startup.acquisition.reason || "unknown"}`);
+    process.exit(1);
+  }
+  const { port: p, requestedPort, usedFallback } = startup;
   console.log(`🌳 World Tree Web 服务启动`);
   console.log(`   URL: http://${HOST}:${p}`);
   if (usedFallback) console.log(`   端口 ${requestedPort} 已占用，已安全改用 ${p}（未终止其他程序）`);
-  console.log(`   配置: ${configPath()}`);
-  console.log(`   数据: ${dataRoot()}`);
-}).catch((err) => {
+} catch (err) {
   console.error(err.message);
   process.exit(1);
-});
+}

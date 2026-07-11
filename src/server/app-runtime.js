@@ -1,3 +1,8 @@
+import { createSingleInstanceRuntime } from "./single-instance-runtime.js";
+import { ensureDir } from "../shared/fs-utils.js";
+
+export { createSingleInstanceRuntime };
+
 /** Listen on the requested port and advance to the next available local port. */
 export async function listenOnAvailablePort(server, {
   host = "127.0.0.1",
@@ -32,4 +37,45 @@ export async function listenOnAvailablePort(server, {
     }
   }
   throw new Error(`No available port found from ${firstPort} after ${maxAttempts} attempts`);
+}
+
+/** Acquire the data-root lease, recover state, then start the local HTTP server. */
+export async function startSingleInstanceServer({
+  server,
+  singleInstanceRuntime,
+  recoverState,
+  directories = [],
+  port,
+  host,
+  listen = listenOnAvailablePort
+} = {}) {
+  const acquisition = await singleInstanceRuntime.acquire();
+  if (acquisition.status !== "acquired") return { acquisition };
+  try {
+    await recoverState();
+    for (const directory of directories) ensureDir(directory);
+    const listening = await listen(server, { port, host });
+    await singleInstanceRuntime.publish({ port: listening.port });
+    let shuttingDown = false;
+    const gracefulShutdown = async (exitCode = 0) => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      const forceExit = setTimeout(() => process.exit(exitCode || 1), 5000);
+      forceExit.unref();
+      const finish = async () => {
+        await singleInstanceRuntime.release().catch(() => {});
+        clearTimeout(forceExit);
+        process.exit(exitCode);
+      };
+      if (server.listening) server.close(() => { void finish(); });
+      else await finish();
+    };
+    for (const signal of ["SIGINT", "SIGTERM"]) {
+      process.once(signal, () => { void gracefulShutdown(0); });
+    }
+    return { status: "started", ...listening };
+  } catch (error) {
+    await singleInstanceRuntime.release().catch(() => {});
+    throw error;
+  }
 }

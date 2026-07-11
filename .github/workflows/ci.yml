@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 3 * * *"
 
 jobs:
   check:
@@ -50,6 +53,7 @@ jobs:
       - run: npm run smoke:experience-golden-path
       - run: npm run smoke:v0.5-interaction-regressions
       - run: npm run qa:visual-shell
+      - run: npm run test:accessibility
 
   coverage:
     runs-on: ubuntu-latest
@@ -61,3 +65,27 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify:coverage
+
+  reliability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - run: npm run test:reliability
+      - run: npm run soak:persistence-local
+
+  windows-launcher:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - run: npm ci
+      - shell: pwsh
+        run: ./scripts/windows-launcher-smoke.ps1

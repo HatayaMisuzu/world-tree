@@ -8,6 +8,7 @@ export function createConfigRuntime(deps = {}) {
     readJson,
     writeJson,
     updateJson,
+    stateCoordinator = null,
     chmod,
     buildOpenAICompatibleChatBody,
     llmHttpError,
@@ -50,11 +51,12 @@ export function createConfigRuntime(deps = {}) {
   }
   
   async function saveConfig(update) {
-    return updateJson(configPath(), {}, (stored) => {
+    const persist = () => updateJson(configPath(), {}, (stored) => {
       const next = { ...DEFAULT_CONFIG, ...(stored || {}), ...update };
       delete next.llmApiKey;
       return next;
     });
+    return stateCoordinator ? stateCoordinator.runExclusive(persist) : persist();
   }
   
   function maskSecret(value) {
@@ -72,7 +74,9 @@ export function createConfigRuntime(deps = {}) {
   }
   
   async function saveSecrets(secrets) {
-    await writeJson(secretsPath(), secrets);
+    const persist = () => writeJson(secretsPath(), secrets);
+    if (stateCoordinator) await stateCoordinator.runExclusive(persist);
+    else await persist();
     if (process.platform !== "win32") {
       try {
         await chmod(secretsPath(), 0o600);
@@ -109,12 +113,14 @@ export function createConfigRuntime(deps = {}) {
       return await getSecretState();
     }
     const id = String(payload?.id || "default").replace(/[^\w.-]/g, "-") || "default";
-    await updateJson(secretsPath(), {}, (stored) => {
+    const persist = () => updateJson(secretsPath(), {}, (stored) => {
       const llm = stored?.llm || {};
       const items = Array.isArray(llm.items) ? llm.items : [];
       const nextItem = { id, label, value };
       return { ...stored, llm: { ...llm, active: id, items: [nextItem, ...items.filter(i => i.id !== id)] } };
     });
+    if (stateCoordinator) await stateCoordinator.runExclusive(persist);
+    else await persist();
     if (process.platform !== "win32") {
       try { await chmod(secretsPath(), 0o600); } catch {}
     }

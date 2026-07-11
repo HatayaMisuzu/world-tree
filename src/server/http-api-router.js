@@ -99,6 +99,7 @@ export function createHttpApiRouter(deps = {}) {
     WORLDS_DIR,
     readdirSync,
     PKG_VERSION,
+    getInstanceInfo,
     userDataPath,
     calcDirectorySizeLimited,
     getLatestVersion,
@@ -108,7 +109,6 @@ export function createHttpApiRouter(deps = {}) {
     DEBUG_LOG,
     HttpError
   } = deps;
-
   async function handleAPI(req, res) {
     const requestUrl = req.url || "/api/unknown";
     try {
@@ -120,7 +120,6 @@ export function createHttpApiRouter(deps = {}) {
     if (!checkRateLimit(req.socket?.remoteAddress || "127.0.0.1", RATE_MAX_API)) {
       return jsonError(res, 429, "RATE_LIMITED", "请求太频繁了。请稍等一分钟再试。", "API rate limit exceeded");
     }
-  
     // CORS — 仅允许本地来源，不反射攻击者 Origin
     const origin = req.headers.origin || "";
     const originHost = parseOriginHost(origin);
@@ -535,6 +534,7 @@ export function createHttpApiRouter(deps = {}) {
         return jsonResponse(res, {
           status: "ok",
           version: PKG_VERSION,
+          instance: typeof getInstanceInfo === "function" && getInstanceInfo(),
           uptime: Math.round(process.uptime()),
           llmConfigured,
           llmProfileConfigured,

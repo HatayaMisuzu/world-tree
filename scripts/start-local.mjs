@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 
 const requestedPort = process.env.PORT || "3000";
+const probeOnly = process.env.WORLD_TREE_LAUNCHER_PROBE_ONLY === "1";
 const child = spawn(process.execPath, ["server.js"], {
   cwd: process.cwd(),
   env: { ...process.env, PORT: requestedPort },
@@ -8,6 +9,14 @@ const child = spawn(process.execPath, ["server.js"], {
 });
 
 let browserStarted = false;
+let probeFinished = false;
+
+function finishProbe(url) {
+  if (!probeOnly || probeFinished) return;
+  probeFinished = true;
+  console.log(`WORLD_TREE_LAUNCHER_PROBE_URL=${url}`);
+  if (child.exitCode === null) child.kill("SIGTERM");
+}
 
 async function waitForHealth(baseUrl, attempts = 40) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -34,11 +43,17 @@ function openBrowser(url) {
 child.stdout.on("data", (chunk) => {
   const text = chunk.toString("utf8");
   process.stdout.write(text);
+  const existing = text.match(/WORLD_TREE_EXISTING_INSTANCE_URL=(http:\/\/[^\s]+)/);
+  if (existing) {
+    if (probeOnly) finishProbe(existing[1]);
+    else openBrowser(existing[1]);
+  }
   const match = text.match(/URL:\s+(http:\/\/[^\s]+)/);
   if (!browserStarted && match) {
     browserStarted = true;
     void waitForHealth(match[1]).then((healthy) => {
-      if (healthy) openBrowser(match[1]);
+      if (healthy && probeOnly) finishProbe(match[1]);
+      else if (healthy) openBrowser(match[1]);
       else console.warn(`[launcher] 服务未在预期时间内通过健康检查：${match[1]}`);
     });
   }

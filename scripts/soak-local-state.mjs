@@ -27,13 +27,13 @@ try {
       const restoreMs = performance.now() - restoreStarted;
       if (state?.turnCount !== turn || tail.at(-1)?.turn !== turn) throw new Error(`restore mismatch at turn ${turn}`);
       if (restoreMs > 2000) throw new Error(`restore exceeded 2s at turn ${turn}: ${restoreMs.toFixed(1)}ms`);
-      console.log(`[soak] ${turn} turns: restore=${restoreMs.toFixed(1)}ms history=${(await stat(historyPath)).size}B`);
+      console.log(`[persistence-soak] ${turn} iterations: restore=${restoreMs.toFixed(1)}ms history=${(await stat(historyPath)).size}B`);
     }
   }
 
   const heapGrowth = process.memoryUsage().heapUsed - startedHeap;
   if (heapGrowth > 128 * 1024 * 1024) throw new Error(`heap growth exceeded 128 MiB: ${heapGrowth}`);
-  console.log(`[soak] PASS: 100/500/1000 turns, heap growth ${(heapGrowth / 1024 / 1024).toFixed(1)} MiB`);
+  console.log(`[persistence-soak] PASS: 100/500/1000 local persistence iterations, heap growth ${(heapGrowth / 1024 / 1024).toFixed(1)} MiB`);
 } finally {
   await rm(root, { recursive: true, force: true });
 }

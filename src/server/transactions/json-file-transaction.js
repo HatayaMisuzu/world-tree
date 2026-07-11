@@ -53,14 +53,21 @@ export function createJsonFileTransaction({ journalPath, faultInjector = null } 
 
   async function recover() {
     ensureDir(dirname(journal));
-    return withFileLock(transactionLock, recoverUnlocked);
+    return runExclusive(recoverUnlocked);
+  }
+
+  /** Shared coordination domain for config, secrets, and connection state. */
+  async function runExclusive(operation) {
+    ensureDir(dirname(journal));
+    return withFileLock(transactionLock, operation);
   }
 
   async function transact(buildPlan) {
     ensureDir(dirname(journal));
-    return withFileLock(transactionLock, async () => {
+    return runExclusive(async () => {
       await recoverUnlocked();
       const plan = typeof buildPlan === "function" ? await buildPlan() : buildPlan;
+      await inject("after-plan", { plan });
       const rawEntries = plan?.entries || plan;
       if (Array.isArray(rawEntries) && rawEntries.length === 0) return plan?.result;
       const entries = validateEntries(rawEntries);
@@ -77,5 +84,5 @@ export function createJsonFileTransaction({ journalPath, faultInjector = null } 
     });
   }
 
-  return { journalPath: journal, recover, transact };
+  return { journalPath: journal, recover, runExclusive, transact };
 }
