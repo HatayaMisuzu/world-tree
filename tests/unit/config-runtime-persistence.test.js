@@ -1,0 +1,48 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { chmod, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { createConfigRuntime } from "../../src/server/config-runtime.js";
+import { readJson, updateJson, writeJson } from "../../src/shared/fs-utils.js";
+
+test("config runtime coordinates config and secret persistence without storing masked keys", async () => {
+  const root = await mkdtemp(join(tmpdir(), "world-tree-config-runtime-"));
+  let coordinatorCalls = 0;
+  const runtime = createConfigRuntime({
+    ROOT: root,
+    DATA_ROOT_OVERRIDE: root,
+    join,
+    userDataPath: (...parts) => join(root, "userData", ...parts),
+    readJson,
+    writeJson,
+    updateJson,
+    stateCoordinator: { async runExclusive(operation) { coordinatorCalls += 1; return operation(); } },
+    chmod,
+    buildOpenAICompatibleChatBody: () => ({}),
+    llmHttpError: () => ({}),
+    errorPayload: () => ({})
+  });
+  try {
+    await runtime.saveConfig({ theme: "light", llmApiKey: "must-not-persist" });
+    assert.equal((await runtime.loadConfig()).theme, "light");
+    assert.equal((await runtime.loadConfig()).llmApiKey, undefined);
+
+    await runtime.saveSecrets({ llm: { active: "one", items: [{ id: "one", label: "One", value: "abcdefgh" }] } });
+    assert.equal(await runtime.getActiveLlmValue(), "abcdefgh");
+    assert.equal((await runtime.getSecretState()).llm.items[0].masked, "*******h");
+    await runtime.saveLlmSecret({ id: "two", label: "Two", value: "secret-two" });
+    assert.equal(await runtime.getActiveLlmValue(), "secret-two");
+    assert.equal((await runtime.saveLlmSecret({ id: "two", value: "****" })).llm.active, "two");
+    assert.equal(runtime.maskSecret(""), "");
+    assert.equal(runtime.maskSecret("abcd"), "****");
+    assert.equal(runtime.maskSecret("abcdef"), "*****f");
+    assert.ok(coordinatorCalls >= 3);
+
+    assert.equal(runtime.strictProbeFailure(runtime.parseChatCompletionProbe("not json")).status, "fail");
+    assert.equal(runtime.strictProbeFailure(runtime.parseChatCompletionProbe(JSON.stringify({ choices: [{ message: { content: runtime.LLM_CONNECTION_SENTINEL } }] }))), null);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
