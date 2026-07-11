@@ -51,7 +51,7 @@
       <section class="home-hero">
         <div class="home-hero-copy">
           <span class="eyebrow">你的世界仍在生长</span>
-          <h1>${current ? `继续「${U.esc(current.displayName || current.name)}」` : "从一个选择，长出持续的世界"}</h1>
+          <h2>${current ? `继续「${U.esc(current.displayName || current.name)}」` : "从一个选择，长出持续的世界"}</h2>
           <p>${current ? `上次停在第 ${current.turnCount || 0} 回合。状态、角色和世界记忆都保存在本机。` : "探索一个示例、与角色相遇，或者把自己的灵感变成可继续的项目。"}</p>
           <div class="actions">${continueAction}${demo ? `<button data-action="install-first-run-demo">从示例开始</button>` : ""}</div>
         </div>
@@ -112,7 +112,7 @@
     const demo = AS.examples.find(item => item.recommendedForFirstRun) || AS.examples.find(item => item.kind === "playable_demo");
     return `<div class="grid product-catalog">
       <header class="catalog-intro">
-        <div><span class="eyebrow">Experience Library</span><h1>选择一种体验</h1><p>所有体验都会把进度保存在同一个世界工作区中。推荐先从“世界探索”或“人物互动”开始。</p></div>
+        <div><span class="eyebrow">Experience Library</span><h2>选择一种体验</h2><p>所有体验都会把进度保存在同一个世界工作区中。推荐先从“世界探索”或“人物互动”开始。</p></div>
         ${demo ? `<button class="primary" data-action="install-first-run-demo">先用示例体验</button>` : ""}
       </header>
       <div class="experience-grid">
@@ -132,7 +132,7 @@
     const forge = registry.get("creation-forge");
     return `<div class="grid creation-hub">
       <header class="catalog-intro">
-        <div><span class="eyebrow">Creation Studio</span><h1>把灵感变成可继续的世界</h1><p>先收集素材，再生成草稿，最后由你审核确认。任何候选内容都不会自动写入正式设定。</p></div>
+        <div><span class="eyebrow">Creation Studio</span><h2>把灵感变成可继续的世界</h2><p>先收集素材，再生成草稿，最后由你审核确认。任何候选内容都不会自动写入正式设定。</p></div>
       </header>
       <section class="creation-steps" aria-label="创作流程">
         <span class="active"><b>1</b>提供素材</span><span><b>2</b>生成草稿</span><span><b>3</b>预览审核</span><span><b>4</b>保存交付</span>
@@ -176,7 +176,7 @@
     const body = ({ projects: projectsPanel, characters: renderCharacters, worldbook: renderWorldbook, review: renderReview, alchemy: renderAlchemy, worlddata: renderWorldData })[AS.libraryTab]();
     return `<div class="grid content-library">
       <header class="catalog-intro content-intro">
-        <div><span class="eyebrow">Your Library</span><h1>我的内容</h1><p>项目、人物、世界设定和候选变化都保存在这里。正式内容与待确认内容始终分开。</p></div>
+        <div><span class="eyebrow">Your Library</span><h2>我的内容</h2><p>项目、人物、世界设定和候选变化都保存在这里。正式内容与待确认内容始终分开。</p></div>
       </header>
       <section class="content-summary">
         <div><span>项目</span><strong>${AS.modules.length}</strong></div><div><span>人物</span><strong>${AS.characters.length}</strong></div><div><span>世界设定</span><strong>${AS.worldbookEntries.length}</strong></div><div class="${AS.reviewItems.length ? "attention" : ""}"><span>待确认</span><strong>${AS.reviewItems.length}</strong></div>
@@ -196,7 +196,7 @@
     ];
     const body = ({ connections: renderConnections, narrative: renderNarrativeSettings, advanced: renderAdvancedSettingsCard })[AS.settingsTab]();
     return `<div class="grid product-settings">
-      <header class="catalog-intro content-intro"><div><span class="eyebrow">Settings</span><h1>设置</h1><p>先确认模型能连接，再开始体验。密钥、世界和运行记录默认只保存在本机。</p></div></header>
+      <header class="catalog-intro content-intro"><div><span class="eyebrow">Settings</span><h2>设置</h2><p>先确认模型能连接，再开始体验。密钥、世界和运行记录默认只保存在本机。</p></div></header>
       <section class="settings-readiness">
         <div><span>模型服务</span><strong class="${getModelConnectionUiState().tone === "ok" ? "status-good" : "status-attention"}">${U.esc(getModelConnectionUiState().label)}</strong></div>
         <div><span>API 密钥</span><strong data-model-api-key-status>${getModelConnectionUiState().hasApiKey ? "已保存在本机" : getModelConnectionUiState().profileConfigured ? "未保存密钥" : "尚未配置"}</strong></div>

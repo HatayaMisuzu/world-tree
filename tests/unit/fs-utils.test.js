@@ -11,6 +11,7 @@ import {
   readJson,
   readJsonSync,
   readJsonlTail,
+  updateJson,
   writeJson
 } from "../../src/server/fs-utils.js";
 
@@ -48,6 +49,14 @@ test("readJsonlTail returns only the requested tail records", async () => {
   });
 });
 
+test("readJsonlTail skips a truncated or corrupt final record", async () => {
+  await withTempRoot(async (root) => {
+    const file = join(root, "truncated.jsonl");
+    await writeFile(file, '{"turn":1}\n{"turn":2}\n{"turn":');
+    assert.deepEqual(await readJsonlTail(file, 10), [{ turn: 1 }, { turn: 2 }]);
+  });
+});
+
 test("calcDirectorySizeLimited reports truncation when entry budget is low", async () => {
   await withTempRoot(async (root) => {
     ensureDir(join(root, "many"));
@@ -64,17 +73,25 @@ test("calcDirectorySizeLimited reports truncation when entry budget is low", asy
   });
 });
 
-test("writeJson uses unique tmp name and does not leave .tmp residue", async () => {
+test("writeJson serializes 200 concurrent writes without errors or tmp residue", async () => {
   await withTempRoot(async (root) => {
     const file = join(root, "data.json");
-    for (let i = 0; i < 5; i++) {
-      await writeJson(file, { ok: true, i });
-    }
+    await Promise.all(Array.from({ length: 200 }, (_, i) => writeJson(file, { ok: true, i })));
     const result = readJsonSync(file, null);
-    assert.deepEqual(result, { ok: true, i: 4 });
+    assert.deepEqual(result, { ok: true, i: 199 });
     const { readdirSync } = await import("node:fs");
     const tmpFiles = readdirSync(root).filter(f => f.endsWith(".tmp"));
     assert.equal(tmpFiles.length, 0, `残留 tmp 文件: ${tmpFiles.join(", ")}`);
+  });
+});
+
+test("updateJson locks the complete concurrent read-modify-write cycle", async () => {
+  await withTempRoot(async (root) => {
+    const file = join(root, "counter.json");
+    await Promise.all(Array.from({ length: 250 }, () => updateJson(file, { count: 0 }, (current) => ({
+      count: current.count + 1
+    }))));
+    assert.deepEqual(readJsonSync(file, null), { count: 250 });
   });
 });
 

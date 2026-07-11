@@ -1,38 +1,12 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env sh
+set -eu
 
-echo ""
-WT_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || echo unknown)"
-echo "  🌳 World Tree Desktop v${WT_VERSION}"
-echo "  ════════════════════════════"
-echo ""
-
-# 检测 Node.js
-if ! command -v node &> /dev/null; then
-    echo "  ❌ 未检测到 Node.js，请先安装："
-    echo "     https://nodejs.org （推荐 v18+ LTS 版本）"
-    echo ""
-    exit 1
+cd "$(dirname "$0")"
+if ! command -v node >/dev/null 2>&1; then
+  echo "Node.js 18 or newer is required: https://nodejs.org" >&2
+  exit 1
 fi
 
-echo "  ✅ Node.js 版本: $(node -v)"
-
-# 首次运行自动安装依赖
-if [ ! -d "node_modules" ]; then
-    echo "  📦 首次运行，正在安装依赖..."
-    npm install
-    echo "  ✅ 依赖安装完成"
-fi
-
-# 启动服务器
-echo "  🚀 启动服务器..."
-echo ""
-
-# 尝试自动打开浏览器
-if command -v xdg-open &> /dev/null; then
-    xdg-open http://localhost:3000 &
-elif command -v open &> /dev/null; then
-    open http://localhost:3000 &
-fi
-
-node server.js
+WT_VERSION="$(node -p "require('./package.json').version")"
+echo "Starting World Tree ${WT_VERSION} safely; an available port will be selected automatically."
+exec node scripts/start-local.mjs

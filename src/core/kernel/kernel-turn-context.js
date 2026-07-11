@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { readJson } from "../../server/fs-utils.js";
+import { readJson } from "../../shared/fs-utils.js";
 import { deepFilterHiddenFields } from "../system/mode-isolation-policy.js";
 import { createLivingWorldPacket } from "../living-world/living-world-packet.js";
 import { createExperienceStabilityPacket } from "../experience-stability/experience-stability-packet.js";

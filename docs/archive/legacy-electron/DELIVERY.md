@@ -1,4 +1,6 @@
-# World Tree Desktop Delivery
+# Historical World Tree Desktop Delivery
+
+> Archived legacy Electron delivery notes. This document is historical and must not be used as current setup or release guidance.
 
 This delivery contains the first implementation of the Electron-based World Tree Desktop control panel.
 

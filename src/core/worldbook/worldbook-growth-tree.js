@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readJson, writeJson, appendJsonl } from "../../server/fs-utils.js";
+import { readJson, writeJson, appendJsonl } from "../../shared/fs-utils.js";
 import { evaluateWorldbookPromotion } from "./worldbook-promotion-policy.js";
 const treePath = (root) => join(root, "runtime", "worldbook-growth-tree.json");
 export async function readWorldbookGrowthTree(projectRoot) { const data = await readJson(treePath(projectRoot), { version: 1, candidates: {} }); return { version: 1, candidates: {}, ...data, candidates: data?.candidates || {} }; }

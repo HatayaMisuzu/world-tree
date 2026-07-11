@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { appendJsonl } from "../../server/fs-utils.js";
+import { appendJsonl } from "../../shared/fs-utils.js";
 import { recordWorldbookCandidate } from "../worldbook/worldbook-growth-tree.js";
 import { createCompletionProposal } from "./completion-proposal.js";
 import { evaluateProcessingDelivery } from "./processing-policy.js";

@@ -91,3 +91,20 @@ test("connection deletion synchronizes config, active secret, and health", async
     await removeTempDir(dataDir);
   }
 });
+
+test("concurrent config patches preserve independent fields", async () => {
+  const dataDir = await createTempDataDir("world-tree-config-concurrency-");
+  const server = await startWorldTreeServer({ dataDir });
+  try {
+    await Promise.all([
+      api(server, "/api/config", { method: "POST", body: JSON.stringify({ theme: "light" }) }),
+      api(server, "/api/config", { method: "POST", body: JSON.stringify({ language: "en-US" }) })
+    ]);
+    const config = await api(server, "/api/config");
+    assert.equal(config.body.theme, "light");
+    assert.equal(config.body.language, "en-US");
+  } finally {
+    await server.stop();
+    await removeTempDir(dataDir);
+  }
+});

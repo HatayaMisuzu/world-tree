@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readJson, writeJson } from "../../server/fs-utils.js";
+import { readJson, writeJson } from "../../shared/fs-utils.js";
 import { validateInertiaShift } from "./emotional-inertia-policy.js";
 
 const filePath = (root) => join(root, "runtime", "character-inertia.json");

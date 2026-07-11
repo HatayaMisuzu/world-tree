@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readJson, readJsonlTail, appendJsonl } from "../../server/fs-utils.js";
+import { readJson, readJsonlTail, appendJsonl } from "../../shared/fs-utils.js";
 import { createTelemetryDigest } from "./telemetry-digest.js";
 
 export async function collectWorldTelemetry(branchRoot, context = {}, options = {}) {

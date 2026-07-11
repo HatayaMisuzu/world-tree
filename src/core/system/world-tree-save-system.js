@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { writeJson, appendJsonl, ensureDir } from "../../server/fs-utils.js";
-import { pathWithinRoot } from "../../server/path-security.js";
+import { writeJson, appendJsonl, ensureDir } from "../../shared/fs-utils.js";
+import { pathWithinRoot } from "./path-boundary.js";
 import { assertModeCanWrite } from "./mode-isolation-policy.js";
 
 export function createWorldTreeSaveSnapshot(project = {}, options = {}) {

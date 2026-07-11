@@ -12,7 +12,7 @@ import { applyOverlayOperation, applyOverlayWriteSet } from "./src/server/persis
 import { prepareImportFiles, validateImportFileKey } from "./src/server/data-import-service.js";
 import { sanitizeWorldName, createModuleService } from "./src/server/module-service.js";
 import { pathWithinRoot, resolveInsideRoot } from "./src/server/path-security.js";
-import { appendJsonl, calcDirectorySizeLimited, ensureDir, readJson, readJsonSync, readJsonlTail, writeJson } from "./src/server/fs-utils.js";
+import { appendJsonl, calcDirectorySizeLimited, ensureDir, readJson, readJsonSync, readJsonlTail, updateJson, writeJson } from "./src/server/fs-utils.js";
 import { getUserDataRoot, userDataPath } from "./src/server/user-data-root.js";
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
@@ -78,6 +78,8 @@ import { mapLlmError } from "./src/server/llm-error-mapper.js";
 import { buildOpenAICompatibleChatBody } from "./src/adapters/providers/openai-compatible.js";
 import { createConfigRuntime } from "./src/server/config-runtime.js";
 import { createConnectionRuntime } from "./src/server/connection-runtime.js";
+import { createJsonFileTransaction } from "./src/server/transactions/json-file-transaction.js";
+import { listenOnAvailablePort } from "./src/server/app-runtime.js";
 import { createStaticShell } from "./src/server/static-shell.js";
 import { createHttpApiRouter } from "./src/server/http-api-router.js";
 import { createDebugLogger } from "./src/server/debug-log.js";
@@ -162,7 +164,7 @@ const {
   strictProbeFailure,
   partialProbeResult,
   testLlmConnection
-} = createConfigRuntime({ ROOT, DATA_ROOT_OVERRIDE, join, userDataPath, readJson, writeJson, chmod, buildOpenAICompatibleChatBody, llmHttpError, errorPayload });
+} = createConfigRuntime({ ROOT, DATA_ROOT_OVERRIDE, join, userDataPath, readJson, writeJson, updateJson, chmod, buildOpenAICompatibleChatBody, llmHttpError, errorPayload });
 
 const WORLDS_DIR = () => join(dataRoot(), "engine", "worlds");
 const CHARACTERS_DIR = () => join(dataRoot(), "engine", "characters");
@@ -175,6 +177,10 @@ const REVIEW_QUEUE_PATH = () => DATA_ROOT_OVERRIDE
   : userDataPath("alchemy-review.json");
 const PLUGINS_DIR = () => userDataPath("plugins");
 const TURN_DEBUG_DIR = (moduleId = "global") => userDataPath("turn-debug", slugName(moduleId, "global"));
+const connectionStateTransaction = createJsonFileTransaction({
+  journalPath: userDataPath(".transactions", "connection-state.json")
+});
+await connectionStateTransaction.recover();
 
 // ═══════════════════════════════════════════════════════════════
 //  Module Service（工厂函数注入）
@@ -1782,12 +1788,11 @@ async function handleCharacterUpdate(body = {}) {
 const {
   connectionTemplates,
   loadConnectionsRaw,
-  saveConnectionsRaw,
   secretValueById,
   publicConnections,
   testConnectionProfile,
   handleConnections
-} = createConnectionRuntime({ readJsonSync, CONNECTIONS_PATH, writeJson, loadSecrets, secretsPath, maskSecret, loadPipelineProfiles, errorPayload, llmProbeMessages, strictProbeFailure, LLM_CONNECTION_SENTINEL, mapLlmError, llmHttpError, parseChatCompletionProbe, partialProbeResult, buildOpenAICompatibleChatBody, slugName, saveConfig, saveSecrets, saveLlmSecret });
+} = createConnectionRuntime({ readJsonSync, CONNECTIONS_PATH, loadConfig, configPath, loadSecrets, secretsPath, maskSecret, loadPipelineProfiles, errorPayload, llmProbeMessages, strictProbeFailure, LLM_CONNECTION_SENTINEL, mapLlmError, llmHttpError, parseChatCompletionProbe, partialProbeResult, buildOpenAICompatibleChatBody, slugName, connectionStateTransaction });
 
 async function handleWorldbook(body = {}, method = "GET", url = null) {
   const moduleKey = body.moduleKey || url?.searchParams?.get("moduleKey") || "";
@@ -2849,26 +2854,10 @@ ensureDir(join(dataRoot(), "engine", "global-memory"));
 ensureDir(CHARACTERS_DIR());
 ensureDir(PLUGINS_DIR());
 
-// 检测端口占用
-function tryListen(server, port, host = HOST) {
-  return new Promise((resolve, reject) => {
-    server.once("error", (err) => {
-      if (err.code === "EADDRINUSE") {
-        reject(new Error(`端口 ${port} 已被占用。请先终止旧进程：\n  netstat -ano | findstr :${port}\n  taskkill //F //PID <pid>`));
-      } else if (err.code === "EACCES") {
-        reject(new Error(`端口 ${port} 需要管理员权限。请使用 1024 以上的端口号。`));
-      } else {
-        console.error(`[server] 端口 ${port} 启动失败: ${err.message} (code: ${err.code || "unknown"})`);
-        reject(err);
-      }
-    });
-    server.listen(port, host, () => resolve(port));
-  });
-}
-
-tryListen(server, PORT).then((p) => {
+listenOnAvailablePort(server, { port: PORT, host: HOST }).then(({ port: p, requestedPort, usedFallback }) => {
   console.log(`🌳 World Tree Web 服务启动`);
   console.log(`   URL: http://${HOST}:${p}`);
+  if (usedFallback) console.log(`   端口 ${requestedPort} 已占用，已安全改用 ${p}（未终止其他程序）`);
   console.log(`   配置: ${configPath()}`);
   console.log(`   数据: ${dataRoot()}`);
 }).catch((err) => {

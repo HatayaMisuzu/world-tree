@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { appendJsonl, readJsonlTail, readJson, writeJson } from "../../server/fs-utils.js";
+import { appendJsonl, readJsonlTail, readJson, writeJson } from "../../shared/fs-utils.js";
 
 const currentScenePath = (root) => join(root, "runtime", "current-scene.json");
 const summariesPath = (root) => join(root, "runtime", "scene-summaries.jsonl");

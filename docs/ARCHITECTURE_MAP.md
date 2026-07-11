@@ -7,7 +7,7 @@
 
 World Tree is currently a local-first Node HTTP application with a browser console UI.
 
-Current baseline is `0.5.0-product-experience-rebuild.0`.
+Current baseline is `0.5.0-product-experience-rebuild.1`.
 
 This is not full V2. Full product-wide V2 is NOT COMPLETE, and product-wide playable closure is NOT COMPLETE.
 
@@ -39,6 +39,8 @@ local JSON / JSONL persistence
 | Mode capsule layer | `src/core/modes/`, `src/core/v2-ready/` | mode contracts, mode-specific readback, V2-ready sockets | Full mode engines unless explicitly implemented |
 | Shared kernel | `src/core/kernel/`, related core services | shared turn/context/proposal support | Direct UI mutation |
 | Persistence | local `userData` / `engine/worlds` / `branches` JSON/JSONL | save/load, runtime state, shared files | Direct canon mutation outside approved path |
+| Shared infrastructure | `src/shared/` | durable JSON primitives and cross-layer utilities | HTTP routing or domain orchestration |
+| Transactions | `src/server/transactions/` | recoverable multi-file commit journals and startup recovery | UI state or domain policy |
 | LLM integration | currently routed through server-side config/test/LLM calls | provider call and diagnostics | storage format ownership |
 | Tests/scripts | `tests/`, `scripts/` | safety checks, smoke tests, audits | feature implementation |
 
@@ -55,9 +57,11 @@ src/server/connection-runtime.js
 src/server/static-shell.js
 src/server/http-api-router.js
 src/server/debug-log.js
+src/server/app-runtime.js
+src/server/transactions/json-file-transaction.js
 ```
 
-`server.js` retains startup, dependency assembly, lifecycle, persistence orchestration, and domain handlers that still need a later bounded service pass. Non-V2 HTTP dispatch, static shell serving, configuration/secrets diagnostics, and connection-profile orchestration are no longer inline in the entry file.
+`server.js` retains startup, dependency assembly, lifecycle, persistence orchestration, and domain handlers that still need a later bounded service pass. Port selection, recoverable connection-state transactions, non-V2 HTTP dispatch, static shell serving, configuration/secrets diagnostics, and connection-profile orchestration are no longer inline in the entry file. Architecture gates prevent the known hotspot files, import fan-out, route filesystem debt, and cross-layer imports from growing beyond the audited baseline.
 
 API dispatch now flows through a bounded router and selected V2 adapter:
 
@@ -101,7 +105,7 @@ Version, Git HEAD, unit/integration test counts, and npm package counts are gene
 - Full mode-specific gameplay engines are not implemented.
 - Several legacy domain handlers still live in `server.js`; route dispatch itself is extracted, while later service extraction remains backlog.
 - Legacy globals remain for route, DOM, and `data-action` compatibility; a future pass may narrow them after the new controllers are stable.
-- Persistence format has not been redesigned.
+- Persistence remains JSON/JSONL, now with durable same-path writes and recoverable transactions for connection/config/secret state; other multi-file domains have not yet migrated to the transaction coordinator.
 - Proposal/canon authority model has not been rewritten.
 - LLM adapter has not been deeply split.
 - TypeScript migration has not been started.

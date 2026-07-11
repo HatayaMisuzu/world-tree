@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readJson, writeJson } from "../../server/fs-utils.js";
+import { readJson, writeJson } from "../../shared/fs-utils.js";
 
 const pathFor = (root) => join(root, "runtime", "stop-loss-windows.json");
 const empty = () => ({ version: 1, updatedAt: null, windows: [] });

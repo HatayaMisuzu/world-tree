@@ -11,6 +11,14 @@ function renderNav() {
 
 function render() {
   try {
+    const previousDialog = U.qs('[role="dialog"][aria-modal="true"]');
+    const activeBeforeRender = document.activeElement;
+    if (!previousDialog && AS.activeDrawer && activeBeforeRender instanceof HTMLElement) {
+      window.__worldTreeDialogReturnFocus = {
+        id: activeBeforeRender.id || "",
+        action: activeBeforeRender.dataset?.action || ""
+      };
+    }
     renderNav();
     U.qs("#viewTitle").textContent = window.WorldTreeNavigation?.labelFor(AS.view) || CFG.nav.find(v => v.id === AS.view)?.label || "首页";
     const currentName = AS.selectedModule ? (AS.selectedModule.displayName || AS.selectedModule.name) : "未选择世界";
@@ -33,6 +41,13 @@ function render() {
     if (AS.view === "library" && AS.libraryTab === "characters") applyCharacterSearchFilter(AS.characterQuery);
     const overlay = U.qs('[role="dialog"][aria-modal="true"]');
     if (overlay) requestAnimationFrame(() => overlay.focus());
+    if (!overlay && previousDialog && window.__worldTreeDialogReturnFocus) {
+      const target = window.__worldTreeDialogReturnFocus.id
+        ? document.getElementById(window.__worldTreeDialogReturnFocus.id)
+        : U.qs(`[data-action="${window.__worldTreeDialogReturnFocus.action}"]`);
+      requestAnimationFrame(() => target?.focus());
+      window.__worldTreeDialogReturnFocus = null;
+    }
   } catch (err) {
     console.error(err);
     U.qs("#main").innerHTML = `<div class="panel">${C.noticeHtml(`页面渲染失败：${U.esc(err.message)}`, "bad")}<button onclick="location.reload()">刷新页面</button></div>`;
@@ -273,6 +288,7 @@ async function installFirstRunDemo() {
 }
 
 function bindEvents() {
+  U.qs("#singlePlayerScriptKillV2SelectedRole")?.setAttribute("aria-label", "选择我的角色");
   U.qsa("[data-view]").forEach(btn => {
     btn.onclick = async () => {
       AS.view = btn.dataset.view;
@@ -281,6 +297,7 @@ function bindEvents() {
       if (AS.view === "library") AS.libraryTab = "projects";
       await loadViewData();
       render();
+      requestAnimationFrame(() => U.qs("#main")?.focus());
     };
   });
 

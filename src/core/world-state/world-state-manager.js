@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readJson, writeJson } from "../../server/fs-utils.js";
+import { readJson, writeJson } from "../../shared/fs-utils.js";
 import { appendChange } from "../tracking/tracking-store.js";
 
 const statePath = (root) => join(root, "shared", "world_state.json");

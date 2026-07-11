@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readJson, writeJson } from "../../server/fs-utils.js";
+import { readJson, writeJson } from "../../shared/fs-utils.js";
 const treePath = (root) => join(root, "timeline-tree.json");
 export async function readTimelineTree(projectRoot) { return readJson(treePath(projectRoot), null); }
 export async function writeTimelineTree(projectRoot, tree) { await writeJson(treePath(projectRoot), tree); return tree; }
