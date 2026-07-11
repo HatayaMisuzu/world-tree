@@ -79,6 +79,29 @@ test("config runtime coordinates config and secret persistence without storing m
       errorPayload: (code) => ({ code })
     });
     assert.equal((await emptyRuntime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).code, "LLM_API_KEY_MISSING");
+
+    const originalFetch = globalThis.fetch;
+    try {
+      globalThis.fetch = async () => ({
+        ok: true,
+        text: async () => JSON.stringify({ choices: [{ message: { content: runtime.LLM_CONNECTION_SENTINEL } }] })
+      });
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).status, "ok");
+
+      globalThis.fetch = async () => ({ ok: false, status: 401, text: async () => "unauthorized" });
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).safeToSave, false);
+
+      globalThis.fetch = async () => ({
+        ok: true,
+        text: async () => JSON.stringify({ choices: [{ message: { reasoning_content: "thinking" }, finish_reason: "length" }] })
+      });
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).status, "partial");
+
+      globalThis.fetch = async () => { const error = new Error("timeout"); error.name = "TimeoutError"; throw error; };
+      assert.equal((await runtime.testLlmConnection({ config: { llmBaseUrl: "https://example.test/v1", llmModel: "model" } })).code, "LLM_TIMEOUT");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   } finally {
     await rm(root, { recursive: true, force: true });
   }
