@@ -285,8 +285,8 @@ if (mechanismCode.includes('source, sourceRef') && mechanismCode.includes('selec
 else fail("机制草稿默认选中规则缺失");
 if (!mechanismCode.includes("enqueueReviewItems") && !mechanismCode.includes("applyReviewItemToWorld")) pass("机制草稿提交不复用普通 worldbook review apply");
 else fail("机制草稿错误复用普通审核队列");
-if (serverCode.includes("createTurnStateFrame") && serverCode.includes("await saveTurnStateFrame(moduleId, frame)")) pass("persistTurn 生成并持久化 TurnStateFrame");
-else fail("persistTurn 未持久化 TurnStateFrame");
+if (serverCode.includes("createTurnStateFrame") && serverCode.includes("createTurnTransaction") && serverCode.includes('label: "turn-frame"')) pass("persistTurn 通过核心事务生成并持久化 TurnStateFrame");
+else fail("persistTurn 未通过核心事务持久化 TurnStateFrame");
 if (turnStateCode.includes('new Set(["stat_bar", "inventory_grid", "status_list"])') && turnStateCode.includes("SECRET_KEY_RE")) pass("VisualPacket 白名单与状态密钥清理存在");
 else fail("VisualPacket 白名单或状态清理缺失");
 if (combinedCode.includes("developerObservabilityOpen: false") && !combinedCode.includes("C.contextPanel()")) pass("开发者观测默认关闭且 contextPanel 不再默认挂载");

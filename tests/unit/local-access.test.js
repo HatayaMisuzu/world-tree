@@ -8,7 +8,8 @@ import {
   isLocalUrl,
   isLoopbackAddress,
   parseHostHeader,
-  parseOriginHost
+  parseOriginHost,
+  validateListenHost
 } from "../../src/server/local-access.js";
 
 function req({ remoteAddress = "127.0.0.1", host = "localhost:3000", origin = "", referer = "" } = {}) {
@@ -63,6 +64,15 @@ test("isLocalAddress and isLocalUrl keep existing local URL rules", () => {
   assert.equal(isLocalUrl("http://127.0.0.1:11434/v1"), true);
   assert.equal(isLocalUrl("https://api.deepseek.com/v1"), false);
   assert.equal(isLocalUrl("not a url"), false);
+});
+
+test("validateListenHost fails closed before runtime listen", () => {
+  for (const host of ["127.0.0.1", "::1", "localhost"]) {
+    assert.equal(validateListenHost(host), host);
+  }
+  for (const host of ["0.0.0.0", "::", "192.168.1.20", "", " ", " 127.0.0.1", "127.0.0.1:3000", "[::1]"]) {
+    assert.throws(() => validateListenHost(host), (error) => error?.code === "HOST_NOT_LOOPBACK");
+  }
 });
 
 test("createRateLimiter enforces per-window limits", () => {

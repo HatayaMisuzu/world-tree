@@ -6,6 +6,7 @@ import { join } from "node:path";
 
 import {
   appendJsonl,
+  appendJsonlBatch,
   calcDirectorySizeLimited,
   ensureDir,
   readJson,
@@ -102,5 +103,44 @@ test("writeJson cleans its tmp file when rename fails", async () => {
     await assert.rejects(() => writeJson(directoryTarget, { ok: false }));
     const residue = (await readdir(root)).filter(name => name.endsWith(".tmp"));
     assert.deepEqual(residue, []);
+  });
+});
+
+test("appendJsonl serializes concurrent writes and keeps every line parseable", async () => {
+  await withTempRoot(async (root) => {
+    const file = join(root, "concurrent.jsonl");
+    await Promise.all(Array.from({ length: 300 }, (_, index) => appendJsonl(file, { index })));
+    const records = await readJsonlTail(file, 500);
+    assert.equal(records.length, 300);
+    assert.deepEqual(records.map((record) => record.index), Array.from({ length: 300 }, (_, index) => index));
+  });
+});
+
+test("appendJsonlBatch keeps related records adjacent under concurrency", async () => {
+  await withTempRoot(async (root) => {
+    const file = join(root, "batches.jsonl");
+    await Promise.all(Array.from({ length: 100 }, (_, batch) => appendJsonlBatch(file, [
+      { batch, sequence: 1 },
+      { batch, sequence: 2 }
+    ])));
+    const records = await readJsonlTail(file, 500);
+    assert.equal(records.length, 200);
+    for (let index = 0; index < records.length; index += 2) {
+      assert.equal(records[index].batch, records[index + 1].batch);
+      assert.deepEqual([records[index].sequence, records[index + 1].sequence], [1, 2]);
+    }
+  });
+});
+
+test("appendJsonlBatch rolls back a failed write without leaving a partial line", async () => {
+  await withTempRoot(async (root) => {
+    const file = join(root, "rollback.jsonl");
+    await appendJsonl(file, { stable: true });
+    await assert.rejects(() => appendJsonlBatch(file, [{ unstable: 1 }, { unstable: 2 }], {
+      faultInjector(stage) {
+        if (stage === "after-write") throw new Error("injected append failure");
+      }
+    }), /injected append failure/);
+    assert.deepEqual(await readJsonlTail(file, 10), [{ stable: true }]);
   });
 });

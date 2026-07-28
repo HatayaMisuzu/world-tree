@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
@@ -80,5 +80,46 @@ test("assertPathInsideRoot throws coded errors for unsafe input", async () => {
       () => assertPathInsideRoot(root, "../world.json", "import path"),
       (err) => err?.code === "PATH_UNSAFE" && err?.label === "import path"
     );
+  });
+});
+
+test("resolveInsideRoot rejects an existing symlink or junction that escapes root", async (t) => {
+  await withTempRoot(async (root) => {
+    const outside = await mkdtemp(join(tmpdir(), "world-tree-path-outside-"));
+    try {
+      await writeFile(join(outside, "secret.json"), "{}");
+      const link = join(root, "shared");
+      try {
+        await symlink(outside, link, process.platform === "win32" ? "junction" : "dir");
+      } catch (error) {
+        if (["EPERM", "EACCES", "UNKNOWN"].includes(error?.code)) {
+          t.skip(`symlink/junction unavailable: ${error.code}`);
+          return;
+        }
+        throw error;
+      }
+      assert.equal(resolveInsideRoot(root, "shared/secret.json"), null);
+      assert.equal(resolveInsideRoot(root, "shared/not-created.json"), null);
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+});
+
+test("resolveInsideRoot allows normal paths and symlinks that remain inside root", async (t) => {
+  await withTempRoot(async (root) => {
+    await mkdir(join(root, "actual"));
+    await writeFile(join(root, "actual", "safe.json"), "{}");
+    assert.ok(resolveInsideRoot(root, "actual/new.json"));
+    try {
+      await symlink(join(root, "actual"), join(root, "shared"), process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      if (["EPERM", "EACCES", "UNKNOWN"].includes(error?.code)) {
+        t.skip(`symlink/junction unavailable: ${error.code}`);
+        return;
+      }
+      throw error;
+    }
+    assert.ok(resolveInsideRoot(root, "shared/safe.json"));
   });
 });

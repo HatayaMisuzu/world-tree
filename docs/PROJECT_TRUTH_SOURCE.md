@@ -70,7 +70,7 @@ Historical reports may describe past limitations or past completion claims. They
 | Selected V2 API/service loops | PASS for user-provided/structural paths |
 | Full-function LLM prompt entry audit | PASS for local prompt contract coverage; DeepSeek live provider smoke recorded for selected paths |
 | Current documentation status | post-merge user-created content product closure alignment |
-| Remote CI | GitHub Actions check-runs PASS when `npm run ci:github-actions-checks` records completed successful check-runs; legacy combined status may remain pending/0 |
+| Remote CI | `LOCAL_PASS / REMOTE_UNVERIFIED` until required GitHub Actions jobs and the `exact-sha-evidence` artifact succeed for the exact commit SHA; older check-runs are not evidence for the current SHA |
 | Browser QA | 8/8 entry matrix, four-viewport visual shell, shared experience golden path, and v0.5 interaction regression gate PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
 | Release package static assets | `ui-labels.js` static serving and npm pack inclusion fixed in current closure sprint |
 | fable5 overlay | fable5 revised four-file packet, batch 00-11 engineering run completed |

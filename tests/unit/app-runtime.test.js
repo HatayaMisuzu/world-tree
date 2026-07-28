@@ -70,3 +70,9 @@ test("listenOnAvailablePort validates ports and skips only occupied candidates",
   });
   await assert.rejects(() => listenOnAvailablePort(new FakeServer([Object.assign(new Error("blocked"), { code: "EACCES" })]), { port: 3012 }), /blocked/);
 });
+
+test("listenOnAvailablePort rejects unsafe hosts before invoking server.listen", async () => {
+  const server = new FakeServer([null]);
+  await assert.rejects(() => listenOnAvailablePort(server, { host: "0.0.0.0", port: 3010 }), (error) => error?.code === "HOST_NOT_LOOPBACK");
+  assert.equal(server.attempt, 0);
+});

@@ -2,11 +2,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  applySecurityHeaders,
   errorPayload,
   HttpError,
   jsonError,
   jsonResponse,
-  llmHttpError
+  llmHttpError,
+  SECURITY_HEADERS
 } from "../../src/server/http-response.js";
 
 function createMockResponse() {
@@ -14,9 +16,16 @@ function createMockResponse() {
     status: null,
     headers: null,
     body: "",
+    setHeaders: {},
+    hasHeader(name) {
+      return Object.hasOwn(this.setHeaders, name);
+    },
+    setHeader(name, value) {
+      this.setHeaders[name] = value;
+    },
     writeHead(status, headers = {}) {
       this.status = status;
-      this.headers = headers;
+      this.headers = { ...this.setHeaders, ...headers };
       return this;
     },
     end(body = "") {
@@ -51,7 +60,16 @@ test("jsonResponse writes JSON content type and serializes body", () => {
   jsonResponse(res, { ok: true }, 201);
   assert.equal(res.status, 201);
   assert.equal(res.headers["Content-Type"], "application/json; charset=utf-8");
+  assert.equal(res.headers["X-Content-Type-Options"], "nosniff");
   assert.equal(res.body, JSON.stringify({ ok: true }));
+});
+
+test("applySecurityHeaders provides the common local-server browser boundary", () => {
+  const res = createMockResponse();
+  applySecurityHeaders(res);
+  assert.deepEqual(res.setHeaders, SECURITY_HEADERS);
+  assert.match(res.setHeaders["Content-Security-Policy"], /frame-ancestors 'none'/);
+  assert.doesNotMatch(res.setHeaders["Content-Security-Policy"], /unsafe-eval/);
 });
 
 test("jsonError writes the standard error payload", () => {

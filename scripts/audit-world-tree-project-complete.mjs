@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// World Tree Complete Project Audit
-// Checks V2 entry closure, docs truth sources, AI guide, asset inventory, route inventory, and preflight gate.
+// World Tree Project Contract / Structure Audit
+// Compatibility filename retained. This checks declared contracts and structure;
+// it does not replace unit, integration, reliability, browser, or live-model tests.
 
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -39,7 +40,8 @@ function check(label, ok) {
 function includesAll(text, terms) { return terms.every(t => text.includes(t)); }
 function excludesAll(text, terms) { return terms.every(t => !text.includes(t)); }
 
-console.log("\n=== World Tree Complete Project Audit ===");
+console.log("\n=== World Tree Project Contract / Structure Audit ===");
+console.log("Scope: declarations and repository structure only; not complete behavioral verification.");
 
 // 1. Canonical scripts
 const scripts = pkg.scripts || {};
@@ -176,10 +178,10 @@ check("Asset matrix includes V2 entry assets", includesAll(assetMatrix, ["Tablet
 // 7. Privacy/local-first default
 check("GitHub update check is opt-in", server.includes("WORLD_TREE_ENABLE_UPDATE_CHECK") && !server.includes("WORLD_TREE_DISABLE_UPDATE_CHECK !== \"1\""));
 
-console.log(`\nProject complete audit: ${pass}/${pass + fail} pass`);
+console.log(`\nProject contract/structure audit: ${pass}/${pass + fail} pass`);
 if (fail > 0) {
   console.error("\nFailures:");
   for (const item of failures) console.error(`- ${item}`);
   process.exit(1);
 }
-console.log("All complete project checks passed.");
+console.log("All project contract/structure checks passed. Behavioral gates must run separately.");

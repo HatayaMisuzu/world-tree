@@ -12,7 +12,7 @@ import { applyOverlayOperation, applyOverlayWriteSet } from "./src/server/persis
 import { prepareImportFiles, validateImportFileKey } from "./src/server/data-import-service.js";
 import { sanitizeWorldName, createModuleService } from "./src/server/module-service.js";
 import { pathWithinRoot, resolveInsideRoot } from "./src/server/path-security.js";
-import { appendJsonl, calcDirectorySizeLimited, ensureDir, readJson, readJsonSync, readJsonlTail, updateJson, writeJson } from "./src/server/fs-utils.js";
+import { appendJsonl, appendJsonlBatch, calcDirectorySizeLimited, ensureDir, readJson, readJsonSync, readJsonlTail, updateJson, writeJson } from "./src/server/fs-utils.js";
 import { getUserDataRoot, userDataPath } from "./src/server/user-data-root.js";
 import { OVERLAY_FILES, resetPendingStore } from "./src/core/engine/overlay-store.js";
 import { clearPredictionStore } from "./src/core/engine/director.js";
@@ -24,6 +24,7 @@ import { buildRealPlayTurnContext } from "./src/core/real-play/turn-context.js";
 import { createWtpack, validateWtpack } from "./src/server/wtpack-service.js";
 import {
   errorPayload,
+  applySecurityHeaders,
   HttpError,
   jsonError,
   jsonResponse,
@@ -78,12 +79,11 @@ import { mapLlmError } from "./src/server/llm-error-mapper.js";
 import { buildOpenAICompatibleChatBody } from "./src/adapters/providers/openai-compatible.js";
 import { createConfigRuntime } from "./src/server/config-runtime.js";
 import { createConnectionRuntime } from "./src/server/connection-runtime.js";
-import { createJsonFileTransaction } from "./src/server/transactions/json-file-transaction.js";
+import { createJsonFileTransaction, createTurnTransaction, recoverTurnTransactionsUnderRoot } from "./src/server/transactions/index.js";
 import { createSingleInstanceRuntime, listenOnAvailablePort, startSingleInstanceServer } from "./src/server/app-runtime.js";
 import { createStaticShell } from "./src/server/static-shell.js";
 import { createHttpApiRouter } from "./src/server/http-api-router.js";
 import { createDebugLogger } from "./src/server/debug-log.js";
-
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), ".");
 const PKG_VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8")).version;
 const PORT = process.env.PORT || 3000;
@@ -444,8 +444,29 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
   const assistantId = `turn-${turnCount}-assistant`;
   const saveId = safeEntityId(kernelContext?.activeBranchId || previousRuntimeState.activeBranch || "main", "main");
   const engineSnapshot = result.overlayPatch?._engineState || null;
+  const statePath = join(rtDir, "state.json");
+  const nextRuntimeState = { ...previousRuntimeState, turnCount, activeBranch: saveId, lastScene: result.parsedSections?.["状态"]?.scene || "",
+    lastInput: input, engineState: engineState || {}, engineSnapshot, updatedAt: now };
+  const previousFrame = await loadLatestTurnStateFrame(moduleId, saveId);
+  const mechanismCache = readJsonSync(mechanismCachePath(moduleId) || "", { mechanisms: [] });
+  const beforeState = previousFrame?.afterState || emptyConfirmedState();
+  const afterState = buildConfirmedAfterState({ previousState: beforeState, engineState: engineState || {},
+    parsedSections: result.parsedSections || {}, overlayPatch: result.overlayPatch || {}, mechanismCache,
+    appliedMechanismChanges: result.appliedMechanismChanges || result.mechanismChanges || [] });
+  const frame = createTurnStateFrame({ turnId, round: turnCount, userMessageId: userId, assistantMessageId: assistantId,
+    moduleKey: moduleId, saveId, beforeState, afterState, engineState: engineState || {}, mechanismCache,
+    worldbookHash: currentWorldbookHash(moduleId, isCharacter ? null : baseDir), createdAt: now });
+  const framePath = statusFramePath(moduleId, turnId);
+  const frameIndexPath = statusIndexPath(moduleId);
+  const currentFrameIndex = readJsonSync(frameIndexPath, { version: "turn-state-index.v1", turns: [] });
+  const frameIndexItem = { turnId: frame.turnId, round: frame.round, userMessageId: frame.userMessageId,
+    assistantMessageId: frame.assistantMessageId, saveId: frame.saveId, createdAt: frame.createdAt,
+    summary: frame.changes?.length ? `${frame.changes.length} 项已确认状态变化` : "本轮暂无状态变化",
+    changeCount: frame.changes?.length || 0 };
+  const nextFrameIndex = { version: "turn-state-index.v1", moduleKey: moduleId, updatedAt: now,
+    turns: [frameIndexItem, ...(Array.isArray(currentFrameIndex.turns) ? currentFrameIndex.turns : [])
+      .filter((entry) => entry.turnId !== turnId)].slice(0, 500) };
 
-  // 🔄 自动备份 chat.jsonl（保留最近 5 个备份）
   const chatPath = join(rtDir, "chat.jsonl");
   if (existsSync(chatPath)) {
     const backupDir = join(rtDir, "backups");
@@ -460,29 +481,26 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
       }
     } catch (err) { console.warn("[persistTurn] chat backup failed (non-fatal):", err?.message || "unknown error"); }
   }
-
-  // state.json — 完整覆盖
-  await writeJson(join(rtDir, "state.json"), {
-    ...previousRuntimeState,
-    turnCount,
-    activeBranch: saveId,
-    lastScene: result.parsedSections?.["状态"]?.scene || "",
-    lastInput: input,
-    engineState: engineState || {},
-    engineSnapshot,
-    updatedAt: now
-  });
-
-  // chat.jsonl — 追加用户+助手消息（截断阈值放宽：上下文窗口充足无需过度紧缩）
-  await appendJsonl(join(rtDir, "chat.jsonl"), { id: userId, turnId, role: "user", content: input.slice(0, CHAT_INPUT_MAX_CHARS), round: turnCount, ts: now, favorite: false, ...(recordMeta.user || {}) });
-  await appendJsonl(join(rtDir, "chat.jsonl"), { id: assistantId, turnId, role: "assistant", content: (result.narrative || "").slice(0, 10000), round: turnCount, ts: new Date().toISOString(), sections: result.parsedSections || {}, favorite: false, candidates: [{ id: `${assistantId}-c0`, content: (result.narrative || "").slice(0, 10000), selected: true, createdAt: now }], ...(recordMeta.assistant || {}) });
-
-  // memory.jsonl — 追加记忆快照
+  const coreOperations = [
+    { type: "json", path: statePath, data: nextRuntimeState, label: "state" },
+    { type: "jsonl", path: chatPath, label: "chat", records: [
+        { id: userId, turnId, role: "user", content: input.slice(0, CHAT_INPUT_MAX_CHARS), round: turnCount, ts: now, favorite: false, ...(recordMeta.user || {}) },
+        { id: assistantId, turnId, role: "assistant", content: (result.narrative || "").slice(0, 10000), round: turnCount, ts: new Date().toISOString(), sections: result.parsedSections || {}, favorite: false, candidates: [{ id: `${assistantId}-c0`, content: (result.narrative || "").slice(0, 10000), selected: true, createdAt: now }], ...(recordMeta.assistant || {}) }
+      ] }
+  ];
   if (result.overlayPatch?.memorySnapshot) {
-    await appendJsonl(join(rtDir, "memory.jsonl"), result.overlayPatch.memorySnapshot);
+    coreOperations.push({ type: "jsonl", path: join(rtDir, "memory.jsonl"), records: [result.overlayPatch.memorySnapshot], label: "memory" });
   }
+  if (!isCharacter) {
+    const worldPath = join(projectRoot, "world.json");
+    const world = readJsonSync(worldPath, {});
+    coreOperations.push({ type: "json", path: worldPath, data: { ...world, turnCount, updatedAt: now }, label: "world-metadata" });
+  }
+  coreOperations.push({ type: "json", path: framePath, data: frame, label: "turn-frame" },
+    { type: "json", path: frameIndexPath, data: nextFrameIndex, label: "turn-index" });
+  await createTurnTransaction({ journalPath: join(rtDir, "transactions", "turn.json") })
+    .transact({ id: `${moduleId}:${turnId}`, operations: coreOperations });
 
-  // execute overlay writeSet — only whitelisted runtime/overlay files are writable.
   if (result.writeSet?.length) {
     try {
       await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId });
@@ -490,20 +508,9 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
       console.warn("[persistTurn] writeSet 执行失败:", e.message);
     }
   }
-
-  // world.json — 更新轮次
-  if (isCharacter) {
-    const st = readJsonSync(join(rtDir, "state.json"), {});
-    await writeJson(join(rtDir, "state.json"), { ...st, turnCount, lastInput: input, engineState: engineState || {}, engineSnapshot, updatedAt: now });
-  } else {
-    const wj = readJsonSync(join(projectRoot, "world.json"), {});
-    wj.turnCount = turnCount; wj.updatedAt = now;
-    await writeJson(join(projectRoot, "world.json"), wj);
-  }
-
-  // Kernel hooks are branch-local sidecars. They never write hidden truth into prompts
-  // and never bypass proposal approval for canonical changes.
+  // Post-commit sidecars cannot change the already committed core outcome.
   if (!isCharacter && kernelContext) {
+    try {
     const nextSceneName = result.parsedSections?.["状态"]?.scene || result.parsedSections?.["状态建议"]?.scene || "";
     const previousSceneName = kernelContext.livingWorldPacket?.scene?.title || "";
     if (nextSceneName && nextSceneName !== previousSceneName) {
@@ -529,35 +536,13 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
       if (!update?.characterId) continue;
       await updateCharacterInertia(baseDir, update.characterId, update.patch || {}, { reason: update.reason || "turn update", sceneId: nextSceneName || previousSceneName || null, turn: turnCount });
     }
+    } catch (error) {
+      console.warn("[persistTurn] post-commit sidecar failed:", error?.message || error);
+    }
   }
-
-  // TurnStateFrame — 每轮确认完成后生成并持久化。只读取已确认运行状态与机制缓存，
-  // 不采纳未确认 proposal、debug、session 或密钥字段。
-  const previousFrame = await loadLatestTurnStateFrame(moduleId, saveId);
-  const mechanismCache = readJsonSync(mechanismCachePath(moduleId) || "", { mechanisms: [] });
-  const beforeState = previousFrame?.afterState || emptyConfirmedState();
-  const afterState = buildConfirmedAfterState({
-    previousState: beforeState,
-    engineState: engineState || {},
-    parsedSections: result.parsedSections || {},
-    overlayPatch: result.overlayPatch || {},
-    mechanismCache,
-    appliedMechanismChanges: result.appliedMechanismChanges || result.mechanismChanges || []
-  });
-  const frame = createTurnStateFrame({
-    turnId, round: turnCount, userMessageId: userId, assistantMessageId: assistantId,
-    moduleKey: moduleId, saveId,
-    beforeState, afterState, engineState: engineState || {}, mechanismCache,
-    worldbookHash: currentWorldbookHash(moduleId, isCharacter ? null : baseDir), createdAt: now
-  });
-  await saveTurnStateFrame(moduleId, frame);
   moduleService.clearModuleCache?.(moduleId);
   return { userId, assistantId, turnId, turnCount };
 }
-
-// ═══════════════════════════════════════════════════════════════
-//  LLM 对话
-// ═══════════════════════════════════════════════════════════════
 
 async function handleLocalChatFallback(body = {}, reason = "LLM_NOT_CONFIGURED") {
   const { input, moduleKey, dataMode, engineState } = body || {};
@@ -610,6 +595,7 @@ async function persistFailedTurn(moduleKey, input, mappedError, engineState = {}
   const rtDir = moduleRuntimeDir(moduleKey);
   if (!rtDir || !moduleKey || String(moduleKey).startsWith("__")) return null;
   ensureDir(rtDir);
+  await createTurnTransaction({ journalPath: join(rtDir, "transactions", "turn.json") }).recover();
   const state = readJsonSync(join(rtDir, "state.json"), {});
   const currentRound = Number(state.turnCount || 0);
   const now = new Date().toISOString();
@@ -624,30 +610,32 @@ async function persistFailedTurn(moduleKey, input, mappedError, engineState = {}
     ts: now,
     favorite: false
   };
-  await appendJsonl(join(rtDir, "chat.jsonl"), {
-    ...common,
-    id: userId,
-    turnId: failedTurnId,
-    role: "user",
-    content: String(input || "").slice(0, CHAT_INPUT_MAX_CHARS),
-    attemptedAt: now,
-    engineState: engineState || {},
-    ...(metadata.user || {})
-  });
-  await appendJsonl(join(rtDir, "chat.jsonl"), {
-    ...common,
-    id: errorId,
-    turnId: failedTurnId,
-    role: "error",
-    content: mappedError.userMessage || mappedError.errorMsg || "LLM 调用失败",
-    code: mappedError.code || "LLM_UNKNOWN_ERROR",
-    userMessage: mappedError.userMessage || mappedError.errorMsg || "",
-    detail: mappedError.detail || "",
-    retryable: mappedError.retryable !== false,
-    attemptedAt: now,
-    inputRefId: userId,
-    ...(metadata.error || {})
-  });
+  await appendJsonlBatch(join(rtDir, "chat.jsonl"), [
+    {
+      ...common,
+      id: userId,
+      turnId: failedTurnId,
+      role: "user",
+      content: String(input || "").slice(0, CHAT_INPUT_MAX_CHARS),
+      attemptedAt: now,
+      engineState: engineState || {},
+      ...(metadata.user || {})
+    },
+    {
+      ...common,
+      id: errorId,
+      turnId: failedTurnId,
+      role: "error",
+      content: mappedError.userMessage || mappedError.errorMsg || "LLM 调用失败",
+      code: mappedError.code || "LLM_UNKNOWN_ERROR",
+      userMessage: mappedError.userMessage || mappedError.errorMsg || "",
+      detail: mappedError.detail || "",
+      retryable: mappedError.retryable !== false,
+      attemptedAt: now,
+      inputRefId: userId,
+      ...(metadata.error || {})
+    }
+  ]);
   moduleService.clearModuleCache?.(moduleKey);
   return { failedTurnId, userId, errorId };
 }
@@ -733,10 +721,21 @@ function createNarrativeStreamGate(onDelta) {
   };
 }
 
-async function runLlmChatSuccess(body, retryMeta = {}, streamHooks = {}) {
+async function runLlmChatAttempt(body, retryMeta = {}, streamHooks = {}, failureMetadata = {}) {
   const moduleKey = body?.moduleKey || "";
   const session = getWorldSessionRegistry().get(moduleKey || "__default__");
-  return await session.runTurn(() => runLlmChatSuccessInSession(body, retryMeta, streamHooks, session));
+  return session.runTurn(async () => {
+    try {
+      return { ok: true, result: await runLlmChatSuccessInSession(body, retryMeta, streamHooks, session) };
+    } catch (error) {
+      const mapped = mapLlmError(error);
+      let persistedIds = null;
+      if (moduleKey && !String(moduleKey).startsWith("__") && body?.input) {
+        persistedIds = await persistFailedTurn(moduleKey, body.input, mapped, body.engineState || {}, failureMetadata);
+      }
+      return { ok: false, result: { ...mapped, persistedIds } };
+    }
+  });
 }
 
 async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}, worldSession = null) {
@@ -917,12 +916,13 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
         parsedSections: sections,
         engineState: result.engineState || normState,
         kernel: summarizeKernelTurnContext(kernelContext)
-      });
+      }).catch((error) => console.warn("[turn] post-commit debug sidecar failed:", error?.message || error));
     }
 
     let usage = null;
     const stageUsage = result._dualStage?.usage || [];
     if (stageUsage.length && moduleKey && !moduleKey.startsWith("__")) {
+      try {
       const { appendUsageRecord, readUsageSummary, summarizeUsageRecords } = await import("./src/core/llm/usage-meter.js");
       const usagePath = join(moduleRuntimeDir(moduleKey), "usage.jsonl");
       const turnUsage = summarizeUsageRecords(stageUsage, { yuanPerMillionTokens: config.yuanPerMillionTokens });
@@ -935,6 +935,9 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
         turn: turnUsage
       });
       usage = { turn: turnUsage, session: await readUsageSummary(usagePath) };
+      } catch (error) {
+        console.warn("[turn] post-commit usage sidecar failed:", error?.message || error);
+      }
     }
 
     const returnedState = normalizeEngineState({ ...(result.engineState || realPlayState), realPlay: realPlayContext.state });
@@ -942,17 +945,7 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
 }
 
 async function handleLlmChat(body) {
-  try {
-    return await runLlmChatSuccess(body);
-  } catch (err) {
-    const mapped = mapLlmError(err);
-    let persistedIds = null;
-    const moduleKey = body?.moduleKey || "";
-    if (moduleKey && !String(moduleKey).startsWith("__") && body?.input) {
-      persistedIds = await persistFailedTurn(moduleKey, body.input, mapped, body.engineState || {});
-    }
-    return { ...mapped, persistedIds };
-  }
+  return (await runLlmChatAttempt(body)).result;
 }
 
 async function handleLlmChatStream(req, res) {
@@ -974,7 +967,7 @@ async function handleLlmChatStream(req, res) {
   try {
     emit("stage", { name: "analysis", label: "分析输入" });
     emit("stage", { name: "writer", label: "生成叙事正文" });
-    const result = await runLlmChatSuccess(body, {}, {
+    const attempt = await runLlmChatAttempt(body, {}, {
       streamWriter: true,
       onWriterToken: (chunk) => gate.feed(chunk),
       onStreamFallback: (err) => emit("stage", {
@@ -983,6 +976,11 @@ async function handleLlmChatStream(req, res) {
         code: err?.code || "LLM_STREAM_FALLBACK"
       })
     });
+    if (!attempt.ok) {
+      emit("error", attempt.result);
+      return;
+    }
+    const result = attempt.result;
     gate.flush();
     if (!wroteDelta) {
       for (const chunk of splitSseText(result.narrative || "（无回应）")) {
@@ -993,13 +991,7 @@ async function handleLlmChatStream(req, res) {
     emit("stage", { name: "persist", label: "已完成落盘" });
     emit("done", result);
   } catch (err) {
-    const mapped = mapLlmError(err);
-    let persistedIds = null;
-    const moduleKey = body?.moduleKey || "";
-    if (moduleKey && !String(moduleKey).startsWith("__") && body?.input) {
-      persistedIds = await persistFailedTurn(moduleKey, body.input, mapped, body.engineState || {});
-    }
-    emit("error", { ...mapped, persistedIds });
+    emit("error", mapLlmError(err));
   } finally {
     if (!res.writableEnded && !res.destroyed) res.end();
   }
@@ -1007,28 +999,32 @@ async function handleLlmChatStream(req, res) {
 
 async function handleLlmChatRetry(body = {}) {
   const moduleKey = body.moduleKey || "";
-  const failedTurnId = body.failedTurnId || body.turnId || body.messageId || "";
-  const failed = await findFailedTurn(moduleKey, failedTurnId);
-  if (!failed?.user || !failed?.error) {
-    return { status: "error", code: "FAILED_TURN_NOT_FOUND", errorMsg: "没有找到可重试的失败回合。请重新加载对话后再试。", retryable: false };
-  }
-  try {
-    return await runLlmChatSuccess({
+  const session = getWorldSessionRegistry().get(moduleKey || "__default__");
+  return session.runTurn(async () => {
+    const failedTurnId = body.failedTurnId || body.turnId || body.messageId || "";
+    const failed = await findFailedTurn(moduleKey, failedTurnId);
+    if (!failed?.user || !failed?.error) {
+      return { status: "error", code: "FAILED_TURN_NOT_FOUND", errorMsg: "没有找到可重试的失败回合。请重新加载对话后再试。", retryable: false };
+    }
+    const retryBody = {
       ...body,
       input: failed.user.content || body.input || "",
       messages: Array.isArray(body.messages) ? body.messages : []
-    }, {
-      failedTurnId: failed.error.failedTurnId || failed.error.turnId,
-      errorId: failed.error.id
-    });
-  } catch (err) {
-    const mapped = mapLlmError(err);
-    const persistedIds = await persistFailedTurn(moduleKey, failed.user.content || "", mapped, body.engineState || {}, {
-      failedTurnId: `retry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      error: { retryOf: failed.error.failedTurnId || failed.error.turnId, previousErrorId: failed.error.id }
-    });
-    return { ...mapped, persistedIds };
-  }
+    };
+    try {
+      return await runLlmChatSuccessInSession(retryBody, {
+        failedTurnId: failed.error.failedTurnId || failed.error.turnId,
+        errorId: failed.error.id
+      }, {}, session);
+    } catch (err) {
+      const mapped = mapLlmError(err);
+      const persistedIds = await persistFailedTurn(moduleKey, failed.user.content || "", mapped, body.engineState || {}, {
+        failedTurnId: `retry-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        error: { retryOf: failed.error.failedTurnId || failed.error.turnId, previousErrorId: failed.error.id }
+      });
+      return { ...mapped, persistedIds };
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2415,7 +2411,7 @@ async function handleWtpackExport(body = {}, url = null) {
 
 async function handleWtpackImport(body = {}) {
   const pack = body.pack || body;
-  const validation = validateWtpack(pack);
+  const validation = validateWtpack(pack, { appVersion: PKG_VERSION });
   if (!validation.ok) return { status: "error", error: validation.code, code: validation.code, errorMsg: validation.errorMsg };
   const world = validation.files["world.json"] || {};
   const legacyPack = {
@@ -2829,6 +2825,7 @@ const { handleAPI } = createHttpApiRouter({
 });
 
 const server = createServer((req, res) => {
+  applySecurityHeaders(res);
   const requestUrl = req.url || "/";
   if (requestUrl.startsWith("/api/")) {
     void handleAPI(req, res).catch((err) => {
@@ -2853,7 +2850,10 @@ try {
   const startup = await startSingleInstanceServer({
     server,
     singleInstanceRuntime,
-    recoverState: () => connectionStateTransaction.recover(),
+    recoverState: async () => {
+      await connectionStateTransaction.recover();
+      await recoverTurnTransactionsUnderRoot(join(dataRoot(), "engine"));
+    },
     directories: [getUserDataRoot(), join(dataRoot(), "engine", "worlds"), join(dataRoot(), "engine", "runs"), join(dataRoot(), "engine", "global-memory"), CHARACTERS_DIR(), PLUGINS_DIR()],
     port: PORT,
     host: HOST,

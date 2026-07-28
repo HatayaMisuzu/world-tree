@@ -32,7 +32,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | Current branch | Read from generated `output/project-facts.json` |
 | Latest audited commit | Read from generated `output/project-facts.json` |
 | Previous productization merge commit | `6a969fb5cf8975231224478f602d491c271c99b1` (historical baseline) |
-| V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI`; current remote CI evidence is verified through GitHub Actions check-runs, while legacy combined status may remain UNKNOWN/pending/0 |
+| V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI`; current working commit is `LOCAL_PASS / REMOTE_UNVERIFIED` until exact-SHA required jobs and evidence artifact succeed |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
 | Global product closure | PRODUCT CLOSURE NOT COMPLETE |
@@ -51,7 +51,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | DeepSeek V4 Flash provider compatibility | VERIFIED for current closure sprint |
 | Human playtest | HUMAN_VALIDATION_REQUIRED |
 | Screen recording | HUMAN_VALIDATION_REQUIRED |
-| Remote CI | GitHub Actions check-runs PASS when `npm run ci:github-actions-checks` records completed successful check-runs; legacy combined status may remain UNKNOWN/pending/0 |
+| Remote CI | `LOCAL_PASS / REMOTE_UNVERIFIED` for the current working commit; only successful required check-runs plus `world-tree-ci-evidence-<SHA>` for that exact SHA may change this to `PASS_REMOTE_EXACT_SHA` |
 | Productization merge CI | Use check-runs evidence, not legacy combined status alone; legacy status may still report UNKNOWN |
 | Browser QA | 8/8 entry matrix PASS; 1440/1024/768/390 visual QA PASS; shared experience golden path and v0.5 interaction regression gate PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
 | Release package static assets | `ui-labels.js` is served by the local server and included in package verification |

@@ -118,7 +118,7 @@ npm run test:strategy-sim-v2  # Strategy Sim V2
 npm run test:world-tree-v2-entries  # V2 entry closure gates
 npm run test:single-player-scriptkill-v2  # Single Player ScriptKill V2 service gate
 npm run test:single-player-scriptkill-v2-audit  # Single Player ScriptKill V2 audit gate
-npm run test:project-complete-audit  # V2 entry closure project audit
+npm run test:project-complete-audit  # V2 entry contract/structure audit（不等于完整行为验证）
 npm run preflight             # audit + check + unit + integration + interface
 ```
 

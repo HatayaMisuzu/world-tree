@@ -65,3 +65,4 @@ All warnings are non-blocking (exit code 0).
 - `npm run test:single-player-scriptkill-v2`
 - `npm run test:single-player-scriptkill-v2-audit`
 - `npm run test:project-complete-audit`
+  - Compatibility-named contract/structure audit only; it does not replace behavior, reliability, browser, or exact-SHA CI verification.

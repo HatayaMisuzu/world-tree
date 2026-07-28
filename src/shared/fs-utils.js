@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { appendFile, open, readFile, readdir, rename, rm, stat } from "node:fs/promises";
+import { open, readFile, readdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 
 const fileQueues = new Map();
@@ -23,7 +23,7 @@ export async function withFileLock(filePath, operation) {
   }
 }
 
-async function syncDirectory(dirPath) {
+export async function syncDirectory(dirPath) {
   let handle;
   try {
     handle = await open(dirPath, "r");
@@ -108,9 +108,56 @@ export function readJsonWithLegacy(primaryPath, legacyPath, fallback = {}) {
   return fallback;
 }
 
-export async function appendJsonl(filePath, record) {
-  ensureDir(dirname(filePath));
-  await appendFile(filePath, `${JSON.stringify(record)}\n`, "utf-8");
+export async function appendJsonlBatch(filePath, records, { faultInjector = null } = {}) {
+  if (!Array.isArray(records) || records.length === 0) {
+    throw new TypeError("appendJsonlBatch requires at least one record");
+  }
+  const payload = records.map((record) => JSON.stringify(record)).join("\n") + "\n";
+  const dirPath = dirname(filePath);
+
+  return withFileLock(filePath, async () => {
+    const fileExisted = existsSync(filePath);
+    ensureDir(dirPath);
+    let handle;
+    let originalSize = 0;
+    try {
+      handle = await open(filePath, fileExisted ? "r+" : "w+", 0o600);
+      originalSize = (await handle.stat()).size;
+      if (typeof faultInjector === "function") {
+        await faultInjector("before-write", { filePath, originalSize, payload });
+      }
+      const buffer = Buffer.from(payload, "utf8");
+      let written = 0;
+      while (written < buffer.length) {
+        const result = await handle.write(buffer, written, buffer.length - written, originalSize + written);
+        if (!result.bytesWritten) throw new Error(`JSONL write made no progress: ${filePath}`);
+        written += result.bytesWritten;
+      }
+      if (typeof faultInjector === "function") {
+        await faultInjector("after-write", { filePath, originalSize, payload });
+      }
+      await handle.sync();
+      await handle.close();
+      handle = null;
+      if (!fileExisted) await syncDirectory(dirPath);
+    } catch (error) {
+      if (handle) {
+        await handle.truncate(originalSize).catch(() => {});
+        await handle.sync().catch(() => {});
+        await handle.close().catch(() => {});
+        handle = null;
+      }
+      if (!fileExisted) {
+        await rm(filePath, { force: true }).catch(() => {});
+        await syncDirectory(dirPath).catch(() => {});
+      }
+      throw error;
+    }
+  });
+}
+
+export async function appendJsonl(filePath, record, options) {
+  return appendJsonlBatch(filePath, [record], options);
 }
 
 export async function readJsonlTail(filePath, limit = 80) {

@@ -5,6 +5,16 @@
 
 export const LOCAL_HOST_VALUES = ["localhost", "127.0.0.1", "::1", "[::1]"];
 export const LOCAL_HOSTS = new Set(LOCAL_HOST_VALUES);
+export const LOOPBACK_LISTEN_HOSTS = new Set(["127.0.0.1", "::1", "localhost"]);
+
+export function validateListenHost(host = "") {
+  if (typeof host !== "string" || !LOOPBACK_LISTEN_HOSTS.has(host)) {
+    const error = new Error(`WORLD_TREE_HOST must be an explicit loopback host (127.0.0.1, ::1, or localhost); received ${JSON.stringify(host)}`);
+    error.code = "HOST_NOT_LOOPBACK";
+    throw error;
+  }
+  return host;
+}
 
 export function isLoopbackAddress(addr = "") {
   const value = String(addr || "");

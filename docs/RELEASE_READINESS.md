@@ -17,7 +17,7 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | Selected V2 browser/UI entry flows | AUTOMATED PASS / NOT HUMAN-SIGNED PLAYABLE | `npm run smoke:product-entry-browser-matrix` proves 8/8 entry reachability, next-step clarity, clean browser health, and selected V2 API product loops |
 | Full-function LLM prompt entry audit | AUTOMATED PASS / SELECTED DEEPSEEK LIVE SMOKE RECORDED | `npm run test:llm-prompts`, `node scripts/audit-llm-prompts.mjs`; selected live evidence does not prove product-wide behavior |
 | V2 entry service slices | AUTOMATED PASS | `npm run test:world-tree-v2-entries` |
-| Project audit | AUTOMATED PASS | `npm run test:project-complete-audit` |
+| Project contract/structure audit | AUTOMATED PASS (NOT BEHAVIORAL PROOF) | `npm run test:project-complete-audit`; release gating separately requires unit, integration, reliability, browser, and exact-SHA CI evidence |
 | User-created content closure | PASS | Flow A and Flow B evidence recorded in `docs/reports/user-created-content-closure-evidence.md` |
 | Blank template infrastructure | PASS | eight `blank_template` placeholders install and read back as empty structures |
 | User-Created Content Product Closure | PASS | Flow A/B API evidence and browser/API hybrid smoke recorded |
@@ -34,6 +34,8 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 ## Release Decision
 
 Do not publish npm, Docker, or GitHub Release from this state.
+
+Current verification boundary: `LOCAL_PASS / REMOTE_UNVERIFIED`. Remote status becomes `PASS_REMOTE_EXACT_SHA` only when required jobs and the `world-tree-ci-evidence-<SHA>` artifact succeed for the exact release commit.
 
 This branch is suitable as a productization closure evidence branch with PARTIAL status. A release candidate needs:
 

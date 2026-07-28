@@ -1,5 +1,6 @@
 import { createSingleInstanceRuntime } from "./single-instance-runtime.js";
 import { ensureDir } from "../shared/fs-utils.js";
+import { validateListenHost } from "./local-access.js";
 
 export { createSingleInstanceRuntime };
 
@@ -9,6 +10,7 @@ export async function listenOnAvailablePort(server, {
   port = 3000,
   maxAttempts = 25
 } = {}) {
+  const safeHost = validateListenHost(host);
   const firstPort = Number(port);
   if (!Number.isInteger(firstPort) || firstPort < 0 || firstPort > 65535) {
     throw new RangeError(`Invalid port: ${port}`);
@@ -29,7 +31,7 @@ export async function listenOnAvailablePort(server, {
         };
         server.once("error", onError);
         server.once("listening", onListening);
-        server.listen(candidate, host);
+        server.listen(candidate, safeHost);
       });
       return { port: boundPort, requestedPort: firstPort, usedFallback: firstPort !== 0 && boundPort !== firstPort };
     } catch (error) {

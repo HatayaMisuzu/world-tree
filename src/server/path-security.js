@@ -1,4 +1,5 @@
-import { isAbsolute, resolve } from "node:path";
+import { existsSync, realpathSync } from "node:fs";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { pathWithinRoot as corePathWithinRoot } from "../core/system/path-boundary.js";
 
 const WINDOWS_DRIVE_RE = /^[a-zA-Z]:[\\/]/;
@@ -59,7 +60,8 @@ export function resolveInsideRoot(rootPath, userPath) {
   if (parts.some(isUnsafePathSegment)) return null;
 
   const target = resolve(rootPath, ...parts);
-  return pathWithinRoot(rootPath, target) ? target : null;
+  if (!pathWithinRoot(rootPath, target)) return null;
+  return realPathWithinRoot(rootPath, target) ? target : null;
 }
 
 export function assertPathInsideRoot(rootPath, userPath, label = "path") {
@@ -68,4 +70,21 @@ export function assertPathInsideRoot(rootPath, userPath, label = "path") {
     throw pathError(`${label} is unsafe or outside root`, label, userPath);
   }
   return target;
+}
+
+export function realPathWithinRoot(rootPath, targetPath) {
+  if (!rootPath || !targetPath || !existsSync(rootPath)) return false;
+  let ancestor = resolve(targetPath);
+  while (!existsSync(ancestor)) {
+    const parent = dirname(ancestor);
+    if (parent === ancestor) return false;
+    ancestor = parent;
+  }
+  try {
+    const realRoot = realpathSync.native(resolve(rootPath));
+    const realAncestor = realpathSync.native(ancestor);
+    return pathWithinRoot(realRoot, realAncestor);
+  } catch {
+    return false;
+  }
 }

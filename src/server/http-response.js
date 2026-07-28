@@ -3,6 +3,25 @@
 // Keep this module small and dependency-free so server.js can gradually shed
 // infrastructure code without changing route behavior.
 
+export const SECURITY_HEADERS = Object.freeze({
+  "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://127.0.0.1:* http://localhost:*; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+  "X-Frame-Options": "DENY",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+});
+
+export function applySecurityHeaders(res) {
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    if (!res.hasHeader?.(name)) res.setHeader?.(name, value);
+  }
+  return res;
+}
+
+export function secureHeaders(headers = {}) {
+  return { ...SECURITY_HEADERS, ...headers };
+}
+
 export function errorPayload(code, userMsg, detail = "") {
   return {
     status: "error",
@@ -51,6 +70,7 @@ export function llmHttpError(status, detail = "") {
 }
 
 export function jsonResponse(res, data, status = 200) {
+  applySecurityHeaders(res);
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data));
 }
