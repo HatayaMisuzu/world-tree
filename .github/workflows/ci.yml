@@ -97,6 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Write exact-SHA verification evidence
+        id: evidence
         shell: bash
         env:
           CHECK_RESULT: ${{ needs.check.result }}
@@ -105,11 +106,11 @@ jobs:
           RELIABILITY_RESULT: ${{ needs.reliability.result }}
           WINDOWS_RESULT: ${{ needs.windows-launcher.result }}
         run: |
-          node -e 'const fs=require("fs"); const e={schemaVersion:1,sha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,runAttempt:process.env.GITHUB_RUN_ATTEMPT,workflow:process.env.GITHUB_WORKFLOW,event:process.env.GITHUB_EVENT_NAME,node:process.version,os:process.platform,arch:process.arch,commands:["npm run check","npm test","npm run test:unit","npm run test:integration","npm run verify:coverage","npm run test:reliability","npm run soak:persistence-local","npm run smoke:product-entry-browser-matrix","npm run smoke:experience-golden-path","npm run smoke:v0.5-interaction-regressions","npm run qa:visual-shell","npm run test:accessibility","./scripts/windows-launcher-smoke.ps1"],jobs:{check:process.env.CHECK_RESULT,browserQuality:process.env.BROWSER_RESULT,coverage:process.env.COVERAGE_RESULT,reliability:process.env.RELIABILITY_RESULT,windowsLauncher:process.env.WINDOWS_RESULT},result:"PASS_REMOTE_EXACT_SHA",generatedAt:new Date().toISOString()}; fs.writeFileSync("ci-evidence.json",JSON.stringify(e,null,2)+"\n");'
+          node scripts/write-ci-evidence.mjs
           cat ci-evidence.json
       - uses: actions/upload-artifact@v4
         with:
-          name: world-tree-ci-evidence-${{ github.sha }}
+          name: ${{ steps.evidence.outputs.artifactName }}
           path: ci-evidence.json
           if-no-files-found: error
           retention-days: 30
