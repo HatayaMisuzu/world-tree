@@ -12,6 +12,14 @@
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree · CHANGELOG
+## 0.5.0-prehuman.1
+
+### Pre-human product closure candidate
+
+- Added complete minimum Character V2 advanced-edit, Worldbook V2 structured-edit/runtime, Strategy Sim V2 continuous-play, and first-run onboarding loops.
+- Added exact-tested-SHA CI evidence schema validation, CodeQL, Dependabot, dynamic truth-source semantics, and pre-human release reporting.
+- Upgraded Playwright and retained zero known npm audit vulnerabilities.
+
 ## 0.5.0-product-experience-rebuild.1
 
 ### Interaction and release verification fixes

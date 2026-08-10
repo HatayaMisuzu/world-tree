@@ -1,6 +1,6 @@
 # Current Project State
 
-Version: `0.5.0-product-experience-rebuild.1`
+Version: `0.5.0-prehuman.1`
 Status: CURRENT TRUTH SOURCE  
 Audience: AI agents, maintainers, reviewers.
 
@@ -27,12 +27,12 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 
 | Item | Value |
 |---|---|
-| Current truth-source version | `0.5.0-product-experience-rebuild.1` |
+| Current truth-source version | `0.5.0-prehuman.1` |
 | Trusted Baseline | Machine facts from `npm run facts:generate` |
 | Current branch | Read from generated `output/project-facts.json` |
 | Latest audited commit | Read from generated `output/project-facts.json` |
 | Previous productization merge commit | `6a969fb5cf8975231224478f602d491c271c99b1` (historical baseline) |
-| V2 entry closure audit status | `V2_ENTRY_CLOSURE_SEALED_PENDING_REMOTE_CI`; current working commit is `LOCAL_PASS / REMOTE_UNVERIFIED` until exact-SHA required jobs and evidence artifact succeed |
+| V2 entry closure audit status | Historical closure label only; current exact-SHA status is dynamically resolved from required check-runs and schema-v2 evidence |
 | Full product-wide V2 | NOT COMPLETE |
 | Product-wide playable closure | NOT COMPLETE |
 | Global product closure | PRODUCT CLOSURE NOT COMPLETE |
@@ -43,7 +43,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | Blank template infrastructure | PASS |
 | Built-in first-play example | `demo-world-cloud-steam-city` implemented as first-play smoke demo |
 | `demo-character` / `demo-scriptkill` | DEFERRED_AFTER_FIRST_PLAY_CANDIDATE |
-| Tutorial / onboarding content | first-play smoke path exists; broader onboarding remains incomplete |
+| Tutorial / onboarding content | guided first-run setup and persisted skip implemented; human validation pending |
 | ENGINEERING_CLOSED | YES |
 | FIRST_PLAYABLE_CANDIDATE | YES |
 | PLAYABLE | NO |
@@ -51,7 +51,7 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | DeepSeek V4 Flash provider compatibility | VERIFIED for current closure sprint |
 | Human playtest | HUMAN_VALIDATION_REQUIRED |
 | Screen recording | HUMAN_VALIDATION_REQUIRED |
-| Remote CI | `LOCAL_PASS / REMOTE_UNVERIFIED` for the current working commit; only successful required check-runs plus `world-tree-ci-evidence-<SHA>` for that exact SHA may change this to `PASS_REMOTE_EXACT_SHA` |
+| Remote CI | Dynamic. Query required check-runs plus `world-tree-ci-evidence-tested-<testedSha>`; this file never grants current-SHA PASS. |
 | Productization merge CI | Use check-runs evidence, not legacy combined status alone; legacy status may still report UNKNOWN |
 | Browser QA | 8/8 entry matrix PASS; 1440/1024/768/390 visual QA PASS; shared experience golden path and v0.5 interaction regression gate PASS; human/manual PLAYABLE sign-off NOT COMPLETE |
 | Release package static assets | `ui-labels.js` is served by the local server and included in package verification |
@@ -67,6 +67,8 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 - **Full V2 not complete**: project-wide product-grade V2 is not complete.
 - **V2 Entry Closure**: selected V2 entry engineering/service slices are sealed for audit purposes; product-wide playable closure remains NOT COMPLETE.
 
+Remote CI and live-provider status are time-bound evidence. Historical evidence is retained with its date and source; current exact-SHA evidence must be queried and must identify the tested commit. For pull requests, the PR head and GitHub merge/test commit are separate identities. Historical live smoke never substitutes for current candidate live smoke.
+
 ## Current status table
 
 | Area | Engineering status | Product status | Current evidence |
@@ -79,10 +81,10 @@ This overlay does not itself mark PLAYABLE. It records the ordered batch plan us
 | Workflow Integration W0-W4 | COMPLETE | Workflow layer | `test:workflows`, `workflow:check` |
 | Tabletop V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED STRUCTURAL API/SERVICE LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:tabletop-v2-full`, `test:v2-product-playable`, `smoke:product-entry-browser-matrix` |
 | Detective V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED CASE API/SERVICE LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:detective-v2-full`, `test:v2-product-playable`, `smoke:product-entry-browser-matrix` |
-| Character V2 Long-term | ENGINEERING/SERVICE CLOSURE COMPLETE | PRODUCT CLOSURE PARTIAL | `test:character-v2-long-term` |
+| Character V2 Long-term | ENGINEERING/SERVICE CLOSURE COMPLETE | ADVANCED EDIT/PERSIST/RELOAD/RUNTIME AUTOMATED PASS; HUMAN VALIDATION PENDING | `test:character-v2-final`, `test:character-v2-long-term` |
 | Single Player ScriptKill V2 | ENGINEERING/SERVICE CLOSURE COMPLETE | SELECTED USER-PROVIDED PACKAGE API/SERVICE LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:single-player-scriptkill-v2`, `test:v2-product-playable`, `smoke:product-entry-browser-matrix` |
-| Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | USER-PROVIDED SPEC API LOOP PASS; PRODUCT ENTRY BROWSER MATRIX PASS | `test:strategy-sim-v2`, `test:strategy-sim-v2-product`, `smoke:product-entry-browser-matrix` |
-| Worldbook V2 | ENGINEERING FOUNDATION COMPLETE | USER-PROVIDED/STRUCTURAL API LOOP PASS; BROWSER UI EDITOR PARTIAL | `test:worldbook-v2`, `test:worldbook-v2-product` |
+| Strategy Sim V2 | ENGINEERING FOUNDATION COMPLETE | MINIMUM CONTINUOUS PLAY/SAVE/RESUME/ENDING AUTOMATED PASS; HUMAN VALIDATION PENDING | `test:strategy-sim-v2`, `test:strategy-sim-v2-product`, browser QA |
+| Worldbook V2 | ENGINEERING FOUNDATION COMPLETE | STRUCTURED EDITOR/PERSISTENCE/INJECTION AUTOMATED PASS; HUMAN VALIDATION PENDING | `test:worldbook-v2`, `test:worldbook-v2-product`, browser QA |
 | Quick Setting | USABLE THIN LOOP | PRODUCT CLOSURE PARTIAL | current project creation flow |
 | Creation Forge | G1 ENGINEERING LOOP IMPLEMENTED | PRODUCT CLOSURE IN PROGRESS | `test:alchemy-closure`, `docs/reports/productization-reality-check.md` |
 
@@ -126,14 +128,7 @@ Engineering foundation complete:
 - module adapters
 - runtime injection helper
 
-Product closure not complete:
-
-- no complete product UI editor
-- V2 API closure exists for load/save/candidates/inject-preview/export on user-provided or structural paths
-- persisted V2 worldbook runtime service exists for the selected API loop
-- no full review/growth-tree V2 unification
-- no product-grade import/export compatibility
-- no browser-proven first-run flow
+Minimum product closure implemented and automated-browser proven: structured create/edit/search/toggle/delete, validation, persisted reload, priority/context-slot fields, injection preview, and runtime inclusion. Full review/growth-tree unification and broad import compatibility are not claimed.
 
 ### Strategy Sim V2
 
@@ -149,22 +144,15 @@ Engineering foundation complete:
 - V2 mode adapter path
 - legacy fallback
 
-Product closure not complete:
-
-- no complete product UI
-- start/turn/save/load/export API closure exists for user-provided sealed specs
-- persisted V2 run service exists for the selected API loop
-- no Creation Forge spec generation/confirmation/seal product flow
-- no archetype library or quick-start templates
-- no complete strategy gameplay
+Minimum product closure implemented and automated-browser proven: default quick start, repeated actions, explained results, history, persistence/resume, ending/restart, export, and recoverable error handling. Full 4X gameplay and a broad archetype library are not claimed.
 
 ## Current limitations
 
 - Tabletop is not full DND.
 - Detective is not a full mystery reasoning engine.
-- Strategy Sim is not a full 4X or complete strategy game.
-- Worldbook V2 is not a complete product editor/runtime experience.
-- Character V2 advanced editor is not complete.
+- Strategy Sim is a minimum continuous-play strategy loop, not a full 4X game.
+- Worldbook V2 has a complete minimum editor/runtime loop; broad import compatibility and review/growth-tree unification are outside this baseline.
+- Character V2 advanced editing is an automated candidate pending human UX validation.
 - Single Player ScriptKill V2 does not include bundled product content unless separately documented.
 - `server.js` remains the HTTP entry and dependency assembly point. Non-V2 dispatch now lives in `src/server/http-api-router.js`; configuration, connection diagnostics, static shell serving, and selected V2 route groups are bounded modules. Several legacy domain handlers remain in the entry for later service extraction.
 - `world-tree-console.js` is now a small compatibility bootstrap; product registry, store, components, views, and controllers live under `browser/`. `world-tree-client-core.js` remains the stable utility/API client boundary.

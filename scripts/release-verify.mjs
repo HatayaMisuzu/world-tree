@@ -22,7 +22,7 @@ try {
   process.exit(1);
 }
 
-const pack = packs[0];
+const pack = Array.isArray(packs) ? packs[0] : Object.values(packs || {})[0];
 if (!pack) {
   process.stderr.write("release:verify found no npm pack result\n");
   process.exit(1);

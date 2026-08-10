@@ -1,6 +1,6 @@
 # World Tree release readiness
 
-Current version: `0.5.0-product-experience-rebuild.1`
+Current version: `0.5.0-prehuman.1`
 
 World Tree is a local-first Web application in strong Beta. The World RPG golden path and selected slices of the other seven entries are playable; this release does not claim full product-wide V2 closure or v1.0 readiness.
 

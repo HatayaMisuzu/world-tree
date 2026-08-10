@@ -15,7 +15,7 @@ export function parseTapTestCount(output = "") {
 
 export function parsePackJson(output = "") {
   const packs = JSON.parse(String(output || "[]"));
-  const pack = packs[0];
+  const pack = Array.isArray(packs) ? packs[0] : Object.values(packs || {})[0];
   if (!pack) throw new Error("PACK_RESULT_NOT_FOUND");
   return {
     packageFiles: Array.isArray(pack.files) ? pack.files.length : 0,

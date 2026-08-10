@@ -15,7 +15,7 @@ Current user-created content status: User-Created Content Product Closure is PAS
 # World Tree — AI Agent Operating Guide
 
 > 给 Hermes、Codex 及其他 AI agent 的项目工作手册。
-> 最后更新: v0.5.0-product-experience-rebuild.1 — Product experience rebuild follow-up fixes
+> 最后更新: v0.5.0-prehuman.1 — Pre-human product closure candidate
 > **先读：**
 > 1. `docs/PROJECT_TRUTH_SOURCE.md`
 > 2. `docs/CURRENT_PROJECT_STATE.md`

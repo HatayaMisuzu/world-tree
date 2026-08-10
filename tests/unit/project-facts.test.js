@@ -15,12 +15,17 @@ test("project facts parse final TAP count and npm pack metadata", () => {
     packageBytes: 20,
     packedBytes: 10
   });
+  assert.deepEqual(parsePackJson(JSON.stringify({ "world-tree": { size: 11, unpackedSize: 21, files: [{ path: "a" }] } })), {
+    packageFiles: 1,
+    packageBytes: 21,
+    packedBytes: 11
+  });
 });
 
 test("project facts reject stale head, counts, package metadata, and playable claims", () => {
   const valid = {
     schemaVersion: 1,
-    version: "0.5.0-product-experience-rebuild.1",
+    version: "0.5.0-prehuman.1",
     head: "a".repeat(40),
     generatedAt: new Date().toISOString(),
     unitTests: 1,

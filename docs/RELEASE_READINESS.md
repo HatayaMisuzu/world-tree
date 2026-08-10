@@ -22,8 +22,8 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 | Blank template infrastructure | PASS | eight `blank_template` placeholders install and read back as empty structures |
 | User-Created Content Product Closure | PASS | Flow A/B API evidence and browser/API hybrid smoke recorded |
 | Blank Template Infrastructure | PASS | blank placeholders install/readback and guard tests recorded |
-| DeepSeek V4 Flash provider compatibility | IMPLEMENTED / PENDING CURRENT REAL SMOKE | DeepSeek profile uses disabled thinking support; provider compatibility must be proven by current env-only real API smoke before being recorded as evidence |
-| DeepSeek selected real LLM smoke | RECORDED WITH EXPOSED USAGE | `/api/llm/test`, `smoke:first-play`, `smoke:user-content-real-llm`, selected key paths, and long-prefix cache probe recorded external/redacted evidence; first-play/user-content chat turns include exact exposed usage |
+| DeepSeek V4 Flash provider compatibility | IMPLEMENTED / DYNAMIC CURRENT STATUS | DeepSeek profile uses disabled thinking support; current status requires a fresh env-only real API matrix for the candidate SHA |
+| Historical DeepSeek selected real LLM smoke | RECORDED WITH EXPOSED USAGE | Dated historical evidence covers `/api/llm/test`, first-play, user-content, selected key paths, and long-prefix cache behavior; it is not current candidate evidence |
 | Product-wide Real LLM closure | NOT COMPLETE | local fallback is not counted as real LLM; selected DeepSeek smoke does not prove every product path |
 | Tier-1 provider matrix | BLOCKED WITHOUT SECRETS | `.github/workflows/first-play-smoke.yml` supports workflow_dispatch and nightly matrix, but each provider needs its own secrets |
 | Tier-2 narrative eval | DRY RUN READY | `npm run narrative:eval` uses 20 fixed scenarios and mock playback; this is not real LLM quality evidence |
@@ -35,7 +35,7 @@ Status: NOT READY FOR FULL PRODUCTIZATION RELEASE.
 
 Do not publish npm, Docker, or GitHub Release from this state.
 
-Current verification boundary: `LOCAL_PASS / REMOTE_UNVERIFIED`. Remote status becomes `PASS_REMOTE_EXACT_SHA` only when required jobs and the `world-tree-ci-evidence-<SHA>` artifact succeed for the exact release commit.
+Current exact-SHA remote status is dynamic. Resolve it from GitHub Actions check-runs plus the schema-v2 `world-tree-ci-evidence-tested-<testedSha>` artifact. A committed document does not itself confer PASS. Historical live smoke likewise does not confer current exact-SHA live-smoke PASS.
 
 This branch is suitable as a productization closure evidence branch with PARTIAL status. A release candidate needs:
 
@@ -50,7 +50,7 @@ This branch is suitable as a productization closure evidence branch with PARTIAL
 
 - [ ] `npm run preflight` PASS on the release commit.
 - [x] `npm run release:verify` PASS and npm pack dry-run confirms package size, required console assets including `ui-labels.js`, plus no `userData/`, `audit/`, `output/`, runtime worlds, characters, or secrets.
-- [x] `npm run smoke:first-play` PASS for DeepSeek V4 Flash with `WT_SMOKE_BASE_URL`, `WT_SMOKE_MODEL`, and `WT_SMOKE_KEY`.
+- [x] Historical DeepSeek V4 Flash first-play evidence is recorded with its original date and source; rerun for the current candidate before baseline tagging.
 - [x] `npm run smoke:product-entry-browser-matrix` PASS for all 8 entries.
 - [x] `npm run ci:github-actions-checks` can verify GitHub Actions check-runs; do not rely on legacy combined status alone.
 - [ ] Tier-1 provider matrix workflow has either PASS artifacts or explicit `BLOCKED_BY_CREDENTIALS` artifacts per provider.

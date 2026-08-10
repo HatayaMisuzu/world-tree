@@ -26,6 +26,13 @@ const CURRENT_FABLE5_DOCS = [
   "docs/RELEASE_READINESS.md"
 ];
 
+const DYNAMIC_EVIDENCE_DOCS = [
+  "docs/PROJECT_TRUTH_SOURCE.md",
+  "docs/CURRENT_PROJECT_STATE.md",
+  "docs/RELEASE_READINESS.md",
+  "docs/INDEX.md"
+];
+
 const requiredFiles = [
   "docs/PROJECT_TRUTH_SOURCE.md",
   "docs/CURRENT_PROJECT_STATE.md",
@@ -205,6 +212,13 @@ for (const file of CURRENT_FABLE5_DOCS) {
   const text = read(file);
   for (const pattern of staleFable5CloseoutPatterns) {
     if (pattern.re.test(text)) errors.push(`${file}: ${pattern.msg}`);
+  }
+}
+
+for (const file of DYNAMIC_EVIDENCE_DOCS) {
+  const text = read(file);
+  if (!/dynamic|动态/i.test(text) || !/testedSha/.test(text)) {
+    errors.push(`${file}: exact-SHA remote evidence must be described as dynamic and keyed by testedSha`);
   }
 }
 

@@ -2,7 +2,7 @@
 
 > 本地优先的 AI 文字冒险大厅：导入角色、世界书、案件或灵感，进入一个可以保存、继续、审核和导出的互动世界。
 >
-> Package version: v0.5.0-product-experience-rebuild.1
+> Package version: v0.5.0-prehuman.1
 >
 > 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md) | 状态术语：[docs/STATUS_TERMINOLOGY.md](docs/STATUS_TERMINOLOGY.md)
 
@@ -66,7 +66,7 @@ World Tree 可以导入 SillyTavern 角色卡和世界书，把它们变成本�
 
 ## 工程状态与真相源
 
-当前版本：`0.5.0-product-experience-rebuild.1`。维护者和 agent 的当前 truth source 在 [docs/PROJECT_TRUTH_SOURCE.md](docs/PROJECT_TRUTH_SOURCE.md)，配套状态文件是 [docs/CURRENT_PROJECT_STATE.md](docs/CURRENT_PROJECT_STATE.md) 和 [docs/V2_ENGINEERING_CLOSURE_STATUS.md](docs/V2_ENGINEERING_CLOSURE_STATUS.md)。
+当前版本：`0.5.0-prehuman.1`。维护者和 agent 的当前 truth source 在 [docs/PROJECT_TRUTH_SOURCE.md](docs/PROJECT_TRUTH_SOURCE.md)，配套状态文件是 [docs/CURRENT_PROJECT_STATE.md](docs/CURRENT_PROJECT_STATE.md) 和 [docs/V2_ENGINEERING_CLOSURE_STATUS.md](docs/V2_ENGINEERING_CLOSURE_STATUS.md)。
 
 Selected V2 service slices have engineering foundation evidence, but full product closure is not complete. Strategy Sim V2 engineering foundation is complete; Strategy Sim V2 product closure is not complete. Worldbook V2 engineering foundation is complete; Worldbook V2 product closure is not complete.
 
