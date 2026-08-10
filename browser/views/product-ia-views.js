@@ -46,8 +46,17 @@
     const continueAction = current
       ? `<button class="primary" data-module-id="${U.esc(current.id)}" data-action="load-module-from-list">继续这个世界</button>`
       : `<button class="primary" data-view="experiences">选择一种体验</button>`;
+    const onboarding = AS.config.firstRun !== false ? `<section class="panel onboarding-card" data-onboarding>
+      <div class="panel-head"><div><h2>第一次使用 World Tree</h2><p class="sub">这是一个本地优先、能保存并继续的 AI 世界与角色互动工作台。按下面三步即可开始。</p></div><button class="small" data-action="dismiss-onboarding">跳过，下次不再显示</button></div>
+      <div class="cols-3">
+        <div class="item"><strong>1 · 配置并测试模型</strong><p class="tiny muted">到“设置 → 连接”填写服务地址、模型和密钥，再点击“测试连接”。</p><button class="small ${AS.llmConnected ? "" : "primary"}" data-action="open-settings">${AS.llmConnected ? "连接已就绪" : "前往模型设置"}</button></div>
+        <div class="item"><strong>2 · 选择起点</strong><p class="tiny muted">推荐先体验“${U.esc(demo?.title || demo?.name || "云上蒸汽城")}”，也可以创建空白世界和角色。</p><div class="actions">${demo ? `<button class="small primary" data-action="install-first-run-demo">安装推荐示例</button>` : ""}<button class="small" data-action="create-world">创建世界</button><button class="small" data-action="open-character-library">创建/选择角色</button></div></div>
+        <div class="item"><strong>3 · 开始并继续</strong><p class="tiny muted">进入世界后输入第一句话；完整回合会自动保存，下次从首页“继续”恢复。</p><span class="tiny muted">没有 API 时仍可创建、编辑、导入、导出和管理本地内容；AI 对话与生成需要可用连接。</span></div>
+      </div>
+    </section>` : "";
 
     return `<div class="grid product-home">
+      ${onboarding}
       <section class="home-hero">
         <div class="home-hero-copy">
           <span class="eyebrow">你的世界仍在生长</span>

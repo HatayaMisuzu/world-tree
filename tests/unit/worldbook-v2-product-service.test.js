@@ -31,6 +31,17 @@ test("loads legacy worldbook through V2 product service", async () => {
   }
 });
 
+test("save rejects invalid entries instead of silently dropping them", async () => {
+  const ctx = makeService();
+  try {
+    const result = await ctx.service.save({ moduleKey: "world:TestWorld", entries: [{ title: "Broken", content: "" }] });
+    assert.equal(result.status, "error");
+    assert.equal(result.code, "WORLDBOOK_ENTRY_INVALID");
+  } finally {
+    ctx.cleanup();
+  }
+});
+
 test("saves edited entries and reads back", async () => {
   const ctx = makeService();
   try {

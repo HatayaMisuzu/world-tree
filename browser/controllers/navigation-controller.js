@@ -415,6 +415,30 @@ U.qsa("[data-alchemy-select]").forEach(input => {
       reader.readAsDataURL(file);
     };
   }
+
+  U.qsa("[data-character-v2-field]").forEach(input => {
+    input.oninput = () => {
+      updateCharacterV2EditorField(input.dataset.characterV2Field, input.value);
+      const status = U.qs("[data-character-v2-editor-status]");
+      if (status) { status.textContent = "有未保存修改"; status.classList.remove("ok"); status.classList.add("warn"); }
+    };
+  });
+  U.qsa("[data-worldbook-v2-field]").forEach(input => {
+    input.oninput = () => {
+      if (!AS.worldbookV2.draft) return;
+      const key = input.dataset.worldbookV2Field;
+      AS.worldbookV2.draft[key] = input.type === "checkbox" ? input.checked : input.value;
+      AS.worldbookV2.dirty = true;
+      let status = U.qs("[data-worldbook-v2-editor-status]");
+      if (!status) {
+        status = document.createElement("span");
+        status.className = "badge warn";
+        status.dataset.worldbookV2EditorStatus = "true";
+        U.qs("#worldbookV2Title")?.closest("section")?.querySelector(".item-head")?.appendChild(status);
+      }
+      if (status) { status.textContent = "未保存"; status.classList.remove("ok"); status.classList.add("warn"); }
+    };
+  });
 }
 
 function bindDrop(dropSel, textSel, accept, directory) {

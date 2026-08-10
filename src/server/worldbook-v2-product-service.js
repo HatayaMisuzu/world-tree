@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { appendJsonl, ensureDir, readJsonSync, readJsonlTail, writeJson } from "./fs-utils.js";
-import { normalizeWorldbookCandidate, normalizeWorldbookEntry } from "../core/worldbook-v2/worldbook-entry-schema.js";
+import { normalizeWorldbookCandidate, normalizeWorldbookEntry, validateWorldbookEntry } from "../core/worldbook-v2/worldbook-entry-schema.js";
 import { prepareWorldbookV2Injection } from "../core/worldbook-v2/worldbook-runtime.js";
 
 const PUBLIC_VISIBILITIES = new Set(["public", "player_known", "character_known", "faction_known"]);
@@ -46,9 +46,12 @@ export function createWorldbookV2ProductService({ dataRoot, moduleWorldDir, path
     const ctx = resolveWorld(moduleKey);
     if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请选择有效世界。" };
     ensureDir(ctx.sharedDir);
-    const safeEntries = entries
-      .map((entry) => normalizeWorldbookEntry({ ...entry, authority: entry.authority || "canon" }, { worldId: moduleKey }))
-      .filter((entry) => entry.title && entry.content);
+    if (!Array.isArray(entries)) return { status: "error", code: "WORLDBOOK_ENTRIES_REQUIRED", errorMsg: "世界书条目列表格式无效。" };
+    if (entries.length > 2000) return { status: "error", code: "WORLDBOOK_TOO_MANY_ENTRIES", errorMsg: "世界书条目过多，请拆分后再保存。" };
+    const checks = entries.map((entry) => validateWorldbookEntry({ ...entry, authority: entry.authority || "canon" }));
+    const invalid = checks.map((check, index) => ({ index, errors: check.errors })).filter((item) => item.errors.length);
+    if (invalid.length) return { status: "error", code: "WORLDBOOK_ENTRY_INVALID", errorMsg: `有 ${invalid.length} 个条目缺少标题或内容。`, invalid };
+    const safeEntries = checks.map((check) => normalizeWorldbookEntry(check.normalized, { worldId: moduleKey }));
     await writeJson(join(ctx.sharedDir, "worldbook.json"), { entries: safeEntries });
     return { status: "ok", moduleKey, entries: safeEntries };
   }

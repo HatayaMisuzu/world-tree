@@ -83,6 +83,73 @@ async function saveCharacterV2Candidates() {
   }
 }
 
+async function openCharacterV2ProfileEditor() {
+  const characterId = AS.currentV2Capsule?.characterId || AS.currentV2RuntimeMvp?.characterId || "";
+  if (!characterId) return createToast("请先预览一个 V2 角色。", "warn");
+  AS.characterV2Editor.open = true;
+  AS.characterV2Editor.busy = true;
+  AS.characterV2Editor.error = "";
+  render();
+  try {
+    const result = await API.get(`/api/characters/v2/profile?characterId=${encodeURIComponent(characterId)}`);
+    if (result.status !== "ok") throw new Error(result.errorMsg || "读取角色高级字段失败");
+    AS.characterV2Editor.characterId = characterId;
+    AS.characterV2Editor.editable = structuredClone(result.editable);
+    AS.characterV2Editor.original = structuredClone(result.editable);
+    AS.characterV2Editor.dirty = false;
+  } catch (err) {
+    AS.characterV2Editor.error = err.message || String(err);
+  } finally {
+    AS.characterV2Editor.busy = false;
+    render();
+  }
+}
+
+function updateCharacterV2EditorField(field, value) {
+  if (!AS.characterV2Editor.editable) return;
+  AS.characterV2Editor.editable[field] = value;
+  AS.characterV2Editor.dirty = true;
+}
+
+async function saveCharacterV2ProfileEditor() {
+  const editor = AS.characterV2Editor;
+  if (!editor.characterId || !editor.editable) return createToast("请先读取角色高级字段。", "warn");
+  if (!String(editor.editable.displayName || "").trim()) return createToast("角色名不能为空。", "warn");
+  if (!String(editor.editable.oneLineSummary || "").trim()) return createToast("角色简介不能为空。", "warn");
+  editor.busy = true;
+  editor.error = "";
+  render();
+  try {
+    const result = await API.post("/api/characters/v2/profile", { characterId: editor.characterId, editable: editor.editable });
+    if (result.status !== "ok") throw new Error(result.errorMsg || "保存失败");
+    editor.editable = structuredClone(result.editable);
+    editor.original = structuredClone(result.editable);
+    editor.dirty = false;
+    editor.savedAt = result.updatedAt || new Date().toISOString();
+    const loaded = await API.loadCharacter(editor.characterId);
+    if (loaded.status === "ok") {
+      AS.currentCharacterCard = loaded.card;
+      AS.currentV2Capsule = loaded.v2Capsule || null;
+      AS.currentV2RuntimeContext = loaded.v2RuntimeContext || null;
+      AS.currentV2RuntimeMvp = loaded.v2RuntimeMvp || null;
+    }
+    AS.characters = await API.loadCharacters();
+    createToast("角色高级设置已保存，并已应用到后续互动。", "ok");
+  } catch (err) {
+    editor.error = err.message || String(err);
+  } finally {
+    editor.busy = false;
+    render();
+  }
+}
+
+function cancelCharacterV2ProfileEditor() {
+  const editor = AS.characterV2Editor;
+  if (editor.dirty && !confirm("放弃尚未保存的角色修改？")) return;
+  AS.characterV2Editor = { open: false, characterId: "", editable: null, original: null, dirty: false, busy: false, error: "", savedAt: "" };
+  render();
+}
+
 async function exportCharacterV2File(format) {
   const characterId = AS.currentV2RuntimeMvp?.characterId || AS.currentV2Capsule?.characterId || AS.currentCharacterCard?.id || "";
   if (!characterId) return createToast("请先预览一个角色。", "warn");

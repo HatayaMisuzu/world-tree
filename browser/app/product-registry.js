@@ -3,8 +3,8 @@
 (function registerWorldTreeProducts(global) {
   const entries = [
     { id: "quick-setting", name: "快速设定", enName: "Quick Setting", category: "creation", maturity: "available", route: "quick-setting", capability: "setting-intake", guidance: "从一段灵感快速建立可继续的世界。", limitation: "轻量创建流程" },
-    { id: "character", name: "人物互动", enName: "Character", category: "experience", maturity: "available", route: "character", capability: "character-chat", guidance: "导入或创建角色并持续对话。", limitation: "高级角色编辑器仍在完善" },
-    { id: "world-rpg", name: "世界探索", enName: "World RPG", category: "experience", maturity: "recommended", route: "world-rpg", capability: "world-exploration", guidance: "在可保存、可分支的世界中自由探索。", limitation: "世界书高级编辑仍在完善" },
+    { id: "character", name: "人物互动", enName: "Character", category: "experience", maturity: "available", route: "character", capability: "character-chat", guidance: "创建或导入角色，编辑高级行为边界并持续对话。", limitation: "真人体验仍待验收" },
+    { id: "world-rpg", name: "世界探索", enName: "World RPG", category: "experience", maturity: "recommended", route: "world-rpg", capability: "world-exploration", guidance: "在可保存、可分支的世界中探索，并用世界书长期维护设定。", limitation: "真人体验仍待验收" },
     { id: "tabletop", name: "桌面叙事", enName: "Tabletop", category: "experience", maturity: "early-access", route: "tabletop", capability: "tabletop-loop", guidance: "用场景、判定与时钟推进单人桌面叙事。", limitation: "基础版，不是完整规则系统" },
     { id: "mystery-puzzle", name: "解谜调查", enName: "Mystery Puzzle", category: "experience", maturity: "early-access", route: "mystery-puzzle", capability: "detective-loop", guidance: "调查地点、整理线索并提交推理。", limitation: "基础调查流程" },
     { id: "strategy-sim", name: "策略模拟", enName: "Strategy Sim", category: "experience", maturity: "early-access", route: "strategy-sim", capability: "strategy-loop", guidance: "围绕资源和事件推进轻量策略回合。", limitation: "基础版，不是完整 4X" },

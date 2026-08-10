@@ -127,11 +127,18 @@ function buildWorldbookV2EntryFromText(text = "") {
 function strategySimV2DefaultSpec() {
   return {
     specId: "ui_strategy_spec",
-    title: "UI Strategy Spec",
-    resources: [{ id: "supply", label: "Supply", min: 0, max: 10, initial: 5, visibility: "public", maxDeltaPerTurn: 2 }],
-    mechanisms: [{ id: "ration", label: "Ration", triggerTags: ["ration"], effects: [{ targetType: "resource", targetId: "supply", delta: -1, reason: "spent supply" }] }],
-    probabilityRules: [{ id: "scout", label: "Scout", triggerTags: ["scout"], baseChance: 0.5, visibility: "partial" }],
-    balanceProfile: { rngSeed: "ui-seed" }
+    title: "雾港生存议会",
+    description: "在十二个回合内维持补给与民心，并探索雾港周边。",
+    resources: [
+      { id: "supply", label: "补给", min: 0, max: 10, initial: 6, safeRange: [4,10], warningRange: [1,3], collapseRange: [0,0], visibility: "public", maxDeltaPerTurn: 2 },
+      { id: "morale", label: "民心", min: 0, max: 10, initial: 5, safeRange: [4,10], warningRange: [1,3], collapseRange: [0,0], visibility: "public", maxDeltaPerTurn: 2 }
+    ],
+    mechanisms: [
+      { id: "ration", label: "节制配给", triggerTags: ["配给", "ration"], effects: [{ targetType: "resource", targetId: "supply", delta: -1, reason: "本回合消耗了补给" }, { targetType: "resource", targetId: "morale", delta: 1, reason: "公平分配稳定了民心" }] },
+      { id: "festival", label: "举办集会", triggerTags: ["集会", "festival"], effects: [{ targetType: "resource", targetId: "supply", delta: -2, reason: "集会消耗了补给" }, { targetType: "resource", targetId: "morale", delta: 2, reason: "集会鼓舞了民心" }] }
+    ],
+    probabilityRules: [{ id: "scout", label: "探索远郊", triggerTags: ["探索", "scout"], baseChance: 0.55, visibility: "partial" }],
+    balanceProfile: { rngSeed: "ui-seed", expectedRunLength: "12" }
   };
 }
 
@@ -161,6 +168,7 @@ const AS = {
   characterV2RuntimeAdvancedOpen: false,
   characterPreviewRawOpen: false,
   characterV2Live: { characterId: "", input: "", busy: false, error: "", reply: null, history: [], candidates: null, packetSummary: null, quality: null, advancedOpen: false, dryRun: false },
+  characterV2Editor: { open: false, characterId: "", editable: null, original: null, dirty: false, busy: false, error: "", savedAt: "" },
   worldbookEntries: [],
   worldbookTest: null,
   reviewItems: [],
@@ -234,8 +242,8 @@ const AS = {
   modePlay: null,
   worldPackOptions: { includeWorldbook: true, includeCharacters: true, includeSharedData: true, includeRuntimeState: false, includeReviewQueue: false, includeMechanisms: false, includeTurnStateFrames: false },
   characterV2Create: { open: false, name: "", text: "", avatar: null, preview: null, error: "", busy: false, advancedOpen: false },
-  worldbookV2: { entryText: "", input: "", loaded: null, candidate: null, preview: null, exportResult: null, lastResult: null, error: "", busy: false },
-  strategySimV2: { specText: "", runId: "", actionText: "", sealedSpec: null, publicView: null, lastResult: null, error: "", busy: false },
+  worldbookV2: { entryText: "", input: "", loaded: null, candidate: null, preview: null, exportResult: null, lastResult: null, error: "", busy: false, query: "", editingId: "", draft: null, dirty: false },
+  strategySimV2: { specText: "", runId: "", actionText: "", sealedSpec: null, publicView: null, history: [], runs: [], ending: null, lastResult: null, error: "", busy: false },
   tabletopV2: { runId: null, module: null, ruleset: null, lastRuling: null, ending: null },
   singlePlayerScriptKillV2: {
     scriptId: "", runId: "", importText: "", importPreview: null, playerRun: null,

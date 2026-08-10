@@ -12,6 +12,16 @@ export async function handleCharacterV2ProductRoute({ path, method, url, readBod
   const dataRoot = getDataRoot(deps);
   const root = charactersRoot(dataRoot);
 
+  if (path === "/api/characters/v2/profile" && method === "GET") {
+    const { loadCharacterV2EditableProfile } = await import("./character-v2-profile-service.js");
+    return jsonResponse(loadCharacterV2EditableProfile(root, url.searchParams.get("characterId") || ""));
+  }
+  if (path === "/api/characters/v2/profile" && method === "POST") {
+    const body = await readBody();
+    const { saveCharacterV2EditableProfile } = await import("./character-v2-profile-service.js");
+    return jsonResponse(saveCharacterV2EditableProfile(root, body.characterId, body.editable || body.profile || {}));
+  }
+
   if (path === "/api/characters/v2/turn" && method === "POST") {
     const body = await readBody();
     const { handleCharacterV2LiveTurn } = await import("./character-v2-live-turn-service.js");

@@ -13,7 +13,7 @@ function minimalSpec() {
     variables: [{ id: "secret_pressure", label: "Secret Pressure", min: 0, max: 10, initial: 3, visibility: "secret" }],
     mechanisms: [{ id: "ration", label: "Ration", triggerTags: ["ration"], effects: [{ targetType: "resource", targetId: "supply", delta: -1, reason: "spent supply" }] }],
     probabilityRules: [{ id: "scout", label: "Scout", triggerTags: ["scout"], baseChance: 0.5, visibility: "partial" }],
-    balanceProfile: { rngSeed: "product-seed" }
+    balanceProfile: { rngSeed: "product-seed", expectedRunLength: 5 }
   };
 }
 
@@ -78,6 +78,43 @@ test("rejects unsafe strategy run ids instead of sanitizing into paths", async (
     const valid = await ctx.service.startRun({ runId: "run.product-01", sealedSpec: sealed.spec });
     assert.equal(valid.status, "ok");
     assert.equal(existsSync(join(ctx.root, "engine", "runs", "strategy-sim-v2", "run.product-01", "state.json")), true);
+  } finally {
+    ctx.cleanup();
+  }
+});
+
+test("supports multi-turn resume, ending, recoverable rejection, and restart without hidden-state leaks", async () => {
+  const ctx = makeService();
+  try {
+    const sealed = await ctx.service.sealSpec({ spec: minimalSpec() });
+    assert.equal(sealed.status, "ok");
+    assert.equal((await ctx.service.startRun({ runId: "run_story", sealedSpec: sealed.spec })).status, "ok");
+
+    for (let expectedTurn = 1; expectedTurn <= 5; expectedTurn += 1) {
+      const result = await ctx.service.turn({ runId: "run_story", action: "ration and scout" });
+      assert.equal(result.status, "ok");
+      assert.equal(result.turn, expectedTurn);
+      assert.equal(result.history.length, expectedTurn);
+      const publicJson = JSON.stringify({ view: result.publicView, history: result.history });
+      for (const forbidden of ["secret_pressure", "rngSeed", "finalChance", "rawRoll"]) assert.equal(publicJson.includes(forbidden), false);
+    }
+
+    const loaded = await ctx.service.loadRun({ runId: "run_story" });
+    assert.equal(loaded.status, "ok");
+    assert.equal(loaded.publicView.turn, 5);
+    assert.equal(loaded.history.length, 5);
+    assert.equal(loaded.ending.status, "defeat");
+
+    const afterEnd = await ctx.service.turn({ runId: "run_story", action: "ration" });
+    assert.deepEqual({ status: afterEnd.status, code: afterEnd.code, recoverable: afterEnd.recoverable }, { status: "error", code: "RUN_ENDED", recoverable: true });
+    assert.equal((await ctx.service.loadRun({ runId: "run_story" })).publicView.turn, 5);
+
+    const restarted = await ctx.service.restartRun({ runId: "run_story" });
+    assert.equal(restarted.status, "ok");
+    assert.notEqual(restarted.runId, "run_story");
+    const listed = await ctx.service.listRuns();
+    assert.equal(listed.runs.some((run) => run.runId === "run_story" && run.phase === "ended"), true);
+    assert.equal(listed.runs.some((run) => run.runId === restarted.runId && run.turn === 0), true);
   } finally {
     ctx.cleanup();
   }

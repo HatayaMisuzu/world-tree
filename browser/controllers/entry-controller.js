@@ -4,18 +4,78 @@
 async function handleAction(e, btn) {
   e.stopPropagation();
 // ── V2 product UI handlers ──
-async function handleWorldbookV2Action(action) {
+async function handleWorldbookV2Action(action, btn) {
   const s = AS.worldbookV2;
-  const moduleKey = AS.selectedModule?.id || "";
-  if (!moduleKey) return createToast("请先选择世界", "warn");
+  const moduleKey = AS.selectedModule && AS.selectedModule.type !== "profile" && !String(AS.selectedModule.id || "").startsWith("profile:") ? AS.selectedModule.id : "";
+  if (!moduleKey) return createToast("当前是运行模板，请先安装示例或创建一个可写世界。", "warn");
   s.entryText = U.qs("#worldbookV2EntryText")?.value || s.entryText || "";
   s.input = U.qs("#worldbookV2Input")?.value || s.input || "";
+  s.query = U.qs("#worldbookV2Query")?.value || s.query || "";
   try {
     s.busy = true; s.error = ""; s.lastResult = null;
     let result;
     if (action === "worldbook-v2-load") {
       result = await API.worldbookV2Load(moduleKey);
       s.loaded = result;
+      AS.worldbookEntries = result.entries || AS.worldbookEntries;
+    } else if (action === "worldbook-v2-search") {
+      result = { status: "ok", query: s.query };
+    } else if (action === "worldbook-v2-new") {
+      s.editingId = "__new__";
+      s.draft = { title: "", content: "", keys: [], entryType: "note", visibility: "public", contextSlot: "global_lore", priority: 100, enabled: true, alwaysOn: false };
+      s.dirty = false;
+      result = { status: "ok" };
+    } else if (action === "worldbook-v2-edit") {
+      const id = btn?.closest("[data-worldbook-v2-id]")?.dataset.worldbookV2Id || "";
+      const entry = (s.loaded?.entries || []).find((item) => (item.entryId || item.id) === id);
+      if (!entry) throw new Error("未找到要编辑的世界书条目");
+      s.editingId = id;
+      s.draft = structuredClone(entry);
+      s.dirty = false;
+      result = { status: "ok" };
+    } else if (action === "worldbook-v2-cancel-edit") {
+      if (s.dirty && !confirm("放弃尚未保存的世界书修改？")) return;
+      s.editingId = ""; s.draft = null; s.dirty = false;
+      result = { status: "ok" };
+    } else if (action === "worldbook-v2-save-entry") {
+      const title = (U.qs("#worldbookV2Title")?.value || "").trim();
+      const content = (U.qs("#worldbookV2Content")?.value || "").trim();
+      if (!title || !content) throw new Error("标题和内容不能为空");
+      const id = s.editingId === "__new__" ? `wb_${Date.now()}` : s.editingId;
+      const draft = {
+        ...(s.draft || {}), entryId: id, id, title, content,
+        keys: (U.qs("#worldbookV2Keys")?.value || "").split(/[,，\n]/).map(item => item.trim()).filter(Boolean),
+        entryType: U.qs("#worldbookV2Type")?.value || "note",
+        visibility: U.qs("#worldbookV2Visibility")?.value || "public",
+        contextSlot: U.qs("#worldbookV2ContextSlot")?.value || "global_lore",
+        priority: Number(U.qs("#worldbookV2Priority")?.value || 100),
+        enabled: U.qs("#worldbookV2Enabled")?.checked !== false,
+        alwaysOn: U.qs("#worldbookV2AlwaysOn")?.checked === true,
+        updatedAt: new Date().toISOString()
+      };
+      const entries = (s.loaded?.entries || []).filter((item) => (item.entryId || item.id) !== id);
+      entries.push(draft);
+      result = await API.worldbookV2Save({ moduleKey, entries });
+      if (result.status !== "ok") throw new Error(result.errorMsg || "保存失败");
+      s.loaded = { ...(s.loaded || {}), entries: result.entries || [] };
+      AS.worldbookEntries = result.entries || [];
+      s.editingId = ""; s.draft = null; s.dirty = false;
+      createToast("世界书条目已保存并会用于后续运行上下文。", "ok");
+    } else if (action === "worldbook-v2-toggle" || action === "worldbook-v2-delete") {
+      const id = btn?.closest("[data-worldbook-v2-id]")?.dataset.worldbookV2Id || "";
+      const entries = (s.loaded?.entries || []).map((item) => ({ ...item }));
+      const index = entries.findIndex((item) => (item.entryId || item.id) === id);
+      if (index < 0) throw new Error("未找到世界书条目");
+      if (action === "worldbook-v2-delete") {
+        if (!confirm(`确认删除“${entries[index].title || "该条目"}”？此操作会立即保存。`)) return;
+        entries.splice(index, 1);
+      } else {
+        entries[index].enabled = entries[index].enabled === false;
+      }
+      result = await API.worldbookV2Save({ moduleKey, entries });
+      if (result.status !== "ok") throw new Error(result.errorMsg || "保存失败");
+      s.loaded = { ...(s.loaded || {}), entries: result.entries || [] };
+      AS.worldbookEntries = result.entries || [];
     } else if (action === "worldbook-v2-create-candidate") {
       const entry = buildWorldbookV2EntryFromText(s.entryText);
       result = await API.worldbookV2CreateCandidate({ moduleKey, entry });
@@ -42,12 +102,16 @@ async function handleWorldbookV2Action(action) {
   }
 }
 
-async function handleStrategySimV2Action(action) {
+async function handleStrategySimV2Action(action, btn) {
   const s = AS.strategySimV2;
   s.specText = U.qs("#strategySimV2SpecText")?.value || s.specText || U.json(strategySimV2DefaultSpec());
   s.runId = U.qs("#strategySimV2RunId")?.value || s.runId || "";
   s.actionText = U.qs("#strategySimV2ActionText")?.value || s.actionText || "";
   const spec = parseJsonObjectInput(s.specText, strategySimV2DefaultSpec());
+  if (action === "strategy-sim-v2-choice") {
+    s.actionText = btn?.dataset.strategyAction || "";
+    action = "strategy-sim-v2-turn";
+  }
   try {
     s.busy = true; s.error = ""; s.lastResult = null;
     let result;
@@ -62,14 +126,44 @@ async function handleStrategySimV2Action(action) {
       result = await API.strategySimV2Start({ runId, sealedSpec });
       s.runId = result.runId || runId;
       s.publicView = result.publicView || s.publicView;
+      s.history = [];
+      s.ending = null;
+      s.runs = (await API.strategySimV2ListRuns()).runs || [];
     } else if (action === "strategy-sim-v2-turn") {
+      if (!s.runId) throw new Error("请先新开一局或读取存档");
+      if (!String(s.actionText || "").trim()) throw new Error("请先选择或输入本回合行动");
       result = await API.strategySimV2Turn({ runId: s.runId, action: s.actionText });
+      if (result.status !== "ok") throw new Error(result.errorMsg || "回合执行失败");
       s.publicView = result.publicView || s.publicView;
+      s.history = result.history || s.history;
+      s.ending = result.ending || null;
+      s.actionText = "";
     } else if (action === "strategy-sim-v2-save") {
       result = await API.strategySimV2Save({ runId: s.runId });
+      s.runs = (await API.strategySimV2ListRuns()).runs || [];
     } else if (action === "strategy-sim-v2-load-run") {
       result = await API.strategySimV2LoadRun({ runId: s.runId });
       s.publicView = result.publicView || s.publicView;
+      s.history = result.history || [];
+      s.ending = result.ending || null;
+    } else if (action === "strategy-sim-v2-list-runs") {
+      result = await API.strategySimV2ListRuns();
+      s.runs = result.runs || [];
+    } else if (action === "strategy-sim-v2-select-run") {
+      s.runId = btn?.dataset.runId || "";
+      result = await API.strategySimV2LoadRun({ runId: s.runId });
+      s.publicView = result.publicView || null;
+      s.history = result.history || [];
+      s.ending = result.ending || null;
+    } else if (action === "strategy-sim-v2-restart") {
+      if (!s.runId || !confirm("重新开始会创建一个新的存档，当前存档会保留。继续吗？")) return;
+      result = await API.strategySimV2Restart({ runId: s.runId });
+      if (result.status !== "ok") throw new Error(result.errorMsg || "重新开始失败");
+      s.runId = result.runId;
+      s.publicView = result.publicView;
+      s.history = [];
+      s.ending = null;
+      s.runs = (await API.strategySimV2ListRuns()).runs || [];
     } else if (action === "strategy-sim-v2-export-run") {
       result = await API.strategySimV2ExportRun({ runId: s.runId });
     }
@@ -232,10 +326,10 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     return render();
   }
   if (action && action.startsWith("worldbook-v2-")) {
-    return handleWorldbookV2Action(action);
+    return handleWorldbookV2Action(action, btn);
   }
   if (action && action.startsWith("strategy-sim-v2-")) {
-    return handleStrategySimV2Action(action);
+    return handleStrategySimV2Action(action, btn);
   }
   if (action && action.startsWith("detective-v2-")) {
     return handleDetectiveV2Action(action);
@@ -297,6 +391,13 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "load-worlddata") { if (AS.selectedModule) AS.dashboardData.entities = await API.entities(AS.selectedModule.id); return render(); }
     if (action === "refresh-modules") { await refreshModules(); return render(); }
     if (action === "install-first-run-demo") return installFirstRunDemo();
+    if (action === "dismiss-onboarding") {
+      await API.saveConfig({ firstRun: false });
+      AS.config.firstRun = false;
+      createToast("首次使用提示已关闭，可继续从首页开始。", "ok");
+      return render();
+    }
+    if (action === "open-character-library") { AS.view = "library"; AS.libraryTab = "characters"; await loadViewData(); return render(); }
     if (action === "load-module-from-list") { await selectModule(btn.dataset.moduleId, "workbench"); AS.workbenchMode = "chat"; return render(); }
     if (action === "install-example") return installExample(btn.closest("[data-example-id]")?.dataset.exampleId);
     if (action === "select-module") { await selectModule(btn.closest("[data-module-id]")?.dataset.moduleId, "chat"); return render(); }
@@ -321,6 +422,9 @@ async function handleSinglePlayerScriptKillV2Action(action) {
     if (action === "character-v2-live-send") return sendCharacterV2LiveTurn(false);
     if (action === "character-v2-live-dry-run") return sendCharacterV2LiveTurn(true);
     if (action === "character-v2-live-advanced-toggle") { AS.characterV2Live.advancedOpen = !AS.characterV2Live.advancedOpen; return render(); }
+    if (action === "character-v2-profile-open") return openCharacterV2ProfileEditor();
+    if (action === "character-v2-profile-save") return saveCharacterV2ProfileEditor();
+    if (action === "character-v2-profile-cancel") return cancelCharacterV2ProfileEditor();
     if (action === "character-v2-candidates-save") return saveCharacterV2Candidates();
     if (action === "character-v2-export-md") return exportCharacterV2File("character_md");
     if (action === "character-v2-export-bundle") return exportCharacterV2File("export_bundle_json");

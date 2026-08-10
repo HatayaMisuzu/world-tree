@@ -172,6 +172,7 @@
     saveWorldbook(data) { return API.post("/api/worldbook", data); },
     testWorldbook(data) { return API.post("/api/worldbook/test", data); },
     worldbookV2Load(moduleKey) { return API.get(`/api/worldbook-v2/load?moduleKey=${encodeURIComponent(moduleKey || "")}`); },
+    worldbookV2Save(data) { return API.post("/api/worldbook-v2/save", data); },
     worldbookV2CreateCandidate(data) { return API.post("/api/worldbook-v2/candidates/create", data); },
     worldbookV2CandidateDecision(data) { return API.post("/api/worldbook-v2/candidates/decision", data); },
     worldbookV2InjectPreview(data) { return API.post("/api/worldbook-v2/inject-preview", data); },
@@ -216,6 +217,8 @@
     strategySimV2Turn(data) { return API.post("/api/strategy-sim-v2/turn", data); },
     strategySimV2Save(data) { return API.post("/api/strategy-sim-v2/save", data); },
     strategySimV2LoadRun(data) { return API.post("/api/strategy-sim-v2/load-run", data); },
+    strategySimV2ListRuns() { return API.get("/api/strategy-sim-v2/runs"); },
+    strategySimV2Restart(data) { return API.post("/api/strategy-sim-v2/restart", data); },
     strategySimV2ExportRun(data) { return API.post("/api/strategy-sim-v2/export-run", data); },
     // Detective V2
     detectiveV2ImportPreview(data) { return API.post("/api/detective-v2/import-preview", data); },
