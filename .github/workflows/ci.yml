@@ -96,6 +96,10 @@ jobs:
     needs: [check, browser-quality, coverage, reliability, windows-launcher]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
       - name: Write exact-SHA verification evidence
         id: evidence
         shell: bash
