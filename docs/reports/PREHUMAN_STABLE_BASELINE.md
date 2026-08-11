@@ -1,56 +1,71 @@
 # Pre-human Stable Baseline Report
 
-Status: `PREHUMAN_STABLE_BASELINE = NOT ACHIEVED`
+Status: `PREHUMAN_STABLE_BASELINE = ACHIEVED`
 
-This report describes the current candidate. Remote status is dynamic and must be queried; a committed document does not permanently confer a CI or provider PASS.
+This is an automated pre-human baseline, not a human-signed product release. Remote status remains dynamic; the immutable tag SHA is the evidence identity and current GitHub state must be queried.
 
 ## Baseline
 
 - Starting SHA: `2e52c987383b1fb6a2666b40322feee5f17ce3e9`
-- Candidate version: `0.5.0-prehuman.1`
-- Latest exact-SHA-verified main candidate before this report update: `5e4d678504d668de7ef9a57c3916434e4eac4664`
-- Final main SHA: dynamic until this report update itself is committed and verified
-- Immutable tag: not created
+- Final identity: the commit targeted by annotated tag `v0.5.0-prehuman.1` (`git rev-list -n 1 v0.5.0-prehuman.1`)
+- Package version: `0.5.0-prehuman.1`
+- Release state: automated/product/real-provider closure complete; human validation pending
+- No GitHub Release is created for this candidate.
 
 ## Completed product loops
 
-- Character V2: structured advanced editing of identity, relationship, runtime, cognition, and performance fields; validation prevents invalid overwrites; save, reload, and runtime-context consumption are covered.
-- Worldbook V2: structured create, edit, search, enable/disable, safe delete, priority/context-slot controls, persistence, injection preview, and runtime-inclusion coverage.
-- Strategy Sim V2: default quick start, repeated actions, explained resource/probability outcomes, public history, automatic persistence, save/resume, ending/restart, export, and recoverable errors without hidden-state leakage.
-- Onboarding: first-run explanation, model/offline setup choices, bundled demo guidance, content setup, first interaction, autosave/continue guidance, and a persisted skip action.
-- Product entries and demo: the eight-entry registry is preserved and the advertised Cloud Steam City demo is installed through the real example path.
+- Character V2 provides structured advanced editing for identity, relationship, runtime, cognition, and performance fields, guarded persistence/reload, runtime-context use, real-provider live turns, safe candidate queues, and no automatic canon/memory/relationship writes.
+- Worldbook V2 provides structured create/edit/search/toggle/delete, priority and context-slot controls, persistence, injection preview, and verified real-provider runtime influence.
+- Strategy Sim V2 provides quick start, continuous turns, explained outcomes, public history, save/resume, ending/restart/export, recovery, and hidden-state isolation. Its runtime is deliberately deterministic and does not require an LLM.
+- Onboarding covers model/offline choice, bundled demo guidance, content setup, first interaction, autosave/continue guidance, and persisted skip.
+- All eight advertised product entries remain registered, and Cloud Steam City installs through the real example path.
+- Creation Forge covers quick creation and localization of user-supplied content, delivery into installable world modules, and a real-provider first turn on generated content.
 
 ## Engineering improvements
 
-- CI evidence schema v2 separates `testedSha`, PR `headSha`, and `baseSha`; artifacts are keyed by the exact tested commit and locally validated before a remote PASS is reported.
-- Current truth-source documents distinguish historical, current exact-SHA, and dynamic remote evidence.
-- CodeQL and Dependabot workflows were added; dependency audit currently reports no known vulnerabilities.
-- The package version is aligned to the pre-human candidate identity. Release packaging and secret/user-data exclusion remain release gates.
+- CI evidence schema v2 separates `testedSha`, PR `headSha`, and `baseSha`; exact-SHA artifacts are named with the tested commit and locally validated.
+- Truth-source documents distinguish historical evidence, current exact-SHA evidence, and dynamic remote state.
+- CodeQL and Dependabot workflows are present. The verified dependency audit reported zero known vulnerabilities.
+- Real-provider smoke commands accept credentials only through process environment variables and can write sanitized evidence to a temporary report directory. Keys and provider response text are not recorded.
+- Release packing and safe-snapshot gates exclude secrets and user data.
+- At closure, `main` protection is configured with strict `exact-sha-evidence`, force pushes disabled, and deletion disabled; the effective configuration must be re-read from GitHub for current state.
 
-## Validation performed so far
+## Validation
 
-- Targeted Character V2, Worldbook V2, Strategy Sim V2, product-playable, console-boundary, CI-evidence, truth, and project checks passed during implementation.
-- In-app browser QA covered first-run onboarding/skip persistence, Character advanced edit/save/reload, Worldbook create/edit/disable/reload/injection preview, and Strategy multi-turn/history/save/reload-resume behavior with no observed application console errors.
-- Two no-code-change local validation rounds passed: `npm test` 180/180, unit 1250/1250, integration 141/141, reliability 28/28, persistence soak at 100/500/1000 iterations, and coverage gates at 70% lines/functions and 60% branches.
-- Browser verification passed twice for all eight entries, the three-turn golden path, interaction regressions, accessibility, and 1440/1024/768/390 layouts without horizontal overflow.
-- Release packaging passed with 606 files and 793,016 packed bytes; safe snapshot generation passed. Windows launcher verification passed locally/in CI and the npm audit reported zero vulnerabilities.
+- Two unchanged-code local rounds passed: `npm test` 180/180, unit 1250/1250, integration 141/141, reliability 28/28, persistence soak at 100/500/1000 iterations, and coverage thresholds of 70% lines/functions and 60% branches.
+- Browser verification passed twice for all eight entries, the three-turn golden path, interaction regressions, accessibility, and 1440/1024/768/390 layouts without horizontal overflow or observed application console errors.
+- Release packaging passed with 606 files and 793,034 packed bytes; safe snapshot generation and Windows launcher checks passed.
+- The final provider-smoke harness change passed `npm test` 180/180 and syntax/diff validation before the complete final-SHA gate rerun.
 
 ## Real LLM
 
-- Current real-provider matrix status: `BLOCKED_BY_CREDENTIALS`.
-- The environment exposed an Anthropic gateway configuration, but model discovery and a minimal real `/v1/messages` call both returned HTTP 401 using the standard x-api-key and bearer forms.
-- The application normal configuration contained only a deliberately fake local credential. No mock or fallback result is counted as real-provider evidence, and no key or provider response was recorded.
-- Scheduled provider workflow run `31427161826` uploaded DeepSeek, OpenRouter, and generic OpenAI-compatible artifacts; all three artifacts reported `BLOCKED_BY_CREDENTIALS`, zero turns, and a failed credentials assertion despite the workflow-level success conclusion.
+- Provider/model: DeepSeek / `deepseek-v4-flash`, OpenAI-compatible endpoint.
+- Built-in first play: PASS, three persisted real-provider turns, no local fallback, context memory assertion passed, 13,732 observed tokens across exposed turn usage.
+- Normal world/character chat and long context: PASS, five consecutive real-provider turns (10 conversation messages), no fallback; Worldbook marker was observed in the first and last turn.
+- Character V2 live turn: PASS, configured endpoint used, safe non-empty reply, candidate-only writes (`canon`, `proposal`, `longTermMemory`, and `relationship` all false).
+- User-created content and Creation Forge: PASS for quick-create and localization flows, delivered world modules, real-provider first interaction, and safety scan; 4,495 exposed chat tokens were observed.
+- Worldbook V2: PASS, one entry activated in injection preview and materially influenced real-provider output.
+- Provider connection test: PASS after transient retries; `/models`, model existence, chat completion, and non-empty content checks passed.
+- Failure/retry: PASS, an intentional unreachable endpoint produced `LLM_UNREACHABLE`, then restored configuration completed a real-provider recovery turn without fallback.
+- Strategy Sim V2: `NOT_APPLICABLE_DETERMINISTIC_ARCHITECTURE`; a deterministic turn passed and secret state was absent from the public view.
+- Latency and usage are captured when exposed by the endpoint. Provider response text, prompts, and credentials are deliberately absent from committed evidence.
+
+The real-provider runs are distinct from mock playback and local fallback. Their reproducible commands are `npm run smoke:first-play`, `npm run smoke:user-content-real-llm`, and `npm run smoke:prehuman-real-llm-matrix` with environment-only configuration and a temporary report directory.
 
 ## Remote CI
 
-Candidate `5e4d678504d668de7ef9a57c3916434e4eac4664` was verified by CI push run `31355812614`, CodeQL run `31355812585`, and a later scheduled exact-SHA CI run `31357635961`. The validated artifact name was `world-tree-ci-evidence-tested-5e4d678504d668de7ef9a57c3916434e4eac4664`, with schema v2 `testedSha` and all required jobs marked success. This is historical evidence for that exact SHA only; future status must be queried dynamically.
+Before final tagging, the tag target is verified by GitHub Actions and the downloaded schema-v2 artifact is locally checked against the same tested SHA. The tag SHA, not this prose, is the durable identity. Future status must be queried from GitHub; historical run IDs and artifact names are not permanent status claims.
+
+The immediately preceding exact-SHA evidence run was CI `31451765827`, CodeQL `31451765812`, artifact `world-tree-ci-evidence-tested-b061a7ef48d204ab52166ee9a116afc451d8db86`. The final tag target receives a new exact-SHA run before tag creation.
 
 ## Remaining
 
-- A valid environment-only provider credential and a current-SHA representative real-LLM matrix PASS.
-- Exact GitHub Actions and evidence validation for the final report-update SHA.
-- Immutable tag creation and verified main protection after all tag gates pass.
-- Human first-time and long-session playtests, subjective UX feedback, 60s+ recording, and per-entry `HUMAN_SIGNED` decisions.
+`HUMAN_VALIDATION_PENDING`
 
-Because non-human gates remain, this candidate is not yet the pre-human stable baseline.
+- First-time human playtest
+- Long-session human playtest
+- Subjective UX feedback
+- A 60-second-or-longer screen recording
+- Per-entry `HUMAN_SIGNED` playable decisions
+
+The candidate must not be described as `HUMAN_SIGNED`, `PLAYABLE_FINAL`, or `FULL_PRODUCT_RELEASE_READY` until those human gates are completed.

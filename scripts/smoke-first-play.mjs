@@ -129,8 +129,10 @@ if (!provider.baseUrl || !provider.model || !apiKey) {
     await api(server, "/api/config", {
       method: "POST",
       body: JSON.stringify({
+        llmProvider: provider.id,
         llmBaseUrl: provider.baseUrl,
         llmModel: provider.model,
+        llmThinking: process.env.WT_SMOKE_THINKING || "auto",
         llmTimeoutMs: Number(process.env.WT_SMOKE_TIMEOUT_MS || 60000)
       })
     });

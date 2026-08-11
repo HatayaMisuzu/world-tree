@@ -11,7 +11,7 @@ import {
 import { summarizeUsageRecords } from "../src/core/llm/usage-meter.js";
 
 const root = resolve(".");
-const reportsDir = join(root, "docs", "reports");
+const reportsDir = resolve(process.env.WORLD_TREE_LLM_REPORT_DIR || join(root, "docs", "reports"));
 const reportPath = join(reportsDir, "user-content-real-llm-smoke.md");
 const resultPath = join(reportsDir, "user-content-real-llm-smoke-result.json");
 const flowAText = "我想玩一个赛博修仙世界，主角是被公司追杀的炼丹师。";
@@ -165,6 +165,7 @@ const runEnabled = process.env.WORLD_TREE_RUN_REAL_LLM_SMOKE === "1";
 const baseUrl = process.env.WORLD_TREE_LLM_BASE_URL || process.env.LLM_BASE_URL || "";
 const model = process.env.WORLD_TREE_LLM_MODEL || process.env.LLM_MODEL || "";
 const apiKey = process.env.WORLD_TREE_LLM_API_KEY || process.env.LLM_API_KEY || "";
+const providerId = process.env.WORLD_TREE_LLM_PROVIDER || "openai-compatible";
 
 if (!runEnabled) {
   blocked("WORLD_TREE_RUN_REAL_LLM_SMOKE is not set to 1");
@@ -176,7 +177,13 @@ if (!runEnabled) {
   try {
     await api(server, "/api/config", {
       method: "POST",
-      body: JSON.stringify({ llmBaseUrl: baseUrl, llmModel: model, llmTimeoutMs: Number(process.env.WORLD_TREE_LLM_TIMEOUT_MS || 60000) })
+      body: JSON.stringify({
+        llmProvider: providerId,
+        llmBaseUrl: baseUrl,
+        llmModel: model,
+        llmThinking: process.env.WORLD_TREE_LLM_THINKING || "auto",
+        llmTimeoutMs: Number(process.env.WORLD_TREE_LLM_TIMEOUT_MS || 60000)
+      })
     });
     await api(server, "/api/secrets/llm", {
       method: "POST",
