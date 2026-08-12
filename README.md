@@ -1,8 +1,10 @@
 # World Tree
 
+`ENGINEERING_CLOSED = YES`; `PREHUMAN_STABLE_BASELINE = ACHIEVED` within the bounded `v0.5.0-prehuman.2` scope; `HUMAN_VALIDATION_PENDING = YES`; `PLAYABLE_FINAL = NO`; `FULL_PRODUCT_RELEASE_READY = NO`; `V1.0_READY = NO`. Representative real-provider evidence is exact-SHA and dynamic; workflow green or `BLOCKED_BY_CREDENTIALS` is not provider PASS. Future expansion is `OUT_OF_SCOPE_FOR_PREHUMAN_BASELINE`.
+
 > 本地优先的 AI 文字冒险大厅：导入角色、世界书、案件或灵感，进入一个可以保存、继续、审核和导出的互动世界。
 >
-> Package version: v0.5.0-prehuman.1
+> Package version: v0.5.0-prehuman.2
 >
 > 快速开始：[docs/USER_QUICKSTART.md](docs/USER_QUICKSTART.md) | 文档索引：[docs/INDEX.md](docs/INDEX.md) | 状态术语：[docs/STATUS_TERMINOLOGY.md](docs/STATUS_TERMINOLOGY.md)
 
@@ -66,7 +68,7 @@ World Tree 可以导入 SillyTavern 角色卡和世界书，把它们变成本�
 
 ## 工程状态与真相源
 
-当前版本：`0.5.0-prehuman.1`。维护者和 agent 的当前 truth source 在 [docs/PROJECT_TRUTH_SOURCE.md](docs/PROJECT_TRUTH_SOURCE.md)，配套状态文件是 [docs/CURRENT_PROJECT_STATE.md](docs/CURRENT_PROJECT_STATE.md) 和 [docs/V2_ENGINEERING_CLOSURE_STATUS.md](docs/V2_ENGINEERING_CLOSURE_STATUS.md)。
+当前版本：`0.5.0-prehuman.2`。维护者和 agent 的当前 truth source 在 [docs/PROJECT_TRUTH_SOURCE.md](docs/PROJECT_TRUTH_SOURCE.md)，配套状态文件是 [docs/CURRENT_PROJECT_STATE.md](docs/CURRENT_PROJECT_STATE.md) 和 [docs/PREHUMAN_STABLE_BASELINE.md](docs/PREHUMAN_STABLE_BASELINE.md)。
 
 Selected V2 service slices have engineering foundation evidence, but full product closure is not complete. Strategy Sim V2 engineering foundation is complete; Strategy Sim V2 product closure is not complete. Worldbook V2 engineering foundation is complete; Worldbook V2 product closure is not complete.
 

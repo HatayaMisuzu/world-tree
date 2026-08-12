@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { promisify } from "node:util";
 
 import { api, createTempDataDir, removeTempDir, startWorldTreeServer } from "../tests/integration/helpers/server-process.js";
 import { createCharacterCapsuleDraft } from "../src/core/character/character-v2-capsule-creation.js";
 import { createOrPreviewCharacterCapsule } from "../src/server/character-capsule-service.js";
 
-const reportDir = resolve(process.env.WORLD_TREE_LLM_REPORT_DIR || join("docs", "reports"));
+const execFileAsync = promisify(execFile);
+const reportDir = resolve(process.env.WORLD_TREE_LLM_REPORT_DIR || join("output", "real-llm"));
 const baseUrl = process.env.WORLD_TREE_LLM_BASE_URL || process.env.LLM_BASE_URL || "";
 const model = process.env.WORLD_TREE_LLM_MODEL || process.env.LLM_MODEL || "";
 const apiKey = process.env.WORLD_TREE_LLM_API_KEY || process.env.LLM_API_KEY || "";
@@ -15,6 +18,21 @@ const timeoutMs = Number(process.env.WORLD_TREE_LLM_TIMEOUT_MS || 120000);
 
 function requireCredentials() {
   if (!baseUrl || !model || !apiKey) throw new Error("missing real-provider environment configuration");
+}
+
+async function readGitIdentity() {
+  const [{ stdout: sha }, { stdout: status }] = await Promise.all([
+    execFileAsync("git", ["rev-parse", "HEAD"], { cwd: resolve(".") }),
+    execFileAsync("git", ["status", "--porcelain"], { cwd: resolve(".") })
+  ]);
+  const testedSha = sha.trim();
+  const worktreeCleanAtStart = status.trim().length === 0;
+  if (!worktreeCleanAtStart) {
+    const error = new Error(`REAL_LLM_EVIDENCE_DIRTY_WORKTREE testedSha=${testedSha}`);
+    error.code = "REAL_LLM_EVIDENCE_DIRTY_WORKTREE";
+    throw error;
+  }
+  return { testedSha, worktreeCleanAtStart };
 }
 
 async function timed(server, path, options) {
@@ -44,6 +62,7 @@ async function saveConfig(server, patch) {
 }
 
 async function run() {
+  const identity = await readGitIdentity();
   requireCredentials();
   const dataDir = await createTempDataDir("wt-prehuman-real-llm-");
   const matrixWorldDir = join(dataDir, "engine", "worlds", "prehuman-matrix", "shared");
@@ -51,8 +70,11 @@ async function run() {
   await writeFile(join(matrixWorldDir, "worldbook.json"), `${JSON.stringify({ entries: [] }, null, 2)}\n`, "utf8");
   const server = await startWorldTreeServer({ dataDir });
   const evidence = {
+    schemaVersion: 2,
+    testedSha: identity.testedSha,
+    worktreeCleanAtStart: identity.worktreeCleanAtStart,
     status: "FAIL",
-    provider: { id: provider, baseUrl, model },
+    provider: { id: provider, model },
     secret: "not recorded",
     cases: {},
     generatedAt: new Date().toISOString()
@@ -72,6 +94,51 @@ async function run() {
       body: JSON.stringify({ id: "prehuman-matrix", label: "Temporary prehuman matrix", value: apiKey })
     });
     assert.equal(savedSecret.status, 200);
+
+    const installed = await api(server, "/api/examples/install", {
+      method: "POST",
+      body: JSON.stringify({ id: "demo-world-cloud-steam-city" })
+    });
+    assert.equal(installed.body?.status, "ok", "built-in first-play example install failed");
+    const firstPlayCall = await timed(server, "/api/llm/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        input: "Inspect the old brass mechanism and tell me what stands out.",
+        moduleKey: installed.body.module.id,
+        modeId: "world-rpg",
+        dataMode: "worldbook",
+        engineState: { dataMode: "worldbook", turnCount: 0 },
+        messages: []
+      })
+    });
+    evidence.cases.builtInFirstPlay = safeChatEvidence("built-in first play", firstPlayCall);
+
+    const forgeText = "Create a floating-island world where lighthouse guilds regulate travel, plus an archivist companion.";
+    const forgePlan = await api(server, "/api/alchemy/plan", { method: "POST", body: JSON.stringify({ text: forgeText }) });
+    assert.equal(forgePlan.body?.status, "ok", "Creation Forge plan failed");
+    const forgeTargets = ["world_module", "worldbook", "character", "mechanism"];
+    const forgePreview = await api(server, "/api/alchemy/generate-preview", {
+      method: "POST", body: JSON.stringify({ text: forgeText, plan: forgePlan.body, selectedTargets: forgeTargets })
+    });
+    assert.equal(forgePreview.body?.status, "ok", "Creation Forge preview failed");
+    const forgeLocalize = await api(server, "/api/alchemy/localize", {
+      method: "POST", body: JSON.stringify({ preview: forgePreview.body, selectedTargets: forgeTargets })
+    });
+    assert.equal(forgeLocalize.body?.status, "ok", "Creation Forge localization failed");
+    const forgeDelivery = await api(server, "/api/alchemy/deliver", {
+      method: "POST",
+      body: JSON.stringify({ preview: forgePreview.body, localFolderDraft: forgeLocalize.body, selectedTargets: forgeTargets, userConfirmed: true })
+    });
+    assert.equal(forgeDelivery.body?.status, "ok", "Creation Forge delivery failed");
+    const forgeChat = await timed(server, "/api/llm/chat", {
+      method: "POST",
+      body: JSON.stringify({ input: "I approach the nearest lighthouse. What happens?", moduleKey: forgeDelivery.body.moduleKey, dataMode: "worldbook", messages: [] })
+    });
+    evidence.cases.creationForgeRepresentative = {
+      ...safeChatEvidence("Creation Forge representative flow", forgeChat),
+      intakeType: forgePlan.body.intakeType,
+      delivered: true
+    };
 
     let connectivity = null;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -231,7 +298,7 @@ async function run() {
   }
 
   await mkdir(reportDir, { recursive: true });
-  await writeFile(join(reportDir, "prehuman-real-llm-matrix-latest.json"), `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
+  await writeFile(join(reportDir, `prehuman-real-llm-matrix-${identity.testedSha}.json`), `${JSON.stringify(evidence, null, 2)}\n`, "utf8");
   console.log(JSON.stringify(evidence, null, 2));
 }
 

@@ -25,7 +25,7 @@ test("project facts parse final TAP count and npm pack metadata", () => {
 test("project facts reject stale head, counts, package metadata, and playable claims", () => {
   const valid = {
     schemaVersion: 1,
-    version: "0.5.0-prehuman.1",
+    version: "0.5.0-prehuman.2",
     head: "a".repeat(40),
     generatedAt: new Date().toISOString(),
     unitTests: 1,

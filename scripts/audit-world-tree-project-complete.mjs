@@ -144,7 +144,7 @@ check("CURRENT_PROJECT_STATE: has Remote CI", currentState.includes("Remote CI")
 check("CURRENT_PROJECT_STATE: Latest audited commit is generated", /Latest audited commit.*project-facts\.json/i.test(currentState));
 check("CURRENT_PROJECT_STATE: Remote CI boundary is explicit", /Remote CI.*(?:PASS|UNKNOWN|check-runs)/i.test(currentState));
 check("CURRENT_PROJECT_STATE: exact-SHA remote evidence is dynamic", /Remote CI[\s\S]{0,240}Dynamic[\s\S]{0,240}testedSha/i.test(currentState));
-check("docs/INDEX: Trusted Baseline is v0.5 machine facts", docsIndex.includes("v0.5.0-prehuman.1") && docsIndex.includes("facts:generate"));
+check("docs/INDEX: Trusted Baseline is v0.5 machine facts", docsIndex.includes("v0.5.0-prehuman.2") && docsIndex.includes("facts:generate"));
 check("docs/INDEX: no stale Main head field", !docsIndex.includes("Main head"));
 check("docs/INDEX: has Current branch", docsIndex.includes("Current branch"));
 check("docs/INDEX: has Latest audited commit", docsIndex.includes("Latest audited commit"));

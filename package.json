@@ -1,6 +1,6 @@
 {
   "name": "world-tree",
-  "version": "0.5.0-prehuman.1",
+  "version": "0.5.0-prehuman.2",
   "description": "World Tree — 本地优先、可保存和继续的 AI 世界与角色互动工作台",
   "type": "module",
   "main": "server.js",
@@ -116,6 +116,7 @@
     "smoke:user-content-real-llm": "node scripts/smoke-user-content-real-llm.mjs",
     "smoke:prehuman-real-llm-matrix": "node scripts/smoke-prehuman-real-llm-matrix.mjs",
     "smoke:first-play": "node scripts/smoke-first-play.mjs",
+    "smoke:first-play:required": "node scripts/smoke-first-play.mjs --require-pass",
     "narrative:eval": "node scripts/narrative-eval.mjs --dry-run",
     "self-report": "node scripts/self-report.mjs",
     "quality:governance": "npm run narrative:eval && node --test tests/unit/quality-governance.test.js",
@@ -129,6 +130,7 @@
     "verify:browser": "npm run smoke:product-entry-browser-matrix && npm run smoke:experience-golden-path && npm run smoke:v0.5-interaction-regressions && npm run qa:visual-shell && npm run test:accessibility",
     "verify:release": "npm run preflight && npm run verify:coverage && npm run facts:generate && npm run release:verify && npm run smoke:first-play && npm run verify:browser && npm run snapshot:safe",
     "verify:nightly": "node scripts/verify-nightly.mjs",
+    "verify:prehuman": "node scripts/verify-prehuman-baseline.mjs",
     "ci:github-actions-checks": "node scripts/verify-github-actions-checks.mjs",
     "test:v2-route-registry": "node --test tests/unit/v2-product-route-registry.test.js",
     "test:console-boundary": "node scripts/check-browser-boundaries.mjs && node --test tests/unit/console-client-core.test.js tests/unit/browser-architecture.test.js",

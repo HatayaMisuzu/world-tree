@@ -1,4 +1,4 @@
-package: world-tree@0.5.0-prehuman.1
-packedSize: 793034
-unpackedSize: 2890744
-files: 606
+package: world-tree@0.5.0-prehuman.2
+packedSize: 795089
+unpackedSize: 2898642
+files: 607

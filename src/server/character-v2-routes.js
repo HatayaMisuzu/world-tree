@@ -14,12 +14,12 @@ export async function handleCharacterV2ProductRoute({ path, method, url, readBod
 
   if (path === "/api/characters/v2/profile" && method === "GET") {
     const { loadCharacterV2EditableProfile } = await import("./character-v2-profile-service.js");
-    return jsonResponse(loadCharacterV2EditableProfile(root, url.searchParams.get("characterId") || ""));
+    return jsonResponse(await loadCharacterV2EditableProfile(root, url.searchParams.get("characterId") || ""));
   }
   if (path === "/api/characters/v2/profile" && method === "POST") {
     const body = await readBody();
     const { saveCharacterV2EditableProfile } = await import("./character-v2-profile-service.js");
-    return jsonResponse(saveCharacterV2EditableProfile(root, body.characterId, body.editable || body.profile || {}));
+    return jsonResponse(await saveCharacterV2EditableProfile(root, body.characterId, body.editable || body.profile || {}));
   }
 
   if (path === "/api/characters/v2/turn" && method === "POST") {

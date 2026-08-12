@@ -60,3 +60,6 @@ docs/reports/self-report-latest.*
 output/playwright/
 output/project-facts.json
 output/snapshots/
+output/prehuman-0.5.0.2-*.json
+output/prehuman-0.5.0.2-*.md
+output/real-llm/

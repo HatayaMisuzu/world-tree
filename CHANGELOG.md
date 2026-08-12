@@ -12,6 +12,15 @@
 <!-- WORLD_TREE_TRUTH_SOURCE_SYNC:END -->
 
 # World Tree · CHANGELOG
+## 0.5.0-prehuman.2
+
+### Bounded automated pre-human baseline
+
+- Added recoverable, serialized Character V2 profile transactions with strict corruption handling and runtime recovery.
+- Made Worldbook V2 candidate decisions terminal, reloadable, idempotent, and conflict-safe.
+- Bound sanitized real-provider evidence to a clean exact SHA and added strict first-play and prehuman verification gates.
+- Unified current truth sources around bounded automated closure, pending human validation, and future-product boundaries.
+
 ## 0.5.0-prehuman.1
 
 ### Pre-human product closure candidate

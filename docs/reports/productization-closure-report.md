@@ -1,5 +1,9 @@
 # Productization Closure Report
 
+Status: HISTORICAL — superseded by `docs/PROJECT_TRUTH_SOURCE.md`.
+
+This report records the state on 2026-06-30. It has no current truth priority and must not be used as current release evidence.
+
 Date: 2026-06-30
 
 ## Final Status

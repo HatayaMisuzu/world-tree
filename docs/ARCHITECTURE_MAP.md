@@ -7,7 +7,7 @@
 
 World Tree is currently a local-first Node HTTP application with a browser console UI.
 
-Current baseline is `0.5.0-prehuman.1`.
+Current baseline is `0.5.0-prehuman.2`.
 
 This is not full V2. Full product-wide V2 is NOT COMPLETE, and product-wide playable closure is NOT COMPLETE.
 

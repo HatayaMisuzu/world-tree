@@ -21,6 +21,7 @@ const actions = [
   "我去找米拉·阀匠，请她带我看第七锚塔最近的压力记录，并留意她是否隐瞒了什么。",
   "我回顾雾铃塔、旧锚链齿轮和第七锚塔压力记录之间的联系，然后决定下一步调查方向。"
 ];
+const requirePass = process.argv.includes("--require-pass");
 
 function envValue(...names) {
   for (const name of names) {
@@ -101,6 +102,7 @@ function blocked(reason, provider) {
   };
   writeReport(result);
   console.log(JSON.stringify(result, null, 2));
+  if (requirePass) process.exitCode = 1;
 }
 
 function assertPass(assertions, id, ok, detail) {

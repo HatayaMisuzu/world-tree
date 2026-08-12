@@ -1,7 +1,9 @@
 # Agent Status Handoff
 
-Version: `0.5.0-product-experience-rebuild.0`
+Version: `0.5.0-prehuman.2`
 Audience: AI agents only.
+
+`ENGINEERING_CLOSED = YES`; `PREHUMAN_STABLE_BASELINE = ACHIEVED` within the bounded `v0.5.0-prehuman.2` scope; `HUMAN_VALIDATION_PENDING = YES`; `PLAYABLE_FINAL = NO`; `FULL_PRODUCT_RELEASE_READY = NO`; `V1.0_READY = NO`. Representative real-provider evidence is exact-SHA and dynamic; workflow green is not provider PASS. Future expansion is `OUT_OF_SCOPE_FOR_PREHUMAN_BASELINE`.
 
 ## Mandatory read order
 

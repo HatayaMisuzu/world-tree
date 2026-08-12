@@ -1,5 +1,7 @@
 # Pre-human Stable Baseline Report
 
+Status: HISTORICAL — superseded by `docs/PREHUMAN_STABLE_BASELINE.md`.
+
 Status: `PREHUMAN_STABLE_BASELINE = ACHIEVED`
 
 This is an automated pre-human baseline, not a human-signed product release. Remote status remains dynamic; the immutable tag SHA is the evidence identity and current GitHub state must be queried.

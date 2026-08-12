@@ -318,8 +318,8 @@ export function createHttpApiRouter(deps = {}) {
           const { loadCharacterCapsuleSummary, loadCharacterCapsuleRuntimeContext, loadCharacterCapsuleRuntimeMvp } = await import("./character-capsule-service.js");
           const charactersRoot = join(dataRoot(), "engine", "characters");
           v2Capsule = loadCharacterCapsuleSummary(charactersRoot, id);
-          v2RuntimeContext = loadCharacterCapsuleRuntimeContext(charactersRoot, id);
-          v2RuntimeMvp = loadCharacterCapsuleRuntimeMvp(charactersRoot, id);
+          v2RuntimeContext = await loadCharacterCapsuleRuntimeContext(charactersRoot, id);
+          v2RuntimeMvp = await loadCharacterCapsuleRuntimeMvp(charactersRoot, id);
         } catch { /* V2 capsule unavailable; legacy-only */ }
         return jsonResponse(res, { status: "ok", card: parsed, ...(v2Capsule ? { v2Capsule } : {}), ...(v2RuntimeContext ? { v2RuntimeContext } : {}), ...(v2RuntimeMvp ? { v2RuntimeMvp } : {}) });
       }

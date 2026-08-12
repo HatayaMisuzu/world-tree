@@ -82,7 +82,7 @@ async function handleWorldbookV2Action(action, btn) {
       s.candidate = result.candidate || null;
       s.loaded = await API.worldbookV2Load(moduleKey).catch(() => s.loaded);
     } else if (action === "worldbook-v2-adopt-candidate") {
-      const latest = s.candidate || (s.loaded?.candidates || []).slice().reverse().find(item => item.status === "pending") || (s.loaded?.candidates || []).slice(-1)[0];
+      const latest = (s.candidate?.status === "pending" ? s.candidate : null) || (s.loaded?.candidates || []).slice().reverse().find(item => item.status === "pending");
       if (!latest?.candidateId) return createToast("没有可采纳的候选条目", "warn");
       result = await API.worldbookV2CandidateDecision({ moduleKey, candidateId: latest.candidateId, decision: "adopt" });
       s.loaded = await API.worldbookV2Load(moduleKey).catch(() => s.loaded);

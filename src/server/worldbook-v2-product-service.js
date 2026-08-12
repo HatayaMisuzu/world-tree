@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { appendJsonl, ensureDir, readJsonSync, readJsonlTail, writeJson } from "./fs-utils.js";
+import { appendJsonl, ensureDir, readJsonSync, readJsonlTail, withFileLock, writeJson } from "./fs-utils.js";
 import { normalizeWorldbookCandidate, normalizeWorldbookEntry, validateWorldbookEntry } from "../core/worldbook-v2/worldbook-entry-schema.js";
 import { prepareWorldbookV2Injection } from "../core/worldbook-v2/worldbook-runtime.js";
 
@@ -11,13 +11,7 @@ export function createWorldbookV2ProductService({ dataRoot, moduleWorldDir, path
     const root = typeof dataRoot === "function" ? dataRoot() : dataRoot;
     const worldDir = moduleWorldDir?.(moduleKey);
     if (!root || !worldDir || !pathWithinRoot?.(root, worldDir) || !existsSync(worldDir)) return null;
-    return {
-      moduleKey,
-      worldDir,
-      sharedDir: join(worldDir, "shared"),
-      runtimeDir: join(worldDir, "runtime"),
-      v2Dir: join(worldDir, "runtime", "worldbook-v2")
-    };
+    return { moduleKey, worldDir, sharedDir: join(worldDir, "shared"), runtimeDir: join(worldDir, "runtime"), v2Dir: join(worldDir, "runtime", "worldbook-v2") };
   }
 
   function readEntries(ctx) {
@@ -25,32 +19,38 @@ export function createWorldbookV2ProductService({ dataRoot, moduleWorldDir, path
     return (Array.isArray(legacy.entries) ? legacy.entries : []).map((entry) => normalizeWorldbookEntry(entry, { worldId: ctx.moduleKey }));
   }
 
+  async function readEffectiveCandidates(ctx, limit = 200) {
+    const [candidates, decisions] = await Promise.all([
+      readJsonlTail(join(ctx.v2Dir, "candidates.jsonl"), limit),
+      readJsonlTail(join(ctx.v2Dir, "candidate-decisions.jsonl"), Math.max(limit, 500))
+    ]);
+    const latest = new Map();
+    for (const record of decisions) latest.set(record.candidateId, record);
+    return candidates.map((candidate) => {
+      const record = latest.get(candidate.candidateId || candidate.id);
+      return { ...candidate, status: record ? (record.decision === "adopt" ? "adopted" : "rejected") : "pending" };
+    });
+  }
+
   async function load({ moduleKey } = {}) {
     const ctx = resolveWorld(moduleKey);
-    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请选择有效世界。" };
+    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "Select a valid world." };
     ensureDir(ctx.v2Dir);
     return {
-      status: "ok",
-      moduleKey,
-      entries: readEntries(ctx),
-      candidates: await readJsonlTail(join(ctx.v2Dir, "candidates.jsonl"), 200),
-      storage: {
-        canon: "shared/worldbook.json",
-        candidates: "runtime/worldbook-v2/candidates.jsonl",
-        usageLog: "runtime/worldbook-v2/usage-log.jsonl"
-      }
+      status: "ok", moduleKey, entries: readEntries(ctx), candidates: await readEffectiveCandidates(ctx, 200),
+      storage: { canon: "shared/worldbook.json", candidates: "runtime/worldbook-v2/candidates.jsonl", usageLog: "runtime/worldbook-v2/usage-log.jsonl" }
     };
   }
 
   async function save({ moduleKey, entries = [] } = {}) {
     const ctx = resolveWorld(moduleKey);
-    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请选择有效世界。" };
+    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "Select a valid world." };
     ensureDir(ctx.sharedDir);
-    if (!Array.isArray(entries)) return { status: "error", code: "WORLDBOOK_ENTRIES_REQUIRED", errorMsg: "世界书条目列表格式无效。" };
-    if (entries.length > 2000) return { status: "error", code: "WORLDBOOK_TOO_MANY_ENTRIES", errorMsg: "世界书条目过多，请拆分后再保存。" };
+    if (!Array.isArray(entries)) return { status: "error", code: "WORLDBOOK_ENTRIES_REQUIRED", errorMsg: "Worldbook entries must be an array." };
+    if (entries.length > 2000) return { status: "error", code: "WORLDBOOK_TOO_MANY_ENTRIES", errorMsg: "Worldbook has too many entries." };
     const checks = entries.map((entry) => validateWorldbookEntry({ ...entry, authority: entry.authority || "canon" }));
     const invalid = checks.map((check, index) => ({ index, errors: check.errors })).filter((item) => item.errors.length);
-    if (invalid.length) return { status: "error", code: "WORLDBOOK_ENTRY_INVALID", errorMsg: `有 ${invalid.length} 个条目缺少标题或内容。`, invalid };
+    if (invalid.length) return { status: "error", code: "WORLDBOOK_ENTRY_INVALID", errorMsg: `${invalid.length} entries are invalid.`, invalid };
     const safeEntries = checks.map((check) => normalizeWorldbookEntry(check.normalized, { worldId: moduleKey }));
     await writeJson(join(ctx.sharedDir, "worldbook.json"), { entries: safeEntries });
     return { status: "ok", moduleKey, entries: safeEntries };
@@ -58,64 +58,62 @@ export function createWorldbookV2ProductService({ dataRoot, moduleWorldDir, path
 
   async function createCandidate({ moduleKey, candidate = {}, entry = {} } = {}) {
     const ctx = resolveWorld(moduleKey);
-    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请选择有效世界。" };
+    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "Select a valid world." };
     ensureDir(ctx.v2Dir);
-    const item = {
-      ...normalizeWorldbookCandidate({ ...candidate, entry: candidate.entry || entry, worldId: moduleKey }),
-      status: "pending",
-      createdAt: new Date().toISOString()
-    };
+    const item = { ...normalizeWorldbookCandidate({ ...candidate, entry: candidate.entry || entry, worldId: moduleKey }), status: "pending", createdAt: new Date().toISOString() };
     await appendJsonl(join(ctx.v2Dir, "candidates.jsonl"), item);
     return { status: "ok", moduleKey, candidate: item };
   }
 
   async function listCandidates({ moduleKey } = {}) {
     const ctx = resolveWorld(moduleKey);
-    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请选择有效世界。" };
+    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "Select a valid world." };
     ensureDir(ctx.v2Dir);
-    return { status: "ok", moduleKey, candidates: await readJsonlTail(join(ctx.v2Dir, "candidates.jsonl"), 200) };
+    return { status: "ok", moduleKey, candidates: await readEffectiveCandidates(ctx, 200) };
   }
 
   async function decideCandidate({ moduleKey, candidateId, decision = "reject" } = {}) {
     const ctx = resolveWorld(moduleKey);
-    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请选择有效世界。" };
-    const candidates = await readJsonlTail(join(ctx.v2Dir, "candidates.jsonl"), 500);
-    const candidate = candidates.find((item) => item.candidateId === candidateId || item.id === candidateId);
-    if (!candidate) return { status: "error", code: "CANDIDATE_NOT_FOUND", errorMsg: "候选世界书条目不存在。" };
-    const adopted = decision === "adopt" || decision === "confirm" || decision === "confirmed";
-    if (adopted) {
-      const entries = readEntries(ctx);
-      const draft = normalizeWorldbookEntry({ ...candidate.draftEntry, authority: "canon" }, { worldId: moduleKey });
-      const next = entries.filter((entry) => entry.entryId !== draft.entryId && entry.id !== draft.id);
-      next.push(draft);
-      await writeJson(join(ctx.sharedDir, "worldbook.json"), { entries: next });
-    }
-    const record = { candidateId, decision: adopted ? "adopt" : "reject", decidedAt: new Date().toISOString() };
-    await appendJsonl(join(ctx.v2Dir, "candidate-decisions.jsonl"), record);
-    return { status: "ok", moduleKey, decision: record, canonMutated: adopted };
+    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "Select a valid world." };
+    const adopted = ["adopt", "confirm", "confirmed"].includes(decision);
+    const normalizedDecision = adopted ? "adopt" : "reject";
+    return withFileLock(join(ctx.v2Dir, ".candidate-decision.lock"), async () => {
+      const candidates = await readJsonlTail(join(ctx.v2Dir, "candidates.jsonl"), 500);
+      const candidate = candidates.find((item) => item.candidateId === candidateId || item.id === candidateId);
+      if (!candidate) return { status: "error", code: "CANDIDATE_NOT_FOUND", errorMsg: "Candidate does not exist." };
+      const decisions = await readJsonlTail(join(ctx.v2Dir, "candidate-decisions.jsonl"), 500);
+      const existing = decisions.filter((item) => item.candidateId === candidateId).at(-1);
+      if (existing) {
+        if (existing.decision !== normalizedDecision) return { status: "error", code: "CANDIDATE_ALREADY_DECIDED", errorMsg: "Candidate already has the opposite terminal decision." };
+        return { status: "ok", moduleKey, decision: existing, canonMutated: false, alreadyDecided: true };
+      }
+      if (adopted) {
+        const entries = readEntries(ctx);
+        const draft = normalizeWorldbookEntry({ ...candidate.draftEntry, authority: "canon" }, { worldId: moduleKey });
+        const next = entries.filter((entry) => entry.entryId !== draft.entryId && entry.id !== draft.id);
+        next.push(draft);
+        await writeJson(join(ctx.sharedDir, "worldbook.json"), { entries: next });
+      }
+      const record = { candidateId, decision: normalizedDecision, decidedAt: new Date().toISOString() };
+      await appendJsonl(join(ctx.v2Dir, "candidate-decisions.jsonl"), record);
+      return { status: "ok", moduleKey, decision: record, canonMutated: adopted, alreadyDecided: false };
+    });
   }
 
   async function injectPreview({ moduleKey, userInput = "", input = "" } = {}) {
     const ctx = resolveWorld(moduleKey);
-    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "请选择有效世界。" };
-    const result = prepareWorldbookV2Injection({
-      entries: readEntries(ctx),
-      input: userInput || input,
-      worldId: moduleKey,
-      audience: "player"
-    });
+    if (!ctx) return { status: "error", code: "MODULE_NOT_FOUND", errorMsg: "Select a valid world." };
+    const result = prepareWorldbookV2Injection({ entries: readEntries(ctx), input: userInput || input, worldId: moduleKey, audience: "player" });
     ensureDir(ctx.v2Dir);
     await appendJsonl(join(ctx.v2Dir, "usage-log.jsonl"), result.usageRecord);
-    const visible = result.injectedWorldbook.filter((entry) => PUBLIC_VISIBILITIES.has(entry.visibility));
-    return { status: "ok", moduleKey, injectedWorldbook: visible, diagnostics: result.diagnostics };
+    return { status: "ok", moduleKey, injectedWorldbook: result.injectedWorldbook.filter((entry) => PUBLIC_VISIBILITIES.has(entry.visibility)), diagnostics: result.diagnostics };
   }
 
   async function exportState({ moduleKey } = {}) {
     const loaded = await load({ moduleKey });
     if (loaded.status !== "ok") return loaded;
     return {
-      status: "ok",
-      moduleKey,
+      status: "ok", moduleKey,
       export: {
         schema: "worldbook-v2-product-export",
         entries: loaded.entries.filter((entry) => PUBLIC_VISIBILITIES.has(entry.visibility)),

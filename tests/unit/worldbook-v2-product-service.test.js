@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { ensureDir, readJsonSync, writeJson } from "../../src/server/fs-utils.js";
@@ -95,4 +95,49 @@ test("inject preview and export exclude hidden/internal entries", async () => {
   } finally {
     ctx.cleanup();
   }
+});
+
+test("candidate decisions reload as adopted or rejected terminal states", async () => {
+  const adoptedCtx = makeService();
+  const rejectedCtx = makeService();
+  try {
+    const adoptedCandidate = await adoptedCtx.service.createCandidate({ moduleKey: "world:TestWorld", entry: { title: "Adopt me", content: "Adopted content", visibility: "public" } });
+    await adoptedCtx.service.decideCandidate({ moduleKey: "world:TestWorld", candidateId: adoptedCandidate.candidate.candidateId, decision: "adopt" });
+    assert.equal((await adoptedCtx.service.load({ moduleKey: "world:TestWorld" })).candidates[0].status, "adopted");
+
+    const rejectedCandidate = await rejectedCtx.service.createCandidate({ moduleKey: "world:TestWorld", entry: { title: "Reject me", content: "Rejected content", visibility: "public" } });
+    await rejectedCtx.service.decideCandidate({ moduleKey: "world:TestWorld", candidateId: rejectedCandidate.candidate.candidateId, decision: "reject" });
+    assert.equal((await rejectedCtx.service.listCandidates({ moduleKey: "world:TestWorld" })).candidates[0].status, "rejected");
+  } finally {
+    adoptedCtx.cleanup();
+    rejectedCtx.cleanup();
+  }
+});
+
+test("duplicate adopt is idempotent and opposite decision is rejected", async () => {
+  const ctx = makeService();
+  try {
+    const candidate = await ctx.service.createCandidate({ moduleKey: "world:TestWorld", entry: { title: "Only once", content: "Canonical once", visibility: "public" } });
+    const candidateId = candidate.candidate.candidateId;
+    const first = await ctx.service.decideCandidate({ moduleKey: "world:TestWorld", candidateId, decision: "adopt" });
+    const second = await ctx.service.decideCandidate({ moduleKey: "world:TestWorld", candidateId, decision: "adopt" });
+    const opposite = await ctx.service.decideCandidate({ moduleKey: "world:TestWorld", candidateId, decision: "reject" });
+    assert.equal(first.canonMutated, true);
+    assert.equal(second.alreadyDecided, true);
+    assert.equal(second.canonMutated, false);
+    assert.equal(opposite.code, "CANDIDATE_ALREADY_DECIDED");
+    const canon = readJsonSync(join(ctx.worldDir, "shared", "worldbook.json"), { entries: [] });
+    assert.equal(canon.entries.filter((entry) => entry.title === "Only once").length, 1);
+    const decisions = readFileSync(join(ctx.worldDir, "runtime", "worldbook-v2", "candidate-decisions.jsonl"), "utf8").trim().split("\n");
+    assert.equal(decisions.length, 1);
+  } finally {
+    ctx.cleanup();
+  }
+});
+
+test("frontend adopt selection has no terminal-candidate fallback", () => {
+  const source = readFileSync(join(process.cwd(), "browser", "controllers", "entry-controller.js"), "utf8");
+  const selection = source.match(/const latest = .*find\(item => item\.status === "pending"\);/)?.[0] || "";
+  assert.equal(selection.includes("slice(-1)[0]"), false);
+  assert.equal(selection.includes("status === \"pending\""), true);
 });

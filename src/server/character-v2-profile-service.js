@@ -1,20 +1,33 @@
 import fs from "node:fs";
 import path from "node:path";
 import { buildCharacterV2RuntimeContext, validateCharacterV2RuntimeContext } from "../core/character/character-v2-runtime-context.js";
+import { commitCharacterProfileTransaction, withCharacterProfileRecovery } from "./character-v2-profile-transaction.js";
 
 const MAX = Object.freeze({ name: 80, summary: 500, block: 1200, item: 240, items: 20 });
 
 function safeId(value) {
   const id = String(value || "").trim();
-  return /^[a-zA-Z0-9一-鿿぀-ゟ゠-ヿ_-]{1,80}$/.test(id) ? id : "";
+  return /^[a-zA-Z0-9\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff_-]{1,80}$/.test(id) ? id : "";
 }
 
-function readJson(file, fallback = null) {
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return fallback; }
+function profileError(code, logicalName, cause) {
+  const error = new Error(`${logicalName} is corrupt`, { cause });
+  error.code = code;
+  error.logicalName = logicalName;
+  return error;
 }
 
-function writeJson(file, value) {
-  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+function readRequiredJson(file, logicalName) {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (cause) {
+    throw profileError("CHARACTER_PROFILE_SOURCE_CORRUPT", logicalName, cause);
+  }
+}
+
+function readOptionalJson(file, fallback = null) {
+  if (!fs.existsSync(file)) return fallback;
+  return readRequiredJson(file, path.basename(file));
 }
 
 function text(value, max) {
@@ -49,15 +62,27 @@ function contextFiles(charactersRoot, characterId) {
   };
 }
 
-export function loadCharacterV2EditableProfile(charactersRoot, characterId) {
-  const files = contextFiles(charactersRoot, characterId);
-  if (!files) return { status: "error", code: "CHARACTER_NOT_FOUND", errorMsg: "未找到可编辑的 V2 角色。" };
-  const manifest = readJson(files.manifest, {});
-  const profile = readJson(files.profile, {});
-  const runtimeContract = readJson(files.runtime, {});
-  const cognitionBoundary = readJson(files.cognition, {});
-  const performanceFingerprint = readJson(files.fingerprint, {});
-  const relationship = readJson(files.relationship, {});
+function readProfileSources(files) {
+  return {
+    manifest: readRequiredJson(files.manifest, "capsule.manifest.json"),
+    profile: readRequiredJson(files.profile, "profile.wt-character.json"),
+    runtimeContract: readRequiredJson(files.runtime, "runtime-contract.json"),
+    cognitionBoundary: readRequiredJson(files.cognition, "cognition-boundary.json"),
+    performanceFingerprint: readRequiredJson(files.fingerprint, "performance-fingerprint.json"),
+    relationship: readRequiredJson(files.relationship, "relationship.seed.json"),
+    memorySeed: readRequiredJson(files.memory, "memory.seed.json"),
+    longTermState: readOptionalJson(files.longTerm, null),
+    uiSummary: readRequiredJson(files.uiSummary, "ui-summary.json"),
+    card: readRequiredJson(files.card, "card.json")
+  };
+}
+
+function errorResult(error) {
+  return { status: "error", code: error?.code || "CHARACTER_PROFILE_LOAD_FAILED", errorMsg: error?.message || String(error) };
+}
+
+function editableFrom(files, sources) {
+  const { manifest, profile, runtimeContract, cognitionBoundary, performanceFingerprint, relationship } = sources;
   return {
     status: "ok",
     characterId: files.id,
@@ -82,58 +107,78 @@ export function loadCharacterV2EditableProfile(charactersRoot, characterId) {
   };
 }
 
-export function saveCharacterV2EditableProfile(charactersRoot, characterId, input = {}) {
+export async function loadCharacterV2EditableProfile(charactersRoot, characterId) {
   const files = contextFiles(charactersRoot, characterId);
-  if (!files) return { status: "error", code: "CHARACTER_NOT_FOUND", errorMsg: "未找到可编辑的 V2 角色。" };
+  if (!files) return { status: "error", code: "CHARACTER_NOT_FOUND", errorMsg: "Character V2 profile not found." };
+  try {
+    return await withCharacterProfileRecovery(files.v2Dir, async () => editableFrom(files, readProfileSources(files)));
+  } catch (error) {
+    return errorResult(error);
+  }
+}
+
+export async function saveCharacterV2EditableProfile(charactersRoot, characterId, input = {}, options = {}) {
+  const files = contextFiles(charactersRoot, characterId);
+  if (!files) return { status: "error", code: "CHARACTER_NOT_FOUND", errorMsg: "Character V2 profile not found." };
   const displayName = text(input.displayName, MAX.name);
   const oneLineSummary = text(input.oneLineSummary, MAX.summary);
-  if (!displayName) return { status: "error", code: "CHARACTER_NAME_REQUIRED", errorMsg: "角色名不能为空。" };
-  if (!oneLineSummary) return { status: "error", code: "CHARACTER_SUMMARY_REQUIRED", errorMsg: "角色简介不能为空。" };
+  if (!displayName) return { status: "error", code: "CHARACTER_NAME_REQUIRED", errorMsg: "Character name is required." };
+  if (!oneLineSummary) return { status: "error", code: "CHARACTER_SUMMARY_REQUIRED", errorMsg: "Character summary is required." };
 
-  const manifest = readJson(files.manifest, {});
-  const profile = readJson(files.profile, {});
-  const runtimeContract = readJson(files.runtime, {});
-  const cognitionBoundary = readJson(files.cognition, {});
-  const fingerprint = readJson(files.fingerprint, {});
-  const relationship = readJson(files.relationship, {});
-  const card = readJson(files.card, {});
-  const updatedAt = new Date().toISOString();
+  try {
+    return await withCharacterProfileRecovery(files.v2Dir, async () => {
+      const sources = readProfileSources(files);
+      const manifest = structuredClone(sources.manifest);
+      const profile = structuredClone(sources.profile);
+      const runtimeContract = structuredClone(sources.runtimeContract);
+      const cognitionBoundary = structuredClone(sources.cognitionBoundary);
+      const fingerprint = structuredClone(sources.performanceFingerprint);
+      const relationship = structuredClone(sources.relationship);
+      const card = structuredClone(sources.card);
+      const updatedAt = new Date().toISOString();
 
-  manifest.displayName = displayName;
-  manifest.updatedAt = updatedAt;
-  profile.identity = { ...(profile.identity || {}), name: displayName, oneLineSummary };
-  runtimeContract.summary = text(input.runtimeSummary, MAX.block) || runtimeContract.summary || "";
-  runtimeContract.outputGuidance = list(input.outputGuidance);
-  cognitionBoundary.summary = text(input.cognitionSummary, MAX.block) || cognitionBoundary.summary || "";
-  cognitionBoundary.commonKnowledgeExamples = list(input.commonKnowledgeExamples);
-  cognitionBoundary.depthLimitedExamples = list(input.depthLimitedExamples);
-  relationship.label = text(input.relationshipLabel, MAX.summary) || relationship.label || "";
-  relationship.allows = list(input.relationshipAllows);
-  relationship.forbids = list(input.relationshipForbids);
-  fingerprint.voice = { ...(fingerprint.voice || {}), catchphrases: list(input.catchphrases), speechHabits: list(input.speechHabits) };
-  fingerprint.nonverbal = { ...(fingerprint.nonverbal || {}), gestures: list(input.gestures), expressions: list(input.expressions) };
-  fingerprint.appearance = { ...(fingerprint.appearance || {}), anchors: list(input.appearanceAnchors) };
-  card.name = displayName;
-  card.description = oneLineSummary;
+      manifest.displayName = displayName;
+      manifest.updatedAt = updatedAt;
+      profile.identity = { ...(profile.identity || {}), name: displayName, oneLineSummary };
+      runtimeContract.summary = text(input.runtimeSummary, MAX.block) || runtimeContract.summary || "";
+      runtimeContract.outputGuidance = list(input.outputGuidance);
+      cognitionBoundary.summary = text(input.cognitionSummary, MAX.block) || cognitionBoundary.summary || "";
+      cognitionBoundary.commonKnowledgeExamples = list(input.commonKnowledgeExamples);
+      cognitionBoundary.depthLimitedExamples = list(input.depthLimitedExamples);
+      relationship.label = text(input.relationshipLabel, MAX.summary) || relationship.label || "";
+      relationship.allows = list(input.relationshipAllows);
+      relationship.forbids = list(input.relationshipForbids);
+      fingerprint.voice = { ...(fingerprint.voice || {}), catchphrases: list(input.catchphrases), speechHabits: list(input.speechHabits) };
+      fingerprint.nonverbal = { ...(fingerprint.nonverbal || {}), gestures: list(input.gestures), expressions: list(input.expressions) };
+      fingerprint.appearance = { ...(fingerprint.appearance || {}), anchors: list(input.appearanceAnchors) };
+      card.name = displayName;
+      card.description = oneLineSummary;
+      const uiSummary = {
+        title: displayName, subtitle: oneLineSummary, badges: ["Text-first", "Saved"],
+        lines: [`Relationship: ${relationship.label || "configured"}`, "Advanced fields are synchronized to runtime context."], safeForNormalUi: true
+      };
 
-  const runtimeContext = buildCharacterV2RuntimeContext({
-    manifest, profile, runtimeContract, cognitionBoundary, performanceFingerprint: fingerprint,
-    relationship, memorySeed: readJson(files.memory, null), longTermState: readJson(files.longTerm, null),
-    uiSummary: readJson(files.uiSummary, null), characterId: files.id
-  });
-  const validation = validateCharacterV2RuntimeContext(runtimeContext);
-  if (!validation.ok) return { status: "error", code: "CHARACTER_V2_PROFILE_INVALID", errorMsg: validation.errors.join("；"), validation };
+      const runtimeContext = buildCharacterV2RuntimeContext({
+        manifest, profile, runtimeContract, cognitionBoundary, performanceFingerprint: fingerprint,
+        relationship, memorySeed: sources.memorySeed, longTermState: sources.longTermState,
+        uiSummary, characterId: files.id
+      });
+      const validation = validateCharacterV2RuntimeContext(runtimeContext);
+      if (!validation.ok) return { status: "error", code: "CHARACTER_V2_PROFILE_INVALID", errorMsg: validation.errors.join("; "), validation };
 
-  writeJson(files.manifest, manifest);
-  writeJson(files.profile, profile);
-  writeJson(files.runtime, runtimeContract);
-  writeJson(files.cognition, cognitionBoundary);
-  writeJson(files.fingerprint, fingerprint);
-  writeJson(files.relationship, relationship);
-  writeJson(files.card, card);
-  writeJson(files.uiSummary, {
-    title: displayName, subtitle: oneLineSummary, badges: ["Text-first", "已保存"],
-    lines: [`关系：${relationship.label || "已配置"}`, "高级字段已同步到角色运行上下文"], safeForNormalUi: true
-  });
-  return { status: "ok", characterId: files.id, updatedAt, editable: loadCharacterV2EditableProfile(charactersRoot, files.id).editable };
+      await commitCharacterProfileTransaction(files.characterDir, {
+        "v2/capsule.manifest.json": manifest,
+        "v2/profile.wt-character.json": profile,
+        "v2/runtime-contract.json": runtimeContract,
+        "v2/cognition-boundary.json": cognitionBoundary,
+        "v2/performance-fingerprint.json": fingerprint,
+        "v2/relationship.seed.json": relationship,
+        "card.json": card,
+        "v2/ui-summary.json": uiSummary
+      }, options);
+      return { status: "ok", characterId: files.id, updatedAt, editable: editableFrom(files, { ...sources, manifest, profile, runtimeContract, cognitionBoundary, performanceFingerprint: fingerprint, relationship }).editable };
+    });
+  } catch (error) {
+    return errorResult(error);
+  }
 }

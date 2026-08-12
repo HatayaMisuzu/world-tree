@@ -21,7 +21,7 @@ export async function handleCharacterV2LiveTurn(body = {}, deps = {}) {
   const charactersRoot = deps.charactersRoot;
   if (!charactersRoot) throw new Error("charactersRoot is required");
 
-  const runtimeMvp = loadCharacterCapsuleRuntimeMvp(charactersRoot, body.characterId, {
+  const runtimeMvp = await loadCharacterCapsuleRuntimeMvp(charactersRoot, body.characterId, {
     userInput: body.userInput,
     assistantDraft: ""
   });

@@ -9,8 +9,8 @@ import { join } from "node:path";
 
 import { randomPort } from "./helpers/server-process.js";
 
-async function runScript(env) {
-  const child = spawn(process.execPath, ["scripts/smoke-first-play.mjs"], {
+async function runScript(env, args = []) {
+  const child = spawn(process.execPath, ["scripts/smoke-first-play.mjs", ...args], {
     cwd: ".",
     env: { ...process.env, ...env },
     stdio: ["ignore", "pipe", "pipe"]
@@ -78,6 +78,23 @@ test("smoke:first-play reports BLOCKED_BY_CREDENTIALS without key", async () => 
       WT_SMOKE_KEY: ""
     });
     assert.equal(result.code, 0, result.stderr);
+    const report = JSON.parse(await readFile(join(reportDir, "first-play-smoke-latest.json"), "utf8"));
+    assert.equal(report.status, "BLOCKED_BY_CREDENTIALS");
+  } finally {
+    await rm(reportDir, { recursive: true, force: true });
+  }
+});
+
+test("smoke:first-play --require-pass fails when credentials are missing", async () => {
+  const reportDir = await mkdtemp(join(tmpdir(), "wt-first-play-required-"));
+  try {
+    const result = await runScript({
+      WT_SMOKE_REPORT_DIR: reportDir,
+      WT_SMOKE_BASE_URL: "",
+      WT_SMOKE_MODEL: "",
+      WT_SMOKE_KEY: ""
+    }, ["--require-pass"]);
+    assert.notEqual(result.code, 0);
     const report = JSON.parse(await readFile(join(reportDir, "first-play-smoke-latest.json"), "utf8"));
     assert.equal(report.status, "BLOCKED_BY_CREDENTIALS");
   } finally {

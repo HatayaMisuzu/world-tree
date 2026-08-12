@@ -22,6 +22,7 @@ import {
   buildCharacterV2RuntimeMvp,
   validateCharacterV2RuntimeMvp
 } from "../core/character/character-v2-runtime-mvp.js";
+import { withCharacterProfileRecovery } from "./character-v2-profile-transaction.js";
 
 const SAFE_AVATAR_MAX_CHARS = 700000; // roughly <= 512KB base64 plus header
 
@@ -210,11 +211,12 @@ export function loadCharacterCapsuleSummary(charactersRoot, characterId) {
   };
 }
 
-export function loadCharacterCapsuleRuntimeContext(charactersRoot, characterId) {
+export async function loadCharacterCapsuleRuntimeContext(charactersRoot, characterId) {
   const characterDir = resolveCharacterDir(charactersRoot, characterId);
   const v2Dir = path.join(characterDir, "v2");
-  const manifest = readJson(path.join(v2Dir, "capsule.manifest.json"), null);
-  if (!manifest) return null;
+  return withCharacterProfileRecovery(v2Dir, async () => {
+    const manifest = readJson(path.join(v2Dir, "capsule.manifest.json"), null);
+    if (!manifest) return null;
 
   const context = buildCharacterV2RuntimeContext({
     manifest,
@@ -241,11 +243,12 @@ export function loadCharacterCapsuleRuntimeContext(charactersRoot, characterId) 
     };
   }
 
-  return summarizeCharacterV2RuntimeContext(context);
+    return summarizeCharacterV2RuntimeContext(context);
+  });
 }
 
-export function loadCharacterCapsuleRuntimeMvp(charactersRoot, characterId, options = {}) {
-  const runtimeContext = loadCharacterCapsuleRuntimeContext(charactersRoot, characterId);
+export async function loadCharacterCapsuleRuntimeMvp(charactersRoot, characterId, options = {}) {
+  const runtimeContext = await loadCharacterCapsuleRuntimeContext(charactersRoot, characterId);
   if (!runtimeContext?.available) return null;
 
   const mvp = buildCharacterV2RuntimeMvp(runtimeContext, options);
