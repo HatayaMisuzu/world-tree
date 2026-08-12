@@ -14,8 +14,12 @@ const testedSha = git("rev-parse", "HEAD");
 const evidencePath = process.env.WORLD_TREE_PREHUMAN_EVIDENCE;
 if (!evidencePath) throw new Error("WORLD_TREE_PREHUMAN_EVIDENCE is required");
 
-const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-execFileSync(npmCommand, ["run", "verify:pr"], { cwd: resolve("."), stdio: "inherit" });
+const npmArgs = ["run", "verify:pr"];
+if (process.env.npm_execpath) {
+  execFileSync(process.execPath, [process.env.npm_execpath, ...npmArgs], { cwd: resolve("."), stdio: "inherit" });
+} else {
+  execFileSync("npm", npmArgs, { cwd: resolve("."), stdio: "inherit", shell: process.platform === "win32" });
+}
 
 const evidence = JSON.parse(readFileSync(resolve(evidencePath), "utf8"));
 const validation = validatePrehumanEvidence(evidence, { testedSha });
