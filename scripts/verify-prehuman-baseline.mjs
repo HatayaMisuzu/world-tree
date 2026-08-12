@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { validatePrehumanEvidence } from "./lib/prehuman-evidence-validation.mjs";
@@ -15,11 +15,21 @@ const evidencePath = process.env.WORLD_TREE_PREHUMAN_EVIDENCE;
 if (!evidencePath) throw new Error("WORLD_TREE_PREHUMAN_EVIDENCE is required");
 
 const npmArgs = ["run", "verify:pr"];
-if (process.env.npm_execpath) {
-  execFileSync(process.execPath, [process.env.npm_execpath, ...npmArgs], { cwd: resolve("."), stdio: "inherit" });
-} else {
-  execFileSync("npm", npmArgs, { cwd: resolve("."), stdio: "inherit", shell: process.platform === "win32" });
+const generatedReportPath = resolve("docs", "reports", "release-verify-latest.txt");
+const generatedReportExisted = existsSync(generatedReportPath);
+const generatedReportBefore = generatedReportExisted ? readFileSync(generatedReportPath, "utf8") : null;
+try {
+  if (process.env.npm_execpath) {
+    execFileSync(process.execPath, [process.env.npm_execpath, ...npmArgs], { cwd: resolve("."), stdio: "inherit" });
+  } else {
+    execFileSync("npm", npmArgs, { cwd: resolve("."), stdio: "inherit", shell: process.platform === "win32" });
+  }
+} finally {
+  if (generatedReportExisted) writeFileSync(generatedReportPath, generatedReportBefore, "utf8");
+  else rmSync(generatedReportPath, { force: true });
 }
+
+if (git("status", "--porcelain")) throw new Error("PREHUMAN_GATE_DIRTY_WORKTREE_AFTER_AUTOMATED_GATES");
 
 const evidence = JSON.parse(readFileSync(resolve(evidencePath), "utf8"));
 const validation = validatePrehumanEvidence(evidence, { testedSha });
