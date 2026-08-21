@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   createRateLimiter,
+  LOCAL_HOSTS,
   isLocalAddress,
   isLocalRequest,
   isLocalUrl,
@@ -27,11 +28,18 @@ test("isLoopbackAddress preserves existing loopback behavior", () => {
   assert.equal(isLoopbackAddress("localhost"), false);
 });
 
-test("parseOriginHost returns host or empty string for invalid origins", () => {
+test("parseOriginHost returns host, empty string for absent, sentinel for invalid/null origins", () => {
   assert.equal(parseOriginHost("http://localhost:3000"), "localhost");
   assert.equal(parseOriginHost("http://127.0.0.1:3000"), "127.0.0.1");
-  assert.equal(parseOriginHost("not a url"), "");
+  // Absent origin → "" (treated as CLI/no-origin request).
   assert.equal(parseOriginHost(""), "");
+  // Unparseable and "null" origins must return a sentinel that fails the
+  // LOCAL_HOSTS allowlist — they are cross-origin contexts (sandboxed iframe,
+  // file://) and must never be treated as "no origin" (CORS bypass fix).
+  const invalid = parseOriginHost("not a url");
+  assert.ok(invalid !== "", "unparseable origin must not return empty string");
+  assert.equal(invalid === parseOriginHost("null"), true);
+  assert.equal(LOCAL_HOSTS.has(invalid), false, "sentinel must not be in LOCAL_HOSTS");
 });
 
 test("parseHostHeader preserves IPv6 bracket behavior", () => {

@@ -22,10 +22,15 @@ export function isLoopbackAddress(addr = "") {
 }
 
 export function parseOriginHost(value = "") {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  // "null" origin (sandboxed iframe / file://) and unparseable origins must NOT
+  // be treated as "no origin" — they are cross-origin contexts and must be rejected.
+  if (raw.toLowerCase() === "null") return "\u0000invalid-origin";
   try {
-    return value ? new URL(value).hostname : "";
+    return new URL(raw).hostname || "\u0000invalid-origin";
   } catch {
-    return "";
+    return "\u0000invalid-origin";
   }
 }
 

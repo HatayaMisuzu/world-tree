@@ -73,7 +73,16 @@ export function assertPathInsideRoot(rootPath, userPath, label = "path") {
 }
 
 export function realPathWithinRoot(rootPath, targetPath) {
-  if (!rootPath || !targetPath || !existsSync(rootPath)) return false;
+  if (!rootPath || !targetPath) return false;
+  // The root itself may not exist yet (e.g. validating paths for a directory
+  // that is about to be created). Walk up from the root to its nearest existing
+  // ancestor and validate against that instead of failing outright.
+  let realRootBase = resolve(rootPath);
+  while (!existsSync(realRootBase)) {
+    const parent = dirname(realRootBase);
+    if (parent === realRootBase) return false;
+    realRootBase = parent;
+  }
   let ancestor = resolve(targetPath);
   while (!existsSync(ancestor)) {
     const parent = dirname(ancestor);
@@ -81,9 +90,14 @@ export function realPathWithinRoot(rootPath, targetPath) {
     ancestor = parent;
   }
   try {
-    const realRoot = realpathSync.native(resolve(rootPath));
+    const realRoot = realpathSync.native(realRootBase);
     const realAncestor = realpathSync.native(ancestor);
-    return pathWithinRoot(realRoot, realAncestor);
+    // The existing ancestor of the target must stay inside the real root.
+    if (!pathWithinRoot(realRoot, realAncestor)) return false;
+    // When the root itself exists, also verify the root's own realpath so a
+    // symlinked root cannot widen the boundary.
+    if (realRootBase !== resolve(rootPath) && !pathWithinRoot(realRoot, resolve(rootPath))) return false;
+    return true;
   } catch {
     return false;
   }

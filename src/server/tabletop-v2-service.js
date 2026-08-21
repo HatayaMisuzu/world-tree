@@ -635,6 +635,22 @@ export async function switchTabletopV2Branch(body = {}, deps = {}) {
       return { status: "error", code: "BRANCH_NOT_FOUND", errorMsg: `branch ${branchId} not found` };
     }
 
+    // Restore the branch's forked game state so the run actually continues from
+    // the branch's divergence point instead of keeping the old lineage state.
+    const branchFilePath = join(branchesDir(dataRoot, runId), `${branchId}.json`);
+    if (existsSync(branchFilePath)) {
+      const branchRecord = JSON.parse(readFileSync(branchFilePath, "utf-8"));
+      const forkedSaveId = branchRecord.forkedFromSaveId;
+      if (forkedSaveId) {
+        const forkedSavePath = join(savesDir(dataRoot, runId), `${forkedSaveId}.json`);
+        if (existsSync(forkedSavePath)) {
+          const forkedSave = JSON.parse(readFileSync(forkedSavePath, "utf-8"));
+          const restored = restoreSaveSlot(forkedSave);
+          Object.assign(runState, restored);
+        }
+      }
+    }
+
     // Update run state to reflect active branch switch
     runState.activeBranchId = branchId;
     runState.branchSwitchHistory = [

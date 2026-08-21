@@ -24,6 +24,11 @@ async function handleWorldbookV2Action(action, btn) {
       s.editingId = "__new__";
       s.draft = { title: "", content: "", keys: [], entryType: "note", visibility: "public", contextSlot: "global_lore", priority: 100, enabled: true, alwaysOn: false };
       s.dirty = false;
+      // Ensure the full entry list is loaded first — save() is a full overwrite,
+      // so saving from an unloaded panel would wipe all existing entries.
+      if (!s.loaded) {
+        s.loaded = await API.worldbookV2Load(moduleKey).catch(() => null);
+      }
       result = { status: "ok" };
     } else if (action === "worldbook-v2-edit") {
       const id = btn?.closest("[data-worldbook-v2-id]")?.dataset.worldbookV2Id || "";
@@ -38,6 +43,11 @@ async function handleWorldbookV2Action(action, btn) {
       s.editingId = ""; s.draft = null; s.dirty = false;
       result = { status: "ok" };
     } else if (action === "worldbook-v2-save-entry") {
+      // Guard against full-overwrite data loss: never save from an unloaded panel.
+      if (!s.loaded) {
+        s.loaded = await API.worldbookV2Load(moduleKey).catch(() => null);
+      }
+      if (!s.loaded) throw new Error("世界书条目列表加载失败，已取消保存以防止覆盖现有条目。请点击「重新加载」后重试。");
       const title = (U.qs("#worldbookV2Title")?.value || "").trim();
       const content = (U.qs("#worldbookV2Content")?.value || "").trim();
       if (!title || !content) throw new Error("标题和内容不能为空");
@@ -62,6 +72,11 @@ async function handleWorldbookV2Action(action, btn) {
       s.editingId = ""; s.draft = null; s.dirty = false;
       createToast("世界书条目已保存并会用于后续运行上下文。", "ok");
     } else if (action === "worldbook-v2-toggle" || action === "worldbook-v2-delete") {
+      // Same full-overwrite guard as save-entry: load before mutating.
+      if (!s.loaded) {
+        s.loaded = await API.worldbookV2Load(moduleKey).catch(() => null);
+      }
+      if (!s.loaded) throw new Error("世界书条目列表加载失败，已取消操作以防止覆盖现有条目。请点击「重新加载」后重试。");
       const id = btn?.closest("[data-worldbook-v2-id]")?.dataset.worldbookV2Id || "";
       const entries = (s.loaded?.entries || []).map((item) => ({ ...item }));
       const index = entries.findIndex((item) => (item.entryId || item.id) === id);

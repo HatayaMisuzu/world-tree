@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { open, readdir, rm } from "node:fs/promises";
+import { open, readdir, rename, rm } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 
 import {
@@ -87,9 +87,20 @@ export function createTurnTransaction({ journalPath, faultInjector = null } = {}
     if (!existsSync(journal)) return { recovered: false };
     const payload = readJsonSync(journal, null);
     if (!payload || payload.version !== JOURNAL_VERSION || !payload.id || !Array.isArray(payload.operations)) {
-      const error = new Error(`Invalid turn transaction journal: ${journal}`);
-      error.code = "TURN_TRANSACTION_JOURNAL_INVALID";
-      throw error;
+      // Quarantine the corrupt journal instead of throwing: a single bad file
+      // must not permanently disable the transaction mechanism or block
+      // startup recovery of every other journal on disk.
+      const quarantinePath = `${journal}.corrupt-${Date.now()}`;
+      try {
+        await rm(quarantinePath, { force: true });
+        await rename(journal, quarantinePath);
+        await syncDirectory(dirname(journal));
+      } catch {
+        await rm(journal, { force: true });
+        if (existsSync(dirname(journal))) await syncDirectory(dirname(journal));
+      }
+      console.warn(`[turn-transaction] quarantined corrupt journal: ${journal}`);
+      return { recovered: true, transactionId: null, action: "quarantined" };
     }
     if (payload.status !== "committed") {
       await rollback(payload);
@@ -176,8 +187,15 @@ export async function recoverTurnTransactionsUnderRoot(rootPath, { maxDirectorie
       if (entry.isDirectory()) {
         await walk(path);
       } else if (entry.isFile() && entry.name === "turn.json" && basename(directory) === "transactions") {
-        const result = await createTurnTransaction({ journalPath: path }).recover();
-        if (result.recovered) recoveries.push({ journalPath: path, ...result });
+        // Per-journal fault isolation: one failing journal (e.g. rollback hitting
+        // an EPERM-locked file) must not abort recovery of all other journals.
+        try {
+          const result = await createTurnTransaction({ journalPath: path }).recover();
+          if (result.recovered) recoveries.push({ journalPath: path, ...result });
+        } catch (err) {
+          recoveries.push({ journalPath: path, recovered: false, error: err?.message || String(err) });
+          console.warn(`[turn-transaction] recovery failed for ${path}:`, err?.message || err);
+        }
       }
     }
   }
