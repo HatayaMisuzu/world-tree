@@ -14,6 +14,8 @@ import { detectRacialTension } from "../data/race.js";
 import { isCardModeCommand } from "../data/character-card.js";
 import { updateAllProximities, suggestActivationCandidates, analyzeNarrativeGap, proximitySummary, activateEntity } from "../data/proximity-scope.js";
 import { worldTick, resolveTurnDelta, calendarDisplay } from "./world-tick.js";
+import { resolveTravelIntent } from "./location-graph.js";
+import { recomputeNpcProximity } from "./npc-schedule.js";
 import { directNarrative, parseEmotionSection, generateDirectionPacket } from "./director.js";
 import { getDefaultEmotionState } from "./emotion-state.js";
 import { createMemorySnapshot, searchMemorySnapshots, formatMemorySection, loadGlobalMemory } from "./global-memory.js";
@@ -346,8 +348,20 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     model.entities = updateAllProximities(model.entities, protagonist);
   }
 
-  // s3-1: worldTick(Δt) — wait/idle → one structured period (calendar day)
-  const tickDelta = resolveTurnDelta(input);
+  // s3-1/s3-2: worldTick(Δt) — wait/idle → one period; travel → edge durationDays
+  const travel = state.locationGraph
+    ? resolveTravelIntent(input, state.locationGraph, state.currentLocationId || "")
+    : null;
+  const tickDelta = travel
+    ? {
+        unit: "period",
+        amount: travel.durationDays,
+        reason: "travel",
+        from: travel.fromId,
+        to: travel.toId,
+        path: travel.path
+      }
+    : resolveTurnDelta(input);
   if (tickDelta) {
     const tickResult = worldTick({
       calendar: state.calendar,
@@ -360,10 +374,42 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     if (tickResult.worldPanel) state.worldPanel = tickResult.worldPanel;
     if (tickResult.timeline) state.timeline = tickResult.timeline;
     if (tickResult.entities) model.entities = tickResult.entities;
+
+    if (travel?.toId) {
+      state.currentLocationId = travel.toId;
+      overlayPatch.travel = {
+        from: travel.fromId,
+        to: travel.toId,
+        path: travel.path,
+        durationDays: travel.durationDays,
+        matchedName: travel.matchedName
+      };
+    }
+
+    // s3-2: NPC schedule positions + proximity ring enter/exit (product proximity-scope)
+    if (Array.isArray(state.npcStates) && state.npcStates.length > 0) {
+      const prox = recomputeNpcProximity({
+        npcs: state.npcStates,
+        totalDays: state.calendar?.totalDays || 0,
+        currentLocationId: state.currentLocationId || "",
+        protagonistId: state.protagonistId || protagonist.name || "player",
+        previousScope: state.proximityScope || null,
+        relations: state.relations || []
+      });
+      state.npcStates = prox.npcs;
+      state.proximityScope = prox.scope;
+      state.proximityRingChanges = prox.changes;
+      overlayPatch.proximityRings = {
+        scope: prox.scope,
+        changes: prox.changes
+      };
+    }
+
     overlayPatch.worldTick = {
       delta: tickDelta,
       calendar: state.calendar,
-      display: tickResult.display || calendarDisplay(state.calendar)
+      display: tickResult.display || calendarDisplay(state.calendar),
+      currentLocationId: state.currentLocationId || null
     };
   }
 
