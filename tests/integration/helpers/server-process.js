@@ -12,11 +12,17 @@ export async function removeTempDir(dir) {
   if (dir) await rm(dir, { recursive: true, force: true });
 }
 
+/** @deprecated Prefer omitting `port` (OS assigns 0). Kept for callers that still pick an explicit port. */
 export function randomPort() {
   return 20000 + Math.floor(Math.random() * 20000);
 }
 
-export async function startWorldTreeServer({ port = randomPort(), dataDir, env = {} } = {}) {
+function parseBoundPort(stdout) {
+  const match = stdout.match(/URL:\s*http:\/\/(?:127\.0\.0\.1|localhost):(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+export async function startWorldTreeServer({ port = 0, dataDir, env = {} } = {}) {
   const root = resolve(".");
   // Isolate userData: when dataDir is provided (test mode), auto-create a temp userData dir
   let userDataDir = undefined;
@@ -55,7 +61,8 @@ export async function startWorldTreeServer({ port = randomPort(), dataDir, env =
     }, 8000);
 
     child.stdout.on("data", () => {
-      if (stdout.includes("World Tree Web 服务启动")) {
+      // listenOnAvailablePort may bind a different port than requested; wait for the banner URL.
+      if (stdout.includes("World Tree Web 服务启动") && parseBoundPort(stdout) != null) {
         clearTimeout(timer);
         resolveReady();
       }
@@ -69,9 +76,14 @@ export async function startWorldTreeServer({ port = randomPort(), dataDir, env =
 
   await ready;
 
+  const boundPort = parseBoundPort(stdout);
+  if (!boundPort) {
+    throw new Error(`server started but bound port was not found in stdout\nstdout:\n${stdout}\nstderr:\n${stderr}`);
+  }
+
   return {
-    port,
-    baseUrl: `http://127.0.0.1:${port}`,
+    port: boundPort,
+    baseUrl: `http://127.0.0.1:${boundPort}`,
     child,
     stdout: () => stdout,
     stderr: () => stderr,
