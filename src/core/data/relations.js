@@ -1,3 +1,4 @@
+import { scopedObject } from "../engine/world-scope.js";
 // ===== 角色关系图谱 v1 =====
 // 独立于组织实体（M4）的角色间关系系统。
 // 关系是角色之间的动态连接，不依赖组织、不预设固定结局。
@@ -33,13 +34,14 @@ export const RELATION_TYPES = {
 //  关系存储
 // ═══════════════════════════════════════════════════════════════
 
-const RELATION_STORE = {
+// per-world (S2 ③): backing object lives in the active world scope
+const RELATION_STORE = scopedObject("relations.store", () => ({
   relations: [],            // 所有关系记录
   changeLog: [],            // 关系变化历史
   maxChangeLog: 200
-};
+}));
 
-let relationIdCounter = 0;
+const COUNTERS = scopedObject("relations.counters", () => ({ relationIdCounter: 0 }));
 
 // ═══════════════════════════════════════════════════════════════
 //  创建与更新
@@ -92,7 +94,7 @@ export function setRelation({ source, target, type = "stranger", attitude = 0, d
 
   // 创建新关系
   const relation = {
-    id: `rel-${++relationIdCounter}`,
+    id: `rel-${++COUNTERS.relationIdCounter}`,
     source,
     target,
     type,
@@ -334,7 +336,7 @@ function logRelationChange(relationId, changes, event) {
 export function resetRelations() {
   RELATION_STORE.relations = [];
   RELATION_STORE.changeLog = [];
-  relationIdCounter = 0;
+  COUNTERS.relationIdCounter = 0;
 }
 
 /** 从快照完全恢复关系存储（用于存档加载） */
@@ -345,7 +347,7 @@ export function importRelationsSnapshot(snapshot = {}) {
     const num = parseInt((r.id || "rel-0").replace("rel-", ""), 10);
     return num > max ? num : max;
   }, 0);
-  relationIdCounter = Math.max(relationIdCounter, maxId);
+  COUNTERS.relationIdCounter = Math.max(COUNTERS.relationIdCounter, maxId);
 }
 
 /** 批量导入关系 */
@@ -353,8 +355,8 @@ export function importRelations(relations = []) {
   for (const r of relations) {
     if (!r.error) {
       RELATION_STORE.relations.push(r);
-      if (r.id && parseInt(r.id.replace('rel-', '')) > relationIdCounter) {
-        relationIdCounter = parseInt(r.id.replace('rel-', ''));
+      if (r.id && parseInt(r.id.replace('rel-', '')) > COUNTERS.relationIdCounter) {
+        COUNTERS.relationIdCounter = parseInt(r.id.replace('rel-', ''));
       }
     }
   }

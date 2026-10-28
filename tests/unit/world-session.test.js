@@ -23,6 +23,9 @@ test("WorldSession resets to fresh state when snapshot restore is invalid", asyn
   assert.equal(result.overlayPatch._engineState.version, 1);
   assert.equal(restore.ok, false);
   assert.equal(restore.warning.code, "WORLD_SESSION_SNAPSHOT_INVALID");
-  assert.equal(queryWorldFacts("A_ONLY_MEMORY").length, 0);
+  // S2 ③: world B's reset happens inside B's own scope; the outer (default) scope is neither
+  // leaked into B (asserted above) nor wiped by B's restore.
+  assert.equal(queryWorldFacts("A_ONLY_MEMORY").length, 1);
+  assert.equal(session.inScope(() => queryWorldFacts("A_ONLY_MEMORY").length), 0);
   resetEngineState();
 });

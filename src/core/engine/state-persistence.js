@@ -7,8 +7,8 @@
 import { exportMemorySnapshot, importMemorySnapshot, resetAllMemoryLayers } from "./memory-layers.js";
 import { exportRelations, importRelationsSnapshot, resetRelations } from "../data/relations.js";
 import { exportProposalSnapshot, importProposalSnapshot, resetProposalStore } from "./proposal-system.js";
-import { exportPredictionStores, importPredictionStores } from "./director.js";
-import { getEventHistory, resetEventCache } from "../data/random-events.js";
+import { exportPredictionStores, importPredictionStores, exportDirectorLog, importDirectorLog, resetDirectorLog } from "./director.js";
+import { getEventHistory, resetEventCache, importEventHistory } from "../data/random-events.js";
 import { loadGlobalMemory } from "./global-memory.js";
 
 /**
@@ -24,6 +24,7 @@ export function exportEngineState(extra = {}) {
     relations: exportRelations(),
     proposals: exportProposalSnapshot(),
     predictions: exportPredictionStores(),
+    director: exportDirectorLog(),
     events: {
       history: getEventHistory()
     },
@@ -40,6 +41,7 @@ export function resetEngineState() {
   resetRelations();
   resetProposalStore();
   importPredictionStores({});
+  resetDirectorLog();
   resetEventCache();
   loadGlobalMemory({ snapshots: [], version: 2 });
 }
@@ -63,13 +65,12 @@ export function importEngineState(snapshot = {}) {
   if (snapshot.predictions) {
     importPredictionStores(snapshot.predictions);
   }
-  // 事件历史是追加型的，这里选择重置后重新导入
-  if (snapshot.events?.history) {
-    resetEventCache();
-    // 事件历史通过叠加恢复——但 resetEventCache 会清空。
-    // 当前架构下事件缓存是内存态，持久化恢复通过 worldCache 机制完成，
-    // 这里仅作为兼容层保留。
+  if (snapshot.director) {
+    importDirectorLog(snapshot.director);
   }
+  // 事件历史：重置后按快照恢复（此前只重置不恢复，读档后冷却信息丢失）
+  resetEventCache();
+  if (snapshot.events?.history) importEventHistory(snapshot.events.history);
 
   return snapshot.runtime || null;
 }
