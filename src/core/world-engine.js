@@ -29,6 +29,20 @@ export {
   SEASON_NAMES,
   DAY_PHASES
 } from "./engine/world-tick.js";
+export {
+  createLocationGraph,
+  findLocationNode,
+  travelDuration,
+  resolveTravelIntent
+} from "./engine/location-graph.js";
+export {
+  createNpcRuntime,
+  resolveNpcLocationAt,
+  advanceNpcSchedules,
+  proximityCandidatesFromNpcs,
+  diffProximityRings,
+  recomputeNpcProximity
+} from "./engine/npc-schedule.js";
 // 🆕 跑团模块
 export * as tabletop from "./engine/tabletop.js";
 export * as rpg from "./engine/rpg.js";
