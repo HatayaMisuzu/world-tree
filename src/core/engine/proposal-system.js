@@ -450,7 +450,9 @@ export function ingestBusProposal(bus = {}) {
       requiresSecondConfirm: bus.requiresSecondConfirm === true,
       rollbackPatch: bus.rollbackPatch || null,
       modeId: bus.modeId || "",
-      projectId: bus.projectId || ""
+      projectId: bus.projectId || "",
+      rippleDepth: Number(bus.rippleDepth || 0),
+      causedBy: bus.causedBy || null
     },
     createdAt: bus.createdAt || new Date().toISOString(),
     adoptedAt: null,
@@ -468,7 +470,12 @@ export function ingestBusProposal(bus = {}) {
     reversible: bus.reversible === true,
     rollbackPatch: bus.rollbackPatch || null,
     oldValue: bus.oldValue ?? null,
-    newValue: bus.newValue ?? null
+    newValue: bus.newValue ?? null,
+    rippleDepth: Number(bus.rippleDepth || 0),
+    causedBy: bus.causedBy || null,
+    worldStateChange: bus.worldStateChange && typeof bus.worldStateChange === "object"
+      ? bus.worldStateChange
+      : null
   };
 
   if (proposal.status === "committed" || proposal.status === "rejected" || proposal.status === "reversed") {

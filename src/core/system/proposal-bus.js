@@ -135,7 +135,13 @@ export function createProposal(input = {}, options = {}) {
     stopLossWindow: input.stopLossWindow || { enabled: false, status: "none", expiresAtTurn: null },
     round: input.round || 0,
     source: input.source || "proposal-bus",
-    moduleKey: input.moduleKey || input.modeId || "unknown"
+    moduleKey: input.moduleKey || input.modeId || "unknown",
+    // S4-2: ripple depth≥2 metadata retained on bus → proposal-system ingest
+    rippleDepth: Number(input.rippleDepth || 0),
+    causedBy: input.causedBy || null,
+    worldStateChange: input.worldStateChange && typeof input.worldStateChange === "object"
+      ? input.worldStateChange
+      : null
   };
 
   // Record of truth: mirror into proposal-system (no auto-commit).

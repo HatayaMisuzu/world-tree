@@ -1,5 +1,6 @@
-// Enqueue depth≥2 bounded-ripple items into the proposal queue (proposal-bus shape).
-// Called from the main turn path (completeTurn); depth 1 stays auto / non-queued.
+// S4-2 / S3 验收句补全: depth≥2 bounded-ripple → proposal-bus → proposal-system queue.
+// Called from the main turn path (completeTurn); depth < 2 stays auto / non-queued.
+// Canon remains unchanged until approve/adopt+commit via proposal-bus (overlay WRITE_POLICY).
 import { stableId } from "../../shared/determinism.js";
 import { deriveBoundedRipple } from "./world-state-ripple.js";
 import { createWorldStateProposal } from "./world-state-proposals.js";
@@ -50,7 +51,11 @@ export function rootChangeFromStateSuggestion(sections = {}, { input = "", round
   };
 }
 
-/** Derive bounded ripple and create pending proposals for depth≥2 (requiresUserApproval). */
+/**
+ * Derive bounded ripple and enqueue depth≥2 items via proposal-bus (createWorldStateProposal).
+ * Boundary: depth < 2 (or requiresUserApproval !== true) are not enqueued.
+ * Queue identity: proposal id / type / rippleDepth are assertable via getByStatus("pending").
+ */
 export function enqueueRippleProposals(projectRoot, rootChange = {}, context = {}, options = {}) {
   if (!rootChange?.id) return { ripple: null, proposals: [] };
   const ripple = deriveBoundedRipple(projectRoot, rootChange, context, options);
@@ -62,16 +67,14 @@ export function enqueueRippleProposals(projectRoot, rootChange = {}, context = {
       stateId,
       summary: item.summary || `Ripple depth-${item.depth} from ${rootChange.id}`,
       reason: item.reason || `bounded-ripple depth ${item.depth}`,
-      impactLevel: item.impactLevel || "major",
-      value: item.newValue ?? item.value,
+      impactLevel: rootChange.impactLevel || item.impactLevel || "major",
+      value: item.newValue ?? item.value ?? item.summary ?? null,
       rippleDepth: item.depth,
-      causedBy: rootChange.id
+      causedBy: rootChange.id,
+      source: "world-state-ripple"
     }, context);
     proposals.push({
       ...proposal,
-      status: "pending",
-      rippleDepth: item.depth,
-      causedBy: rootChange.id,
       action: item.action || "pending_proposal"
     });
   }
