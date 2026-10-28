@@ -23,7 +23,8 @@ const charLiveService = read("src/server/character-v2-live-turn-service.js");
 const charCapsuleService = read("src/server/character-capsule-service.js");
 const charRuntimeContext = read("src/core/character/character-v2-runtime-context.js");
 const ui = readBrowserSource(root);
-const tabletopService = read("src/server/tabletop-v2-service.js");
+// tabletop-v2-service.js re-exports its split modules (import service, runtime paths); audit them together.
+const tabletopService = ["src/server/tabletop-v2-service.js", "src/server/tabletop-v2-import-service.js", "src/server/tabletop-v2-paths.js"].map(read).join("\n");
 
 check("script test:world-tree-v2-entries exists", !!pkg.scripts?.["test:world-tree-v2-entries"]);
 check("script test:entry-closures exists", !!pkg.scripts?.["test:entry-closures"]);
