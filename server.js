@@ -66,11 +66,7 @@ import { collectWorldTelemetry } from "./src/core/telemetry/world-telemetry.js";
 import { detectWorldbookCandidates } from "./src/core/worldbook/worldbook-candidate-detector.js";
 import { recordWorldbookCandidate } from "./src/core/worldbook/worldbook-growth-tree.js";
 import { updateCharacterInertia } from "./src/core/character/emotional-inertia.js";
-import {
-  getKernelSummary, handleBranchOperation, getLatestKernelTelemetry, refreshKernelTelemetry,
-  previewAutoLight, approveKernelProposal, rejectKernelProposal, getKernelStopLoss, reverseKernelProposal,
-  ingestProcessingMaterial, listProcessingCandidates, deliverProcessingById
-} from "./src/server/kernel-service.js";
+import { getKernelSummary, handleBranchOperation, getLatestKernelTelemetry, refreshKernelTelemetry, previewAutoLight, approveKernelProposal, rejectKernelProposal, getKernelStopLoss, reverseKernelProposal, ingestProcessingMaterial, listProcessingCandidates, deliverProcessingById } from "./src/server/kernel-service.js";
 import { handleWorkflowApiRequest, getWorkflowTypesResponse, getWorkflowStatus } from "./src/core/workflows/adapters/server-workflow-adapter.js";
 import { normalizeStrategySimSpec, validateStrategySimSpec, sealStrategySimSpec } from "./src/core/strategy-sim/strategy-sim-spec.js";
 import { handleV2ProductPlayableRoute } from "./src/server/v2-product-playable-routes.js";
@@ -769,8 +765,7 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
     entities: [], turnCount: 0
   };
   const sessionSnapshot = model?.moduleData?.runtime?.engineSnapshot || model?._overlay?.runtime?.engineSnapshot || null;
-  // S2 ④: restore this world's engine snapshot before the director runs (it used to run against
-  // whatever state the previous turn of any world left behind, and its decisions were then wiped).
+  // S2 ④: restore this world's snapshot BEFORE the director runs (else its decisions get wiped)
   if (worldSession) worldSession.beginTurn(sessionSnapshot);
 
   // 标准化引擎状态

@@ -67,7 +67,7 @@ const CORE_FILES = [
   "src/core/engine/guardian.js", "src/core/engine/guardian-llm.js",
   "src/core/engine/global-memory.js", "src/core/engine/lifecycle.js",
   "src/core/engine/health-check.js", "src/core/engine/overlay-store.js",
-  "src/core/engine/emotion-state.js", "src/core/engine/director.js",
+  "src/core/engine/emotion-state.js", "src/core/engine/director.js", "src/core/engine/director-prediction-cache.js", "src/core/engine/director-story-hooks.js", "src/core/engine/director-scoring.js",
   "src/core/engine/direction-packet.js", "src/core/engine/commands.js",
   "src/core/engine/output-parser.js", "src/core/engine/modules.js",
   "src/core/engine/constants.js", "src/core/engine/state-persistence.js",

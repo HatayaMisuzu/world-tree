@@ -166,3 +166,28 @@ test("regression: analyzePacing high-engagement path no longer throws (curiosity
   assert.doesNotThrow(() => analyzePacing({ engagement: 9, tension: 5, fatigue: 2, curiosity: 9 }, 5, 0));
   assert.ok(analyzePacing({ engagement: 9, tension: 5, fatigue: 2, curiosity: 9 }, 5, 0).advices.some((a) => a.signal === "最佳窗口"));
 });
+
+test("④ director cooldown takes effect: no new event within COOLDOWN_MIN_ROUNDS of a trigger (caller passes lastEventRound=0)", async () => {
+  const { PACING_THRESHOLDS } = await import("../../src/core/engine/constants.js");
+  const cooldown = PACING_THRESHOLDS.COOLDOWN_MIN_ROUNDS;
+  const hot = { engagement: 9, tension: 9, fatigue: 1, curiosity: 9 };
+  const result = runInWorldScope(createWorldScope(`cooldown-${Math.random()}`), () => {
+    resetEngineState();
+    const rounds = [];
+    for (let round = 1; round <= 60; round += 1) {
+      // 主管线的真实调用方式：lastEventRound 一直是 0（从不更新）
+      const r = directNarrative({ emotionState: hot, input: "调查", round, moduleData: DEMO, worldSeed: "cooldown-seed", lastEventRound: 0 });
+      rounds.push({ round, trigger: Boolean(r.event.trigger.trigger), cooling: r.pacing.advices.some(a => a.signal === "事件冷却") });
+    }
+    return rounds;
+  });
+  const triggered = result.filter(r => r.trigger).map(r => r.round);
+  assert.ok(triggered.length >= 3, `expected several triggers in 60 hot rounds, got ${triggered.length}`);
+  for (let i = 1; i < triggered.length; i += 1) {
+    assert.ok(triggered[i] - triggered[i - 1] >= cooldown, `events at rounds ${triggered[i - 1]} and ${triggered[i]} violate cooldown ${cooldown}`);
+  }
+  const first = triggered[0];
+  for (let k = 1; k < cooldown; k += 1) {
+    assert.equal(result.find(r => r.round === first + k).cooling, true, `round ${first + k} should report 事件冷却`);
+  }
+});
