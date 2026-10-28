@@ -9,6 +9,7 @@ const files = [
   "src/server/connection-runtime.js",
   "src/server/static-shell.js",
   "src/server/http-api-router.js",
+  "src/server/character-card-http-routes.js",
   "src/server/debug-log.js",
   "world-tree-console.html",
   "world-tree-console.css",

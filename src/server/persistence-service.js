@@ -115,18 +115,18 @@ export function applySlashWriteOps(runtimeDir, ops = [], context = {}) {
       const target = op.overwrite ? join(dir, `${stem}.json`) : allocateFreePath(dir, stem, ".json");
       const finalName = basename(target, ".json");
       writeFileSync(target, `${JSON.stringify({ ...op.payload, name: finalName, requestedName: op.name, round: context.round ?? op.payload?.round }, null, 2)}\n`, { flag: op.overwrite ? "w" : "wx" });
-      written.push({ op: op.op, path: target, name: finalName });
+      written.push({ op: op.op, path: target, name: finalName, receipt: `【系统】存档「${finalName}」已保存（文件 archives/${finalName}.json）。` });
     } else if (op.op === SLASH_WRITE_OP.WORLD_COPY) {
       const worldsRoot = context.projectRoot ? dirname(context.projectRoot) : "";
       const source = safeFileStem(op.source);
       const sourceDir = worldsRoot ? join(worldsRoot, source) : "";
       if (!sourceDir || source !== op.source || !existsSync(join(sourceDir, "world.json"))) {
-        written.push({ op: op.op, skipped: "source-world-not-found", source: op.source });
+        written.push({ op: op.op, skipped: "source-world-not-found", source: op.source, receipt: `【系统】世界复制未执行：找不到源世界「${op.source}」。` });
         continue;
       }
       const target = allocateFreePath(worldsRoot, safeFileStem(op.target));
       cpSync(sourceDir, target, { recursive: true, errorOnExist: true, force: false });
-      written.push({ op: op.op, path: target, name: basename(target) });
+      written.push({ op: op.op, path: target, name: basename(target), receipt: `【系统】世界「${source}」已复制为「${basename(target)}」。` });
     }
   }
   return written;

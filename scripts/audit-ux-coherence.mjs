@@ -56,7 +56,8 @@ const v2RouteContent = [
   "src/server/single-player-scriptkill-v2-routes.js",
   "src/server/character-v2-routes.js"
 ].map(read).join("\n");
-const tabletopService = read("src/server/tabletop-v2-service.js");
+// tabletop-v2-service.js re-exports its split modules (import service, runtime paths); audit them together.
+const tabletopService = ["src/server/tabletop-v2-service.js", "src/server/tabletop-v2-import-service.js", "src/server/tabletop-v2-paths.js"].map(read).join("\n");
 const pkg = read("package.json");
 const stateDoc = read("docs/CURRENT_PROJECT_STATE.md");
 const aliasFile = read("src/core/features/feature-alias-registry.js");

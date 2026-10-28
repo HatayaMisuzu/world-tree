@@ -52,7 +52,7 @@ console.log("\n📝 语法检查");
 const CORE_FILES = [
   "server.js",
   "src/server/config-runtime.js", "src/server/connection-runtime.js", "src/server/static-shell.js",
-  "src/server/http-api-router.js", "src/server/debug-log.js",
+  "src/server/http-api-router.js", "src/server/character-card-http-routes.js", "src/server/debug-log.js",
   "world-tree-console.js",
   "browser/app/product-registry.js", "browser/app/navigation.js", "browser/state/app-store.js",
   "browser/components/feedback.js", "browser/components/forms.js", "browser/components/product-components.js",
@@ -132,6 +132,8 @@ const CORE_FILES = [
   "src/core/tabletop/tabletop-v2-save-branch.js",
   "src/core/tabletop/tabletop-v2-ending-summary.js",
   "src/server/tabletop-v2-service.js",
+  "src/server/tabletop-v2-import-service.js",
+  "src/server/tabletop-v2-paths.js",
   "tests/unit/tabletop-v2-dice-engine.test.js",
   "tests/unit/tabletop-v2-ruleset-profile.test.js",
   "tests/unit/tabletop-v2-adventure-module.test.js",

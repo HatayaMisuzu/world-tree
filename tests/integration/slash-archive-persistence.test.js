@@ -103,12 +103,17 @@ test("slash /存档 twice and /世界 复制 twice persist distinct files throug
     const worldId = String(moduleKey).replace(/^world:/, "");
     await saveConnection(server, { id: "fake-success", baseUrl: fakeLlm.baseUrl });
 
-    await chat(server, moduleKey, "/存档");
-    await chat(server, moduleKey, "/存档");
+    const firstSave = await chat(server, moduleKey, "/存档");
+    const secondSave = await chat(server, moduleKey, "/存档");
     const archiveDir = join(dataDir, "engine", "worlds", worldId, "runtime", "archives");
     const files = (await readdir(archiveDir)).filter((f) => f.endsWith(".json")).sort();
     assert.equal(files.length, 2, `expected two archive files, got ${files.join(",")}`);
     assert.notEqual(files[0], files[1]);
+    const receiptName = (body) => body.narrative.match(/存档「([^」]+)」已保存/)?.[1];
+    const savedNames = [receiptName(firstSave), receiptName(secondSave)];
+    assert.ok(savedNames[0] && savedNames[1], `receipts must name the archive: ${firstSave.narrative} / ${secondSave.narrative}`);
+    assert.deepEqual([...savedNames].sort(), files.map((f) => f.replace(/\.json$/, "")), "receipts must show actual on-disk names");
+    assert.equal(`${savedNames[1]}.json`, files.find((f) => f === `${savedNames[1]}.json`), "second receipt equals the second file on disk");
     for (const file of files) {
       const archive = JSON.parse(await readFile(join(archiveDir, file), "utf8"));
       assert.equal(archive.name, file.replace(/\.json$/, ""));
@@ -118,10 +123,13 @@ test("slash /存档 twice and /世界 复制 twice persist distinct files throug
 
     const worldsDir = join(dataDir, "engine", "worlds");
     const before = new Set(await readdir(worldsDir));
-    await chat(server, moduleKey, `/世界 复制 ${worldId}`);
-    await chat(server, moduleKey, `/世界 复制 ${worldId}`);
+    const firstCopy = await chat(server, moduleKey, `/世界 复制 ${worldId}`);
+    const secondCopy = await chat(server, moduleKey, `/世界 复制 ${worldId}`);
     const copies = (await readdir(worldsDir)).filter((d) => !before.has(d)).sort();
     assert.equal(copies.length, 2, `expected two world copies, got ${copies.join(",")}`);
+    const copyName = (body) => body.narrative.match(/已复制为「([^」]+)」/)?.[1];
+    assert.deepEqual([copyName(firstCopy), copyName(secondCopy)].sort(), copies, "copy receipts must show actual on-disk world names");
+    assert.notEqual(copyName(firstCopy), copyName(secondCopy));
     for (const copy of copies) {
       const world = JSON.parse(await readFile(join(worldsDir, copy, "world.json"), "utf8"));
       assert.ok(world, `copy ${copy} must contain world.json`);
