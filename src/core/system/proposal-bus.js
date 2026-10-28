@@ -141,7 +141,10 @@ export function createProposal(input = {}, options = {}) {
     causedBy: input.causedBy || null,
     worldStateChange: input.worldStateChange && typeof input.worldStateChange === "object"
       ? input.worldStateChange
-      : null
+      : null,
+    // S4-5: retain reveal / domain metadata for ingest + inspectability
+    metadata: input.metadata && typeof input.metadata === "object" ? input.metadata : null,
+    requiresUserApproval: Boolean(input.requiresUserApproval)
   };
 
   // Record of truth: mirror into proposal-system (no auto-commit).
