@@ -1,5 +1,21 @@
 {
   "currentScene": "brass-harbor-opening",
   "publicTension": "雾铃塔连续异常鸣响，港口传闻增多。",
-  "openThreads": ["第七锚塔失压", "匿名委托来源", "旧锚链齿轮用途"]
+  "openThreads": [
+    "第七锚塔失压",
+    "匿名委托来源",
+    "旧锚链齿轮用途"
+  ],
+  "nations": [
+    {
+      "id": "cloud-steam-city-state",
+      "name": "云上蒸汽城邦",
+      "type": "国家"
+    },
+    {
+      "id": "rust-harbor-league",
+      "name": "云下锈港联盟",
+      "type": "国家"
+    }
+  ]
 }

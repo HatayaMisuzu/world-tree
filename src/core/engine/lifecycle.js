@@ -305,10 +305,12 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
   }
 
   // ═══ 🆕 叙事关系提取：从本轮叙事文本中自动更新角色关系 ═══
+  // s3-4: marked 【叙事】 often lands in sections["叙事"]._raw while parsed.narrative stays ""
+  const narrativeForRelations = parsed.narrative || parsed.sections?.["叙事"]?._raw || "";
   if (dataMode !== "character_card" && model.moduleData?.characters?.length) {
     const charNames = new Set(model.moduleData.characters.map(c => c.name).filter(Boolean));
-    if (charNames.size >= 2 && parsed.narrative) {
-      const changes = extractRelationChanges(parsed.narrative, charNames, emotionUpdate);
+    if (charNames.size >= 2 && narrativeForRelations) {
+      const changes = extractRelationChanges(narrativeForRelations, charNames, emotionUpdate);
       for (const change of changes) {
         const result = setRelation(change);
         if (!result.error) {

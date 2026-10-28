@@ -1,4 +1,32 @@
 [
-  { "id": "brass-harbor", "name": "黄铜港", "summary": "云上蒸汽城的飞艇港和第一幕开场地点。" },
-  { "id": "fog-bell-tower", "name": "雾铃塔", "summary": "第七锚塔顶端的异常钟楼。" }
+  {
+    "id": "brass-harbor",
+    "name": "黄铜港",
+    "regionId": "cloud-steam",
+    "summary": "黄铜港"
+  },
+  {
+    "id": "fog-bell-tower",
+    "name": "雾铃塔",
+    "regionId": "cloud-steam",
+    "summary": "雾铃塔"
+  },
+  {
+    "id": "ash-guild-hall",
+    "name": "灰烬会馆",
+    "regionId": "cloud-steam",
+    "summary": "灰烬会馆"
+  },
+  {
+    "id": "wind-court-plaza",
+    "name": "风议广场",
+    "regionId": "cloud-steam",
+    "summary": "风议广场"
+  },
+  {
+    "id": "cloud-well",
+    "name": "下层云井",
+    "regionId": "cloud-below",
+    "summary": "下层云井"
+  }
 ]

@@ -1,0 +1,140 @@
+[
+  {
+    "id": "mira-valvewright",
+    "name": "米拉·阀匠",
+    "locationId": "ash-guild-hall",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "ash-guild-hall"
+      },
+      {
+        "atDay": 3,
+        "locationId": "fog-bell-tower"
+      },
+      {
+        "atDay": 7,
+        "locationId": "brass-harbor"
+      }
+    ],
+    "relationDistance": 0.2
+  },
+  {
+    "id": "captain-luo",
+    "name": "罗船长",
+    "locationId": "brass-harbor",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "brass-harbor"
+      },
+      {
+        "atDay": 5,
+        "locationId": "wind-court-plaza"
+      }
+    ],
+    "relationDistance": 0.3
+  },
+  {
+    "id": "ash-foreman",
+    "name": "灰烬工头",
+    "locationId": "ash-guild-hall",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "ash-guild-hall"
+      },
+      {
+        "atDay": 4,
+        "locationId": "brass-harbor"
+      }
+    ]
+  },
+  {
+    "id": "wind-clerk",
+    "name": "风令书记",
+    "locationId": "wind-court-plaza",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "wind-court-plaza"
+      },
+      {
+        "atDay": 6,
+        "locationId": "fog-bell-tower"
+      }
+    ]
+  },
+  {
+    "id": "scavenger-yen",
+    "name": "拾荒者燕",
+    "locationId": "brass-harbor",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "brass-harbor"
+      },
+      {
+        "atDay": 2,
+        "locationId": "cloud-well"
+      },
+      {
+        "atDay": 8,
+        "locationId": "brass-harbor"
+      }
+    ]
+  },
+  {
+    "id": "bell-keeper",
+    "name": "雾钟守望",
+    "locationId": "fog-bell-tower",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "fog-bell-tower"
+      },
+      {
+        "atDay": 10,
+        "locationId": "ash-guild-hall"
+      }
+    ]
+  },
+  {
+    "id": "dock-hand-kai",
+    "name": "码头工凯",
+    "locationId": "brass-harbor",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "brass-harbor"
+      },
+      {
+        "atDay": 1,
+        "locationId": "ash-guild-hall"
+      },
+      {
+        "atDay": 3,
+        "locationId": "brass-harbor"
+      }
+    ]
+  },
+  {
+    "id": "rust-envoy",
+    "name": "锈港使者",
+    "locationId": "cloud-well",
+    "schedule": [
+      {
+        "atDay": 0,
+        "locationId": "cloud-well"
+      },
+      {
+        "atDay": 4,
+        "locationId": "brass-harbor"
+      },
+      {
+        "atDay": 9,
+        "locationId": "cloud-well"
+      }
+    ]
+  }
+]

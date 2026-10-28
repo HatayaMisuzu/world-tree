@@ -1,4 +1,64 @@
 [
-  { "id": "ash-guild", "name": "灰烬工会", "summary": "维护锅炉、阀门和锚塔的工匠组织。" },
-  { "id": "wind-court", "name": "风议会", "summary": "管理航线、风令和浮空安全的城邦议会。" }
+  {
+    "id": "cloud-steam-city-state",
+    "name": "云上蒸汽城邦",
+    "type": "国家",
+    "summary": "靠十二座蒸汽锚塔浮在云海之上的主城邦。",
+    "hierarchy": "",
+    "relations": {},
+    "keyFigures": [],
+    "goals": [
+      "维持锚塔高度",
+      "封锁下层云井消息"
+    ]
+  },
+  {
+    "id": "rust-harbor-league",
+    "name": "云下锈港联盟",
+    "type": "国家",
+    "summary": "云海下方锈蚀港口结成的贸易与拾荒联盟。",
+    "hierarchy": "",
+    "relations": {},
+    "keyFigures": [],
+    "goals": [
+      "打通云墙走私航线"
+    ]
+  },
+  {
+    "id": "ash-guild",
+    "name": "灰烬工会",
+    "type": "公会",
+    "summary": "维护锅炉、阀门和锚塔的工匠组织。",
+    "hierarchy": "",
+    "relations": {},
+    "keyFigures": [],
+    "goals": [
+      "控制第七锚塔",
+      "追查旧锚链碎片"
+    ]
+  },
+  {
+    "id": "wind-court",
+    "name": "风议会",
+    "type": "其他",
+    "summary": "管理航线、风令和浮空安全的城邦议会。",
+    "hierarchy": "",
+    "relations": {},
+    "keyFigures": [],
+    "goals": [
+      "封锁下层云井"
+    ]
+  },
+  {
+    "id": "scavenger-company",
+    "name": "拾荒者商会",
+    "type": "商会",
+    "summary": "往来云墙内外的轻型滑翔艇商会。",
+    "hierarchy": "",
+    "relations": {},
+    "keyFigures": [],
+    "goals": [
+      "垄断雾钟残骸交易"
+    ]
+  }
 ]
