@@ -289,11 +289,14 @@ test("runtime/archives and legacy archive both appear in /存档列表 (deduped 
     assert.match(list.narrative, /\[W\]新档/);
     assert.match(list.narrative, /\[W\]旧独有/);
     assert.match(list.narrative, /\[W\]同名/);
-    // Deduped: only one line for 同名; primary summary should appear
-    const sameNameHits = [...list.narrative.matchAll(/\[W\]同名/g)];
-    assert.equal(sameNameHits.length, 1, `expected one 同名 entry after dedupe, got narrative:\n${list.narrative}`);
+    // Deduped: only one list line for 同名; primary summary should appear
+    const sameNameListHits = [...list.narrative.matchAll(/^\d+\. \[W\]同名/gm)];
+    assert.equal(sameNameListHits.length, 1, `expected one 同名 list entry after dedupe, got narrative:\n${list.narrative}`);
     assert.match(list.narrative, /primary copy/);
     assert.doesNotMatch(list.narrative, /legacy copy/);
+    assert.match(list.narrative, /【系统】「\[W\]同名」以 runtime 档为准，旧路径同名已遮蔽。/);
+    assert.doesNotMatch(list.narrative, /「\[W\]新档」以 runtime/);
+    assert.doesNotMatch(list.narrative, /「\[W\]旧独有」以 runtime/);
 
     const loadedLegacy = await chat(server, moduleKey, "/读档 [W]旧独有");
     assert.match(loadedLegacy.narrative, /已读档「\[W\]旧独有」/);

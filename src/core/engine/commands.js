@@ -299,9 +299,15 @@ export function execSlashCommand({ input, engineState, model }) {
       if (wb.length) parts.push(`【世界书】\n${wb.map((a,i) => `${i+1}. ${a.name} | ${a.createdAt||""} | ${a.summary||""}`).join("\n")}`);
       if (cc.length) parts.push(`【角色卡】\n${cc.map((a,i) => `${i+1}. ${a.name} | ${a.createdAt||""} | ${a.summary||""}`).join("\n")}`);
       if (pr.length) parts.push(`【预设模式】\n${pr.map((a,i) => `${i+1}. ${a.name} | ${a.createdAt||""} | ${a.summary||""}`).join("\n")}`);
+      const shadowed = all.filter((a) => a.shadowsLegacy).map((a) => a.name).filter(Boolean);
+      let narrative = parts.length ? parts.join("\n\n") : "暂无存档。";
+      if (shadowed.length) {
+        const names = shadowed.map((n) => `「${n}」`).join("、");
+        narrative += `\n\n【系统】${names}以 runtime 档为准，旧路径同名已遮蔽。`;
+      }
       return { handled: true, intent,
-        narrative: parts.length ? parts.join("\n\n") : "暂无存档。",
-        patch: commandPatch("archive-list", { count: all.length, grouped: { worldbook: wb.length, character_card: cc.length, preset: pr.length } })
+        narrative,
+        patch: commandPatch("archive-list", { count: all.length, grouped: { worldbook: wb.length, character_card: cc.length, preset: pr.length }, shadowed })
       };
     }
     if (intent.root.includes("存档") && !intent.root.includes("列表") && !intent.root.includes("delete")) {
@@ -349,9 +355,12 @@ export function execSlashCommand({ input, engineState, model }) {
       }
       const snap = extractRuntimeFromArchive(hit.data || {});
       const restored = restoreRuntimeSnapshot(snap || {}, state);
+      const shadowHint = hit.shadowsLegacy
+        ? `【系统】「${hit.name}」以 runtime 档为准，旧路径同名已遮蔽。`
+        : "";
       return { handled: true, intent,
-        narrative: `${mode}模式：已读档「${hit.name}」（${hit.path || "runtime/archives/"}）。引擎已从存档恢复运行时状态（情绪/事件等），跨存档缓存已清理。`,
-        patch: commandPatch("archive-load", { name: hit.name, currentMode: mode, found: true, path: hit.path || "" }),
+        narrative: `${mode}模式：已读档「${hit.name}」（${hit.path || "runtime/archives/"}）。引擎已从存档恢复运行时状态（情绪/事件等），跨存档缓存已清理。${shadowHint ? ` ${shadowHint}` : ""}`,
+        patch: commandPatch("archive-load", { name: hit.name, currentMode: mode, found: true, path: hit.path || "", shadowed: Boolean(hit.shadowsLegacy) }),
         engineState: restored
       };
     }
