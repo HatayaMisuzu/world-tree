@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, access, readFile } from "node:fs/promises";
+import { mkdtemp, access, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,7 +45,7 @@ test("P2 branch 8 archives inactive branch and exposes no merge API", async () =
 test("P2 branch 9 serializes concurrent main initialization", async () => { const root=await project(); const trees=await Promise.all(Array.from({length:12},()=>initializeBranchTree(root))); assert.equal(trees.every((tree)=>tree.activeBranchId==="main"),true); await access(join(root,"branches","main","shared","world_state.json")); await access(join(root,"branches","main","runtime","tracking","conflicts.json")); });
 
 // Telemetry: 8 focused tests
-test("P2 telemetry 1 runs with missing optional files", async () => { const root=await mkdtemp(join(tmpdir(),"wt-tel-")); assert.equal((await collectWorldTelemetry(root,{}, {persist:false})).version,1); });
+test("P2 telemetry 1 runs with missing optional files", async () => { const root=await mkdtemp(join(tmpdir(),"wt-tel-")); try { assert.equal((await collectWorldTelemetry(root,{}, {persist:false})).version,1); } finally { await rm(root, { recursive: true, force: true }); } });
 test("P2 telemetry 2 writes its digest", async () => { const root=await project(); await collectWorldTelemetry(root); await access(join(root,"runtime","world-telemetry.jsonl")); });
 test("P2 telemetry 3 does not modify shared", async () => { const root=await project(); const before=await readFile(join(root,"shared","world_state.json"),"utf8"); await collectWorldTelemetry(root); assert.equal(await readFile(join(root,"shared","world_state.json"),"utf8"),before); });
 test("P2 telemetry 4 uses enum levels", async () => { const root=await project(); const d=await collectWorldTelemetry(root,{}, {persist:false}); assert.equal(Object.values(d.metrics).every((v)=>TELEMETRY_LEVELS.includes(v)),true); });
