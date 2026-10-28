@@ -1,12 +1,26 @@
 // src/core/strategy-sim/strategy-sim-public-view-scrubber.js
 // Converts full StrategyRunState into report-safe/player-safe public view.
+// S4-3: secret/omit grading consults visibility-policy; partial presentation stays strategy-local.
 
 import { normalizeVisibility } from "./strategy-sim-spec.js";
 import { getPlayerVisibleProbability } from "./strategy-probability-system.js";
+import {
+  normalizeVisibilityGrade,
+  canExposeToPlayer,
+  countCanaryHits,
+  scanOutputForCanaries
+} from "../v2-ready/visibility-policy.js";
 
 function scrubNumericItem(item = {}, definition = {}) {
-  const visibility = normalizeVisibility(definition.visibility || item.visibility, "hidden");
+  const rawVis = definition.visibility || item.visibility;
+  const visibility = normalizeVisibility(rawVis, "hidden");
+  const policyGrade = normalizeVisibilityGrade(rawVis, "gm_only");
   const label = definition.label || item.label || item.id;
+
+  // Policy sole grading for hard secrets / system-only — omit entirely.
+  if (policyGrade === "hidden_truth" || policyGrade === "system_only" || visibility === "secret") {
+    return null;
+  }
 
   if (visibility === "public") {
     return {
@@ -31,6 +45,7 @@ function scrubNumericItem(item = {}, definition = {}) {
   }
 
   if (visibility === "hidden") {
+    // Strategy "hidden" may hint; policy grade is gm_only (non-exact).
     return definition.canAppearInReport === false ? null : {
       id: item.id,
       label,
@@ -39,6 +54,10 @@ function scrubNumericItem(item = {}, definition = {}) {
     };
   }
 
+  // Unknown strategy visibility: deny via policy default
+  if (!canExposeToPlayer({ id: item.id, visibility: policyGrade }, { audience: "player" })) {
+    return null;
+  }
   return null;
 }
 
@@ -66,6 +85,8 @@ export function scrubStrategyPublicView(spec, state, options = {}) {
   const probabilityHints = (spec.probabilityRules || [])
     .filter((rule) => {
       const visibility = normalizeVisibility(rule.visibility, "hidden");
+      const grade = normalizeVisibilityGrade(rule.visibility, "gm_only");
+      if (grade === "hidden_truth" || grade === "system_only" || visibility === "secret") return false;
       if (visibility === "public" || visibility === "partial") return true;
       if (visibility === "hidden") return rule.publicDisclosure?.canHint === true;
       return false;
@@ -90,20 +111,33 @@ export function scrubStrategyPublicView(spec, state, options = {}) {
     phase: state?.phase || "unknown",
     resources,
     variables,
-    activeEvents: (state?.activeEvents || []).filter((event) => normalizeVisibility(event.visibility, "hidden") !== "secret"),
+    activeEvents: (state?.activeEvents || []).filter((event) => {
+      const visibility = normalizeVisibility(event.visibility, "hidden");
+      const grade = normalizeVisibilityGrade(event.visibility, "gm_only");
+      if (grade === "hidden_truth" || grade === "system_only" || visibility === "secret") return false;
+      return true;
+    }),
     probabilityHints,
     omitted,
     generatedAt: options.generatedAt || new Date().toISOString()
   });
 }
 
-export function assertNoHiddenStrategyLeak(value, path = "$") {
+export function assertNoHiddenStrategyLeak(value, path = "$", options = {}) {
   const text = typeof value === "string" ? value : JSON.stringify(value || {});
   const forbidden = ["secretState", "hiddenState", "hiddenModifiers", "rawRoll", "rngSeed", "rngCounter", "finalChance"];
   for (const key of forbidden) {
     if (text.includes(key)) {
       throw new Error(`hidden strategy leak detected at ${path}: ${key}`);
     }
+  }
+  const canaries = options.canaryTokens || value?.canaryTokens || [];
+  const canary = scanOutputForCanaries(text, canaries);
+  if (!canary.ok) {
+    throw new Error(`hidden strategy canary leak detected at ${path}: ${canary.hits.join(",")}`);
+  }
+  if (options.canaryTokens && countCanaryHits(text, options.canaryTokens) > 0) {
+    throw new Error(`hidden strategy canary leak detected at ${path}`);
   }
   return true;
 }
