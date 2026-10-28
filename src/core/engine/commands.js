@@ -296,9 +296,10 @@ export function execSlashCommand({ input, engineState, model }) {
       const cc = all.filter((a) => a.name?.startsWith("[C]"));
       const pr = all.filter((a) => a.name?.startsWith("[P]"));
       const parts = [];
-      if (wb.length) parts.push(`【世界书】\n${wb.map((a,i) => `${i+1}. ${a.name} | ${a.createdAt||""} | ${a.summary||""}`).join("\n")}`);
-      if (cc.length) parts.push(`【角色卡】\n${cc.map((a,i) => `${i+1}. ${a.name} | ${a.createdAt||""} | ${a.summary||""}`).join("\n")}`);
-      if (pr.length) parts.push(`【预设模式】\n${pr.map((a,i) => `${i+1}. ${a.name} | ${a.createdAt||""} | ${a.summary||""}`).join("\n")}`);
+      // omit createdAt from list narrative — wall clock must not enter prompt/chat surface (dc-3)
+      if (wb.length) parts.push(`【世界书】\n${wb.map((a,i) => `${i+1}. ${a.name} | ${a.summary||""}`).join("\n")}`);
+      if (cc.length) parts.push(`【角色卡】\n${cc.map((a,i) => `${i+1}. ${a.name} | ${a.summary||""}`).join("\n")}`);
+      if (pr.length) parts.push(`【预设模式】\n${pr.map((a,i) => `${i+1}. ${a.name} | ${a.summary||""}`).join("\n")}`);
       return { handled: true, intent,
         narrative: parts.length ? parts.join("\n\n") : "暂无存档。",
         patch: commandPatch("archive-list", { count: all.length, grouped: { worldbook: wb.length, character_card: cc.length, preset: pr.length } })

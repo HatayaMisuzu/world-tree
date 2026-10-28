@@ -115,3 +115,65 @@ test("stripHiddenState: removes hidden gm state", () => {
   assert.ok(safe.publicState);
   assert.equal(safe.hiddenGmState, undefined);
 });
+
+// ── dc-3: ids/seeds independent of wall clock ──
+
+function withMockedDate(clockStart, fn) {
+  const RealDate = Date;
+  let t = clockStart;
+  globalThis.Date = class extends RealDate {
+    constructor(...a) { super(...(a.length ? a : [t += 7])); }
+    static now() { return (t += 7); }
+  };
+  try { return fn(); }
+  finally { globalThis.Date = RealDate; }
+}
+
+test("dc-3: run/save/branch ids stable under mocked Date (same seed+module)", () => {
+  const module = normalizeAdventureModule({ title: "Clock Independence", moduleId: "mod-dc3" });
+  const capture = (clockStart) => withMockedDate(clockStart, () => {
+    const run = createTabletopRun({ module, seed: "seed-dc3", playerCharacter: { name: "Hero" } });
+    const slot = createSaveSlot(run, "checkpoint");
+    const branch = forkBranchFromSave(slot, "alt");
+    return {
+      runId: run.runId,
+      branchId: run.branchId,
+      seed: run.seed,
+      saveId: slot.saveId,
+      forkBranchId: branch.branchId,
+    };
+  });
+  const a = capture(1_000_000_000_000);
+  const b = capture(1_900_000_123_457);
+  assert.deepEqual(a, b);
+  assert.match(a.runId, /^run-[0-9a-f]{16}$/);
+  assert.match(a.saveId, /^save-[0-9a-f]{16}$/);
+  assert.match(a.forkBranchId, /^branch-[0-9a-f]{16}$/);
+  assert.notEqual(a.runId, a.branchId);
+});
+
+test("dc-3: different seeds produce different run ids; same seed reproduces", () => {
+  const module = normalizeAdventureModule({ title: "Seed Diff", moduleId: "mod-seed" });
+  const r1 = createTabletopRun({ module, seed: "a" });
+  const r2 = createTabletopRun({ module, seed: "a" });
+  const r3 = createTabletopRun({ module, seed: "b" });
+  assert.equal(r1.runId, r2.runId);
+  assert.equal(r1.seed, "a");
+  assert.notEqual(r1.runId, r3.runId);
+});
+
+test("dc-3: successive saves at same turn get distinct stable saveIds", () => {
+  const module = normalizeAdventureModule({ title: "Save Seq", moduleId: "mod-save-seq" });
+  const run = createTabletopRun({ module, seed: 7 });
+  const s1 = createSaveSlot(run, "slot");
+  run.saveSlots = [s1.saveId];
+  const s2 = createSaveSlot(run, "slot");
+  assert.notEqual(s1.saveId, s2.saveId);
+  // replay
+  const run2 = createTabletopRun({ module, seed: 7 });
+  const s1b = createSaveSlot(run2, "slot");
+  run2.saveSlots = [s1b.saveId];
+  const s2b = createSaveSlot(run2, "slot");
+  assert.equal(s1.saveId, s1b.saveId);
+  assert.equal(s2.saveId, s2b.saveId);
+});

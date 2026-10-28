@@ -136,3 +136,36 @@ test("summarizePublicClocks: filters hidden clocks", () => {
   assert.equal(summary[0].label, "Public");
   assert.equal(summary[0].percentage, 50);
 });
+
+// ── dc-3: clock ids independent of wall clock ──
+
+function withMockedDate(clockStart, fn) {
+  const RealDate = Date;
+  let t = clockStart;
+  globalThis.Date = class extends RealDate {
+    constructor(...a) { super(...(a.length ? a : [t += 7])); }
+    static now() { return (t += 7); }
+  };
+  try { return fn(); }
+  finally { globalThis.Date = RealDate; }
+}
+
+test("dc-3: createClock id stable under mocked Date for same inputs", () => {
+  const capture = (clockStart) => withMockedDate(clockStart, () => {
+    const c = createClock({ label: "Faction Move", segments: 6, visibility: "public", source: "module" });
+    return { id: c.id, label: c.label, segments: c.segments };
+  });
+  const a = capture(1_000_000_000_000);
+  const b = capture(2_000_000_000_000);
+  assert.deepEqual(a, b);
+  assert.match(a.id, /^clock-[0-9a-f]{16}$/);
+});
+
+test("dc-3: explicit id wins; different labels diverge", () => {
+  const c1 = createClock({ id: "fixed", label: "A" });
+  const c2 = createClock({ label: "A", segments: 4 });
+  const c3 = createClock({ label: "B", segments: 4 });
+  assert.equal(c1.id, "fixed");
+  assert.notEqual(c2.id, c3.id);
+  assert.equal(c2.id, createClock({ label: "A", segments: 4 }).id);
+});

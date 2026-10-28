@@ -35,7 +35,7 @@ function playDirector({ seed, moduleData, rounds = 40 }) {
     for (let round = 0; round < rounds; round += 1) {
       directNarrative({ emotionState: EMOS[round % EMOS.length], input: "调查", round, moduleData, worldSeed: seed });
     }
-    // wall-clock createdAt in cache entries is excluded, same as the state hash (moved to dc-3)
+    // dc-3: prediction cache uses createdAtRound (no wall clock); still strip any leftover *At keys
     return { decisions: getDirectorDecisions(), predictions: withoutWallClock(exportPredictionStores()) };
   });
 }
@@ -190,4 +190,32 @@ test("④ director cooldown takes effect: no new event within COOLDOWN_MIN_ROUND
   for (let k = 1; k < cooldown; k += 1) {
     assert.equal(result.find(r => r.round === first + k).cooling, true, `round ${first + k} should report 事件冷却`);
   }
+});
+
+test("dc-3: prediction cache entries have no wall-clock createdAt; same seed → identical raw exports", () => {
+  const a = playDirector({ seed: "dc3-cache", moduleData: DEMO, rounds: 12 });
+  const b = playDirector({ seed: "dc3-cache", moduleData: DEMO, rounds: 12 });
+  // raw export (no withoutWallClock) must already match — proves no Date.now/ISO left in cache
+  const rawA = runInWorldScope(createWorldScope("raw-a"), () => {
+    resetEngineState();
+    for (let round = 0; round < 12; round += 1) {
+      directNarrative({ emotionState: EMOS[round % EMOS.length], input: "调查", round, moduleData: DEMO, worldSeed: "dc3-cache" });
+    }
+    return exportPredictionStores();
+  });
+  const rawB = runInWorldScope(createWorldScope("raw-b"), () => {
+    resetEngineState();
+    for (let round = 0; round < 12; round += 1) {
+      directNarrative({ emotionState: EMOS[round % EMOS.length], input: "调查", round, moduleData: DEMO, worldSeed: "dc3-cache" });
+    }
+    return exportPredictionStores();
+  });
+  assert.deepEqual(rawA, rawB);
+  for (const store of Object.values(rawA)) {
+    for (const e of store.events || []) {
+      assert.equal(e.createdAt, undefined);
+      assert.equal(typeof e.createdAtRound, "number");
+    }
+  }
+  assert.deepEqual(a.predictions, b.predictions);
 });

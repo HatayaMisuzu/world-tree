@@ -14,6 +14,7 @@ import { assembleContext } from "./engine/context-engine.js";
 import { directorModePromptBlock } from "./engine/director-modes.js";
 import { telemetryForLLM } from "./engine/world-telemetry.js";
 import { resolvePromptRuntimeIdentity } from "./prompts/prompt-runtime-identity.js";
+import { withoutWallClock } from "../shared/determinism.js";
 
 export { ENGINE_VERSION, MODULES, MODULE_PRESETS, DEFAULT_ENGINE_STATE, normalizeEngineState, DIRECTOR_MODES, classifyWorldTreeInput };
 export { parseMarkedOutput, sectionsToOverlayPatch } from "./engine/output-parser.js";
@@ -26,7 +27,8 @@ export * as murderMystery from "./engine/murder-mystery.js";
 export * as storytellers from "./engine/storytellers.js";
 
 function compactJson(value, limit = 1600) {
-  const text = JSON.stringify(value || {}, null, 2);
+  // Strip wall-clock keys so moduleContext / prompt injection stays deterministic (dc-3).
+  const text = JSON.stringify(withoutWallClock(value || {}), null, 2);
   return text.length > limit ? `${text.slice(0, limit)}\n...` : text;
 }
 
