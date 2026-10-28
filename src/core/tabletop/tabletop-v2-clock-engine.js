@@ -7,11 +7,12 @@ import { stableId } from "../../shared/determinism.js";
 
 // ── Factory ──
 
-export function createClock({ id, label, segments = 4, value = 0, visibility = "public", source = "module", maxSegments } = {}) {
+export function createClock({ id, label, segments = 4, value = 0, visibility = "public", source = "module", maxSegments, index, seq } = {}) {
   const max = maxSegments || segments;
   const resolvedLabel = label || "时钟";
+  const sequence = index !== undefined ? index : (seq !== undefined ? seq : 0);
   return {
-    id: id || stableId("clock", resolvedLabel, max, visibility, source),
+    id: id || stableId("clock", resolvedLabel, max, visibility, source, sequence),
     label: resolvedLabel,
     segments: max,
     value: Math.max(0, Math.min(max, Number(value) || 0)),

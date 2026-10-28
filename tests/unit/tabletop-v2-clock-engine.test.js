@@ -169,3 +169,37 @@ test("dc-3: explicit id wins; different labels diverge", () => {
   assert.notEqual(c2.id, c3.id);
   assert.equal(c2.id, createClock({ label: "A", segments: 4 }).id);
 });
+
+
+// ── Sequence index in stableId (same-params collision fix) ──
+
+test("createClock: different indices yield different ids for identical params", () => {
+  const params = { label: "Faction Move", segments: 6, visibility: "public", source: "module" };
+  const a = createClock({ ...params, index: 0 });
+  const b = createClock({ ...params, index: 1 });
+  assert.notEqual(a.id, b.id);
+  assert.match(a.id, /^clock-[0-9a-f]{16}$/);
+  assert.match(b.id, /^clock-[0-9a-f]{16}$/);
+});
+
+test("createClock: same inputs including index yield same id (Date-independent)", () => {
+  const capture = (clockStart, index) => withMockedDate(clockStart, () => {
+    return createClock({
+      label: "Faction Move",
+      segments: 6,
+      visibility: "public",
+      source: "module",
+      index,
+    }).id;
+  });
+  const a = capture(1_000_000_000_000, 2);
+  const b = capture(2_000_000_000_000, 2);
+  assert.equal(a, b);
+  assert.notEqual(a, capture(1_000_000_000_000, 3));
+});
+
+test("createClock: seq alias matches index in stableId", () => {
+  const params = { label: "Timer", segments: 4, visibility: "hidden", source: "module" };
+  assert.equal(createClock({ ...params, index: 5 }).id, createClock({ ...params, seq: 5 }).id);
+  assert.notEqual(createClock({ ...params, index: 5 }).id, createClock({ ...params, seq: 6 }).id);
+});
