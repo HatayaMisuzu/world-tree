@@ -4,6 +4,7 @@
 // 依赖：emotion-state.js；子模块 director-prediction-cache / director-story-hooks / director-scoring
 
 import { getEmotionProfile, updateEmotionState, formatEmotionState } from "./emotion-state.js";
+import { deriveRng } from "../../shared/determinism.js";
 import { createDirectionPacket, normalizeDirectionPacket, summarizeDirectionPacket, PACING_OPTIONS, PRESSURE_OPTIONS, EVENT_INTENSITY_OPTIONS } from "./direction-packet.js";
 import { getStoryteller, applyStorytellerPacing } from "./storytellers.js";
 import { cacheEventPrediction, checkEventCache, pruneEventCache, getEventCache } from "./director-prediction-cache.js";
@@ -241,7 +242,7 @@ export function generateDirectionPacket(opts = {}) {
     chosenPacing = llmAnalysis.pacingSuggestion;
   } else {
     // 🆕 叙事者节奏倾向
-    chosenPacing = applyStorytellerPacing(storyteller, emotion.state) || pacingMap[signal] || "hold";
+    chosenPacing = applyStorytellerPacing(storyteller, emotion.state, deriveRng(worldSeed, round, "storyteller.pacing")) || pacingMap[signal] || "hold";
   }
 
   // ④ pressure：LLM 建议优先，JS 紧张度映射兜底

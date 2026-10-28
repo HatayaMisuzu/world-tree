@@ -323,6 +323,7 @@ export function execSlashCommand({ input, engineState, model }) {
         patch: commandPatch("archive-save", {
           name: prefixedName,
           dataMode: mode,
+          autoNamed: !explicitName,
           overlayPath: `data/engine/runs/${mode}/archives/${prefixedName}.json`,
           runtimeSnapshot  // 🆕 嵌入运行时快照
         })

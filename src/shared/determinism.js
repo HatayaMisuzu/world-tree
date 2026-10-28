@@ -64,6 +64,20 @@ export function rngFrom(maybeRng, ...fallbackParts) {
   return maybeRng && typeof maybeRng.next === "function" ? maybeRng : deriveRng(...fallbackParts);
 }
 
+// Default streams for callers that pass no rng/seed/round: derived from (worldSeed, round, purpose, args)
+// plus a per-key call index, so repeated calls in one round differ but the same call sequence reproduces.
+const defaultStreamCalls = new Map();
+export function defaultRngFor(worldSeed, round, purpose, ...args) {
+  const key = hashSeed(worldSeed ?? "world-tree", Number(round) || 0, purpose, ...args);
+  const call = defaultStreamCalls.get(key) || 0;
+  if (defaultStreamCalls.size >= 4096 && !defaultStreamCalls.has(key)) defaultStreamCalls.clear();
+  defaultStreamCalls.set(key, call + 1);
+  return createRng(hashSeed(key, call));
+}
+export function resetDefaultRngStreams() { defaultStreamCalls.clear(); }
+/** Function-style view (() => [0,1)) of an rng object, for APIs that take rng as a function. */
+export function rngFn(rng) { return () => rng.next(); }
+
 /** Per-world seed: explicit runtime/world seed if present, else the world id (stable across processes). */
 export function worldSeedOf(model = {}) {
   return model?.moduleData?.runtime?.seed ?? model?.moduleData?.world?.seed ?? model?.selected?.seed

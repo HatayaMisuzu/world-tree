@@ -9,11 +9,13 @@
  *
  * See: docs/LEGACY_REDUNDANCY_AUDIT.md
  */
-import { rngFrom } from "../../shared/determinism.js";
+import { defaultRngFor, rngFrom, worldSeedOf } from "../../shared/determinism.js";
 
-/** 种子 RNG：优先用调用方传入的 rng，否则按 (seed, round, purpose, args) 确定性派生 */
+/** 种子 RNG：优先用调用方传入的 rng；有 seed/round 时按其纯派生；都没传时由世界 seed + 回合数派生默认流（同调用序列可复现、连续调用不同） */
 function tabletopRng(opts = {}, purpose, ...args) {
-  return rngFrom(opts.rng, opts.seed ?? "world-tree", opts.round ?? 0, purpose, ...args);
+  if (opts.rng && typeof opts.rng.next === "function") return opts.rng;
+  if (opts.seed !== undefined || opts.round !== undefined) return rngFrom(null, opts.seed ?? worldSeedOf(opts.model), opts.round ?? 0, purpose, ...args);
+  return defaultRngFor(opts.worldSeed ?? worldSeedOf(opts.model), opts.model?.turnCount ?? 0, purpose, ...args);
 }
 // ===== 跑团模块 v1.0 =====
 // @hidden v2.3.0 — 模式未完成（status=hidden），不对用户暴露。引擎代码保留。

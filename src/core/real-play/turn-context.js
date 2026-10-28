@@ -1,3 +1,4 @@
+import { defaultRngFor, rngFn } from "../../shared/determinism.js";
 import { formatDicePromptContext, parseDiceNotation, rollDice } from "../tabletop/dice.js";
 import { addDiscoveredClue, addHypothesis, buildVisibleClueContext, createClueBoard } from "../mystery-puzzle/clue-board.js";
 import { applyStrategyChoice, buildStrategyResourceContext, createResourcePanel, STRATEGY_CHOICES } from "../strategy-sim/resource-panel.js";
@@ -9,7 +10,8 @@ function commandValue(input, command) {
   const match = String(input || "").trim().match(new RegExp(`^/${command}\\s+(.+)$`, "i"));
   return match?.[1]?.trim() || "";
 }
-export function buildRealPlayTurnContext({ modeId = "world-rpg", input = "", engineState = {}, messages = [], rng = Math.random } = {}) {
+export function buildRealPlayTurnContext({ modeId = "world-rpg", input = "", engineState = {}, messages = [], rng = null } = {}) {
+  rng = typeof rng === "function" ? rng : rngFn(defaultRngFor(engineState?.worldSeed ?? engineState?.seed ?? "world-tree", engineState?.turnCount ?? 0, "real-play.dice", modeId));
   const previous = engineState.realPlay || {};
   const state = { ...previous };
   const promptBlocks = [];
