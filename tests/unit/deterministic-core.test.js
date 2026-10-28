@@ -12,6 +12,8 @@ import { addToPending } from "../../src/core/engine/overlay-store.js";
 import { sessionRecord, confirmWorldFact, resetAllMemoryLayers } from "../../src/core/engine/memory-layers.js";
 import { addClue, addUnresolvedEvent, createWorldPanel } from "../../src/core/data/world-state.js";
 import { getProposalStats } from "../../src/core/engine/proposal-system.js";
+import { roll, dicePool, generateEncounter } from "../../src/core/engine/tabletop.js";
+import { execSlashCommand, uniqueAutoName } from "../../src/core/engine/commands.js";
 import { grepRulesLayer } from "../../scripts/determinism-check.mjs";
 
 function withNondeterminismTrapped(fn) {
@@ -88,15 +90,78 @@ test("director: same world seed + inputs → identical decisions over 40 rounds;
   assert.notDeepEqual(runFor("seed-1"), runFor("seed-2"));
 });
 
-test("ids no longer depend on wall clock: same inputs → same ids", () => {
-  assert.equal(createProcessingPackage("包", "素材").id, createProcessingPackage("包", "素材").id);
-  assert.equal(proposeEntry({ keys: ["k"], content: "c" }).id, proposeEntry({ keys: ["k"], content: "c" }).id);
-  const p1 = createWorldPanel(); const p2 = createWorldPanel();
-  addClue(p1, { description: "d" }); addClue(p2, { description: "d" });
-  assert.equal(p1.knownClues[0].id, p2.knownClues[0].id);
-  resetAllMemoryLayers(); const a = [sessionRecord({ type: "event", summary: "s" }), sessionRecord({ type: "event", summary: "s" })];
-  resetAllMemoryLayers(); const b = [sessionRecord({ type: "event", summary: "s" }), sessionRecord({ type: "event", summary: "s" })];
-  assert.deepEqual(a.map(e => e?.id), b.map(e => e?.id));
+function idsUnderClock(clockStart) {
+  const realNow = Date.now; const RealDate = Date; let t = clockStart;
+  // 每次取时钟都跨 7ms，且 new Date() 同步漂移：任何依赖墙钟的 id 都会变化
+  globalThis.Date = class extends RealDate {
+    constructor(...a) { super(...(a.length ? a : [t += 7])); }
+    static now() { return (t += 7); }
+  };
+  try {
+    resetAllMemoryLayers();
+    const p = createWorldPanel();
+    addClue(p, { description: "d" }); addUnresolvedEvent(p, { description: "e" });
+    return {
+      pkg: createProcessingPackage("包", "素材").id,
+      entry: proposeEntry({ keys: ["k"], content: "c" }).id,
+      clue: p.knownClues[0].id,
+      uevent: p.unresolvedEvents[0].id,
+      session: [sessionRecord({ type: "event", summary: "s" }), sessionRecord({ type: "event", summary: "s" })].map(e => e?.id),
+      fact: confirmWorldFact("f")?.id ?? null,
+    };
+  } finally { globalThis.Date = RealDate; Date.now = realNow; }
+}
+
+test("ids no longer depend on wall clock: different clocks (cross-ms) → identical ids", () => {
+  const a = idsUnderClock(1_000_000_000_000);
+  const b = idsUnderClock(1_900_000_123_457);
+  assert.deepEqual(a, b);
+  assert.ok(a.pkg && a.entry && a.clue && a.uevent);
+});
+
+test("tabletop dice: seeded, reproducible, Math.random-free", () => {
+  withNondeterminismTrapped(() => {
+    const r1 = roll("4d6", { seed: "w", round: 3 }); const r2 = roll("4d6", { seed: "w", round: 3 });
+    assert.deepEqual(r1.rolls, r2.rolls);
+    assert.ok(r1.rolls.every(v => v >= 1 && v <= 6));
+    const seqs = new Set(Array.from({ length: 12 }, (_, i) => roll("4d6", { seed: "w", round: i }).rolls.join()));
+    assert.ok(seqs.size > 1, "different rounds give different rolls");
+    const rng = createRng("shared"); const x = roll("3d20", { rng }); const y = roll("3d20", { rng });
+    assert.notDeepEqual(x.rolls, y.rolls, "shared rng advances");
+    assert.deepEqual(dicePool(5, 6, 4, { seed: "w" }), dicePool(5, 6, 4, { seed: "w" }));
+    assert.deepEqual(generateEncounter("wilderness", 3, { seed: "w", round: 2 }), generateEncounter("wilderness", 3, { seed: "w", round: 2 }));
+  });
+});
+
+test("commands: repeated auto-named archive/world-copy in the same turn get deterministic suffixes", () => {
+  assert.equal(uniqueAutoName("a", []), "a");
+  assert.equal(uniqueAutoName("a", ["a"]), "a-2");
+  assert.equal(uniqueAutoName("a", ["a", "a-2"]), "a-3");
+  const engineState = {};
+  const archives = [];
+  const model = { turnCount: 3, moduleData: { archives } };
+  const names = [];
+  for (let i = 0; i < 3; i += 1) {
+    const res = execSlashCommand({ input: "/存档", engineState, model });
+    const name = res.patch?.payload?.name ?? res.patch?.name ?? JSON.stringify(res.patch).match(/"name":"([^"]+)"/)?.[1];
+    names.push(name); archives.push({ name });
+  }
+  assert.equal(new Set(names).size, 3, `names collide: ${names}`);
+  assert.deepEqual(names.map(n => n.replace(/^\[W\]/, "")), ["auto-r3", "auto-r3-2", "auto-r3-3"]);
+  // 重放：同样输入 → 同样序号
+  const again = []; const arch2 = [];
+  for (let i = 0; i < 3; i += 1) {
+    const res = execSlashCommand({ input: "/存档", engineState: {}, model: { turnCount: 3, moduleData: { archives: arch2 } } });
+    const name = JSON.stringify(res.patch).match(/"name":"([^"]+)"/)[1]; again.push(name); arch2.push({ name });
+  }
+  assert.deepEqual(again, names);
+  const worlds = [];
+  const copies = [];
+  for (let i = 0; i < 2; i += 1) {
+    const res = execSlashCommand({ input: "/世界 复制 甲", engineState: {}, model: { turnCount: 5, worlds } });
+    const t = JSON.stringify(res.patch).match(/"target":"([^"]+)"/)[1]; copies.push(t); worlds.push({ name: t });
+  }
+  assert.deepEqual(copies, ["甲_分歧_r5", "甲_分歧_r5-2"]);
 });
 
 test("overlay pending ids are reproducible and unique within a queue", () => {
@@ -113,5 +178,5 @@ test("overlay pending ids are reproducible and unique within a queue", () => {
 test("static check: rules layer grep finds no Math.random / Date.now (allowlist reported)", () => {
   const g = grepRulesLayer();
   assert.deepEqual(g.hits, []);
-  assert.ok(g.allowed.every(line => line.startsWith("src/core/engine/tabletop.js:")));
+  assert.deepEqual(g.allowed, [], "rules layer must have zero hits, no allowlist");
 });

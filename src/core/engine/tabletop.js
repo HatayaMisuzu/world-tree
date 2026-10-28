@@ -9,6 +9,12 @@
  *
  * See: docs/LEGACY_REDUNDANCY_AUDIT.md
  */
+import { rngFrom } from "../../shared/determinism.js";
+
+/** 种子 RNG：优先用调用方传入的 rng，否则按 (seed, round, purpose, args) 确定性派生 */
+function tabletopRng(opts = {}, purpose, ...args) {
+  return rngFrom(opts.rng, opts.seed ?? "world-tree", opts.round ?? 0, purpose, ...args);
+}
 // ===== 跑团模块 v1.0 =====
 // @hidden v2.3.0 — 模式未完成（status=hidden），不对用户暴露。引擎代码保留。
 // Tabletop RPG 模式专用模块。
@@ -50,19 +56,20 @@ export function parseDice(expr) {
 }
 
 /** 掷单个骰子 */
-function rollDie(sides) {
-  return Math.floor(Math.random() * sides) + 1;
+function rollDie(sides, rng) {
+  return rng.int(sides) + 1;
 }
 
 /**
  * 掷骰。返回 { total, rolls, modifier, expr, critical, fumble }
  */
-export function roll(expr) {
+export function roll(expr, opts = {}) {
+  const rng = tabletopRng(opts, "tabletop.roll", expr);
   const parsed = parseDice(expr);
   const { count, sides, modifier, keepHighest, keepLowest } = parsed;
 
   const rolls = [];
-  for (let i = 0; i < count; i++) rolls.push(rollDie(sides));
+  for (let i = 0; i < count; i++) rolls.push(rollDie(sides, rng));
 
   let kept = rolls;
   if (keepHighest > 0 && keepHighest < count) {
@@ -142,11 +149,12 @@ export function check(modifier, dc, options = {}) {
 /**
  * 骰池：掷 count 个 d<sides>，统计 >= threshold 的成功数
  */
-export function dicePool(count, sides = 6, threshold = 4) {
+export function dicePool(count, sides = 6, threshold = 4, opts = {}) {
+  const rng = tabletopRng(opts, "tabletop.dicePool", count, sides, threshold);
   const rolls = [];
   let successes = 0;
   for (let i = 0; i < count; i++) {
-    const r = rollDie(sides);
+    const r = rollDie(sides, rng);
     rolls.push(r);
     if (r >= threshold) successes++;
   }
@@ -365,13 +373,14 @@ const ENCOUNTER_TABLE = {
 };
 
 /** 根据环境生成遭遇 */
-export function generateEncounter(environment = "wilderness", count = 1) {
+export function generateEncounter(environment = "wilderness", count = 1, opts = {}) {
+  const rng = tabletopRng(opts, "tabletop.encounter", environment, count);
   const table = ENCOUNTER_TABLE[environment] || ENCOUNTER_TABLE.wilderness;
   const totalWeight = table.reduce((s, e) => s + e.weight, 0);
   const results = [];
 
   for (let i = 0; i < count; i++) {
-    let roll = Math.random() * totalWeight;
+    let roll = rng.next() * totalWeight;
     for (const entry of table) {
       roll -= entry.weight;
       if (roll <= 0) {

@@ -26,9 +26,7 @@ const DEMO = process.env.WT_DET_EXAMPLE_ID || "demo-world-cloud-steam-city";
 // ---------- 3. static grep ----------
 export const RULES_LAYER = ["src/core/engine", "src/core/data", "src/core/world-engine.js"];
 // file -> reason. Keep this list short; every entry is reported.
-export const GREP_ALLOWLIST = {
-  "src/core/engine/tabletop.js": "hard rule: tabletop.js must not be modified in this PR series (legacy DM rules; to be bridged to tabletop-v2 dice)"
-};
+export const GREP_ALLOWLIST = {};
 function walk(p, re = /\.m?js$/, out = []) {
   const st = statSync(p);
   if (st.isDirectory()) for (const f of readdirSync(p).sort()) walk(join(p, f), re, out);
