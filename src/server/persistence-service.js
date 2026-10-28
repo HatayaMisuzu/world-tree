@@ -1,4 +1,6 @@
-import { join } from "node:path";
+import { cpSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+import { SLASH_WRITE_OP, isSlashWriteOp } from "../core/engine/slash-persistence.js";
 import { stableId, withoutWallClock } from "../shared/determinism.js";
 import { OVERLAY_FILES, WRITE_POLICY, splitWriteSet } from "../core/engine/overlay-store.js";
 import { appendJsonl, readJsonSync, writeJson } from "./fs-utils.js";
@@ -91,9 +93,49 @@ async function appendQueue(runtimeDir, file, entries, context = {}) {
   }
 }
 
-export async function applyOverlayWriteSet(runtimeDir, writeSet = [], context = {}) {
-  const { auto, pending, manual } = splitWriteSet(writeSet);
+function safeFileStem(name = "") {
+  return String(name || "").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").replace(/\.\.+/g, "_").slice(0, 120) || "archive";
+}
+
+/** Deterministic, never-overwriting allocation: stem, stem-2, stem-3 … against what is on disk. */
+export function allocateFreePath(dir, stem, ext = "") {
+  let candidate = join(dir, `${stem}${ext}`);
+  for (let n = 2; existsSync(candidate); n += 1) candidate = join(dir, `${stem}-${n}${ext}`);
+  return candidate;
+}
+
+/** Writes archive-save / world-copy slash results. Auto-named archives and world copies never overwrite. */
+export function applySlashWriteOps(runtimeDir, ops = [], context = {}) {
   const written = [];
+  for (const op of ops) {
+    if (op.op === SLASH_WRITE_OP.ARCHIVE) {
+      const dir = join(runtimeDir, "archives");
+      mkdirSync(dir, { recursive: true });
+      const stem = safeFileStem(op.name);
+      const target = op.overwrite ? join(dir, `${stem}.json`) : allocateFreePath(dir, stem, ".json");
+      const finalName = basename(target, ".json");
+      writeFileSync(target, `${JSON.stringify({ ...op.payload, name: finalName, requestedName: op.name, round: context.round ?? op.payload?.round }, null, 2)}\n`, { flag: op.overwrite ? "w" : "wx" });
+      written.push({ op: op.op, path: target, name: finalName });
+    } else if (op.op === SLASH_WRITE_OP.WORLD_COPY) {
+      const worldsRoot = context.projectRoot ? dirname(context.projectRoot) : "";
+      const source = safeFileStem(op.source);
+      const sourceDir = worldsRoot ? join(worldsRoot, source) : "";
+      if (!sourceDir || source !== op.source || !existsSync(join(sourceDir, "world.json"))) {
+        written.push({ op: op.op, skipped: "source-world-not-found", source: op.source });
+        continue;
+      }
+      const target = allocateFreePath(worldsRoot, safeFileStem(op.target));
+      cpSync(sourceDir, target, { recursive: true, errorOnExist: true, force: false });
+      written.push({ op: op.op, path: target, name: basename(target) });
+    }
+  }
+  return written;
+}
+
+export async function applyOverlayWriteSet(runtimeDir, writeSet = [], context = {}) {
+  const slashOps = writeSet.filter(isSlashWriteOp);
+  const { auto, pending, manual } = splitWriteSet(writeSet.filter((op) => !isSlashWriteOp(op)));
+  const written = applySlashWriteOps(runtimeDir, slashOps, context);
 
   for (const op of auto) {
     written.push(await applyOverlayOperation(runtimeDir, {

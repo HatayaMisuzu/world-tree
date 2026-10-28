@@ -21,6 +21,7 @@ import { recordSimulationRun, isSimulateActive } from "./simulator.js";
 import { calculateWorldTelemetry, telemetryForLLM, directorHints as telemetryDirectorHints } from "./world-telemetry.js";
 import { POSITIVE_RELATION_WORDS, NEGATIVE_RELATION_WORDS, RELATION_TYPE_KEYWORDS, DEGRADATION } from "./constants.js";
 import { exportEngineState } from "./state-persistence.js";
+import { slashWriteOps } from "./slash-persistence.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  prepareTurn — 三种模式差异化预处理
@@ -182,7 +183,7 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
         policy: WRITE_POLICY.AUTO.level,
         payload: [{ text: (parsed.narrative || rawText).slice(0, 200), at: new Date().toISOString() }],
         value: [{ text: (parsed.narrative || rawText).slice(0, 200), at: new Date().toISOString() }]
-      }],
+      }, ...slashWriteOps({ input, engineState: state, model })],
       audit: { parseErrors: parsed.errors, quality: "narrative-only", rules: { pass: true } },
       sceneSummary: null,
       rawText,
@@ -198,7 +199,7 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
       narrative: parsed.narrative || rawText,
       parsedSections: parsed.sections,
       overlayPatch,
-      writeSet: buildOverlayWriteSet(moduleKey, overlayPatch, dataMode),
+      writeSet: [...buildOverlayWriteSet(moduleKey, overlayPatch, dataMode), ...slashWriteOps({ input, engineState: state, model })],
       audit: { parseErrors: parsed.errors, quality: { consistency: "ok" }, rules: { pass: true } },
       sceneSummary: overlayPatch.sceneSummary,
       rawText,
@@ -424,7 +425,7 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     narrative: parsed.narrative || rawText,
     parsedSections: parsed.sections,
     overlayPatch, sceneSummary,
-    writeSet: buildOverlayWriteSet(moduleKey, overlayPatch, dataMode),
+    writeSet: [...buildOverlayWriteSet(moduleKey, overlayPatch, dataMode), ...slashWriteOps({ input, engineState: state, model })],
     audit: {
       parseErrors: parsed.errors,
       quality: overlayPatch.audit,

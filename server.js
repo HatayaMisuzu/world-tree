@@ -503,7 +503,7 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
 
   if (result.writeSet?.length) {
     try {
-      await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId, round: turnCount });
+      await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId, round: turnCount, projectRoot });
     } catch (e) {
       console.warn("[persistTurn] writeSet 执行失败:", e.message);
     }

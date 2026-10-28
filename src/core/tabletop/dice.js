@@ -1,3 +1,5 @@
+import { defaultRngFor, rngFn } from "../../shared/determinism.js";
+
 const DICE_NOTATION = /^(\d+)d(\d+)([+-]\d+)?$/i;
 
 export function parseDiceNotation(value = "") {
@@ -12,7 +14,7 @@ export function parseDiceNotation(value = "") {
   if (!Number.isInteger(modifier) || Math.abs(modifier) > 10000) return { ok: false, error: "dice modifier out of range" };
   return { ok: true, notation: `${count}d${sides}${modifier > 0 ? `+${modifier}` : modifier < 0 ? modifier : ""}`, count, sides, modifier };
 }
-export function rollDice(value, rng = Math.random) {
+export function rollDice(value, rng = rngFn(defaultRngFor("tabletop", 0, "tabletop.rollDice", String(value?.notation ?? value)))) {
   const parsed = typeof value === "string" ? parseDiceNotation(value) : value;
   if (!parsed?.ok) return parsed || { ok: false, error: "invalid dice notation" };
   const rolls = Array.from({ length: parsed.count }, () => Math.floor(Math.max(0, Math.min(0.999999999, Number(rng())) ) * parsed.sides) + 1);

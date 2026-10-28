@@ -5,7 +5,7 @@
 
 import { getEmotionProfile, updateEmotionState, getDefaultEmotionState, formatEmotionState } from "./emotion-state.js";
 import { proposeRandomEvent } from "../data/random-events.js";
-import { rngFrom } from "../../shared/determinism.js";
+import { deriveRng, rngFrom } from "../../shared/determinism.js";
 import { createDirectionPacket, normalizeDirectionPacket, summarizeDirectionPacket, PACING_OPTIONS, PRESSURE_OPTIONS, EVENT_INTENSITY_OPTIONS } from "./direction-packet.js";
 import { getStoryteller, applyStorytellerModifiers, applyStorytellerPacing, storytellerStrategySummary } from "./storytellers.js";
 import { EVENT_SCORE, PACING_THRESHOLDS, PREDICTION_CACHE } from "./constants.js";
@@ -582,7 +582,7 @@ export function generateDirectionPacket(opts = {}) {
     chosenPacing = llmAnalysis.pacingSuggestion;
   } else {
     // 🆕 叙事者节奏倾向
-    chosenPacing = applyStorytellerPacing(storyteller, emotion.state) || pacingMap[signal] || "hold";
+    chosenPacing = applyStorytellerPacing(storyteller, emotion.state, deriveRng(worldSeed, round, "storyteller.pacing")) || pacingMap[signal] || "hold";
   }
 
   // ④ pressure：LLM 建议优先，JS 紧张度映射兜底

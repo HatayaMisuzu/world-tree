@@ -2,6 +2,8 @@
 // Deterministic dice rolling, probability estimation, and roll record invariants.
 // LLM never produces dice results — all rolls go through this engine.
 
+import { defaultRngFor, rngFn } from "../../shared/determinism.js";
+
 // ── Seeded RNG (mulberry32) ──
 
 export function createSeededRng(seed = 1) {
@@ -35,10 +37,11 @@ export function normalizeDiceExpression(expression) {
 function resolveRng(options = {}) {
   if (options.rng) return options.rng;
   if (options.seed !== undefined) return createSeededRng(options.seed);
-  return Math.random;
+  // 未传 rng/seed：由世界 seed + 回合数派生默认流（可复现，连续调用不同）
+  return rngFn(defaultRngFor(options.worldSeed ?? "tabletop-v2", options.round ?? 0, "tabletop-v2.dice"));
 }
 
-export function rollDie(sides, rng = Math.random) {
+export function rollDie(sides, rng = rngFn(defaultRngFor("tabletop-v2", 0, "tabletop-v2.die", sides))) {
   return Math.floor(rng() * sides) + 1;
 }
 
