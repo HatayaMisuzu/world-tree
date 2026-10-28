@@ -448,6 +448,14 @@ export function createModuleService(deps) {
       }
     }
 
+    // Legacy install path: <world>/archive/
+    const legacyArchivesDir = join(worldDir, "archive");
+    if (existsSync(legacyArchivesDir)) {
+      for (const entry of readdirSync(legacyArchivesDir, { withFileTypes: true })) {
+        if (entry.isFile() && entry.name.toLowerCase().endsWith(".json")) paths.push(join(legacyArchivesDir, entry.name));
+      }
+    }
+
     return paths.sort().map(fileFingerprint).join("|");
   }
 
@@ -479,8 +487,8 @@ export function createModuleService(deps) {
     return result;
   }
 
-  function collectRuntimeArchives(worldDir) {
-    const dir = join(worldDir, "runtime", "archives");
+  function listArchiveEntries(worldDir, relativeDir) {
+    const dir = join(worldDir, ...relativeDir.split("/"));
     if (!existsSync(dir)) return [];
     return readdirSync(dir)
       .filter((name) => name.toLowerCase().endsWith(".json"))
@@ -491,7 +499,7 @@ export function createModuleService(deps) {
         const stem = file.replace(/\.json$/i, "");
         const name = data.name || stem;
         return {
-          path: `runtime/archives/${file}`,
+          path: `${relativeDir}/${file}`,
           name,
           title: data.title || name,
           createdAt: data.createdAt || data.created_at || "",
@@ -499,6 +507,20 @@ export function createModuleService(deps) {
           data
         };
       });
+  }
+
+  function collectRuntimeArchives(worldDir) {
+    // Canonical: runtime/archives/; legacy installs: <world>/archive/.
+    // Merge both; when names collide, primary (runtime/archives) wins.
+    const primary = listArchiveEntries(worldDir, "runtime/archives");
+    const legacy = listArchiveEntries(worldDir, "archive");
+    if (!legacy.length) return primary;
+    const byName = new Map();
+    for (const entry of primary) byName.set(entry.name, entry);
+    for (const entry of legacy) {
+      if (!byName.has(entry.name)) byName.set(entry.name, entry);
+    }
+    return [...byName.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
   }
 
   async function buildModuleModel(moduleId) {

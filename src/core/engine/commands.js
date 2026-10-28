@@ -350,7 +350,7 @@ export function execSlashCommand({ input, engineState, model }) {
       const snap = extractRuntimeFromArchive(hit.data || {});
       const restored = restoreRuntimeSnapshot(snap || {}, state);
       return { handled: true, intent,
-        narrative: `${mode}模式：已读档「${hit.name}」（runtime/archives/）。引擎已从存档恢复运行时状态（情绪/事件等），跨存档缓存已清理。`,
+        narrative: `${mode}模式：已读档「${hit.name}」（${hit.path || "runtime/archives/"}）。引擎已从存档恢复运行时状态（情绪/事件等），跨存档缓存已清理。`,
         patch: commandPatch("archive-load", { name: hit.name, currentMode: mode, found: true, path: hit.path || "" }),
         engineState: restored
       };
