@@ -6,6 +6,7 @@ import { classifyPlayerIntent, createRulingRequest, resolveRulingWithoutLlm, bui
 import { validatePlayerIntentAgainstBook } from "./tabletop-v2-adventure-module.js";
 import { applyTabletopTurnConsequences, updateSceneTransition } from "./tabletop-v2-state-mutation.js";
 import { recordTurn, stripHiddenState } from "./tabletop-v2-save-branch.js";
+import { collectNonPlayerSensitiveTerms, redactHiddenLeaks } from "../v2-ready/visibility-policy.js";
 
 // ── GM Loop step enum ──
 
@@ -224,42 +225,21 @@ function buildFallbackNarration(ruling, bookCheck) {
 
 // ── Hidden leak scanner ──
 
-export function scanForHiddenLeaks(narration = "", hiddenGmState = {}, gmBook = {}) {
-  const sensitiveTerms = [];
-  const leaks = [];
-
-  // Check hidden truth
-  const hiddenTruth = gmBook?.hiddenTruth || "";
-  if (hiddenTruth && hiddenTruth.length > 3) {
-    sensitiveTerms.push({ source: "gmBook.hiddenTruth", text: hiddenTruth.slice(0, 100) });
-  }
-
-  // Check hidden clocks
-  const hiddenClocks = hiddenGmState?.hiddenClocks || hiddenGmState?.clocks || [];
-  for (const clock of hiddenClocks) {
-    if (clock.label) sensitiveTerms.push({ source: `hiddenClock:${clock.id || clock.clockId}`, text: clock.label });
-  }
-
-  // Check NPC secrets
-  const npcSecrets = hiddenGmState?.npcSecrets || {};
-  for (const [npcId, secrets] of Object.entries(npcSecrets)) {
-    for (const [key, val] of Object.entries(secrets || {})) {
-      if (typeof val === "string" && val.length > 5 && key !== "lastUpdated") {
-        sensitiveTerms.push({ source: `npcSecret:${npcId}.${key}`, text: val.slice(0, 80) });
-      }
-    }
-  }
-
-  // Scan narration for leaks
-  let sanitized = narration;
-  for (const term of sensitiveTerms) {
-    if (narration.includes(term.text)) {
-      leaks.push(term.source);
-      sanitized = sanitized.replace(new RegExp(term.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '【已隐藏】');
-    }
-  }
-
-  return { leaks, sanitizedNarration: leaks.length > 0 ? sanitized : narration };
+export function scanForHiddenLeaks(narration = "", hiddenGmState = {}, gmBook = {}, options = {}) {
+  // S4-3: grade hidden facts via visibility-policy (sole source); redact via shared helper.
+  const sensitiveTerms = collectNonPlayerSensitiveTerms(hiddenGmState, gmBook, {
+    modeId: options.modeId || "tabletop",
+    audience: "player"
+  });
+  const canaryTokens = Array.isArray(options.canaryTokens)
+    ? options.canaryTokens
+    : (Array.isArray(hiddenGmState?.canaryTokens) ? hiddenGmState.canaryTokens : []);
+  const result = redactHiddenLeaks(narration, sensitiveTerms, canaryTokens);
+  return {
+    leaks: result.leaks,
+    sanitizedNarration: result.sanitizedNarration,
+    canaryHits: result.canaryHits || []
+  };
 }
 
 // ── Hidden state visibility assertion ──

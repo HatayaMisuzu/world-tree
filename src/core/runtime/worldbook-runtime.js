@@ -1,35 +1,9 @@
 import { normalizeWorldbookEntries, worldbookEntriesFromModel } from "../cards.js";
 import { buildVectorIndex, matchEntries } from "../data/worldbook.js";
 import { budgetFor, estimateContextChars, estimateContextTokens } from "../engine/context-budget.js";
-import { filterPromptVisible } from "../v2-ready/visibility-policy.js";
+import { filterPromptVisible, normalizeWriterVisibility } from "../v2-ready/visibility-policy.js";
 
-
-/** Map legacy / worldbook visibility labels onto v2-ready visibility-policy enums. */
-export function normalizeWriterVisibility(entry = {}) {
-  if (entry.gmOnly === true || entry.gm_only === true) return "gm_only";
-  if (entry.systemOnly === true || entry.system_only === true) return "system_only";
-  if (entry.hiddenTruth === true || entry.hidden_truth === true) return "hidden_truth";
-  const raw = entry.visibility;
-  if (raw == null || raw === "") return "player_visible"; // legacy injectable entries
-  const map = {
-    player_visible: "player_visible",
-    public: "player_visible",
-    player_known: "player_visible",
-    character_known: "player_visible",
-    faction_known: "player_visible",
-    gm_only: "gm_only",
-    gmOnly: "gm_only",
-    hidden_truth: "hidden_truth",
-    hiddenTruth: "hidden_truth",
-    secret: "hidden_truth",
-    system_only: "system_only",
-    systemOnly: "system_only",
-    mode_private: "mode_private",
-    private: "mode_private",
-    forbidden: "system_only"
-  };
-  return map[raw] || "gm_only";
-}
+export { normalizeWriterVisibility } from "../v2-ready/visibility-policy.js";
 
 function applyVisibilityPolicy(entries, context = {}) {
   const normalized = (Array.isArray(entries) ? entries : []).map((entry) => ({
