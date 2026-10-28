@@ -58,7 +58,7 @@
 |------|--------|------|
 | `src/core/engine/rpg.js` | `world-engine.js:10,22` | RPG_DM_INSTRUCTION + re-export as `rpg` |
 | `src/core/engine/tabletop.js` | `world-engine.js:9,21` | TABLETOP_DM_INSTRUCTION + re-export as `tabletop` |
-| `src/core/engine/sim.js` | `world-engine.js:11,23` | SIM_DM_INSTRUCTION + re-export as `sim` |
+| `archive/src/core/engine/sim.js` (dc-4) | was `world-engine.js` import+re-export | `SIM_DM_INSTRUCTION` → `engine/sim-dm-instruction.js`; `export * as sim` removed; remainder archived |
 | `src/core/engine/murder-mystery.js` | `world-engine.js:12,24` | MURDER_MYSTERY_DM_INSTRUCTION + re-export as `murderMystery` |
 | `src/core/engine/modules.js` | `world-engine.js:4` | ENGINE_VERSION, MODULES, MODULE_PRESETS, DEFAULT_ENGINE_STATE |
 | `src/core/engine/lifecycle.js` | `world-engine.js:2,19` | prepareTurn, completeTurn |
