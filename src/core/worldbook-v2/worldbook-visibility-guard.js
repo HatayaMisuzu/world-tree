@@ -1,3 +1,10 @@
+/**
+ * Reach note (S4-5): Writer / tabletop / strategy hidden-info grading sole source is
+ * `../v2-ready/visibility-policy.js`. This module's audience ALLOW matrix stays
+ * worldbook-v2 domain-local (authority=candidate gate + gm may see hiddenTruth /
+ * director may see private). Folding it wholesale into policy would change those
+ * product semantics — deferred; do not invent a fifth grading path.
+ */
 import { normalizeWorldbookEntry, worldbookEntryToPromptText } from "./worldbook-entry-schema.js";
 import { sanitizeForLlm, assertNoHiddenKeys } from "../prompts/prompt-hidden-sanitizer.js";
 import { checkConsistency, shouldBlockOutput } from "../narrative-radar/narrative-consistency-radar.js";
