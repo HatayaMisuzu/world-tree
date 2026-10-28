@@ -515,8 +515,7 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
     const previousSceneName = kernelContext.livingWorldPacket?.scene?.title || "";
     if (nextSceneName && nextSceneName !== previousSceneName) {
       await transitionScene(baseDir, { title: nextSceneName, modeId: kernelContext.modeId }, {
-        round: turnCount,
-        summary: String(result.narrative || "").slice(0, 500),
+        round: turnCount, summary: String(result.narrative || "").slice(0, 500),
         modeId: kernelContext.modeId,
         changes: result.appliedMechanismChanges || result.mechanismChanges || []
       });
