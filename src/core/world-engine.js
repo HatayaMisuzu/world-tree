@@ -1,5 +1,6 @@
 import { moduleTitle } from "./normalizers.js";
 import { prepareTurn, completeTurn } from "./engine/lifecycle.js";
+import { evaluateNpcRequests, formatNpcDecisionsForWriter } from "./engine/npc-decision.js";
 import { classifyWorldTreeInput } from "./engine/commands.js";
 import { ENGINE_VERSION, MODULES, MODULE_PRESETS, DEFAULT_ENGINE_STATE, normalizeEngineState, DATA_MODES, DIRECTOR_MODES } from "./engine/modules.js";
 import { budgetFor } from "./engine/context-budget.js";
@@ -467,6 +468,17 @@ export function buildWriterPacket({ model, input, engineState, directionPacket, 
   const knowledge = renderKnowledgeCards(knowledgeCards, "rules");
   const context = moduleContext(model);
 
+  // S4-6: inject rules-layer NPC decisions into Writer (prefer turnPrep; else evaluate here)
+  const npcEval = turnPrep?.npcDecisions
+    || evaluateNpcRequests({
+      input,
+      characters: model?.moduleData?.characters || [],
+      playerName: model?.moduleData?.protagonistName || "玩家",
+      npcStates: state?.npcStates || [],
+      currentLocationId: state?.currentLocationId || ""
+    });
+  const npcDecisionBlock = turnPrep?.npcDecisionWriterBlock || formatNpcDecisionsForWriter(npcEval);
+
   return [
     `╔══════════════════════════════════════╗`,
     `║  World Tree Desktop · Story Writer   ║`,
@@ -501,7 +513,8 @@ export function buildWriterPacket({ model, input, engineState, directionPacket, 
     ...(isTabletop ? ["【检定建议】 ← DM: 当判定需要时标注，别输出数字"] : []),
     "",
     turnPrep?.directorResult?.emotion?.formatted ? `【当前情绪】\n${turnPrep.directorResult.emotion.formatted}` : "",
-    proximityData ? `【邻近环】\n${proximityData.summary}` : ""
+    proximityData ? `【邻近环】\n${proximityData.summary}` : "",
+    npcDecisionBlock || ""
   ].filter(Boolean).join("\n");
 }
 
