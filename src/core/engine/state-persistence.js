@@ -2,7 +2,7 @@
 // 统一导出/导入入口——在 completeTurn 末尾调用 exportEngineState()，
 // 在模组加载时调用 importEngineState()。
 //
-// 覆盖：记忆层 / 关系网 / 提案队列 / 预测缓存 / 情绪状态 / 事件历史
+// 覆盖：记忆层 / 关系网 / 提案队列 / 预测缓存 / 情绪状态 / 事件历史 / 因果时间线
 
 import { exportMemorySnapshot, importMemorySnapshot, resetAllMemoryLayers } from "./memory-layers.js";
 import { exportRelations, importRelationsSnapshot, resetRelations } from "../data/relations.js";
@@ -10,6 +10,7 @@ import { exportProposalSnapshot, importProposalSnapshot, resetProposalStore } fr
 import { exportPredictionStores, importPredictionStores, exportDirectorLog, importDirectorLog, resetDirectorLog } from "./director.js";
 import { getEventHistory, resetEventCache, importEventHistory } from "../data/random-events.js";
 import { loadGlobalMemory } from "./global-memory.js";
+import { exportTimeline, importEvents, resetTimeline } from "../data/timeline-causality.js";
 
 /**
  * 导出全部引擎内存状态为可序列化对象
@@ -28,6 +29,10 @@ export function exportEngineState(extra = {}) {
     events: {
       history: getEventHistory()
     },
+    causality: (() => {
+      const t = exportTimeline();
+      return { events: t.events, edges: t.edges, echoes: t.echoes };
+    })(),
     runtime: {
       emotionState: extra.emotionState || null,
       turnCount: extra.turnCount || 0,
@@ -43,6 +48,7 @@ export function resetEngineState() {
   importPredictionStores({});
   resetDirectorLog();
   resetEventCache();
+  resetTimeline();
   loadGlobalMemory({ snapshots: [], version: 2 });
 }
 
@@ -71,6 +77,16 @@ export function importEngineState(snapshot = {}) {
   // 事件历史：重置后按快照恢复（此前只重置不恢复，读档后冷却信息丢失）
   resetEventCache();
   if (snapshot.events?.history) importEventHistory(snapshot.events.history);
+
+  // S4-4: causality graph roundtrip via timeline-causality export/import
+  resetTimeline();
+  if (snapshot.causality) {
+    importEvents(
+      snapshot.causality.events || [],
+      snapshot.causality.edges || [],
+      snapshot.causality.echoes || []
+    );
+  }
 
   return snapshot.runtime || null;
 }

@@ -2682,13 +2682,12 @@ async function handleDashboardNarrative(moduleId) {
     }
   } catch (e) { branches = [{ name: "main", status: "active" }]; }
 
-  // 因果链
-  let causality = { events: [], totalEvents: 0 };
+  // 因果链 (S4-4: live timeline-causality store, filled by completeTurn)
+  let causality = { events: [], edges: [], totalEvents: 0 };
   try {
-    const { traceCauses, traceImpact } = await import("./src/core/data/timeline-causality.js");
-    const timeline = model.moduleData?.timeline || {};
-    const events = Array.isArray(timeline.events) ? timeline.events : Object.values(timeline).filter(e => e && typeof e === "object");
-    causality = { events: events.slice(-10).map(e => ({ title: e.title || e.name || "", type: e.type || "", time: e.time || "", dependsOn: e.dependsOn || [] })), totalEvents: events.length };
+    const { getCausalGraph } = await import("./src/core/data/timeline-causality.js");
+    const graph = getCausalGraph();
+    causality = { events: graph.nodes.slice(-10), edges: graph.edges.slice(-20), totalEvents: graph.nodes.length, totalEdges: graph.edges.length };
   } catch (e) { causality = { error: e.message }; }
 
   // 关系网络

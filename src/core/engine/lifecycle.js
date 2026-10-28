@@ -27,6 +27,7 @@ import { POSITIVE_RELATION_WORDS, NEGATIVE_RELATION_WORDS, RELATION_TYPE_KEYWORD
 import { exportEngineState } from "./state-persistence.js";
 import { slashWriteOps } from "./slash-persistence.js";
 import { rootChangeFromStateSuggestion, enqueueRippleProposals } from "../world-state/world-state-ripple-queue.js";
+import { recordTurnCausality } from "./timeline-causality-wire.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  prepareTurn — 三种模式差异化预处理
@@ -523,6 +524,24 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     timestamp: new Date().toISOString(),
     round: model.turnCount || 0,
   };
+
+  // S4-4: offscreen / world events → timeline-causality DAG (record only; canon still via proposal/WRITE_POLICY)
+  const causalityWrite = recordTurnCausality({
+    tickDelta,
+    calendar: state.calendar || null,
+    lodReports: state.lodReports || [],
+    randomEvent: overlayPatch.randomEvent || null,
+    round: model.turnCount || 0,
+    branchId: model.selected?.branch || "main"
+  });
+  if (causalityWrite.eventIds.length) {
+    overlayPatch.causality = {
+      eventIds: causalityWrite.eventIds,
+      tickEventId: causalityWrite.tickEventId,
+      nodeCount: causalityWrite.graph.nodes.length,
+      edgeCount: causalityWrite.graph.edges.length
+    };
+  }
 
   // ═══ 引擎状态持久化（每轮自动导出，用于存档恢复） ═══
   overlayPatch._engineState = exportEngineState({
