@@ -104,7 +104,7 @@ export function allocateFreePath(dir, stem, ext = "") {
   return candidate;
 }
 
-/** Writes archive-save / world-copy slash results. Auto-named archives and world copies never overwrite. */
+/** Writes archive-save / world-copy slash results. Archives overwrite only when op.overwrite is true; world copies never overwrite. */
 export function applySlashWriteOps(runtimeDir, ops = [], context = {}) {
   const written = [];
   for (const op of ops) {

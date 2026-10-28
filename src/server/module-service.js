@@ -441,6 +441,13 @@ export function createModuleService(deps) {
       }
     }
 
+    const archivesDir = join(worldDir, "runtime", "archives");
+    if (existsSync(archivesDir)) {
+      for (const entry of readdirSync(archivesDir, { withFileTypes: true })) {
+        if (entry.isFile() && entry.name.toLowerCase().endsWith(".json")) paths.push(join(archivesDir, entry.name));
+      }
+    }
+
     return paths.sort().map(fileFingerprint).join("|");
   }
 
@@ -472,10 +479,32 @@ export function createModuleService(deps) {
     return result;
   }
 
+  function collectRuntimeArchives(worldDir) {
+    const dir = join(worldDir, "runtime", "archives");
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir)
+      .filter((name) => name.toLowerCase().endsWith(".json"))
+      .sort()
+      .map((file) => {
+        const abs = join(dir, file);
+        const data = readJsonSync(abs, null) || {};
+        const stem = file.replace(/\.json$/i, "");
+        const name = data.name || stem;
+        return {
+          path: `runtime/archives/${file}`,
+          name,
+          title: data.title || name,
+          createdAt: data.createdAt || data.created_at || "",
+          summary: String(data.summary || data.description || "").slice(0, 260),
+          data
+        };
+      });
+  }
+
   async function buildModuleModel(moduleId) {
     const worldName = safeEntityId(String(moduleId || "").replace(/^world:/, ""), "");
     const worldDir = moduleWorldDir(moduleId);
-    const empty = { loaded: true, selected: { id: worldName, name: worldName, path: worldDir, branch: "main" }, moduleData: { characters: [], scenes: [], worldbook: { entries: [] }, relations: {}, timeline: {}, worldState: {}, organizations: [], races: [], runtime: {}, tracking: [], canon: {} }, entities: [], turnCount: 0 };
+    const empty = { loaded: true, selected: { id: worldName, name: worldName, path: worldDir, branch: "main" }, moduleData: { characters: [], scenes: [], worldbook: { entries: [] }, relations: {}, timeline: {}, worldState: {}, organizations: [], races: [], runtime: {}, tracking: [], canon: {}, archives: [] }, entities: [], turnCount: 0 };
     if (!worldDir || !pathWithinRoot(worldsDir(), worldDir) || !existsSync(worldDir)) return empty;
     const cacheKey = normalizeModuleKey(moduleId);
     const fingerprint = getModuleFingerprint(worldDir);
@@ -505,6 +534,7 @@ export function createModuleService(deps) {
         rules: readJsonSync(join(shared, "rules.json"), []),
         runtime: state || {},
         tracking: [], canon: {},
+        archives: collectRuntimeArchives(worldDir),
         modeSpecific: {
           modeId: world.mode || (world.modeMetadata && world.modeMetadata.modeId) || "",
           files: modeSpecificShared,

@@ -1,6 +1,6 @@
 import { applyPreset, MODULES, MODULE_PRESETS, setModuleEnabled, normalizeEngineState } from "./modules.js";
 import { isCardModeCommand, CARD_MODE_ALLOWED_COMMANDS } from "../data/character-card.js";
-import { collectRuntimeSnapshot, embedRuntimeInArchive } from "./archive-state.js";
+import { collectRuntimeSnapshot, embedRuntimeInArchive, extractRuntimeFromArchive, restoreRuntimeSnapshot } from "./archive-state.js";
 import { resetPredictionCache, getEventCache } from "./director.js";
 import { resetEventCache, getEventHistory } from "../data/random-events.js";
 import { runHealthCheck, formatHealthReport } from "./health-check.js";
@@ -287,9 +287,10 @@ export function execSlashCommand({ input, engineState, model }) {
   if (intent.category === "archive") {
     const mode = state.dataMode || "worldbook";
     const modePrefix = mode === "character_card" ? "[C]" : mode === "preset" ? "[P]" : "[W]";
+    const OVERWRITE_TOKENS = new Set(["覆盖", "overwrite", "--overwrite", "--force", "force"]);
 
     if (intent.action === "list" || intent.root.includes("存档列表")) {
-      // 按模式分组展示
+      // 按模式分组展示（canonical disk path: runtime/archives/）
       const all = model.moduleData?.archives || [];
       const wb = all.filter((a) => !a.name?.startsWith("[C]") && !a.name?.startsWith("[P]"));
       const cc = all.filter((a) => a.name?.startsWith("[C]"));
@@ -304,15 +305,17 @@ export function execSlashCommand({ input, engineState, model }) {
       };
     }
     if (intent.root.includes("存档") && !intent.root.includes("列表") && !intent.root.includes("delete")) {
-      // /存档 [名称] — 收集运行时快照，嵌入存档
-      const explicitName = modName || intent.action || "";
+      // /存档 [名称] [覆盖] — 默认同名加 -2；仅显式「覆盖」才覆盖
+      const rawTokens = [intent.action, ...String(intent.rest || "").trim().split(/\s+/)].filter(Boolean);
+      const overwrite = rawTokens.some((t) => OVERWRITE_TOKENS.has(String(t).toLowerCase()) || OVERWRITE_TOKENS.has(String(t)));
+      const nameTokens = rawTokens.filter((t) => !OVERWRITE_TOKENS.has(String(t)) && !OVERWRITE_TOKENS.has(String(t).toLowerCase()));
+      const explicitName = nameTokens.join(" ");
       const rawName = explicitName || `auto-r${Number(model?.turnCount) || 0}`;
       const basePrefixed = rawName.startsWith("[W]") || rawName.startsWith("[C]") || rawName.startsWith("[P]")
         ? rawName : `${modePrefix}${rawName}`;
-      // 自动名在同回合重复时确定性加序号；用户显式命名保持原样（覆盖语义）
+      // 命令层保留请求名；最终文件名由 disk allocateFreePath 决定（除非 overwrite）
       const prefixedName = explicitName ? basePrefixed : uniqueAutoName(basePrefixed, namesOf(model?.moduleData?.archives));
 
-      // 收集当前运行时状态（情绪/缓存/事件历史）
       const runtimeSnapshot = collectRuntimeSnapshot(state, {
         predictionCache: getEventCache(),
         eventHistory: getEventHistory()
@@ -324,19 +327,32 @@ export function execSlashCommand({ input, engineState, model }) {
           name: prefixedName,
           dataMode: mode,
           autoNamed: !explicitName,
-          overlayPath: `data/engine/runs/${mode}/archives/${prefixedName}.json`,
-          runtimeSnapshot  // 🆕 嵌入运行时快照
+          overwrite,
+          overlayPath: `runtime/archives/${prefixedName}.json`,
+          runtimeSnapshot
         })
       };
     }
     if (intent.root.includes("读档")) {
-      const loadName = modName || intent.action || "";
-      // 清理跨存档缓存
+      const loadName = (modName || intent.action || "").trim();
+      const all = model.moduleData?.archives || [];
+      const hit = all.find((a) => a.name === loadName)
+        || all.find((a) => a.name === `${modePrefix}${loadName}`)
+        || all.find((a) => a.name?.endsWith(loadName));
       resetPredictionCache();
       resetEventCache();
+      if (!hit) {
+        return { handled: true, intent,
+          narrative: `未找到存档「${loadName}」。可用 /存档列表 查看 runtime/archives/ 中的存档。`,
+          patch: commandPatch("archive-load", { name: loadName, currentMode: mode, found: false })
+        };
+      }
+      const snap = extractRuntimeFromArchive(hit.data || {});
+      const restored = restoreRuntimeSnapshot(snap || {}, state);
       return { handled: true, intent,
-        narrative: `${mode}模式：读档 "${loadName}"。引擎将从存档恢复完整运行时状态（情绪/事件/缓存），跨存档数据已清理。`,
-        patch: commandPatch("archive-load", { name: loadName, currentMode: mode })
+        narrative: `${mode}模式：已读档「${hit.name}」（runtime/archives/）。引擎已从存档恢复运行时状态（情绪/事件等），跨存档缓存已清理。`,
+        patch: commandPatch("archive-load", { name: hit.name, currentMode: mode, found: true, path: hit.path || "" }),
+        engineState: restored
       };
     }
     if (intent.root.includes("delete")) {

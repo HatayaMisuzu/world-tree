@@ -71,7 +71,10 @@ function collectScenes(files, module, warnings) {
 }
 
 function collectArchives(files, module, warnings) {
-  return listJson(files, `${module.path}/archive`).map((path) => {
+  // Canonical slash-save path is runtime/archives/; keep legacy <module>/archive as fallback.
+  const primary = listJson(files, `${module.path}/runtime/archives`);
+  const paths = primary.length ? primary : listJson(files, `${module.path}/archive`);
+  return paths.map((path) => {
     const record = files.get(path);
     const data = readJson(files, path, warnings);
     return normalizeArchive(path, data, record?.text || "");

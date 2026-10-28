@@ -142,3 +142,69 @@ test("slash /存档 twice and /世界 复制 twice persist distinct files throug
     await removeTempDir(dataDir);
   }
 });
+
+test("slash /存档 named twice defaults to -2; list and load see runtime/archives", async () => {
+  const dataDir = await createTempDataDir();
+  const server = await startWorldTreeServer({ dataDir });
+  const fakeLlm = await startNarrativeLlm();
+  try {
+    const create = await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "存档列表对齐", displayName: "存档列表对齐", mode: "world-rpg", dataMode: "worldbook", sourceText: "灯塔城邦。", sourceType: "test" })
+    });
+    assert.equal(create.body.status, "ok");
+    const moduleKey = create.body.module.id;
+    const worldId = String(moduleKey).replace(/^world:/, "");
+    await saveConnection(server, { id: "fake-success", baseUrl: fakeLlm.baseUrl });
+
+    const first = await chat(server, moduleKey, "/存档 灯塔进度");
+    const second = await chat(server, moduleKey, "/存档 灯塔进度");
+    const archiveDir = join(dataDir, "engine", "worlds", worldId, "runtime", "archives");
+    const files = (await readdir(archiveDir)).filter((f) => f.endsWith(".json")).sort();
+    assert.equal(files.length, 2, `expected two files after same-name saves, got ${files.join(",")}`);
+    assert.deepEqual(files, ["[W]灯塔进度-2.json", "[W]灯塔进度.json"]);
+    const receiptName = (body) => body.narrative.match(/存档「([^」]+)」已保存/)?.[1];
+    assert.equal(receiptName(first), "[W]灯塔进度");
+    assert.equal(receiptName(second), "[W]灯塔进度-2");
+
+    const list = await chat(server, moduleKey, "/存档列表");
+    assert.match(list.narrative, /\[W\]灯塔进度/);
+    assert.match(list.narrative, /\[W\]灯塔进度-2/);
+    assert.doesNotMatch(list.narrative, /暂无存档/);
+
+    const loaded = await chat(server, moduleKey, "/读档 [W]灯塔进度");
+    assert.match(loaded.narrative, /已读档「\[W\]灯塔进度」/);
+    assert.match(loaded.narrative, /runtime\/archives/);
+  } finally {
+    await server.stop();
+    await fakeLlm.stop();
+    await removeTempDir(dataDir);
+  }
+});
+
+test("slash /存档 name 覆盖 overwrites the same file when asked", async () => {
+  const dataDir = await createTempDataDir();
+  const server = await startWorldTreeServer({ dataDir });
+  const fakeLlm = await startNarrativeLlm();
+  try {
+    const create = await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "存档覆盖", displayName: "存档覆盖", mode: "world-rpg", dataMode: "worldbook", sourceText: "灯塔城邦。", sourceType: "test" })
+    });
+    assert.equal(create.body.status, "ok");
+    const moduleKey = create.body.module.id;
+    const worldId = String(moduleKey).replace(/^world:/, "");
+    await saveConnection(server, { id: "fake-success", baseUrl: fakeLlm.baseUrl });
+
+    await chat(server, moduleKey, "/存档 固定名");
+    const overwrite = await chat(server, moduleKey, "/存档 固定名 覆盖");
+    const archiveDir = join(dataDir, "engine", "worlds", worldId, "runtime", "archives");
+    const files = (await readdir(archiveDir)).filter((f) => f.endsWith(".json")).sort();
+    assert.deepEqual(files, ["[W]固定名.json"], "explicit 覆盖 must not allocate -2");
+    assert.match(overwrite.narrative, /存档「\[W\]固定名」已保存/);
+  } finally {
+    await server.stop();
+    await fakeLlm.stop();
+    await removeTempDir(dataDir);
+  }
+});

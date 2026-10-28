@@ -1,7 +1,7 @@
 // Turns the archive-save / world-copy slash patches into real persistence ops.
 // Disk is the source of truth for naming: the write layer (persistence-service)
-// allocates the final file/dir name deterministically and never overwrites an
-// auto-named archive or any existing world.
+// allocates the final file/dir name deterministically. Archives never overwrite
+// unless the user explicitly asks; world copies never overwrite.
 import { execSlashCommand } from "./commands.js";
 import { embedRuntimeInArchive } from "./archive-state.js";
 
@@ -16,7 +16,7 @@ export function slashWriteOps({ input, engineState, model } = {}) {
   const payload = patch?.payload || {};
   if (patch?.type === "archive-save" && payload.name) {
     const archive = embedRuntimeInArchive({ name: payload.name, mode: payload.dataMode, round: Number(model?.turnCount) || 0 }, payload.runtimeSnapshot || {});
-    return [{ op: SLASH_WRITE_OP.ARCHIVE, name: payload.name, overwrite: payload.autoNamed === false, payload: archive }];
+    return [{ op: SLASH_WRITE_OP.ARCHIVE, name: payload.name, overwrite: payload.overwrite === true, payload: archive }];
   }
   if (patch?.type === "world-copy" && payload.source && payload.target) {
     return [{ op: SLASH_WRITE_OP.WORLD_COPY, source: payload.source, target: payload.target, label: payload.label || "" }];
