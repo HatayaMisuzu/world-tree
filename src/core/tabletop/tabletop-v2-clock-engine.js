@@ -7,6 +7,27 @@ import { stableId } from "../../shared/determinism.js";
 
 // ── Factory ──
 
+/**
+ * Create a progress clock. When `id` is omitted, the id is derived via stableId
+ * from (label, segments/maxSegments, visibility, source, sequence).
+ *
+ * Collision: consecutive calls with the same identity params and without a
+ * distinct `index` or `seq` collide — both default sequence to 0 and yield the
+ * same stableId. Callers that create multiple clocks MUST pass different
+ * `index`/`seq` (or an explicit `id`) for each. Behavior locked by #25; this
+ * documents it only.
+ *
+ * @param {object} [opts]
+ * @param {string} [opts.id] Explicit id; skips stableId derivation when set.
+ * @param {string} [opts.label]
+ * @param {number} [opts.segments=4]
+ * @param {number} [opts.value=0]
+ * @param {string} [opts.visibility="public"]
+ * @param {string} [opts.source="module"]
+ * @param {number} [opts.maxSegments] Overrides segments as the max used in the id.
+ * @param {number} [opts.index] Sequence disambiguator (preferred); defaults to 0.
+ * @param {number} [opts.seq] Alias for index; used only when index is undefined.
+ */
 export function createClock({ id, label, segments = 4, value = 0, visibility = "public", source = "module", maxSegments, index, seq } = {}) {
   const max = maxSegments || segments;
   const resolvedLabel = label || "时钟";
