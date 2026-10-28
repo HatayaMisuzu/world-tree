@@ -22,6 +22,7 @@ import { calculateWorldTelemetry, telemetryForLLM, directorHints as telemetryDir
 import { POSITIVE_RELATION_WORDS, NEGATIVE_RELATION_WORDS, RELATION_TYPE_KEYWORDS, DEGRADATION } from "./constants.js";
 import { exportEngineState } from "./state-persistence.js";
 import { slashWriteOps } from "./slash-persistence.js";
+import { rootChangeFromStateSuggestion, enqueueRippleProposals } from "../world-state/world-state-ripple-queue.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  prepareTurn — 三种模式差异化预处理
@@ -447,6 +448,20 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     sceneSummary: sceneSummary?.summary || ""
   });
 
+  // S2 dc-5: bounded ripple → proposal queue for depth≥2 (major/critical 状态建议)
+  const rippleRoot = rootChangeFromStateSuggestion(parsed.sections, { input, round: model.turnCount || 0 });
+  let rippleProposals = [];
+  let rippleDigest = null;
+  if (rippleRoot) {
+    const enqueued = enqueueRippleProposals("", rippleRoot, {
+      modeId: state.modeId || state.mode || model.selected?.mode || "world-rpg",
+      recentRippleChanges: state.recentRippleChanges || []
+    });
+    rippleProposals = enqueued.proposals || [];
+    rippleDigest = enqueued.ripple;
+    if (rippleDigest) overlayPatch.rippleDigest = rippleDigest;
+  }
+
   return {
     narrative: parsed.narrative || rawText,
     parsedSections: parsed.sections,
@@ -459,7 +474,9 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
       racialTensions: overlayPatch.racialTensions
     },
     rawText,
-    engineState: state
+    engineState: state,
+    proposals: rippleProposals,
+    rippleDigest
   };
 }
 

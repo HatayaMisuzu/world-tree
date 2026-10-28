@@ -104,3 +104,25 @@ test("worldbook selection ranks hit count before priority and then trims by budg
   assert.equal(runtime.injectedWorldbook[0].id, "high");
   assert.ok(runtime.diagnostics.droppedByBudget.some((entry) => entry.id === "low"));
 });
+
+test("worldbook runtime drops gm_only / hidden_truth via visibility-policy before Writer injection", () => {
+  const runtime = prepareWorldbookInjection({
+    worldbook: {
+      entries: [
+        { id: "public", title: "Public Lore", keys: ["灯塔"], content: "PLAYER_VISIBLE_MARKER", visibility: "player_visible", priority: 100 },
+        { id: "secret", title: "GM Secret", keys: ["灯塔"], content: "GM_ONLY_SECRET_MARKER", visibility: "gm_only", priority: 200 },
+        { id: "truth", title: "Hidden Truth", keys: ["灯塔"], content: "HIDDEN_TRUTH_MARKER", visibility: "hidden_truth", priority: 200 },
+        { id: "legacy", title: "Legacy Entry", keys: ["灯塔"], content: "LEGACY_OK_MARKER", priority: 90 }
+      ]
+    },
+    input: "靠近灯塔",
+    engineState: { contextBudget: "balanced", modeId: "world-rpg" }
+  });
+  const ids = runtime.injectedWorldbook.map((e) => e.id);
+  assert.equal(ids.includes("secret"), false);
+  assert.equal(ids.includes("truth"), false);
+  assert.equal(ids.includes("public"), true);
+  assert.equal(ids.includes("legacy"), true);
+  assert.ok(runtime.diagnostics.droppedByVisibility.some((e) => e.id === "secret"));
+  assert.equal(runtime.injectedWorldbook.some((e) => String(e.content).includes("GM_ONLY_SECRET_MARKER")), false);
+});
