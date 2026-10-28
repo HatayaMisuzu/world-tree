@@ -5,6 +5,7 @@
  */
 
 import { calculateProximityScope } from "../proximity/proximity-scope.js";
+import { createLodState } from "./lod-evolve.js";
 
 /**
  * @typedef {{ atDay: number, locationId: string }} ScheduleEntry
@@ -34,7 +35,7 @@ export function createNpcRuntime(def = {}) {
   const locationId = String(
     def.locationId || def.location || schedule[0]?.locationId || "unknown"
   );
-  return {
+  const npc = {
     id: id || "npc_unknown",
     name: def.name || id || "未命名 NPC",
     locationId,
@@ -44,6 +45,9 @@ export function createNpcRuntime(def = {}) {
       : undefined,
     alive: def.alive !== false
   };
+  // s3-3: lod bag (comparable: fatigue / taskProgress); default lastEvolvedDay=0
+  npc.lod = createLodState(def.lod && typeof def.lod === "object" ? def.lod : {});
+  return npc;
 }
 
 /**

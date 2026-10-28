@@ -16,6 +16,7 @@ import { updateAllProximities, suggestActivationCandidates, analyzeNarrativeGap,
 import { worldTick, resolveTurnDelta, calendarDisplay } from "./world-tick.js";
 import { resolveTravelIntent } from "./location-graph.js";
 import { recomputeNpcProximity } from "./npc-schedule.js";
+import { evolveNpcsByLod } from "./lod-evolve.js";
 import { directNarrative, parseEmotionSection, generateDirectionPacket } from "./director.js";
 import { getDefaultEmotionState } from "./emotion-state.js";
 import { createMemorySnapshot, searchMemorySnapshots, formatMemorySection, loadGlobalMemory } from "./global-memory.js";
@@ -387,22 +388,33 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     }
 
     // s3-2: NPC schedule positions + proximity ring enter/exit (product proximity-scope)
+    // s3-3: LOD offscreen evolution (near fine / far summary / dormant wake补算)
     if (Array.isArray(state.npcStates) && state.npcStates.length > 0) {
+      const previousScope = state.proximityScope || null;
       const prox = recomputeNpcProximity({
         npcs: state.npcStates,
         totalDays: state.calendar?.totalDays || 0,
         currentLocationId: state.currentLocationId || "",
         protagonistId: state.protagonistId || protagonist.name || "player",
-        previousScope: state.proximityScope || null,
+        previousScope,
         relations: state.relations || []
       });
-      state.npcStates = prox.npcs;
+      const lod = evolveNpcsByLod({
+        npcs: prox.npcs,
+        totalDays: state.calendar?.totalDays || 0,
+        scope: prox.scope,
+        previousScope,
+        ringChanges: prox.changes
+      });
+      state.npcStates = lod.npcs;
       state.proximityScope = prox.scope;
       state.proximityRingChanges = prox.changes;
+      state.lodReports = lod.reports;
       overlayPatch.proximityRings = {
         scope: prox.scope,
         changes: prox.changes
       };
+      overlayPatch.lodEvolve = { reports: lod.reports };
     }
 
     overlayPatch.worldTick = {
