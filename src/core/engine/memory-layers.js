@@ -498,6 +498,7 @@ export function exportMemorySnapshot() {
       player: {
         preferences: MEMORY_LAYERS.player.preferences,
         patterns: MEMORY_LAYERS.player.patterns,
+        choices: MEMORY_LAYERS.player.choices.slice(-100),
         choicesCount: MEMORY_LAYERS.player.choices.length
       }
     },
