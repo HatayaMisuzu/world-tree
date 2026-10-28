@@ -34,6 +34,6 @@ export function deriveBoundedRipple(_projectRoot, rootChange = {}, context = {},
     rootStateId: rootChange.stateId || rootChange.targetId || "",
     generatedAt: new Date().toISOString(),
     maxDepth,
-    items: candidates.map((item, index) => ({ id: item.id || `rip_${rootChange.id}_${index + 1}`, impactLevel: item.impactLevel || "medium", confidence: Number(item.confidence ?? 0), ...item }))
+    items: candidates.map((item, index) => ({ id: item.id || `rip_${rootChange.id}_${index + 1}`, impactLevel: item.impactLevel || rootChange.impactLevel || "medium", confidence: Number(item.confidence ?? 0), ...item }))
   }, { maxDepth, maxItemsPerDepth: 3 });
 }

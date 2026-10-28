@@ -531,7 +531,7 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
     sceneSummary: sceneSummary?.summary || ""
   });
 
-  // S2 dc-5: bounded ripple → proposal queue for depth≥2 (major/critical 状态建议)
+  // S4-2 / dc-5: bounded ripple depth≥2 → proposal-bus → proposal-system (major/critical 状态建议)
   const rippleRoot = rootChangeFromStateSuggestion(parsed.sections, { input, round: model.turnCount || 0 });
   let rippleProposals = [];
   let rippleDigest = null;
