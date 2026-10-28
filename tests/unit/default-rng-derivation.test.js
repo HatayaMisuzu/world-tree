@@ -63,3 +63,22 @@ test("slash persistence: same auto name twice in one round yields two files on d
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("slash persistence: explicit same name defaults to -2 unless overwrite:true", () => {
+  const dir = mkdtempSync(join(tmpdir(), "wt-slash-explicit-"));
+  try {
+    const base = { op: SLASH_WRITE_OP.ARCHIVE, name: "[W]手动名", payload: { name: "[W]手动名" } };
+    const [w1] = applySlashWriteOps(dir, [{ ...base, overwrite: false, payload: { ...base.payload, marker: 1 } }], { round: 1 });
+    const [w2] = applySlashWriteOps(dir, [{ ...base, overwrite: false, payload: { ...base.payload, marker: 2 } }], { round: 2 });
+    assert.equal(w1.name, "[W]手动名");
+    assert.equal(w2.name, "[W]手动名-2");
+    const [w3] = applySlashWriteOps(dir, [{ ...base, overwrite: true, payload: { ...base.payload, marker: 3 } }], { round: 3 });
+    assert.equal(w3.name, "[W]手动名");
+    const files = readdirSync(join(dir, "archives")).sort();
+    assert.deepEqual(files, ["[W]手动名-2.json", "[W]手动名.json"]);
+    assert.equal(JSON.parse(readFileSync(join(dir, "archives", "[W]手动名.json"), "utf8")).marker, 3);
+    assert.equal(JSON.parse(readFileSync(join(dir, "archives", "[W]手动名-2.json"), "utf8")).marker, 2);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

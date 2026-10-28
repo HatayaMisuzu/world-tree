@@ -71,11 +71,18 @@ function collectScenes(files, module, warnings) {
 }
 
 function collectArchives(files, module, warnings) {
-  return listJson(files, `${module.path}/archive`).map((path) => {
+  // Canonical slash-save path is runtime/archives/; also keep legacy <module>/archive.
+  // Merge both; when names collide, primary (runtime/archives) wins.
+  const primary = listJson(files, `${module.path}/runtime/archives`);
+  const legacy = listJson(files, `${module.path}/archive`);
+  const byName = new Map();
+  for (const path of [...primary, ...legacy]) {
     const record = files.get(path);
     const data = readJson(files, path, warnings);
-    return normalizeArchive(path, data, record?.text || "");
-  });
+    const archive = normalizeArchive(path, data, record?.text || "");
+    if (!byName.has(archive.name)) byName.set(archive.name, archive);
+  }
+  return [...byName.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
 }
 
 function collectBranches(files, module, warnings) {

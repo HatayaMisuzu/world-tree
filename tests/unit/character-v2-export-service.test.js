@@ -18,35 +18,51 @@ function setupChar(root) {
 
 test("character_md export returns readable markdown", () => {
   const root = mkRoot();
-  const charId = setupChar(root);
-  const result = exportCharacterV2(root, charId, "character_md");
-  assert.equal(result.status, "ok");
-  assert.ok(result.content.includes("美铃"));
-  assert.ok(result.content.includes("关系基线"));
+  try {
+    const charId = setupChar(root);
+    const result = exportCharacterV2(root, charId, "character_md");
+    assert.equal(result.status, "ok");
+    assert.ok(result.content.includes("美铃"));
+    assert.ok(result.content.includes("关系基线"));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("wt_profile_json excludes advanced fields", () => {
   const root = mkRoot();
-  const charId = setupChar(root);
-  const result = exportCharacterV2(root, charId, "wt_profile_json");
-  assert.equal(result.status, "ok");
-  const parsed = JSON.parse(result.content);
-  assert.equal(parsed.advancedSummary, undefined);
+  try {
+    const charId = setupChar(root);
+    const result = exportCharacterV2(root, charId, "wt_profile_json");
+    assert.equal(result.status, "ok");
+    const parsed = JSON.parse(result.content);
+    assert.equal(parsed.advancedSummary, undefined);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("export_bundle_json includes sidecars", () => {
   const root = mkRoot();
-  const charId = setupChar(root);
-  const result = exportCharacterV2(root, charId, "export_bundle_json");
-  assert.equal(result.status, "ok");
-  const parsed = JSON.parse(result.content);
-  assert.equal(parsed.characterId, charId);
-  assert.ok(parsed.runtime);
-  assert.ok(parsed.manifest);
+  try {
+    const charId = setupChar(root);
+    const result = exportCharacterV2(root, charId, "export_bundle_json");
+    assert.equal(result.status, "ok");
+    const parsed = JSON.parse(result.content);
+    assert.equal(parsed.characterId, charId);
+    assert.ok(parsed.runtime);
+    assert.ok(parsed.manifest);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("unknown format returns error", () => {
   const root = mkRoot();
-  const result = exportCharacterV2(root, "char_x", "invalid");
-  assert.equal(result.status, "error");
+  try {
+    const result = exportCharacterV2(root, "char_x", "invalid");
+    assert.equal(result.status, "error");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

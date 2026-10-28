@@ -159,6 +159,31 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
   const parsed = parseMarkedOutput(rawText);
   const state = normalizeEngineState(engineState);
 
+  // Surface /存档列表 and /读档 narratives (they read runtime/archives/) without depending on LLM text.
+  // Real-play may append a prompt block after a blank line; only the user's command line counts (same as slashWriteOps).
+  const slashInput = String(input || "").trim().split(/\r?\n/)[0].trim();
+  const slashCommand = execSlashCommand({ input: slashInput, engineState: state, model });
+  const slashType = slashCommand?.patch?.type;
+  if (slashCommand?.handled && (slashType === "archive-list" || slashType === "archive-load")) {
+    const nextState = slashCommand.engineState || state;
+    return {
+      narrative: slashCommand.narrative,
+      parsedSections: { "叙事": { _raw: slashCommand.narrative } },
+      overlayPatch: {
+        createdAt: new Date().toISOString(),
+        input,
+        narrative: slashCommand.narrative,
+        emotionState: nextState.emotionState
+      },
+      writeSet: [],
+      audit: { parseErrors: [], quality: "slash-command", rules: { pass: true } },
+      sceneSummary: null,
+      rawText: slashCommand.narrative,
+      engineState: nextState,
+      commandResult: slashCommand
+    };
+  }
+
   // 角色卡模式：解析情绪反馈段（如有），忽略其他标记段（DM隐退后不应有复杂标记段）
   if (dataMode === "character_card") {
     const emotionUpdate = parseEmotionSection(parsed.sections);

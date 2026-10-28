@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { writeJson } from "../../src/server/fs-utils.js";
@@ -18,13 +18,17 @@ async function createProject() {
 
 test("unified kernel context joins P0-P2 on the active branch without hidden truth leakage", async () => {
   const root = await createProject();
-  const context = await createKernelTurnContext({ projectRoot: root, modeId: "world-rpg", userInput: "继续", runtimeFlags: { advanceMode: "auto-light" } });
-  const serialized = JSON.stringify(context);
-  assert.equal(context.activeBranchId, "main");
-  assert.deepEqual(context.debug, { p0: true, p1: true, p2: true, promptChars: context.promptText.length, canonicalWrites: 0 });
-  assert.match(context.promptText, /World Tree Kernel Sidecar/);
-  assert.doesNotMatch(serialized, /never expose|地下密道/);
-  assert.equal("projectRoot" in summarizeKernelTurnContext(context), false);
+  try {
+    const context = await createKernelTurnContext({ projectRoot: root, modeId: "world-rpg", userInput: "继续", runtimeFlags: { advanceMode: "auto-light" } });
+    const serialized = JSON.stringify(context);
+    assert.equal(context.activeBranchId, "main");
+    assert.deepEqual(context.debug, { p0: true, p1: true, p2: true, promptChars: context.promptText.length, canonicalWrites: 0 });
+    assert.match(context.promptText, /World Tree Kernel Sidecar/);
+    assert.doesNotMatch(serialized, /never expose|地下密道/);
+    assert.equal("projectRoot" in summarizeKernelTurnContext(context), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("mode runner exposes the same safe kernel summary", async () => {

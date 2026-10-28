@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { createServer } from "node:http";
-import { readFile, readdir } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
@@ -136,6 +136,169 @@ test("slash /存档 twice and /世界 复制 twice persist distinct files throug
       const copiedArchives = await readdir(join(worldsDir, copy, "runtime", "archives"));
       assert.equal(copiedArchives.length, 2, `copy ${copy} must carry the archives`);
     }
+  } finally {
+    await server.stop();
+    await fakeLlm.stop();
+    await removeTempDir(dataDir);
+  }
+});
+
+test("slash /存档 named twice defaults to -2; list and load see runtime/archives", async () => {
+  const dataDir = await createTempDataDir();
+  const server = await startWorldTreeServer({ dataDir });
+  const fakeLlm = await startNarrativeLlm();
+  try {
+    const create = await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "存档列表对齐", displayName: "存档列表对齐", mode: "world-rpg", dataMode: "worldbook", sourceText: "灯塔城邦。", sourceType: "test" })
+    });
+    assert.equal(create.body.status, "ok");
+    const moduleKey = create.body.module.id;
+    const worldId = String(moduleKey).replace(/^world:/, "");
+    await saveConnection(server, { id: "fake-success", baseUrl: fakeLlm.baseUrl });
+
+    const first = await chat(server, moduleKey, "/存档 灯塔进度");
+    const second = await chat(server, moduleKey, "/存档 灯塔进度");
+    const archiveDir = join(dataDir, "engine", "worlds", worldId, "runtime", "archives");
+    const files = (await readdir(archiveDir)).filter((f) => f.endsWith(".json")).sort();
+    assert.equal(files.length, 2, `expected two files after same-name saves, got ${files.join(",")}`);
+    assert.deepEqual(files, ["[W]灯塔进度-2.json", "[W]灯塔进度.json"]);
+    const receiptName = (body) => body.narrative.match(/存档「([^」]+)」已保存/)?.[1];
+    assert.equal(receiptName(first), "[W]灯塔进度");
+    assert.equal(receiptName(second), "[W]灯塔进度-2");
+
+    const list = await chat(server, moduleKey, "/存档列表");
+    assert.match(list.narrative, /\[W\]灯塔进度/);
+    assert.match(list.narrative, /\[W\]灯塔进度-2/);
+    assert.doesNotMatch(list.narrative, /暂无存档/);
+
+    const loaded = await chat(server, moduleKey, "/读档 [W]灯塔进度");
+    assert.match(loaded.narrative, /已读档「\[W\]灯塔进度」/);
+    assert.match(loaded.narrative, /runtime\/archives/);
+  } finally {
+    await server.stop();
+    await fakeLlm.stop();
+    await removeTempDir(dataDir);
+  }
+});
+
+test("slash /存档 name 覆盖 overwrites the same file when asked", async () => {
+  const dataDir = await createTempDataDir();
+  const server = await startWorldTreeServer({ dataDir });
+  const fakeLlm = await startNarrativeLlm();
+  try {
+    const create = await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "存档覆盖", displayName: "存档覆盖", mode: "world-rpg", dataMode: "worldbook", sourceText: "灯塔城邦。", sourceType: "test" })
+    });
+    assert.equal(create.body.status, "ok");
+    const moduleKey = create.body.module.id;
+    const worldId = String(moduleKey).replace(/^world:/, "");
+    await saveConnection(server, { id: "fake-success", baseUrl: fakeLlm.baseUrl });
+
+    await chat(server, moduleKey, "/存档 固定名");
+    const overwrite = await chat(server, moduleKey, "/存档 固定名 覆盖");
+    const archiveDir = join(dataDir, "engine", "worlds", worldId, "runtime", "archives");
+    const files = (await readdir(archiveDir)).filter((f) => f.endsWith(".json")).sort();
+    assert.deepEqual(files, ["[W]固定名.json"], "explicit 覆盖 must not allocate -2");
+    assert.match(overwrite.narrative, /存档「\[W\]固定名」已保存/);
+  } finally {
+    await server.stop();
+    await fakeLlm.stop();
+    await removeTempDir(dataDir);
+  }
+});
+
+
+test("legacy <world>/archive alone is visible to /存档列表 and loadable via /读档 chat path", async () => {
+  const dataDir = await createTempDataDir();
+  const server = await startWorldTreeServer({ dataDir });
+  const fakeLlm = await startNarrativeLlm();
+  try {
+    const create = await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "旧档回退", displayName: "旧档回退", mode: "world-rpg", dataMode: "worldbook", sourceText: "灯塔城邦。", sourceType: "test" })
+    });
+    assert.equal(create.body.status, "ok");
+    const moduleKey = create.body.module.id;
+    const worldId = String(moduleKey).replace(/^world:/, "");
+    await saveConnection(server, { id: "fake-success", baseUrl: fakeLlm.baseUrl });
+
+    // Only write legacy path; do NOT create runtime/archives
+    const legacyDir = join(dataDir, "engine", "worlds", worldId, "archive");
+    await mkdir(legacyDir, { recursive: true });
+    const archiveName = "[W]旧灯塔";
+    await writeFile(join(legacyDir, `${archiveName}.json`), JSON.stringify({
+      name: archiveName,
+      title: "旧灯塔",
+      createdAt: "2024-01-01T00:00:00.000Z",
+      summary: "legacy-only archive",
+      _isolated: true,
+      _runtime: { version: 1, emotionState: { engagement: 5, tension: 5, fatigue: 5, curiosity: 5 } }
+    }), "utf8");
+
+    const list = await chat(server, moduleKey, "/存档列表");
+    assert.match(list.narrative, /\[W\]旧灯塔/);
+    assert.doesNotMatch(list.narrative, /暂无存档/);
+
+    const loaded = await chat(server, moduleKey, "/读档 [W]旧灯塔");
+    assert.match(loaded.narrative, /已读档「\[W\]旧灯塔」/);
+    assert.match(loaded.narrative, /archive\/\[W\]旧灯塔\.json/);
+  } finally {
+    await server.stop();
+    await fakeLlm.stop();
+    await removeTempDir(dataDir);
+  }
+});
+
+test("runtime/archives and legacy archive both appear in /存档列表 (deduped by name)", async () => {
+  const dataDir = await createTempDataDir();
+  const server = await startWorldTreeServer({ dataDir });
+  const fakeLlm = await startNarrativeLlm();
+  try {
+    const create = await api(server, "/api/modules/create", {
+      method: "POST",
+      body: JSON.stringify({ name: "双目录合并", displayName: "双目录合并", mode: "world-rpg", dataMode: "worldbook", sourceText: "灯塔城邦。", sourceType: "test" })
+    });
+    assert.equal(create.body.status, "ok");
+    const moduleKey = create.body.module.id;
+    const worldId = String(moduleKey).replace(/^world:/, "");
+    await saveConnection(server, { id: "fake-success", baseUrl: fakeLlm.baseUrl });
+
+    const worldRoot = join(dataDir, "engine", "worlds", worldId);
+    const primaryDir = join(worldRoot, "runtime", "archives");
+    const legacyDir = join(worldRoot, "archive");
+    await mkdir(primaryDir, { recursive: true });
+    await mkdir(legacyDir, { recursive: true });
+
+    await writeFile(join(primaryDir, "[W]新档.json"), JSON.stringify({
+      name: "[W]新档", title: "新档", summary: "from runtime/archives", createdAt: "2025-01-01T00:00:00.000Z"
+    }), "utf8");
+    await writeFile(join(legacyDir, "[W]旧独有.json"), JSON.stringify({
+      name: "[W]旧独有", title: "旧独有", summary: "from legacy archive", createdAt: "2024-01-01T00:00:00.000Z"
+    }), "utf8");
+    // Same name in both dirs: primary must win (still only one list entry)
+    await writeFile(join(legacyDir, "[W]同名.json"), JSON.stringify({
+      name: "[W]同名", title: "legacy-dup", summary: "legacy copy", createdAt: "2024-06-01T00:00:00.000Z"
+    }), "utf8");
+    await writeFile(join(primaryDir, "[W]同名.json"), JSON.stringify({
+      name: "[W]同名", title: "primary-dup", summary: "primary copy", createdAt: "2025-06-01T00:00:00.000Z"
+    }), "utf8");
+
+    const list = await chat(server, moduleKey, "/存档列表");
+    assert.match(list.narrative, /\[W\]新档/);
+    assert.match(list.narrative, /\[W\]旧独有/);
+    assert.match(list.narrative, /\[W\]同名/);
+    // Deduped: only one line for 同名; primary summary should appear
+    const sameNameHits = [...list.narrative.matchAll(/\[W\]同名/g)];
+    assert.equal(sameNameHits.length, 1, `expected one 同名 entry after dedupe, got narrative:\n${list.narrative}`);
+    assert.match(list.narrative, /primary copy/);
+    assert.doesNotMatch(list.narrative, /legacy copy/);
+
+    const loadedLegacy = await chat(server, moduleKey, "/读档 [W]旧独有");
+    assert.match(loadedLegacy.narrative, /已读档「\[W\]旧独有」/);
+    const loadedPrimary = await chat(server, moduleKey, "/读档 [W]新档");
+    assert.match(loadedPrimary.narrative, /已读档「\[W\]新档」/);
   } finally {
     await server.stop();
     await fakeLlm.stop();

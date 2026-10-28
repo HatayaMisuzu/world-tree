@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, access } from "node:fs/promises";
+import { mkdtemp, access, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { writeJson, appendJsonl } from "../../src/server/fs-utils.js";
@@ -27,23 +27,31 @@ test("impact classifier separates light, medium, major, and critical changes", (
 
 test("critical proposal requires second confirmation and opens stop-loss after approval", async () => {
   const projectRoot = await root();
-  await writeJson(join(projectRoot, "shared", "world_state.json"), { state: "alive" });
-  const proposal = createProposal({ id: "death", targetFile: "shared/world_state.json", patch: { replace: { state: "dead" } }, impactLevel: "critical", requiresSecondConfirm: true, oldValue: { state: "alive" } });
-  await appendJsonl(join(projectRoot, "runtime", "world-proposals.jsonl"), proposal);
-  assert.equal((await approveProposal({ projectRoot }, "death")).status, "second_confirmation_required");
-  const approved = await approveProposal({ projectRoot }, "death", {}, { secondConfirm: true, currentTurn: 10 });
-  assert.equal(approved.status, "approved");
-  assert.equal(approved.stopLossWindow.expiresAtTurn, 15);
+  try {
+    await writeJson(join(projectRoot, "shared", "world_state.json"), { state: "alive" });
+    const proposal = createProposal({ id: "death", targetFile: "shared/world_state.json", patch: { replace: { state: "dead" } }, impactLevel: "critical", requiresSecondConfirm: true, oldValue: { state: "alive" } });
+    await appendJsonl(join(projectRoot, "runtime", "world-proposals.jsonl"), proposal);
+    assert.equal((await approveProposal({ projectRoot }, "death")).status, "second_confirmation_required");
+    const approved = await approveProposal({ projectRoot }, "death", {}, { secondConfirm: true, currentTurn: 10 });
+    assert.equal(approved.status, "approved");
+    assert.equal(approved.stopLossWindow.expiresAtTurn, 15);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
 });
 
 test("stop-loss creates a reverse proposal without deleting original tracking", async () => {
   const projectRoot = await root();
-  const original = { id: "major", targetFile: "shared/world_state.json", impactLevel: "major", oldValue: { state: "old" }, summary: "change" };
-  const window = await openStopLossWindow(projectRoot, original, 3);
-  assert.equal(isStopLossOpen(window, 6), true);
-  const reverse = createReverseProposal(original, window);
-  assert.equal(reverse.reversesProposalId, "major");
-  assert.equal(reverse.status, "pending");
+  try {
+    const original = { id: "major", targetFile: "shared/world_state.json", impactLevel: "major", oldValue: { state: "old" }, summary: "change" };
+    const window = await openStopLossWindow(projectRoot, original, 3);
+    assert.equal(isStopLossOpen(window, 6), true);
+    const reverse = createReverseProposal(original, window);
+    assert.equal(reverse.reversesProposalId, "major");
+    assert.equal(reverse.status, "pending");
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
 });
 
 test("context engine consumes P0, filters nested secrets, and enforces budgets", () => {
@@ -61,9 +69,13 @@ test("emotional inertia blocks abrupt jumps and limits tracks per turn", async (
   assert.deepEqual(validation.accepted, { trust: "warming" });
   assert.ok(validation.warnings.includes("distance_jump_blocked"));
   const projectRoot = await root();
-  const update = await updateCharacterInertia(projectRoot, "npc", { distance: "intimate" }, { reason: "sudden" });
-  assert.ok(update.warnings.length > 0);
-  assert.equal(update.requiresProposalForLongTerm, true);
+  try {
+    const update = await updateCharacterInertia(projectRoot, "npc", { distance: "intimate" }, { reason: "sudden" });
+    assert.ok(update.warnings.length > 0);
+    assert.equal(update.requiresProposalForLongTerm, true);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
 });
 
 test("director guardian rejects reveals, player substitution, and excess events", () => {
@@ -75,21 +87,29 @@ test("director guardian rejects reveals, player substitution, and excess events"
 
 test("worldbook concepts remain seed/sprout candidates until approved proposal", async () => {
   const projectRoot = await root();
-  const [seed] = detectWorldbookCandidates({ sceneId: "s1", concepts: [{ id: "artifact", title: "Rune Slate", mentions: 1 }] });
-  await recordWorldbookCandidate(projectRoot, seed);
-  const recorded = await recordWorldbookCandidate(projectRoot, { ...seed, lastSeen: { sceneId: "s2" } });
-  assert.equal(recorded.mentions, 2);
-  const sprout = await transitionWorldbookCandidate(projectRoot, "artifact", { userSupported: true });
-  assert.equal(sprout.candidate.status, "sprout");
-  const blocked = await transitionWorldbookCandidate(projectRoot, "artifact", {});
-  assert.equal(blocked.decision.reason, "proposal_required");
-  await assert.rejects(() => access(join(projectRoot, "shared", "worldbook.json")));
+  try {
+    const [seed] = detectWorldbookCandidates({ sceneId: "s1", concepts: [{ id: "artifact", title: "Rune Slate", mentions: 1 }] });
+    await recordWorldbookCandidate(projectRoot, seed);
+    const recorded = await recordWorldbookCandidate(projectRoot, { ...seed, lastSeen: { sceneId: "s2" } });
+    assert.equal(recorded.mentions, 2);
+    const sprout = await transitionWorldbookCandidate(projectRoot, "artifact", { userSupported: true });
+    assert.equal(sprout.candidate.status, "sprout");
+    const blocked = await transitionWorldbookCandidate(projectRoot, "artifact", {});
+    assert.equal(blocked.decision.reason, "proposal_required");
+    await assert.rejects(() => access(join(projectRoot, "shared", "worldbook.json")));
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
 });
 
 test("experience stability packet composes bounded context and safe director without canon writes", async () => {
   const projectRoot = await root();
-  const packet = await createExperienceStabilityPacket({ modeId: "world-rpg", projectRoot, livingWorldPacket: { scene: { id: "s" }, sceneSummaries: [], trackingDigest: {}, worldState: { states: {} }, worldbookContext: {}, proximityScope: { rings: {} } } });
-  assert.equal(packet.contextPacket.contextProfile, "full");
-  assert.equal(packet.directorPlan.shouldRevealSecret, false);
-  assert.equal(packet.debug.canonicalWrites, 0);
+  try {
+    const packet = await createExperienceStabilityPacket({ modeId: "world-rpg", projectRoot, livingWorldPacket: { scene: { id: "s" }, sceneSummaries: [], trackingDigest: {}, worldState: { states: {} }, worldbookContext: {}, proximityScope: { rings: {} } } });
+    assert.equal(packet.contextPacket.contextProfile, "full");
+    assert.equal(packet.directorPlan.shouldRevealSecret, false);
+    assert.equal(packet.debug.canonicalWrites, 0);
+  } finally {
+    await rm(projectRoot, { recursive: true, force: true });
+  }
 });
