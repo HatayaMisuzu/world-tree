@@ -61,3 +61,16 @@ See `docs/archive/` for historical stage reports.
 ## Test Result Policy
 
 Do not hardcode test pass counts here. Current test results belong in execution reports or Reality Check files. `package.json` is the source of truth for scripts.
+
+## Legacy status
+
+Legacy classification vocabulary used by `docs/LEGACY_REDUNDANCY_AUDIT.md` and `npm run legacy:check`. Full inventories live in the audit; this section only defines the status enum.
+
+| Status | Meaning |
+|---|---|
+| `active-compatibility` | Still referenced; kept as a compatibility layer while a newer path exists |
+| `legacy-bridge` | Old API/path retained so newer systems can call through a bridge |
+| `archived-design` | Historical design or execution record; not current truth |
+| `orphan-candidate` | Unreferenced candidate; keep until a human decides archive or reuse |
+
+Do not treat `orphan-candidate` as permission to delete. Prefer the audit and upgrade plan over inventing new inventories here.
