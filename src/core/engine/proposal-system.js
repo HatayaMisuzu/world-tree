@@ -396,6 +396,101 @@ function inferTypeId(change = {}) {
 //  导出管理 API
 // ═══════════════════════════════════════════════════════════════
 
+/**
+ * Ingest a bus-shaped / external proposal into the record store without auto-commit.
+ * Used by the proposal-bus facade so JSONL/kernel callers share one implementation of record.
+ */
+export function ingestBusProposal(bus = {}) {
+  const existing = bus.id ? findProposal(bus.id) : null;
+  if (existing) return existing;
+
+  const impact = String(bus.impactLevel || "").toLowerCase();
+  const level = impact === "critical" ? CHANGE_LEVEL.CRITICAL
+    : impact === "major" ? CHANGE_LEVEL.MAJOR
+    : impact === "light" ? CHANGE_LEVEL.LIGHT
+    : CHANGE_LEVEL.MEDIUM;
+
+  const id = bus.id || `proposal-${++COUNTERS.proposalIdCounter}`;
+  if (bus.id) {
+    const num = parseInt(String(bus.id).replace(/^proposal-/, ""), 10);
+    if (Number.isFinite(num)) COUNTERS.proposalIdCounter = Math.max(COUNTERS.proposalIdCounter, num);
+  }
+
+  const proposal = {
+    id,
+    typeId: bus.typeId || inferTypeIdFromBus(bus),
+    typeName: bus.typeName || bus.type || "bus_proposal",
+    change: bus.change && typeof bus.change === "object" ? {
+      field: bus.change.field || "",
+      oldValue: bus.change.oldValue ?? bus.oldValue ?? null,
+      newValue: bus.change.newValue ?? bus.newValue ?? null,
+      description: bus.change.description || bus.summary || "",
+      patch: bus.change.patch || bus.patch || null
+    } : {
+      field: bus.field || bus.targetFile || "",
+      oldValue: bus.oldValue ?? null,
+      newValue: bus.newValue ?? null,
+      description: bus.summary || bus.reason || "",
+      patch: bus.patch || null
+    },
+    level,
+    source: bus.source || "proposal-bus",
+    moduleKey: bus.moduleKey || bus.modeId || "unknown",
+    round: Number(bus.round || bus.createdRound || 0),
+    impacts: Array.isArray(bus.impacts) ? bus.impacts : [],
+    status: bus.status === "approved" ? "committed" : (bus.status || "pending"),
+    needsConfirmation: level === CHANGE_LEVEL.CRITICAL || bus.requiresSecondConfirm === true,
+    needsStopLoss: level === CHANGE_LEVEL.CRITICAL || level === CHANGE_LEVEL.MAJOR,
+    autoCommit: false,
+    metadata: {
+      ...(bus.metadata || {}),
+      busType: bus.type || null,
+      targetFile: bus.targetFile || "",
+      impactLevel: bus.impactLevel || null,
+      requiresSecondConfirm: bus.requiresSecondConfirm === true,
+      rollbackPatch: bus.rollbackPatch || null,
+      modeId: bus.modeId || "",
+      projectId: bus.projectId || ""
+    },
+    createdAt: bus.createdAt || new Date().toISOString(),
+    adoptedAt: null,
+    committedAt: bus.status === "approved" ? (bus.updatedAt || new Date().toISOString()) : null,
+    rejectedAt: bus.status === "rejected" ? (bus.updatedAt || new Date().toISOString()) : null,
+    reversedAt: null,
+    confirmDeadline: null,
+    // Retain bus fields for facade/kernel compatibility
+    targetFile: bus.targetFile || "",
+    patch: bus.patch || null,
+    impactLevel: bus.impactLevel || null,
+    requiresSecondConfirm: bus.requiresSecondConfirm === true,
+    summary: bus.summary || "",
+    reason: bus.reason || "",
+    reversible: bus.reversible === true,
+    rollbackPatch: bus.rollbackPatch || null,
+    oldValue: bus.oldValue ?? null,
+    newValue: bus.newValue ?? null
+  };
+
+  if (proposal.status === "committed" || proposal.status === "rejected" || proposal.status === "reversed") {
+    PROPOSAL_STORE.history.push(proposal);
+  } else {
+    PROPOSAL_STORE.proposals.push(proposal);
+  }
+  return proposal;
+}
+
+function inferTypeIdFromBus(bus = {}) {
+  const target = String(bus.targetFile || bus.type || "").toLowerCase();
+  if (target.includes("character")) return "character";
+  if (target.includes("worldbook")) return "worldbook-entry";
+  if (target.includes("relation")) return "relation";
+  if (target.includes("timeline")) return "timeline";
+  if (target.includes("scene")) return "scene";
+  if (target.includes("organization") || target.includes("faction")) return "organization";
+  if (target.includes("world_state") || target.includes("world-state") || target.includes("rule")) return "rule";
+  return "rule";
+}
+
 /** 重置提案存储（用于模组切换） */
 export function resetProposalStore() {
   PROPOSAL_STORE.proposals = [];
@@ -404,15 +499,50 @@ export function resetProposalStore() {
   COUNTERS.proposalIdCounter = 0;
 }
 
-/** 从快照恢复提案存储（用于存档加载） */
+/**
+ * 从快照恢复提案存储（用于存档加载）。
+ * engineSnapshot compatibility:
+ * - current: { proposals, history, autoCommitLog, ... }
+ * - legacy array root: [proposal, ...]
+ * - legacy bus-shaped proposal objects (patch/targetFile) are normalized via ingestBusProposal
+ */
 export function importProposalSnapshot(snapshot = {}) {
-  PROPOSAL_STORE.proposals = snapshot.proposals || [];
-  PROPOSAL_STORE.history = snapshot.history || [];
-  PROPOSAL_STORE.config.autoCommitLog = snapshot.autoCommitLog || [];
-  // 恢复计数器
-  const maxId = PROPOSAL_STORE.proposals.reduce((max, p) => {
-    const num = parseInt((p.id || "proposal-0").replace("proposal-", ""), 10);
-    return num > max ? num : max;
+  const root = Array.isArray(snapshot)
+    ? { proposals: snapshot, history: [], autoCommitLog: [] }
+    : (snapshot || {});
+
+  // Clear first so normalize/ingest does not duplicate against stale state
+  PROPOSAL_STORE.proposals = [];
+  PROPOSAL_STORE.history = [];
+  PROPOSAL_STORE.config.autoCommitLog = root.autoCommitLog || [];
+
+  const incoming = Array.isArray(root.proposals) ? root.proposals : [];
+  const incomingHistory = Array.isArray(root.history) ? root.history : [];
+
+  for (const entry of incoming) {
+    if (entry && (entry.patch || entry.targetFile) && !(entry.change && entry.typeId)) {
+      ingestBusProposal(entry);
+    } else if (entry) {
+      PROPOSAL_STORE.proposals.push(entry);
+    }
+  }
+  for (const entry of incomingHistory) {
+    if (entry && (entry.patch || entry.targetFile) && !(entry.change && entry.typeId)) {
+      const p = ingestBusProposal({ ...entry, status: entry.status === "pending" ? "committed" : (entry.status || "committed") });
+      // ingest may have placed pending; force history for historical rows
+      if (PROPOSAL_STORE.proposals.some(x => x.id === p.id)) {
+        PROPOSAL_STORE.proposals = PROPOSAL_STORE.proposals.filter(x => x.id !== p.id);
+        if (!PROPOSAL_STORE.history.some(x => x.id === p.id)) PROPOSAL_STORE.history.push(p);
+      }
+    } else if (entry) {
+      PROPOSAL_STORE.history.push(entry);
+    }
+  }
+
+  const all = [...PROPOSAL_STORE.proposals, ...PROPOSAL_STORE.history];
+  const maxId = all.reduce((max, p) => {
+    const num = parseInt(String(p.id || "proposal-0").replace(/^proposal-/, ""), 10);
+    return Number.isFinite(num) && num > max ? num : max;
   }, 0);
   COUNTERS.proposalIdCounter = Math.max(COUNTERS.proposalIdCounter, maxId);
 }
