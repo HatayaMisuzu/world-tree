@@ -8,6 +8,7 @@ import { buildOverlayWriteSet, OVERLAY_FILES, OVERLAY_ROOT, WRITE_POLICY } from 
 import { auditNarrative, checkFeasibility } from "../data/rules.js";
 import { predictDirections } from "../data/prediction.js";
 import { eventChance, proposeRandomEvent } from "../data/random-events.js";
+import { worldSeedOf } from "../../shared/determinism.js";
 import { summarizeScene, getContextWindow } from "../data/scenes.js";
 import { detectRacialTension } from "../data/race.js";
 import { isCardModeCommand } from "../data/character-card.js";
@@ -82,7 +83,8 @@ export function prepareTurn({ model, input, engineState, worldbookState, cards =
     sceneChanged: sceneTransition.detected,
     plotState: {},
     lastEventRound: state.lastEventRound || 0,
-    worldType: model.selected?.type || "daily"
+    worldType: model.selected?.type || "daily",
+    worldSeed: worldSeedOf(model)
   });
 
   // 更新 engine state 中的情绪状态
@@ -123,6 +125,7 @@ export function prepareTurn({ model, input, engineState, worldbookState, cards =
     lastEventRound: state.lastEventRound || 0,
     worldType: model.selected?.type || "daily",
     existingResult: directorResult,
+    worldSeed: worldSeedOf(model),
     moduleData: model.moduleData || {},
     worldSubType: state.worldSubType || "classic",
     storytellerId: state.storyteller || "classic",

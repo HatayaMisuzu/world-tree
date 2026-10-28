@@ -1,3 +1,4 @@
+import { stableId } from "../../shared/determinism.js";
 // ===== 世界状态系统 v2 =====
 // v1: 简单 merge/diff（保留向下兼容）
 // v2: 八维状态面板 + 每轮快照 + 状态变化追踪 + 未解决事件
@@ -203,7 +204,7 @@ export function addClue(panel, clue) {
     if (clue.leadsTo) existing.leadsTo = [...new Set([...(existing.leadsTo || []), ...clue.leadsTo])];
   } else {
     panel.knownClues.push({
-      id: clue.id || `clue-${Date.now()}`,
+      id: clue.id || stableId("clue", clue.description, panel.knownClues.length),
       description: clue.description,
       source: clue.source || "叙事",
       verified: clue.verified ?? false,
@@ -264,7 +265,7 @@ function addWorldChange(panel, change) {
 
 export function addUnresolvedEvent(panel, event) {
   panel.unresolvedEvents.push({
-    id: event.id || `uevent-${Date.now()}`,
+    id: event.id || stableId("uevent", event.description, panel.unresolvedEvents.length),
     description: event.description,
     urgency: event.urgency || "中",       // 低/中/高/紧急
     since: new Date().toISOString(),

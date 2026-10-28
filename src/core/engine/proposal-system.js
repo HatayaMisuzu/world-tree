@@ -236,7 +236,8 @@ export function getProposalStats() {
     rejected: all.filter(p => p.status === "rejected").length,
     reversed: all.filter(p => p.status === "reversed").length,
     needsConfirmation: getPendingUserConfirmations().length,
-    reversible: getReversibleProposals(Date.now()).length
+    // was getReversibleProposals(Date.now()): compared rounds with a wall-clock ms value, so always 0
+    reversible: getReversibleProposals(all.reduce((m, p) => Math.max(m, Number(p.round) || 0), 0)).length
   };
 }
 

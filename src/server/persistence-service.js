@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { stableId, withoutWallClock } from "../shared/determinism.js";
 import { OVERLAY_FILES, WRITE_POLICY, splitWriteSet } from "../core/engine/overlay-store.js";
 import { appendJsonl, readJsonSync, writeJson } from "./fs-utils.js";
 
@@ -16,7 +17,7 @@ function reviewRecordFromOverlay(entry = {}, status = "pending", index = 0, cont
   const now = new Date().toISOString();
   const payload = payloadOf(entry);
   return {
-    id: entry.id || `review-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+    id: entry.id || stableId("review", status, index, entry.id || "", context.round ?? ""),
     status,
     createdAt: entry.createdAt || entry.queuedAt || now,
     source: entry.source || "overlay-write-set",
@@ -76,7 +77,7 @@ export async function applyOverlayOperation(runtimeDir, op = {}) {
 
 async function appendQueue(runtimeDir, file, entries, context = {}) {
   for (const [index, entry] of entries.entries()) {
-    const id = entry.id || `overlay-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = entry.id || stableId("overlay", file, context.round ?? context.turnId ?? "", index, withoutWallClock(entry));
     const queued = { ...entry, id };
     await appendJsonl(join(runtimeDir, "overlay", file), {
       ...queued

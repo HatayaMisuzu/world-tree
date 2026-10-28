@@ -503,7 +503,7 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
 
   if (result.writeSet?.length) {
     try {
-      await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId });
+      await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId, round: turnCount });
     } catch (e) {
       console.warn("[persistTurn] writeSet 执行失败:", e.message);
     }
@@ -515,6 +515,7 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
     const previousSceneName = kernelContext.livingWorldPacket?.scene?.title || "";
     if (nextSceneName && nextSceneName !== previousSceneName) {
       await transitionScene(baseDir, { title: nextSceneName, modeId: kernelContext.modeId }, {
+        round: turnCount,
         summary: String(result.narrative || "").slice(0, 500),
         modeId: kernelContext.modeId,
         changes: result.appliedMechanismChanges || result.mechanismChanges || []

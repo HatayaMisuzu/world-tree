@@ -1,3 +1,4 @@
+import { rngFrom } from "../../shared/determinism.js";
 // ===== M19 角色卡驱动模式 + M8 增强角色模型 =====
 // v12.19+ 动态人格分层 + 关系网 + 扩展随身物品
 // 角色 = 完整互动世界，DM完全隐退，角色直连user。
@@ -333,7 +334,7 @@ export function characterCardMode(card = {}) {
 }
 
 // ---- 软性拒绝机制 ----
-export function softReject(personalityType = "傲娇", question = "") {
+export function softReject(personalityType = "傲娇", question = "", rng = null) {
   const responses = {
     "傲娇": ["…我干嘛要知道那种事。", "哼，问别人去。"],
     "温柔": ["啊…这个我也不太清楚呢。", "不好意思…" + (question ? "关于" + question + "我帮不上忙。" : "")],
@@ -342,7 +343,7 @@ export function softReject(personalityType = "傲娇", question = "") {
     "元气": ["唔——这个嘛…", "啊哈哈，跳过跳过！"]
   };
   const pool = responses[personalityType] || responses["傲娇"];
-  return pool[Math.floor(Math.random() * pool.length)];
+  return rngFrom(rng, "character-card.softReject", personalityType, question).pick(pool);
 }
 
 // ---- 关系追踪（隐形·叙事化） ----

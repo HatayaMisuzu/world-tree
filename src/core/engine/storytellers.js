@@ -1,3 +1,4 @@
+import { rngFrom } from "../../shared/determinism.js";
 // ===== 叙事者风格系统 v1.0 =====
 // 叙事者不是"文风皮肤"，而是 Director 层的事件调度策略配置。
 // 优先级：疲劳保护 > 剧情连续性 > 玩家情绪 > 叙事者风格 > 文风偏好
@@ -202,7 +203,7 @@ export const STORYTELLERS = {
  * @param {Object} emotion - 当前情绪 { engagement, tension, fatigue, curiosity }
  * @returns {{ score: number, adjustments: string[] }}
  */
-export function applyStorytellerModifiers(baseScore, storyteller = STORYTELLERS.classic, emotion = {}) {
+export function applyStorytellerModifiers(baseScore, storyteller = STORYTELLERS.classic, emotion = {}, rng = null) {
   const st = storyteller || STORYTELLERS.classic;
   const adjustments = [];
   let score = baseScore;
@@ -223,7 +224,7 @@ export function applyStorytellerModifiers(baseScore, storyteller = STORYTELLERS.
 
   // ── 3. 叙事者随机波动 ──
   if (st.randomness > 0.3) {
-    const randomFactor = 0.5 + Math.random() * st.randomness * 2;
+    const randomFactor = 0.5 + rngFrom(rng, "storyteller.modifier", st.id, baseScore, emotion).next() * st.randomness * 2;
     score *= randomFactor;
     adjustments.push(`🎲 随机波动(${st.name})：× ${randomFactor.toFixed(2)}`);
   }
@@ -267,7 +268,7 @@ export function applyStorytellerModifiers(baseScore, storyteller = STORYTELLERS.
  * 根据叙事者调整方向包的 pacing 建议
  * @returns {string} pacing 值
  */
-export function applyStorytellerPacing(storyteller = STORYTELLERS.classic, emotion = {}) {
+export function applyStorytellerPacing(storyteller = STORYTELLERS.classic, emotion = {}, rng = null) {
   const st = storyteller || STORYTELLERS.classic;
   const fatigue = emotion.fatigue || 5;
 
@@ -279,7 +280,7 @@ export function applyStorytellerPacing(storyteller = STORYTELLERS.classic, emoti
   switch (st.pressureCurve) {
     case "escalating": return "escalate";
     case "soft":       return "hold";
-    case "unstable":   return Math.random() > 0.5 ? "hook" : "relief";
+    case "unstable":   return rngFrom(rng, "storyteller.pacing", st.id, emotion).next() > 0.5 ? "hook" : "relief";
     case "slow_burn":  return emotion.curiosity > 6 ? "reveal_partial" : "hold";
     case "arc_based":  return "hold";
     case "quest_based": return emotion.engagement > 5 ? "hook" : "hold";

@@ -292,7 +292,7 @@ export function execSlashCommand({ input, engineState, model }) {
     }
     if (intent.root.includes("存档") && !intent.root.includes("列表") && !intent.root.includes("delete")) {
       // /存档 [名称] — 收集运行时快照，嵌入存档
-      const rawName = modName || intent.action || `auto-${Date.now()}`;
+      const rawName = modName || intent.action || `auto-r${Number(model?.turnCount) || 0}`;
       const prefixedName = rawName.startsWith("[W]") || rawName.startsWith("[C]") || rawName.startsWith("[P]")
         ? rawName : `${modePrefix}${rawName}`;
 
@@ -608,7 +608,7 @@ export function execSlashCommand({ input, engineState, model }) {
     if (action === "复制" || action === "copy" || action === "clone") {
       const parts = worldName.split(/\s+/);
       const source = parts[0] || "";
-      const target = parts[1] || `${source}_分歧_${Date.now()}`;
+      const target = parts[1] || `${source}_分歧_r${Number(model?.turnCount) || 0}`;
       const label = parts.slice(2).join(" ") || "";
       if (!source) {
         return { handled: true, intent,

@@ -1,3 +1,4 @@
+import { stableId } from "../../shared/determinism.js";
 export const OVERLAY_ROOT = "runtime/overlay";
 export const ENGINE_VERSION = "world-tree-v0.2.1";
 
@@ -179,12 +180,21 @@ function summarizePendingChange(op) {
   return "overlay change";
 }
 
+/** Reproducible pending id: same world/round/operation/queue position → same id; bumps on collision. */
+function uniquePendingId(queue, moduleKey, round, operation) {
+  const taken = new Set(queue.map(e => e.id));
+  for (let n = queue.length; ; n += 1) {
+    const id = stableId("pending", moduleKey, round, n, operation?.path || "", operation?.op || operation?.mode || "", operation?.value ?? operation?.payload ?? null);
+    if (!taken.has(id)) return id;
+  }
+}
+
 export function addToPending(moduleKey, operation, options = {}) {
   if (!PENDING_QUEUES.has(moduleKey)) PENDING_QUEUES.set(moduleKey, []);
   const queue = PENDING_QUEUES.get(moduleKey);
   const createdRound = Number.isFinite(Number(options.round)) ? Number(options.round) : 0;
   const entry = {
-    id: `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: uniquePendingId(queue, moduleKey, createdRound, operation),
     createdAt: new Date().toISOString(),
     age: 0,
     createdRound,

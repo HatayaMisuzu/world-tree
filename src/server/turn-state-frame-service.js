@@ -1,4 +1,5 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
+import { stableId } from "../shared/determinism.js";
 
 const SECRET_KEY_RE = /api.?key|secret|token|authorization|cookie|password/i;
 const RUNTIME_ONLY_KEY_RE = /debug|proposal|session|^(?:_?raw|metadata)$/i;
@@ -56,6 +57,7 @@ export function diffConfirmedState(beforeState = {}, afterState = {}, { sourceMe
   const before = new Map(scalarEntries(beforeState));
   const after = new Map(scalarEntries(afterState));
   const changes = [];
+  let changeIndex = 0;
   for (const [target, next] of after) {
     const previous = before.get(target);
     if (Object.is(previous, next)) continue;
@@ -64,7 +66,7 @@ export function diffConfirmedState(beforeState = {}, afterState = {}, { sourceMe
     const numeric = typeof previous === "number" && typeof next === "number";
     const delta = numeric ? next - previous : undefined;
     changes.push(scrubStateValue({
-      id: randomUUID(),
+      id: stableId("change", sourceMessageId, changeIndex++, target, previous ?? null, next),
       type: previous === undefined ? "new" : numeric ? (delta > 0 ? "increase" : delta < 0 ? "decrease" : "set") : "changed",
       category, target, label: labelFor(target), before: previous ?? null, after: next,
       ...(numeric ? { delta } : {}), reason: "已确认运行状态发生变化。", confidence: 1,
@@ -83,13 +85,13 @@ export function sanitizeVisualPacket(packet = {}) {
       const min = Number.isFinite(Number(raw.min)) ? Number(raw.min) : 0;
       const max = Number.isFinite(Number(raw.max)) ? Number(raw.max) : 100;
       const value = Number.isFinite(Number(raw.value)) ? Math.max(min, Math.min(max, Number(raw.value))) : min;
-      cards.push(scrubStateValue({ type: raw.type, id: raw.id || randomUUID(), title: raw.title || "状态", value, min, max, ...(Number.isFinite(Number(raw.delta)) ? { delta: Number(raw.delta) } : {}), label: raw.label || "", hint: raw.hint || "" }));
+      cards.push(scrubStateValue({ type: raw.type, id: raw.id || stableId("card", raw.type, cards.length, raw.title || ""), title: raw.title || "状态", value, min, max, ...(Number.isFinite(Number(raw.delta)) ? { delta: Number(raw.delta) } : {}), label: raw.label || "", hint: raw.hint || "" }));
     }
     if (raw.type === "inventory_grid") {
-      cards.push(scrubStateValue({ type: raw.type, id: raw.id || randomUUID(), title: raw.title || "背包", items: (Array.isArray(raw.items) ? raw.items : []).slice(0, 60).map((item, index) => ({ id: item.id || `item-${index}`, name: item.name || "物品", count: Number.isFinite(Number(item.count)) ? Number(item.count) : 0, ...(Number.isFinite(Number(item.delta)) ? { delta: Number(item.delta) } : {}), tag: item.tag || "" })) }));
+      cards.push(scrubStateValue({ type: raw.type, id: raw.id || stableId("card", raw.type, cards.length, raw.title || ""), title: raw.title || "背包", items: (Array.isArray(raw.items) ? raw.items : []).slice(0, 60).map((item, index) => ({ id: item.id || `item-${index}`, name: item.name || "物品", count: Number.isFinite(Number(item.count)) ? Number(item.count) : 0, ...(Number.isFinite(Number(item.delta)) ? { delta: Number(item.delta) } : {}), tag: item.tag || "" })) }));
     }
     if (raw.type === "status_list") {
-      cards.push(scrubStateValue({ type: raw.type, id: raw.id || randomUUID(), title: raw.title || "状态", items: (Array.isArray(raw.items) ? raw.items : []).slice(0, 60).map(item => ({ label: item.label || "状态", value: String(item.value ?? ""), ...(item.delta !== undefined ? { delta: String(item.delta) } : {}), ...(["new", "changed", "up", "down"].includes(item.status) ? { status: item.status } : {}) })) }));
+      cards.push(scrubStateValue({ type: raw.type, id: raw.id || stableId("card", raw.type, cards.length, raw.title || ""), title: raw.title || "状态", items: (Array.isArray(raw.items) ? raw.items : []).slice(0, 60).map(item => ({ label: item.label || "状态", value: String(item.value ?? ""), ...(item.delta !== undefined ? { delta: String(item.delta) } : {}), ...(["new", "changed", "up", "down"].includes(item.status) ? { status: item.status } : {}) })) }));
     }
   }
   return { version: "visual-dsl.v1", mode: packet.mode === "detailed" ? "detailed" : "simple", cards };
@@ -229,7 +231,7 @@ export function createTurnStateFrame({ turnId, round, userMessageId, assistantMe
   const safeBefore = scrubStateValue(beforeState || emptyConfirmedState());
   const changes = diffConfirmedState(safeBefore, safeAfter, { sourceMessageId: assistantMessageId });
   return scrubStateValue({
-    id: randomUUID(), turnId, round, userMessageId, assistantMessageId, moduleKey, saveId,
+    id: stableId("frame", moduleKey, saveId, turnId, round, hash(safeAfter)), turnId, round, userMessageId, assistantMessageId, moduleKey, saveId,
     ...(worldbookHash ? { worldbookHash } : {}), createdAt,
     beforeStateHash: hash(safeBefore), afterStateHash: hash(safeAfter), afterState: safeAfter,
     changes, visual: visualFromState(safeAfter, changes)

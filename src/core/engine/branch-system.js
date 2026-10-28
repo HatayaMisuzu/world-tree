@@ -17,6 +17,7 @@
 
 import { readFile, writeFile, mkdir, cp, readdir, stat } from "node:fs/promises";
 import { join, basename } from "node:path";
+import { stableId } from "../../shared/determinism.js";
 
 /** async helper — replaces existsSync */
 async function exists(path) {
@@ -38,7 +39,7 @@ async function readJSON(path) {
  */
 function createBranchMeta(opts = {}) {
   return {
-    branchId: opts.branchId || `branch-${Date.now()}`,
+    branchId: opts.branchId || stableId("branch", opts.parentBranch || "main", opts.label || opts.name || "", opts.forkRound ?? opts.round ?? 0),
     parentBranch: opts.parentBranch || "main",
     createdFrom: opts.divergeEvent || null,
     createdAtRound: opts.round || 0,
@@ -78,7 +79,12 @@ export async function createBranch(worldsRoot, worldName, sourceBranch = "main",
   if (!(await exists(srcDir))) return { error: `源分支「${sourceBranch}」不存在` };
 
   // 生成新分支 ID
-  const branchId = `branch-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  // reproducible id: source branch + fork round + label; first free suffix wins
+  let branchId = "";
+  for (let n = 0; ; n += 1) {
+    branchId = stableId("branch", worldName, sourceBranch, opts.round ?? 0, opts.label || "", n);
+    if (!(await exists(join(worldDir, "branches", branchId)))) break;
+  }
   const dstDir = join(worldDir, "branches", branchId);
 
   // 不允许重复
