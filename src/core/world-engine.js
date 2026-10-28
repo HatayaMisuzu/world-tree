@@ -43,6 +43,16 @@ export {
   diffProximityRings,
   recomputeNpcProximity
 } from "./engine/npc-schedule.js";
+export {
+  LOD_RINGS,
+  LOD_RATES,
+  createLodState,
+  applyLodDays,
+  evolveNpcLod,
+  evolveNpcsByLod,
+  continuousNearLod,
+  ensureNpcLod
+} from "./engine/lod-evolve.js";
 // 🆕 跑团模块
 export * as tabletop from "./engine/tabletop.js";
 export * as rpg from "./engine/rpg.js";

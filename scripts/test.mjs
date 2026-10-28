@@ -65,7 +65,7 @@ const CORE_FILES = [
   "src/adapters/llm.js",
   "src/core/world-engine.js",
   "src/core/engine/guardian.js", "src/core/engine/guardian-llm.js",
-  "src/core/engine/global-memory.js", "src/core/engine/lifecycle.js", "src/core/engine/world-tick.js", "src/core/engine/location-graph.js", "src/core/engine/npc-schedule.js",
+  "src/core/engine/global-memory.js", "src/core/engine/lifecycle.js", "src/core/engine/world-tick.js", "src/core/engine/location-graph.js", "src/core/engine/npc-schedule.js", "src/core/engine/lod-evolve.js",
   "src/core/engine/health-check.js", "src/core/engine/overlay-store.js",
   "src/core/engine/emotion-state.js", "src/core/engine/director.js", "src/core/engine/director-prediction-cache.js", "src/core/engine/director-story-hooks.js", "src/core/engine/director-scoring.js",
   "src/core/engine/direction-packet.js", "src/core/engine/commands.js",
