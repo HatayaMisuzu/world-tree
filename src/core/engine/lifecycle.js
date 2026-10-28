@@ -13,6 +13,7 @@ import { summarizeScene, getContextWindow } from "../data/scenes.js";
 import { detectRacialTension } from "../data/race.js";
 import { isCardModeCommand } from "../data/character-card.js";
 import { updateAllProximities, suggestActivationCandidates, analyzeNarrativeGap, proximitySummary, activateEntity } from "../data/proximity-scope.js";
+import { worldTick, resolveTurnDelta, calendarDisplay } from "./world-tick.js";
 import { directNarrative, parseEmotionSection, generateDirectionPacket } from "./director.js";
 import { getDefaultEmotionState } from "./emotion-state.js";
 import { createMemorySnapshot, searchMemorySnapshots, formatMemorySection, loadGlobalMemory } from "./global-memory.js";
@@ -344,6 +345,28 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
   if (sceneChanged.detected) {
     model.entities = updateAllProximities(model.entities, protagonist);
   }
+
+  // s3-1: worldTick(Δt) — wait/idle → one structured period (calendar day)
+  const tickDelta = resolveTurnDelta(input);
+  if (tickDelta) {
+    const tickResult = worldTick({
+      calendar: state.calendar,
+      worldPanel: state.worldPanel,
+      timeline: state.timeline,
+      entities: model.entities,
+      protagonist
+    }, tickDelta);
+    if (tickResult.calendar) state.calendar = tickResult.calendar;
+    if (tickResult.worldPanel) state.worldPanel = tickResult.worldPanel;
+    if (tickResult.timeline) state.timeline = tickResult.timeline;
+    if (tickResult.entities) model.entities = tickResult.entities;
+    overlayPatch.worldTick = {
+      delta: tickDelta,
+      calendar: state.calendar,
+      display: tickResult.display || calendarDisplay(state.calendar)
+    };
+  }
+
   // 分析剧情缺口，生成候选激活建议(不自动激活)
   const activeEntities = (model.entities || []).filter((e) => e.proximity?.level != null && e.proximity.level <= 1);
   const gaps = analyzeNarrativeGap(

@@ -19,6 +19,16 @@ import { withoutWallClock } from "../shared/determinism.js";
 export { ENGINE_VERSION, MODULES, MODULE_PRESETS, DEFAULT_ENGINE_STATE, normalizeEngineState, DIRECTOR_MODES, classifyWorldTreeInput };
 export { parseMarkedOutput, sectionsToOverlayPatch } from "./engine/output-parser.js";
 export { prepareTurn, completeTurn } from "./engine/lifecycle.js";
+export {
+  worldTick,
+  resolveTurnDelta,
+  createCalendar,
+  advanceCalendar,
+  calendarDisplay,
+  TIME_UNITS,
+  SEASON_NAMES,
+  DAY_PHASES
+} from "./engine/world-tick.js";
 // 🆕 跑团模块
 export * as tabletop from "./engine/tabletop.js";
 export * as rpg from "./engine/rpg.js";
