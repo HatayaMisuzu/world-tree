@@ -164,6 +164,29 @@ test("commands: repeated auto-named archive/world-copy in the same turn get dete
   assert.deepEqual(copies, ["甲_分歧_r5", "甲_分歧_r5-2"]);
 });
 
+test("commands: /存档列表 hints when runtime shadows legacy same-name archive", () => {
+  const archives = [
+    { name: "[W]独有", createdAt: "2025-01-01", summary: "only runtime" },
+    { name: "[W]同名", createdAt: "2025-06-01", summary: "primary copy", shadowsLegacy: true }
+  ];
+  const res = execSlashCommand({
+    input: "/存档列表",
+    engineState: { dataMode: "worldbook" },
+    model: { moduleData: { archives } }
+  });
+  assert.equal(res.handled, true);
+  assert.match(res.narrative, /\[W\]同名/);
+  assert.match(res.narrative, /【系统】「\[W\]同名」以 runtime 档为准，旧路径同名已遮蔽。/);
+  assert.doesNotMatch(res.narrative, /「\[W\]独有」以 runtime/);
+  const load = execSlashCommand({
+    input: "/读档 [W]同名",
+    engineState: { dataMode: "worldbook" },
+    model: { moduleData: { archives } }
+  });
+  assert.match(load.narrative, /已读档「\[W\]同名」/);
+  assert.match(load.narrative, /【系统】「\[W\]同名」以 runtime 档为准，旧路径同名已遮蔽。/);
+});
+
 test("overlay pending ids are reproducible and unique within a queue", () => {
   const op = { path: "runtime/overlay/a.json", op: "merge-json", value: { a: 1 } };
   const x1 = addToPending("w-ids-1", op, { round: 2 }); const x2 = addToPending("w-ids-1", op, { round: 2 });

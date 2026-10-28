@@ -76,11 +76,22 @@ function collectArchives(files, module, warnings) {
   const primary = listJson(files, `${module.path}/runtime/archives`);
   const legacy = listJson(files, `${module.path}/archive`);
   const byName = new Map();
-  for (const path of [...primary, ...legacy]) {
+  for (const path of primary) {
     const record = files.get(path);
     const data = readJson(files, path, warnings);
     const archive = normalizeArchive(path, data, record?.text || "");
-    if (!byName.has(archive.name)) byName.set(archive.name, archive);
+    byName.set(archive.name, archive);
+  }
+  for (const path of legacy) {
+    const record = files.get(path);
+    const data = readJson(files, path, warnings);
+    const archive = normalizeArchive(path, data, record?.text || "");
+    if (byName.has(archive.name)) {
+      const kept = byName.get(archive.name);
+      byName.set(archive.name, { ...kept, shadowsLegacy: true });
+    } else {
+      byName.set(archive.name, archive);
+    }
   }
   return [...byName.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
 }
