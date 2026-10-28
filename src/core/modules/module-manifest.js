@@ -94,13 +94,13 @@ const entries = [
   define("mystery.truth_lock", null, "真相锁", "mystery", MODULE_STATUS.DECLARED_ONLY, [], ["validateTruthLock"], ["murder-mystery"], ["mystery.case"], "未来能力声明。"),
   define("mystery.scoring", null, "推理评分", "mystery", MODULE_STATUS.PROTOTYPE_HIDDEN, ["src/core/engine/murder-mystery.js"], ["accuse", "scoreReasoning"], ["murder-mystery"], ["mystery.case"], "隐藏剧本杀原型能力。"),
   define("puzzle.scene", null, "场景谜题", "puzzle", MODULE_STATUS.DECLARED_ONLY, [], ["loadPuzzleScene"], ["mystery-puzzle"], ["scene.session"], "未来能力声明。"),
-  define("strategy.resource", null, "策略资源", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, ["archive/src/core/engine/sim.js"], ["createResources", "advanceResources"], ["strategy-sim"], [], "隐藏模拟经营原型能力。"),
-  define("strategy.calendar", null, "策略日历", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, ["archive/src/core/engine/sim.js"], ["advanceCalendar"], ["strategy-sim"], ["time.timeline"], "隐藏模拟经营原型能力。"),
-  define("strategy.decision", null, "策略决策", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, ["archive/src/core/engine/sim.js"], ["resolveDecision"], ["strategy-sim"], ["strategy.resource"], "隐藏模拟经营原型能力。"),
+  define("strategy.resource", null, "策略资源", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, [], ["createResources", "advanceResources"], ["strategy-sim"], [], "隐藏模拟经营原型能力。源码已归档至 archive/，非产品路径加载源。"),
+  define("strategy.calendar", null, "策略日历", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, [], ["advanceCalendar"], ["strategy-sim"], ["time.timeline"], "隐藏模拟经营原型能力。源码已归档至 archive/，非产品路径加载源。"),
+  define("strategy.decision", null, "策略决策", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, [], ["resolveDecision"], ["strategy-sim"], ["strategy.resource"], "隐藏模拟经营原型能力。源码已归档至 archive/，非产品路径加载源。"),
   define("strategy.faction", null, "策略势力", "strategy", MODULE_STATUS.DECLARED_ONLY, [], ["manageFaction"], ["strategy-sim"], ["entity.organization"], "未来能力声明。"),
   define("strategy.diplomacy", null, "策略外交", "strategy", MODULE_STATUS.DECLARED_ONLY, [], ["resolveDiplomacy"], ["strategy-sim"], ["strategy.faction"], "未来能力声明。"),
   define("strategy.turn", null, "策略回合", "strategy", MODULE_STATUS.DECLARED_ONLY, [], ["advanceTurn"], ["strategy-sim"], ["strategy.calendar", "strategy.decision"], "未来能力声明。"),
-  define("strategy.loyalty", null, "忠诚度", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, ["archive/src/core/engine/sim.js"], ["updateLoyalty"], ["strategy-sim"], ["strategy.faction"], "隐藏模拟经营原型能力。"),
+  define("strategy.loyalty", null, "忠诚度", "strategy", MODULE_STATUS.PROTOTYPE_HIDDEN, [], ["updateLoyalty"], ["strategy-sim"], ["strategy.faction"], "隐藏模拟经营原型能力。源码已归档至 archive/，非产品路径加载源。"),
   define("creation.questioning", null, "创作追问", "creation", MODULE_STATUS.DECLARED_ONLY, ["src/core/data/creation-wizard.js"], ["generateCreationQuestions"], ["creation-forge"], ["creation.alchemy"], "现有向导尚未通过新 registry 包装。"),
   define("creation.outline", null, "创作大纲", "creation", MODULE_STATUS.DECLARED_ONLY, ["src/core/data/creation-wizard.js"], ["generateCreationSummary"], ["creation-forge"], ["creation.questioning"], "现有向导尚未通过新 registry 包装。")
 ];
