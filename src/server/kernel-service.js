@@ -4,7 +4,7 @@ import { createKernelTurnContext, summarizeKernelTurnContext } from "../core/ker
 import { initializeBranchTree, createBranch, switchBranch, listBranches, archiveBranch, resolveActiveBranchProjectRoot, getActiveBranch } from "../core/timeline/branch-manager.js";
 import { createBranchDiffSummary } from "../core/timeline/branch-diff-summary.js";
 import { collectWorldTelemetry } from "../core/telemetry/world-telemetry.js";
-import { approveProposal, rejectProposal } from "../core/system/proposal-bus.js";
+import { approveProposal, rejectProposal, reverseProposal, ingestBusProposal } from "../core/system/proposal-bus.js";
 import { readStopLossWindows } from "../core/content/stop-loss-window.js";
 import { createReverseProposal } from "../core/content/reversible-change.js";
 import { prepareForgeMaterialCandidates } from "../core/creation-forge/forge-processing-adapter.js";
@@ -78,9 +78,17 @@ export async function reverseKernelProposal(projectRoot, proposalId) {
   const windows = await readStopLossWindows(root);
   const window = windows.windows.find((item) => item.proposalId === proposalId && item.status === "open");
   if (!original || !window) throw new Error("proposal or open stop-loss window not found");
+  // Ensure record store knows the approved original (status committed) then attempt record reverse.
+  ingestBusProposal({ ...original, status: "approved" });
+  const recordReverse = reverseProposal(proposalId, "stop-loss reverse requested");
   const reverse = createReverseProposal(original, window);
   await appendJsonl(join(root, "runtime", "world-proposals.jsonl"), reverse);
-  return { status: "ok", proposal: reverse, originalWindowStatus: "open_until_reverse_approved" };
+  return {
+    status: "ok",
+    proposal: reverse,
+    originalWindowStatus: "open_until_reverse_approved",
+    record: recordReverse?.error ? { error: recordReverse.error } : { ok: true, status: recordReverse?.proposal?.status || "reversed" }
+  };
 }
 
 export async function ingestProcessingMaterial(projectRoot, input = {}) { const root = await branchRoot(projectRoot); const prepared = await prepareForgeMaterialCandidates(root, { ...input, content: input.content || input.text || "", sourceLabel: input.sourceLabel || input.sourceType || "kernel-api" }); for (const candidate of prepared.candidates) await appendJsonl(join(root, "runtime", "processing", "extracted-candidates.jsonl"), candidate); return { status: "ok", ...prepared }; }

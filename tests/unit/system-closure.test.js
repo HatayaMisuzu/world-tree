@@ -206,7 +206,7 @@ test("validate proposal", () => {
 
 // ═══ Proposal bus: real approve/reject (temp dir) ═══
 
-test("approveProposal real I/O reads proposal log and writes shared", async () => {
+test("approveProposal routes canon through overlay-store WRITE_POLICY (not shared/)", async () => {
   const root = makeTempProject("wt-prop-approve");
   try {
     const logPath = join(root, "runtime", "world-proposals.jsonl");
@@ -227,11 +227,18 @@ test("approveProposal real I/O reads proposal log and writes shared", async () =
 
     assert.equal(r.ok, true);
     assert.equal(r.status, "approved");
+    assert.equal(r.writePath, "overlay-store");
 
-    // Verify shared file was modified
+    // shared/ must remain untouched — canon goes through overlay WRITE_POLICY
     const shared = readJsonSync(sharedPath, {});
-    assert.equal(shared.title, "new");
-    assert.equal(shared.count, 1);
+    assert.equal(shared.title, "old");
+    assert.equal(shared.count, 0);
+
+    const canonPath = join(root, "runtime", "overlay", "canon-overlay.json");
+    assert.ok(existsSync(canonPath), "canon-overlay.json should be written");
+    const canon = readJsonSync(canonPath, {});
+    assert.equal(canon.title, "new");
+    assert.equal(canon.count, 1);
 
     // Verify proposal log was updated
     const logData = readFileSync(logPath, "utf-8");
@@ -520,8 +527,12 @@ test("approveProposal allows shared/ targetFile", async () => {
 
     assert.equal(r.ok, true);
     assert.equal(r.status, "approved");
+    assert.equal(r.writePath, "overlay-store");
+    // shared base unchanged; overlay carries the approved patch
     const shared = readJsonSync(sharedPath, {});
-    assert.equal(shared.title, "new");
+    assert.equal(shared.title, "old");
+    const canon = readJsonSync(join(root, "runtime", "overlay", "canon-overlay.json"), {});
+    assert.equal(canon.title, "new");
   } finally {
     cleanupDir(root);
   }

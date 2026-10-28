@@ -103,14 +103,16 @@ try {
     "mode-runner catch blocks must return ok:false, not success text");
 } catch {}
 
-// proposal-bus 不再是 status return stub
+// proposal-bus is the external interface; record impl is proposal-system; canon via overlay WRITE_POLICY
 try {
   const proposalBus = readFileSync(resolve(BASE, "src/core/system/proposal-bus.js"), "utf-8");
-  const hasRealIO = proposalBus.includes("readProposalLog") || proposalBus.includes("writeProposalLog") ||
-                    proposalBus.includes("appendJsonl") || proposalBus.includes("writeJson");
-  check("proposal-bus has real I/O", "src/core/system/proposal-bus.js",
-    () => hasRealIO,
-    "proposal-bus must have real file I/O, not just status returns");
+  const wiresRecord = proposalBus.includes("proposal-system.js")
+    && (proposalBus.includes("adoptProposal") || proposalBus.includes("commitProposal"))
+    && proposalBus.includes("WRITE_POLICY");
+  const noSharedDirect = !/writeJsonFn\(targetPath/.test(proposalBus);
+  check("proposal-bus wires proposal-system + WRITE_POLICY", "src/core/system/proposal-bus.js",
+    () => wiresRecord && noSharedDirect,
+    "proposal-bus must facade proposal-system and route canon via overlay WRITE_POLICY");
 } catch {}
 
 // save-system 不再是 ok true stub

@@ -6,7 +6,7 @@
 恢复方法：`git mv archive/<路径> <路径>`。
 
 判定规则：从产品入口（server.js、bin/world-tree.js、HTML `<script>` 标签）出发，跟踪静态 import、require、字面量动态 import；
-engine/ 主干一般不动；tabletop.js、prompt-hidden-sanitizer 绝对保留；`sim.js` 在 dc-4 迁出 `SIM_DM_INSTRUCTION` 后整体归档（PRD §3.3）；被测试/脚本以字符串或动态方式引用的文件保留。
+engine/ 主干一般不动；tabletop.js、prompt-hidden-sanitizer 绝对保留；`sim.js` 在 dc-4 迁出 `SIM_DM_INSTRUCTION` 后整体归档（PRD §3.3）；`system/proposal-bus.js` 在 S4-1 归档旧实现，产品侧保留薄 facade；被测试/脚本以字符串或动态方式引用的文件保留。
 
 | 原路径 | 理由 | 证据 |
 |---|---|---|
@@ -33,6 +33,8 @@ engine/ 主干一般不动；tabletop.js、prompt-hidden-sanitizer 绝对保留�
 | `src/core/v2-ready/time-binding.js` | 仅被同批归档的 v2-ready-normalizer 引用 | `node scripts/reach.mjs` → unreachable；文档提及：docs/ARCHITECTURE_REALITY_CHECK.md docs/V2_READY_FOUNDATION_REPORT.md |
 | `src/core/strategy-sim/index.js` | V1 策略模拟入口；现行为 strategy-sim-mode-adapter（保留） | `node scripts/reach.mjs` → unreachable；文档提及：CHANGELOG.md ST-COMPARISON.md WORLD_TREE_P0_P2_KERNEL_IMPLEMENTATION_REPORT.md docs/AGENT_STATUS_HANDOFF.md docs/AI_AGENT_OPERATING_GUIDE.md docs/ARCH…（共 40 篇文档） |
 | `src/core/strategy-sim/strategy-sim-state.js` | V1 状态，仅被 V1 index.js 引用 | `node scripts/reach.mjs` → unreachable；文档提及：docs/ARCHITECTURE_REALITY_CHECK.md |
+
+| `src/core/system/proposal-bus.js` | S4-1：外部接口名仍为 proposal-bus，记录实现收敛到 `engine/proposal-system.js`（adopt/commit/reject/reverse + stop-loss）；canon 写入走 overlay-store WRITE_POLICY；旧 JSONL/shared 直写实现归档 | `node scripts/reach.mjs` → archive 下 unreachable；产品路径为薄 facade `src/core/system/proposal-bus.js` |
 
 | `src/core/engine/sim.js` | `SIM_DM_INSTRUCTION` 已迁至 `src/core/engine/sim-dm-instruction.js`；createResources/advanceResources/createCalendar 等机制函数无产品调用方（PRD §3.3 / 组长裁定）；`export * as sim` 已删除 | `node scripts/reach.mjs` → archive 下 unreachable；产品路径仅保留 sim-dm-instruction |
 
