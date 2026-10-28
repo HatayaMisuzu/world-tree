@@ -1,11 +1,11 @@
 // ===== Director 层 v1 =====
 // 叙事导演层：介于 prepareTurn 与 buildEnginePacket 之间
 // 职责：情绪评估 → 叙事需求分析 → 事件评分 → 节奏控制 → 事件预测缓存
-//
 // 依赖：emotion-state.js, random-events.js (仅环境事件)
 
 import { getEmotionProfile, updateEmotionState, getDefaultEmotionState, formatEmotionState } from "./emotion-state.js";
 import { proposeRandomEvent } from "../data/random-events.js";
+import { deriveRng, rngFrom } from "../../shared/determinism.js";
 import { createDirectionPacket, normalizeDirectionPacket, summarizeDirectionPacket, PACING_OPTIONS, PRESSURE_OPTIONS, EVENT_INTENSITY_OPTIONS } from "./direction-packet.js";
 import { getStoryteller, applyStorytellerModifiers, applyStorytellerPacing, storytellerStrategySummary } from "./storytellers.js";
 import { EVENT_SCORE, PACING_THRESHOLDS, PREDICTION_CACHE } from "./constants.js";
@@ -247,7 +247,7 @@ export function calculateEventScore(context = {}) {
   if (coreChars === 0) { scores.ambient += EVENT_SCORE.AMBIENT_NO_CORE_CHARS_BONUS; reasons.push(`无核心角色 → 环境事件+${EVENT_SCORE.AMBIENT_NO_CORE_CHARS_BONUS}`); }
 
   // ④ 随机波动（避免完全确定性）
-  scores.ambient += Math.random() * EVENT_SCORE.AMBIENT_RANDOM_MAX;
+  scores.ambient += rngFrom(context.rng, context.worldSeed ?? "world-tree", round || 0, "director.ambient").next() * EVENT_SCORE.AMBIENT_RANDOM_MAX;
 
   // ---- 综合决策 ----
   const method = scores.core > EVENT_SCORE.JUDGMENT_SCORE_THRESHOLD ? "judgment" : (scores.core > EVENT_SCORE.PROBABILITY_SCORE_THRESHOLD || scores.ambient > EVENT_SCORE.AMBIENT_PROBABILITY_THRESHOLD) ? "probability" : "none";
@@ -289,7 +289,7 @@ export function shouldTriggerEvent(assessment, context = {}) {
 
   // 概率制：以分数/100 作为概率权重
   const weight = (assessment.score || 0) / 100;
-  if (Math.random() < weight) {
+  if (rngFrom(context.rng, context.worldSeed ?? "world-tree", context.round || 0, "director.trigger").next() < weight) {
     return {
       trigger: true,
       method: "probability",
@@ -390,8 +390,7 @@ export function directNarrative(opts = {}) {
     proximityEntities = [],
     round = 0,
     sceneChanged = false,
-    plotState = {},
-    lastEventRound = 0
+    plotState = {}, lastEventRound = 0, worldSeed = "world-tree"
   } = opts;
 
   // 1. 更新情绪状态
@@ -427,14 +426,14 @@ export function directNarrative(opts = {}) {
     // 节奏阻止新事件
     assessment = calculateEventScore({
       emotion: updatedEmotion, proximity: proximityEntities,
-      round, sceneChanged, plotState, lastEventRound
+      round, sceneChanged, plotState, lastEventRound, worldSeed
     });
     triggerResult = { trigger: false, method: "pacing_blocked", event: null };
 
     // 边界分（20-50）的未触发事件→缓存，等后续轮次自然冒泡
     if (assessment.score >= 20 && assessment.score <= 50) {
       cacheEventPrediction(assessment, proposeRandomEvent({
-        round, sceneChanged, worldType: opts.worldType || "daily",
+        round, sceneChanged, worldType: opts.worldType || "daily", worldSeed,
         forceLevel: assessment.type === "ambient" ? "light" : "moderate"
       }), { round, worldType: opts.worldType || "daily" });
     }
@@ -442,9 +441,9 @@ export function directNarrative(opts = {}) {
     // 正常评估
     assessment = calculateEventScore({
       emotion: updatedEmotion, proximity: proximityEntities,
-      round, sceneChanged, plotState, lastEventRound
+      round, sceneChanged, plotState, lastEventRound, worldSeed
     });
-    triggerResult = shouldTriggerEvent(assessment, { round, sceneChanged, worldType: opts.worldType || "daily" });
+    triggerResult = shouldTriggerEvent(assessment, { round, sceneChanged, worldType: opts.worldType || "daily", worldSeed });
 
     // 边缘分（20-50）但未触发→缓存
     if (!triggerResult.trigger && assessment.score >= 20 && assessment.score <= 50) {
@@ -517,7 +516,7 @@ export function generateDirectionPacket(opts = {}) {
     worldSubType = "classic",  // 🆕 classic | tabletop | rpg | sim | murder-mystery
     storytellerId = "classic",  // 🆕 叙事者风格
     telemetrySnapshot = null,
-    telemetryHints = []
+    telemetryHints = [], worldSeed = "world-tree"
   } = opts;
 
   // 🆕 加载叙事者配置
@@ -526,7 +525,7 @@ export function generateDirectionPacket(opts = {}) {
   // 复用或重新计算 Director 结果
   const result = existingResult || directNarrative({
     emotionState, input, proximityEntities,
-    round, sceneChanged, plotState, lastEventRound, worldType
+    round, sceneChanged, plotState, lastEventRound, worldType, worldSeed
   });
 
   const emotion = result.emotion;
@@ -583,7 +582,7 @@ export function generateDirectionPacket(opts = {}) {
     chosenPacing = llmAnalysis.pacingSuggestion;
   } else {
     // 🆕 叙事者节奏倾向
-    chosenPacing = applyStorytellerPacing(storyteller, emotion.state) || pacingMap[signal] || "hold";
+    chosenPacing = applyStorytellerPacing(storyteller, emotion.state, deriveRng(worldSeed, round, "storyteller.pacing")) || pacingMap[signal] || "hold";
   }
 
   // ④ pressure：LLM 建议优先，JS 紧张度映射兜底

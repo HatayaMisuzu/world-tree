@@ -1,4 +1,5 @@
 import { normalizeWorldbookEntries } from "../cards.js";
+import { rngFrom, stableId } from "../../shared/determinism.js";
 
 // --------------- M2 触发式条目系统 ---------------
 // 完整实现 v12.19 世界书匹配引擎
@@ -62,7 +63,7 @@ function _vectorMatch(entry, query, vectors, queryVector = null) {
 export function buildVectorIndex(entries = [], contentField = "content") {
   const vectors = {};
   for (const entry of entries) {
-    const key = entry.id || entry.keys?.[0] || `entry-${Math.random().toString(36).slice(2, 8)}`;
+    const key = entry.id || entry.keys?.[0] || stableId("entry", entry.title || "", entry[contentField] || "");
     vectors[key] = tokenFreq(`${entry.title || ""} ${entry.keys || ""} ${entry[contentField] || ""}`);
   }
   return vectors;
@@ -126,7 +127,7 @@ export function matchEntries(worldbook, input = "", options = {}) {
     if (!entry.inject || entry.matchType === "persistent") continue;
     const prob = entry.probability ?? entry.triggerProb ?? 100;
     if (prob >= 100) continue;
-    const roll = Math.floor(Math.random() * 100) + 1;
+    const roll = rngFrom(options.rng, options.seed ?? "worldbook", options.round ?? 0, input, entry.id || entry.title || "", "worldbook.probability").int(100) + 1;
     if (roll > prob) { entry.inject = false; entry.dropReason = `probability:${prob}`; }
   }
 
@@ -279,7 +280,7 @@ function _semanticStats(entry, query) {
 
 export function proposeEntry({ keys = [], content = "", priority = 100, source = "llm" }) {
   return {
-    id: `proposed-${Date.now()}`,
+    id: stableId("proposed", keys, content, source),
     keys,
     content,
     priority,

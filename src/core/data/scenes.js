@@ -1,6 +1,7 @@
+import { stableId } from "../../shared/determinism.js";
 export function addScene(chain = {}, scene = {}) {
   const scenes = Array.isArray(chain.scenes) ? chain.scenes : [];
-  return { ...chain, scenes: [...scenes, { ...scene, id: scene.id || `scene-${Date.now()}`, createdAt: new Date().toISOString() }] };
+  return { ...chain, scenes: [...scenes, { ...scene, id: scene.id || stableId("scene", scenes.length, scene.title || scene.name || "", scene.summary || ""), createdAt: new Date().toISOString() }] };
 }
 
 export function rotateChain(chain = {}, max = 8) {

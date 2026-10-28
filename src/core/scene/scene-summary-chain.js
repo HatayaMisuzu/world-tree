@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { stableId } from "../../shared/determinism.js";
 import { appendJsonl, readJsonlTail, readJson, writeJson } from "../../shared/fs-utils.js";
 
 const currentScenePath = (root) => join(root, "runtime", "current-scene.json");
@@ -9,7 +10,7 @@ export function createDeterministicSceneSummary(scene = {}, context = {}) {
   const changes = (context.changes || []).slice(0, 3).map((item) => ({ type: item.changeType || item.type || "event", text: item.reason || item.summary || "状态发生变化", trackingRef: item.id || null }));
   const summary = events.length ? events.join("；") : `${scene.title || "本场景"}告一段落。`;
   return {
-    id: context.id || `ss_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: context.id || stableId("ss", scene.sceneId || scene.id || "", scene.title || "", context.round ?? "", summary),
     modeId: scene.modeId || context.modeId || "",
     sceneId: scene.sceneId || scene.id || "",
     title: scene.title || "未命名场景",
@@ -39,7 +40,7 @@ export async function transitionScene(projectRoot, nextScene = {}, context = {})
     summary = createDeterministicSceneSummary(current, context);
     await appendJsonl(summariesPath(projectRoot), summary);
   }
-  const normalized = { version: 1, ...nextScene, sceneId: nextScene.sceneId || nextScene.id || `scene_${Date.now()}`, startedAt: nextScene.startedAt || new Date().toISOString() };
+  const normalized = { version: 1, ...nextScene, sceneId: nextScene.sceneId || nextScene.id || stableId("scene", current?.sceneId || current?.id || "", nextScene.title || nextScene.name || nextScene.location || "", context.round ?? context.turnId ?? ""), startedAt: nextScene.startedAt || new Date().toISOString() };
   await writeJson(currentScenePath(projectRoot), normalized);
   return { currentScene: normalized, summary };
 }

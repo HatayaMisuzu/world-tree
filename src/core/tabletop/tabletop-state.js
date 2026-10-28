@@ -1,3 +1,4 @@
+import { defaultRngFor, rngFn } from "../../shared/determinism.js";
 export function createDefaultState() { return { schemaVersion: 1, modeMeaning: "solo_tabletop_narrative", player: { name: "玩家" }, clocks: [], sessionLog: [] }; }
-export function resolveCheck(difficulty = 1) { const roll = Math.floor(Math.random() * 6) + 1; return { roll, outcome: roll >= difficulty * 3 ? "success" : roll >= difficulty ? "partial" : "failure" }; }
+export function resolveCheck(difficulty = 1, rng = rngFn(defaultRngFor("tabletop", 0, "tabletop.resolveCheck", difficulty))) { const roll = Math.floor(rng() * 6) + 1; return { roll, outcome: roll >= difficulty * 3 ? "success" : roll >= difficulty ? "partial" : "failure" }; }
 export function createProposal(type, summary) { return { id: `prop_${Date.now()}`, type, summary, status: "pending" }; }

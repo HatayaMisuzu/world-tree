@@ -1,3 +1,4 @@
+import { stableId } from "../../shared/determinism.js";
 export const PROCESSING_STEPS = [
   "逻辑检查",
   "矛盾检测",
@@ -20,7 +21,7 @@ export function scoreMaterial(text = "") {
 
 export function createProcessingPackage(name, material = "") {
   return {
-    id: `package-${Date.now()}`,
+    id: stableId("package", name || "", material),
     name: name || "未命名设定包",
     material,
     report: scoreMaterial(material),

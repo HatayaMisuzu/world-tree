@@ -1,3 +1,4 @@
+import { rngFrom } from "../../shared/determinism.js";
 /**
  * Legacy compatibility bridge — V1 active-compatibility.
  *
@@ -440,7 +441,8 @@ export function simulateNPCPlayer(caseData, state, npcId, context = "discussion"
   if (isMurderer) {
     // 凶手会试图误导
     const others = caseData.characters.filter(ch => !ch.isMurderer && ch.id !== state.playerCharacterId);
-    const target = others.length ? others[Math.floor(Math.random() * others.length)] : null;
+    const rng = rngFrom(null, "murder-mystery.npc", caseData.id || caseData.title || "", npcId, state.round ?? state.turn ?? state.revealedClues?.size ?? 0, context);
+    const target = others.length ? rng.pick(others) : null;
     return {
       character: npc.name,
       role: npc.role,
@@ -453,7 +455,7 @@ export function simulateNPCPlayer(caseData, state, npcId, context = "discussion"
 
   // 普通角色分享线索观察
   if (npcKnowledge.length) {
-    const share = npcKnowledge[Math.floor(Math.random() * npcKnowledge.length)];
+    const share = rngFrom(null, "murder-mystery.share", caseData.id || caseData.title || "", npcId, npcKnowledge, context).pick(npcKnowledge);
     return {
       character: npc.name,
       role: npc.role,

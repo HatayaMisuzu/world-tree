@@ -5,6 +5,19 @@ import { resetPredictionCache, getEventCache } from "./director.js";
 import { resetEventCache, getEventHistory } from "../data/random-events.js";
 import { runHealthCheck, formatHealthReport } from "./health-check.js";
 
+/** Deterministic de-dup: base, base-2, base-3 … against names already known to the model. */
+export function uniqueAutoName(base, takenNames = []) {
+  const taken = new Set(takenNames.filter(Boolean));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
+}
+
+function namesOf(list) {
+  return (Array.isArray(list) ? list : []).map((x) => (typeof x === "string" ? x : x?.name || x?.id));
+}
+
 export function classifyWorldTreeInput(input = "") {
   const text = String(input || "").trim();
   const slash = text.match(/^\/(\S+)(?:\s+(\S+))?(?:\s+([\s\S]*))?$/);
@@ -292,9 +305,12 @@ export function execSlashCommand({ input, engineState, model }) {
     }
     if (intent.root.includes("存档") && !intent.root.includes("列表") && !intent.root.includes("delete")) {
       // /存档 [名称] — 收集运行时快照，嵌入存档
-      const rawName = modName || intent.action || `auto-${Date.now()}`;
-      const prefixedName = rawName.startsWith("[W]") || rawName.startsWith("[C]") || rawName.startsWith("[P]")
+      const explicitName = modName || intent.action || "";
+      const rawName = explicitName || `auto-r${Number(model?.turnCount) || 0}`;
+      const basePrefixed = rawName.startsWith("[W]") || rawName.startsWith("[C]") || rawName.startsWith("[P]")
         ? rawName : `${modePrefix}${rawName}`;
+      // 自动名在同回合重复时确定性加序号；用户显式命名保持原样（覆盖语义）
+      const prefixedName = explicitName ? basePrefixed : uniqueAutoName(basePrefixed, namesOf(model?.moduleData?.archives));
 
       // 收集当前运行时状态（情绪/缓存/事件历史）
       const runtimeSnapshot = collectRuntimeSnapshot(state, {
@@ -307,6 +323,7 @@ export function execSlashCommand({ input, engineState, model }) {
         patch: commandPatch("archive-save", {
           name: prefixedName,
           dataMode: mode,
+          autoNamed: !explicitName,
           overlayPath: `data/engine/runs/${mode}/archives/${prefixedName}.json`,
           runtimeSnapshot  // 🆕 嵌入运行时快照
         })
@@ -608,7 +625,8 @@ export function execSlashCommand({ input, engineState, model }) {
     if (action === "复制" || action === "copy" || action === "clone") {
       const parts = worldName.split(/\s+/);
       const source = parts[0] || "";
-      const target = parts[1] || `${source}_分歧_${Date.now()}`;
+      const target = parts[1] || uniqueAutoName(`${source}_分歧_r${Number(model?.turnCount) || 0}`,
+        [...namesOf(model?.worlds), ...namesOf(model?.moduleData?.worlds)]);
       const label = parts.slice(2).join(" ") || "";
       if (!source) {
         return { handled: true, intent,

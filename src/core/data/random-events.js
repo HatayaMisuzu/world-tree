@@ -1,3 +1,4 @@
+import { rngFrom } from "../../shared/determinism.js";
 // ===== M17 随机性模块 =====
 // v2 — 概率 vs 判断分离
 //
@@ -12,8 +13,8 @@
 const CACHE = { lastEventLevel: "", lastEventRound: 0, eventHistory: [] };
 
 // ---- 纯概率判定（仅用于环境事件/气氛调剂） ----
-export function eventChance(weight = 0.15) {
-  return Math.random() < weight;
+export function eventChance(weight = 0.15, rng = null, ...seedParts) {
+  return rngFrom(rng, "events.chance", weight, ...seedParts).next() < weight;
 }
 
 // ---- 事件模板池（Director 层调用） ----
@@ -26,6 +27,7 @@ export function eventChance(weight = 0.15) {
 export function proposeRandomEvent(context = {}) {
   const round = context.round || 0;
   const forceLevel = context.forceLevel; // "light" | "moderate" | "major" | null
+  const rng = rngFrom(context.rng, context.worldSeed ?? "world-tree", round, "events.propose", forceLevel || "auto");
 
   // 冷却检查（Director 跳过时自己已经判断过了，但保留双重保险）
   if (!forceLevel && CACHE.lastEventRound && round - CACHE.lastEventRound < 3) return null;
@@ -36,7 +38,7 @@ export function proposeRandomEvent(context = {}) {
     level = forceLevel;
   } else {
     // 无强制级别时，按概率随机抽（Director 计分制下不应该走到这里）
-    const roll = Math.random();
+    const roll = rng.next();
     level = roll < 0.55 ? "light" : roll < 0.85 ? "moderate" : "major";
   }
 
@@ -47,7 +49,7 @@ export function proposeRandomEvent(context = {}) {
 
   const titleMap = { light: "轻松调剂", moderate: "中等事件", major: "重大事件" };
   const generators = { light: generateLightDiversion, moderate: generateModerateEvent, major: generateMajorEvent };
-  const proposal = (generators[level] || generateLightDiversion)(context);
+  const proposal = (generators[level] || generateLightDiversion)({ ...context, rng });
 
   CACHE.lastEventLevel = level;
   CACHE.lastEventRound = round;
@@ -96,7 +98,7 @@ function generateLightDiversion(context = {}) {
     ]
   };
   const items = pool[type] || pool.urban;
-  return items[Math.floor(Math.random() * items.length)];
+  return rngFrom(context.rng, context.worldSeed ?? "world-tree", context.round || 0, type).pick(items);
 }
 
 // ---- 中等事件池（Director 计分制） ----
@@ -131,7 +133,7 @@ function generateModerateEvent(context = {}) {
     ]
   };
   const items = pool[type] || pool.urban;
-  return items[Math.floor(Math.random() * items.length)];
+  return rngFrom(context.rng, context.worldSeed ?? "world-tree", context.round || 0, type).pick(items);
 }
 
 // ---- 重大事件池（Director 计分制） ----
@@ -161,7 +163,7 @@ function generateMajorEvent(context = {}) {
     ]
   };
   const items = pool[type] || pool.urban;
-  return items[Math.floor(Math.random() * items.length)];
+  return rngFrom(context.rng, context.worldSeed ?? "world-tree", context.round || 0, type).pick(items);
 }
 
 // ---- 历史查询 ----

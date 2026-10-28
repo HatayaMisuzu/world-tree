@@ -1,3 +1,4 @@
+import { stableId } from "../../shared/determinism.js";
 // ===== 时间线与因果链 v1 =====
 // 构建于现有 timeline.js 之上。
 // 新增：事件依赖图(DAG)、因果链、改动影响回溯、命运回响(echoes)、伏笔追踪。
@@ -110,7 +111,7 @@ export function createTimelineEvent(opts = {}) {
   // 注册回响
   for (const echo of echoes) {
     TIMELINE_STORE.echoes.push({
-      id: `echo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: stableId("echo", event.id, echo, TIMELINE_STORE.echoes.length),
       eventId: event.id,
       trigger: echo.trigger || "",
       effect: echo.effect || "",

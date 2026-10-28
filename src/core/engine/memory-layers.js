@@ -1,3 +1,4 @@
+import { stableId } from "../../shared/determinism.js";
 // ===== 五层记忆体系 v1 =====
 // 构建于 global-memory.js（快照层）之上，提供分层记忆管理。
 //
@@ -95,7 +96,7 @@ export function stmContext(maxTokens = 1000) {
 /** 记录会话级重要时刻 */
 export function sessionRecord({ type, summary, importance = "medium", keywords = [] }) {
   const entry = {
-    id: `session-${Date.now()}`,
+    id: stableId("session", MEMORY_LAYERS.stm.currentRound, MEMORY_LAYERS.session.entries.length, type, summary),
     type,                    // event / decision / discovery / emotional_peak / plot_twist
     summary,
     importance,              // low / medium / high / critical
@@ -212,7 +213,7 @@ export function characterMemoryContext(name) {
  */
 export function confirmWorldFact(fact, source = "narrative", confidence = "confirmed", category = "event") {
   const entry = {
-    id: `world-${Date.now()}`,
+    id: stableId("world", MEMORY_LAYERS.world.entries.length, fact, source, category),
     fact,
     source,
     confidence,
