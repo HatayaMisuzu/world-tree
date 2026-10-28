@@ -47,7 +47,7 @@ export function normalizeAdventureModule(input = {}) {
       notes: c.notes || "",
     })),
     worldbookRefs: input.worldbookRefs || [],
-    clocks: (input.clocks || []).map(normalizeClockFromModule),
+    clocks: (input.clocks || []).map((c, i) => normalizeClockFromModule(c, i)),
     randomTables: input.randomTables || [],
     startPolicy: input.startPolicy || { type: "default", requirePlayerCharacter: true },
     savePolicy: input.savePolicy || { type: "default", maxSlots: 10 },
@@ -102,9 +102,9 @@ function normalizeScene(scene = {}, index = 0) {
   };
 }
 
-function normalizeClockFromModule(clock = {}) {
+function normalizeClockFromModule(clock = {}, index = 0) {
   return {
-    id: clock.id || stableId("clock", clock.label || "时钟", clock.segments || 4, clock.visibility || "public", clock.source || "module"),
+    id: clock.id || stableId("clock", clock.label || "时钟", clock.segments || 4, clock.visibility || "public", clock.source || "module", index),
     label: clock.label || "时钟",
     segments: clock.segments || 4,
     value: clock.value !== undefined ? clock.value : 0,
