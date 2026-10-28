@@ -74,6 +74,10 @@ export function assertPathInsideRoot(rootPath, userPath, label = "path") {
 
 export function realPathWithinRoot(rootPath, targetPath) {
   if (!rootPath || !targetPath) return false;
+  // Lexical containment is always required: when the root does not exist yet we
+  // validate against an existing ancestor, which alone would admit siblings of
+  // the root (e.g. "<parent>/other/file").
+  if (!pathWithinRoot(resolve(rootPath), resolve(targetPath))) return false;
   // The root itself may not exist yet (e.g. validating paths for a directory
   // that is about to be created). Walk up from the root to its nearest existing
   // ancestor and validate against that instead of failing outright.

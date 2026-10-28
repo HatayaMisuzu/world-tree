@@ -127,3 +127,38 @@ test("startup recovery scan finds and rolls back world journals", async () => {
     assert.deepEqual(await readJsonl(file.chat), [{ id: "seed" }]);
   });
 });
+
+test("H5: a corrupt journal is quarantined and other journals still recover", async () => {
+  await withTempRoot(async (root) => {
+    const bad = paths(join(root, "a-corrupt-world"));
+    const { mkdir, writeFile, readdir } = await import("node:fs/promises");
+    await mkdir(join(root, "a-corrupt-world", "runtime", "transactions"), { recursive: true });
+    await writeFile(bad.journal, "{not json", "utf8");
+
+    const good = await seed(join(root, "b-good-world"));
+    await assert.rejects(
+      () => createTurnTransaction({ journalPath: good.journal, faultInjector: crashAt("after-state") }).transact({ id: "tx-good", operations: operations(good) }),
+      /simulated crash/
+    );
+
+    const warn = console.warn; console.warn = () => {};
+    let recoveries;
+    try { ({ recoveries } = await recoverTurnTransactionsUnderRoot(root)); } finally { console.warn = warn; }
+
+    const badResult = recoveries.find((item) => item.journalPath === bad.journal);
+    assert.equal(badResult?.action, "quarantined");
+    assert.equal(existsSync(bad.journal), false);
+    const quarantined = (await readdir(join(root, "a-corrupt-world", "runtime", "transactions"))).filter((name) => name.startsWith("turn.json.corrupt-"));
+    assert.equal(quarantined.length, 1);
+    assert.equal(await readFile(join(root, "a-corrupt-world", "runtime", "transactions", quarantined[0]), "utf8"), "{not json");
+
+    const goodResult = recoveries.find((item) => item.journalPath === good.journal);
+    assert.equal(goodResult?.action, "rollback");
+    assert.deepEqual(readJsonSync(good.state, null), { turnCount: 0 });
+    assert.deepEqual(await readJsonl(good.chat), [{ id: "seed" }]);
+    assert.equal(existsSync(good.journal), false);
+
+    // A second scan is clean (quarantined file is not named turn.json).
+    assert.deepEqual((await recoverTurnTransactionsUnderRoot(root)).recoveries, []);
+  });
+});

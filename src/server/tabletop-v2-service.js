@@ -637,18 +637,23 @@ export async function switchTabletopV2Branch(body = {}, deps = {}) {
 
     // Restore the branch's forked game state so the run actually continues from
     // the branch's divergence point instead of keeping the old lineage state.
+    // Degrades gracefully (label-only switch) if the branch/save file is missing or corrupt.
     const branchFilePath = join(branchesDir(dataRoot, runId), `${branchId}.json`);
-    if (existsSync(branchFilePath)) {
-      const branchRecord = JSON.parse(readFileSync(branchFilePath, "utf-8"));
-      const forkedSaveId = branchRecord.forkedFromSaveId;
-      if (forkedSaveId) {
-        const forkedSavePath = join(savesDir(dataRoot, runId), `${forkedSaveId}.json`);
-        if (existsSync(forkedSavePath)) {
-          const forkedSave = JSON.parse(readFileSync(forkedSavePath, "utf-8"));
-          const restored = restoreSaveSlot(forkedSave);
-          Object.assign(runState, restored);
+    try {
+      if (existsSync(branchFilePath)) {
+        const branchRecord = JSON.parse(readFileSync(branchFilePath, "utf-8"));
+        const forkedSaveId = branchRecord.forkedFromSaveId;
+        if (forkedSaveId) {
+          const forkedSavePath = join(savesDir(dataRoot, runId), `${forkedSaveId}.json`);
+          if (existsSync(forkedSavePath)) {
+            const forkedSave = JSON.parse(readFileSync(forkedSavePath, "utf-8"));
+            const restored = restoreSaveSlot(forkedSave);
+            Object.assign(runState, restored);
+          }
         }
       }
+    } catch (err) {
+      console.warn(`[tabletop-v2] branch ${branchId} forked state not restored: ${err?.message || err}`);
     }
 
     // Update run state to reflect active branch switch

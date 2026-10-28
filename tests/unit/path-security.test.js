@@ -123,3 +123,37 @@ test("resolveInsideRoot allows normal paths and symlinks that remain inside root
     assert.ok(resolveInsideRoot(root, "shared/safe.json"));
   });
 });
+
+// ── H2 (audit 2026-08-21): root directory may not exist yet ──
+
+test("H2: import into a not-yet-created world root succeeds while traversal is still rejected", async () => {
+  const { prepareImportFiles } = await import("../../src/server/data-import-service.js");
+  const { realPathWithinRoot } = await import("../../src/server/path-security.js");
+  await withTempRoot(async (base) => {
+    const root = join(base, "worlds", "brand-new-world"); // does not exist
+    const prepared = prepareImportFiles(root, { "world.json": "{}", "runtime/chat.jsonl": "{\"a\":1}\n" });
+    assert.deepEqual(prepared.map((item) => relative(root, item.targetPath).replace(/\\/g, "/")), ["world.json", "runtime/chat.jsonl"]);
+    assert.equal(resolveInsideRoot(root, "runtime/state.json"), join(root, "runtime", "state.json"));
+
+    for (const bad of ["../escape.json", "../../worlds/other/world.json", "%2e%2e/escape.json", "a/../../escape.json", "/etc/passwd.json", "C:/x.json"]) {
+      assert.throws(() => prepareImportFiles(root, { [bad]: "{}" }), (err) => err.code === "IMPORT_FILE_KEY_INVALID", bad);
+      assert.equal(resolveInsideRoot(root, bad), null, bad);
+    }
+    // Direct realpath check must not admit siblings of a missing root via its existing ancestor.
+    assert.equal(realPathWithinRoot(root, join(base, "worlds", "other", "world.json")), false);
+    assert.equal(realPathWithinRoot(root, join(root, "world.json")), true);
+  });
+});
+
+test("H2: missing root under a symlinked ancestor cannot reach outside through the symlink", async () => {
+  await withTempRoot(async (base) => {
+    const outside = join(base, "outside");
+    await mkdir(outside, { recursive: true });
+    const inside = join(base, "inside");
+    await mkdir(inside, { recursive: true });
+    await symlink(outside, join(inside, "link"), "dir");
+    const root = join(inside, "new-world"); // missing
+    assert.equal(resolveInsideRoot(root, "link/x.json"), join(root, "link", "x.json")); // lexical, under missing root: fine
+    assert.equal(resolveInsideRoot(inside, "link/x.json"), null); // existing root, symlink escape rejected
+  });
+});
