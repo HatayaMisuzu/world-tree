@@ -1,8 +1,7 @@
 import { startupPacket } from "../core/commands.js";
 import { moduleTitle } from "../core/normalizers.js";
 import { completeTurn, DIRECTOR_MODES, moduleContext, renderKnowledgeCards, scrubPromptForPrivacy } from "../core/world-engine.js";
-import { characterCardMode } from "../core/data/character-card.js";
-import { cardModeNarrativeHint } from "../core/data/character-card.js";
+import { characterCardMode, cardModeNarrativeHint } from "../core/data/character-card.js";
 import { styleInstruction } from "../core/data/templates.js";
 import { buildDirectorPacket, buildWriterPacket, buildEnginePacket, buildGuardianPacket } from "../core/world-engine.js";
 import { formatDirectionPacket } from "../core/engine/direction-packet.js";
@@ -12,12 +11,7 @@ import { extractVisibleNarrative } from "../core/engine/output-parser.js";
 import { joinPromptSafetyClauses } from "../core/prompts/prompt-safety-clauses.js";
 import { renderOrderedPromptSections } from "../core/prompts/prompt-section-order.js";
 import { resolveProvider } from "./providers/index.js";
-import {
-  extractJsonValue,
-  validateChatCompletionJson,
-  validateDirectionPacketJson,
-  validateLlmAnalysisJson
-} from "../core/llm/json-extract.js";
+import { extractJsonValue, validateChatCompletionJson, validateDirectionPacketJson, validateLlmAnalysisJson } from "../core/llm/json-extract.js";
 import { createHash } from "node:crypto";
 import { worldSeedOf } from "../shared/determinism.js";
 

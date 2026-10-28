@@ -1,7 +1,6 @@
 // ===== Director 层 v1 =====
 // 叙事导演层：介于 prepareTurn 与 buildEnginePacket 之间
 // 职责：情绪评估 → 叙事需求分析 → 事件评分 → 节奏控制 → 事件预测缓存
-//
 // 依赖：emotion-state.js, random-events.js (仅环境事件)
 
 import { getEmotionProfile, updateEmotionState, getDefaultEmotionState, formatEmotionState } from "./emotion-state.js";
@@ -472,10 +471,7 @@ export function directNarrative(opts = {}) {
     proximityEntities = [],
     round = 0,
     sceneChanged = false,
-    plotState = {},
-    lastEventRound = 0,
-    worldSeed = "world-tree",
-    moduleData = null
+    plotState = {}, lastEventRound = 0, worldSeed = "world-tree", moduleData = null
   } = opts;
   const storyHooks = Array.isArray(opts.storyHooks) ? opts.storyHooks : collectStoryHooks(moduleData || {});
 
@@ -610,8 +606,7 @@ export function generateDirectionPacket(opts = {}) {
     worldSubType = "classic",  // 🆕 classic | tabletop | rpg | sim | murder-mystery
     storytellerId = "classic",  // 🆕 叙事者风格
     telemetrySnapshot = null,
-    telemetryHints = [],
-    worldSeed = "world-tree"
+    telemetryHints = [], worldSeed = "world-tree"
   } = opts;
 
   // 🆕 加载叙事者配置
