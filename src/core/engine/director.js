@@ -1,372 +1,19 @@
 // ===== Director 层 v1 =====
 // 叙事导演层：介于 prepareTurn 与 buildEnginePacket 之间
 // 职责：情绪评估 → 叙事需求分析 → 事件评分 → 节奏控制 → 事件预测缓存
-// 依赖：emotion-state.js, random-events.js (仅环境事件)
+// 依赖：emotion-state.js；子模块 director-prediction-cache / director-story-hooks / director-scoring
 
-import { getEmotionProfile, updateEmotionState, getDefaultEmotionState, formatEmotionState } from "./emotion-state.js";
-import { proposeRandomEvent } from "../data/random-events.js";
-import { deriveRng, rngFrom } from "../../shared/determinism.js";
+import { getEmotionProfile, updateEmotionState, formatEmotionState } from "./emotion-state.js";
+import { deriveRng } from "../../shared/determinism.js";
 import { createDirectionPacket, normalizeDirectionPacket, summarizeDirectionPacket, PACING_OPTIONS, PRESSURE_OPTIONS, EVENT_INTENSITY_OPTIONS } from "./direction-packet.js";
-import { getStoryteller, applyStorytellerModifiers, applyStorytellerPacing, storytellerStrategySummary } from "./storytellers.js";
-import { EVENT_SCORE, PACING_THRESHOLDS, PREDICTION_CACHE } from "./constants.js";
-
-// ═══════════════════════════════════════════════════════════════
-//  事件预测缓存 — 延迟触发的"边缘事件"在后续轮次自然冒泡
-// ═══════════════════════════════════════════════════════════════
-
-// 多世界隔离：每个世界独立缓存
-const PREDICTION_STORES = new Map();
-
-/** 导出预测缓存（用于持久化） */
-export function exportPredictionStores() {
-  const result = {};
-  for (const [key, store] of PREDICTION_STORES) {
-    result[key] = { events: store.events, maxSize: store.maxSize, counter: store.counter };
-  }
-  return result;
-}
-
-/** 导入预测缓存（从持久化恢复） */
-export function importPredictionStores(data = {}) {
-  PREDICTION_STORES.clear();
-  for (const [key, store] of Object.entries(data)) {
-    PREDICTION_STORES.set(key, { events: store.events || [], maxSize: store.maxSize || PREDICTION_CACHE.MAX_SIZE, counter: store.counter || 0 });
-  }
-}
-
-export function clearPredictionStore(worldName = null) {
-  if (worldName) PREDICTION_STORES.delete(String(worldName));
-  else PREDICTION_STORES.clear();
-}
-
-function getPredictionStore(worldName = "_default") {
-  if (!PREDICTION_STORES.has(worldName)) {
-    PREDICTION_STORES.set(worldName, { events: [], maxSize: PREDICTION_CACHE.MAX_SIZE, counter: 0 });
-  }
-  return PREDICTION_STORES.get(worldName);
-}
-/**
- * 将未触发但有潜力的事件存入缓存
- * @param {Object} assessment - calculateEventScore 的返回
- * @param {Object} eventTemplate - 事件对象（含 level/title/proposal）
- * @param {Object} context - { worldType, round, score, reason }
- */
-export function cacheEventPrediction(assessment, eventTemplate = null, context = {}) {
-  if (!assessment || assessment.method === "none") return;
-  const score = assessment.score || 0;
-  if (score < PREDICTION_CACHE.SCORE_MIN || score > PREDICTION_CACHE.SCORE_MAX) return;
-  const store = getPredictionStore(context.worldName || "_default");
-
-  const sameType = store.events.find(
-    (e) => e.type === assessment.type && e.status === "pending" && e.worldType === context.worldType
-  );
-  if (sameType) return;
-
-  if (store.events.filter((e) => e.status === "pending").length >= store.maxSize) {
-    const oldest = store.events
-      .filter((e) => e.status === "pending")
-      .sort((a, b) => a.round - b.round)[0];
-    if (oldest) oldest.status = "evicted";
-  }
-
-  const entry = {
-    id: `cache-${++store.counter}`,
-    createdAt: new Date().toISOString(),
-    round: context.round || 0,
-    score,
-    type: assessment.type,
-    event: eventTemplate || { level: assessment.type === "ambient" ? "light" : "moderate", title: "待定", proposal: "" },
-    worldType: context.worldType || "daily",
-    status: "pending",
-    reason: assessment.reason || ""
-  };
-  store.events.push(entry);
-}
-
-/**
- * 检查缓存中有没有可以升级触发的事件
- * @param {Object} context - { emotion, proximity, round, sceneChanged }
- * @returns {{ promoted: boolean, event: Object|null, source: Object|null }}
- */
-export function checkEventCache(context = {}) {
-  const { emotion, proximity = [], round = 0, sceneChanged = false, worldName } = context;
-  const store = getPredictionStore(worldName || "_default");
-  const pending = store.events.filter((e) => e.status === "pending");
-
-  if (!pending.length) return { promoted: false, event: null, source: null };
-
-  // 排序：按 score 从高到低 + 等待轮次加成
-  for (const entry of pending) {
-    const waitBonus = Math.min(PREDICTION_CACHE.WAIT_BONUS_MAX, (round - entry.round) * PREDICTION_CACHE.WAIT_BONUS_MULTIPLIER);
-    entry.effectiveScore = entry.score + waitBonus;
-  }
-  pending.sort((a, b) => (b.effectiveScore || 0) - (a.effectiveScore || 0));
-
-  const best = pending[0];
-  const effectiveScore = best.effectiveScore || best.score;
-
-  // 检查当前条件是否还匹配
-  const coreChars = (proximity || []).filter((e) => e.proximity?.level === 0 && e.type === "character").length;
-
-  // 条件恶化：无人可互动的事件，但场景中没有人
-  if (best.type === "core" && coreChars === 0) {
-    best.status = "stale";
-    return { promoted: false, event: null, source: null };
-  }
-
-  // 升级判断
-  if (effectiveScore >= 50 || (effectiveScore >= 35 && sceneChanged)) {
-    best.status = "activated";
-    const event = best.event;
-
-    // 如果是 light 事件但等待了太久，升级到 moderate
-    if (event.level === "light" && (round - best.round) >= 5) {
-      event.level = "moderate";
-      event.title = "中等事件（缓存升级）";
-    }
-
-    return {
-      promoted: true,
-      event: {
-        ...event,
-        marker: event.level === "major" ? "★" : event.level === "moderate" ? "◆" : "·",
-        canIncorporate: event.level === "major",
-        canBackground: event.level !== "light",
-        cached: true,
-        cacheId: best.id,
-        promotedAt: new Date().toISOString()
-      },
-      source: best
-    };
-  }
-
-  // 超时淘汰
-  if (round - best.round > 10) {
-    best.status = "expired";
-  }
-
-  // 这个 entry 保留缓存，下次再评估
-  return { promoted: false, event: null, source: null };
-}
-
-/**
- * 清理过期缓存
- * @param {number} currentRound
- * @param {number} ttl - 缓存存活轮数上限
- */
-export function pruneEventCache(currentRound = 0, ttl = 8, worldName = "_default") {
-  const store = getPredictionStore(worldName);
-  const before = store.events.length;
-  store.events = store.events.filter((e) => {
-    if (e.status === "activated" || e.status === "evicted") return false;
-    if (currentRound - e.round > ttl) {
-      e.status = "expired";
-      return false;
-    }
-    return true;
-  });
-  return { removed: before - store.events.length, remaining: store.events.length };
-}
-
-/** 获取完整缓存状态（调试用） */
-export function getEventCache(worldName = "_default") {
-  const store = getPredictionStore(worldName);
-  return {
-    size: store.events.length,
-    maxSize: store.maxSize,
-    pending: store.events.filter((e) => e.status === "pending").length,
-    events: store.events.map((e) => ({
-      id: e.id, score: e.score, type: e.type, status: e.status,
-      level: e.event?.level, round: e.round,
-      waitRounds: e.waitRounds
-    }))
-  };
-}
-
-/** 重置预测缓存（切换模组/存档时调用） */
-export function resetPredictionCache(worldName = "_default") {
-  const store = getPredictionStore(worldName);
-  store.events = [];
-  store.counter = 0;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  事件评分系统（替代原有的纯概率判定）
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * 评估当前叙事状态下某类事件的"适合度"分数
- * @param {Object} context - { worldType, round, proximity, emotion, plotState, sceneChanged }
- * @returns {{ score: number, method: "judgment"|"probability", reason: string[], type: "core"|"ambient"|"both" }}
- */
-export function calculateEventScore(context = {}) {
-  const { emotion = getDefaultEmotionState(), proximity = [], round = 0, sceneChanged = false, plotState = {} } = context;
-  const scores = { core: 0, ambient: 0 };
-  const reasons = [];
-
-  // ---- 核心事件评分（剧情驱动型） ----
-
-  // ① 角色在场度：核心环角色越多，越适合触发核心事件
-  const coreChars = (proximity || []).filter((e) => e.proximity?.level === 0 && e.type === "character").length;
-  if (coreChars >= 2) scores.core += EVENT_SCORE.CORE_CHARS_2PLUS;
-  else if (coreChars === 1) scores.core += EVENT_SCORE.CORE_CHARS_1;
-  reasons.push(`角色在场: ${coreChars}人 → +${coreChars >= 2 ? EVENT_SCORE.CORE_CHARS_2PLUS : coreChars === 1 ? EVENT_SCORE.CORE_CHARS_1 : 0}`);
-
-  // ② 情绪张力：紧张+投入 → 适合核心事件
-  const tension = emotion.tension || 5;
-  const engagement = emotion.engagement || 5;
-  const tensionScore = (tension - 5) * EVENT_SCORE.TENSION_PER_POINT;
-  scores.core += Math.max(0, tensionScore);
-  if (tension > EVENT_SCORE.HIGH_TENSION_THRESHOLD) reasons.push(`高张力(t=${tension}) → +${tensionScore}`);
-
-  // ③ 好奇心：好奇高 → 适合抛出信息型事件
-  const curiosity = emotion.curiosity || 5;
-  if (curiosity >= EVENT_SCORE.HIGH_CURIOSITY) { scores.core += EVENT_SCORE.HIGH_CURIOSITY_BONUS; reasons.push(`高好奇(c=${curiosity}) → +${EVENT_SCORE.HIGH_CURIOSITY_BONUS}`); }
-
-  // ④ 冷却期：距离上次事件越久，权重越高
-  const roundsSinceLast = (round || 0) - (context.lastEventRound || 0);
-  const cooldownBonus = Math.min(EVENT_SCORE.COOLDOWN_MAX, roundsSinceLast * EVENT_SCORE.COOLDOWN_MULTIPLIER);
-  if (roundsSinceLast > 0) { scores.core += cooldownBonus; reasons.push(`冷却期: ${roundsSinceLast}轮 → +${cooldownBonus}`); }
-
-  // ⑤ 场景变化：新场景天然适合触发新事件
-  if (sceneChanged) { scores.core += EVENT_SCORE.SCENE_CHANGE_BONUS; reasons.push(`场景变化 → +${EVENT_SCORE.SCENE_CHANGE_BONUS}`); }
-
-  // ⑥ 疲劳度调节：疲劳过高时降低核心事件得分
-  const fatigue = emotion.fatigue || 5;
-  if (fatigue >= EVENT_SCORE.HIGH_FATIGUE_THRESHOLD) { scores.core = Math.max(0, scores.core - EVENT_SCORE.HIGH_FATIGUE_PENALTY); reasons.push(`高疲劳(f=${fatigue}) → -${EVENT_SCORE.HIGH_FATIGUE_PENALTY} (核心事件降权)`); }
-
-  // ---- 环境事件评分（氛围型） ----
-
-  // ① 疲劳/低压 → 适合轻松调剂
-  if (fatigue >= EVENT_SCORE.HIGH_FATIGUE_THRESHOLD - 1 || tension <= PACING_THRESHOLDS.LOOSE_TENSION_MAX) { scores.ambient += EVENT_SCORE.AMBIENT_LOW_TENSION_BONUS; reasons.push(`疲劳/低压 → 环境事件+${EVENT_SCORE.AMBIENT_LOW_TENSION_BONUS}`); }
-
-  // ② 好奇心低 → 推进式事件
-  if (curiosity <= PACING_THRESHOLDS.LOOSE_TENSION_MAX) { scores.ambient += EVENT_SCORE.AMBIENT_LOW_CURIOSITY_BONUS; reasons.push(`低好奇 → 环境事件+${EVENT_SCORE.AMBIENT_LOW_CURIOSITY_BONUS}`); }
-
-  // ③ 角色少 → 更适合环境事件
-  if (coreChars === 0) { scores.ambient += EVENT_SCORE.AMBIENT_NO_CORE_CHARS_BONUS; reasons.push(`无核心角色 → 环境事件+${EVENT_SCORE.AMBIENT_NO_CORE_CHARS_BONUS}`); }
-
-  // ④ 随机波动（避免完全确定性）
-  scores.ambient += rngFrom(context.rng, context.worldSeed ?? "world-tree", round || 0, "director.ambient").next() * EVENT_SCORE.AMBIENT_RANDOM_MAX;
-
-  // ---- 综合决策 ----
-  const method = scores.core > EVENT_SCORE.JUDGMENT_SCORE_THRESHOLD ? "judgment" : (scores.core > EVENT_SCORE.PROBABILITY_SCORE_THRESHOLD || scores.ambient > EVENT_SCORE.AMBIENT_PROBABILITY_THRESHOLD) ? "probability" : "none";
-  const eventType = scores.core > scores.ambient ? "core" : "ambient";
-
-  return {
-    score: Math.max(scores.core, scores.ambient),
-    method,
-    type: eventType,
-    coreScore: scores.core,
-    ambientScore: scores.ambient,
-    reason: reasons.join("; ")
-  };
-}
-
-/**
- * 判断是否应该触发事件
- * @param {{ score: number, method: string, type: string }} assessment
- * @param {Object} context
- * @returns {{ trigger: boolean, method: string, event: Object|null }}
- */
-export function shouldTriggerEvent(assessment, context = {}) {
-  if (!assessment || assessment.method === "none") {
-    return { trigger: false, method: "none", event: null };
-  }
-
-  if (assessment.method === "judgment") {
-    // 计分制：分数够高就触发，不用概率
-    return {
-      trigger: true,
-      method: "judgment",
-      event: proposeRandomEvent({
-        ...context,
-        forceLevel: assessment.type === "ambient" ? "light" : null,
-        forceScore: assessment.score
-      })
-    };
-  }
-
-  // 概率制：以分数/100 作为概率权重
-  const weight = (assessment.score || 0) / 100;
-  if (rngFrom(context.rng, context.worldSeed ?? "world-tree", context.round || 0, "director.trigger").next() < weight) {
-    return {
-      trigger: true,
-      method: "probability",
-      probability: weight,
-      event: proposeRandomEvent({
-        ...context,
-        forceLevel: assessment.type === "ambient" ? "light" : null
-      })
-    };
-  }
-
-  return { trigger: false, method: "probability_miss", event: null };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  节奏分析
-// ═══════════════════════════════════════════════════════════════
-
-export function analyzePacing(emotion, round = 0, lastEventRound = 0) {
-  const { engagement, tension, fatigue } = emotion || getDefaultEmotionState();
-  const T = PACING_THRESHOLDS;
-  const advices = [];
-
-  // 节奏过紧：高张力+高投入+高疲劳
-  if (tension >= T.TIGHT_TENSION_MIN && fatigue >= T.TIGHT_FATIGUE_MIN && engagement >= T.TIGHT_ENGAGEMENT_MIN) {
-    advices.push({
-      signal: "节奏过紧",
-      severity: "advise",
-      advice: "连续高张力，建议插入一段温和的日常互动或环境描写来释放压力，然后再推主线。"
-    });
-  }
-
-  // 节奏过松：低张力+低好奇+低投入
-  if (tension <= T.LOOSE_TENSION_MAX && engagement <= T.LOOSE_ENGAGEMENT_MAX && fatigue <= T.LOOSE_FATIGUE_MAX) {
-    advices.push({
-      signal: "节奏过松",
-      severity: "advise",
-      advice: "叙事节奏偏平，可考虑放入一个轻量悬念或角色小互动来提升张力。"
-    });
-  }
-
-  // 疲劳预警
-  if (fatigue >= T.FATIGUE_WARN_THRESHOLD) {
-    advices.push({
-      signal: "玩家疲劳",
-      severity: "warning",
-      advice: "玩家疲劳度较高，本轮避免重大事件和复杂信息，以轻松、简洁、角色互动为主。"
-    });
-  }
-
-  // 最佳窗口期
-  if (engagement >= T.BEST_WINDOW_ENGAGEMENT_MIN && curiosity >= T.BEST_WINDOW_CURIOSITY_MIN && fatigue <= T.BEST_WINDOW_FATIGUE_MAX) {
-    advices.push({
-      signal: "最佳窗口",
-      severity: "signal",
-      advice: "玩家处于高投入+高好奇状态，适合推进关键剧情或深入角色互动。趁这个机会抛出重要信息。"
-    });
-  }
-
-  // 冷却不足
-  const roundsSinceLast = round - (lastEventRound || 0);
-  if (roundsSinceLast < T.COOLDOWN_MIN_ROUNDS && roundsSinceLast > 0) {
-    advices.push({
-      signal: "事件冷却",
-      severity: "info",
-      advice: `上次事件仅过去 ${roundsSinceLast} 轮，建议本轮聚焦角色互动而非新事件。已阻止新事件触发以保护叙事沉浸。`
-    });
-  }
-
-  return {
-    tempo: advices.length === 0 ? "normal" : advices.some(a => a.severity === "warning") ? "tense" : advices[0]?.signal || "normal",
-    advices,
-    // 关键标志
-    blockNewEvents: advices.some(a => a.signal === "事件冷却" || a.signal === "玩家疲劳"),
-    preferCharacterInteraction: advices.some(a => a.signal === "玩家疲劳" || a.signal === "节奏过紧")
-  };
-}
+import { getStoryteller, applyStorytellerPacing } from "./storytellers.js";
+import { cacheEventPrediction, checkEventCache, pruneEventCache, getEventCache } from "./director-prediction-cache.js";
+import { collectStoryHooks, recordDirectorDecision, selectHookEvent, lastTriggeredRound } from "./director-story-hooks.js";
+import { calculateEventScore, shouldTriggerEvent, analyzePacing } from "./director-scoring.js";
+// 子模块的公开 API 继续从 director.js 导出（调用方不变）
+export { exportPredictionStores, importPredictionStores, clearPredictionStore, cacheEventPrediction, checkEventCache, pruneEventCache, getEventCache, resetPredictionCache } from "./director-prediction-cache.js";
+export { collectStoryHooks, lastTriggeredRound, exportDirectorLog, importDirectorLog, resetDirectorLog, getDirectorDecisions, selectHookEvent } from "./director-story-hooks.js";
+export { calculateEventScore, shouldTriggerEvent, analyzePacing } from "./director-scoring.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  导演层主入口
@@ -390,8 +37,11 @@ export function directNarrative(opts = {}) {
     proximityEntities = [],
     round = 0,
     sceneChanged = false,
-    plotState = {}, lastEventRound = 0, worldSeed = "world-tree"
+    plotState = {}, lastEventRound: givenLastEventRound = 0, worldSeed = "world-tree", moduleData = null
   } = opts;
+  // 冷却起点：调用方传入值与决策日志里最近一次触发取较大者（主管线此前总传 0，冷却从不生效）
+  const lastEventRound = Math.max(givenLastEventRound || 0, lastTriggeredRound(round) ?? 0);
+  const storyHooks = Array.isArray(opts.storyHooks) ? opts.storyHooks : collectStoryHooks(moduleData || {});
 
   // 1. 更新情绪状态
   const updatedEmotion = updateEmotionState(emotionState, { input, turnCount: round, sceneChanged });
@@ -401,8 +51,10 @@ export function directNarrative(opts = {}) {
   const pacing = analyzePacing(updatedEmotion, round, lastEventRound);
 
   // 2.5 检查事件预测缓存（优先于新事件评估）
-  const cacheContext = { emotion: updatedEmotion, proximity: proximityEntities, round, sceneChanged };
-  const cacheResult = checkEventCache(cacheContext);
+  const cacheContext = { emotion: updatedEmotion, proximity: proximityEntities, round, sceneChanged, storyHooks };
+  // 冷却期内缓存也不升级（冷却 = 本轮不出新事件）；缓存条目保留到冷却结束
+  const cooling = pacing.advices.some(a => a.signal === "事件冷却");
+  const cacheResult = cooling ? { promoted: false } : checkEventCache(cacheContext);
 
   let assessment, triggerResult;
 
@@ -431,11 +83,9 @@ export function directNarrative(opts = {}) {
     triggerResult = { trigger: false, method: "pacing_blocked", event: null };
 
     // 边界分（20-50）的未触发事件→缓存，等后续轮次自然冒泡
-    if (assessment.score >= 20 && assessment.score <= 50) {
-      cacheEventPrediction(assessment, proposeRandomEvent({
-        round, sceneChanged, worldType: opts.worldType || "daily", worldSeed,
-        forceLevel: assessment.type === "ambient" ? "light" : "moderate"
-      }), { round, worldType: opts.worldType || "daily" });
+    const hookEvent = selectHookEvent(storyHooks, { round, worldSeed, forceLevel: assessment.type === "ambient" ? "light" : "moderate" });
+    if (hookEvent && assessment.score >= 20 && assessment.score <= 50) {
+      cacheEventPrediction(assessment, hookEvent, { round, worldType: opts.worldType || "daily" });
     }
   } else {
     // 正常评估
@@ -443,19 +93,29 @@ export function directNarrative(opts = {}) {
       emotion: updatedEmotion, proximity: proximityEntities,
       round, sceneChanged, plotState, lastEventRound, worldSeed
     });
-    triggerResult = shouldTriggerEvent(assessment, { round, sceneChanged, worldType: opts.worldType || "daily", worldSeed });
+    triggerResult = shouldTriggerEvent(assessment, { round, sceneChanged, worldType: opts.worldType || "daily", worldSeed, storyHooks });
 
     // 边缘分（20-50）但未触发→缓存
-    if (!triggerResult.trigger && assessment.score >= 20 && assessment.score <= 50) {
-      cacheEventPrediction(assessment, triggerResult.event || proposeRandomEvent({
-        round, sceneChanged, worldType: opts.worldType || "daily",
-        forceLevel: assessment.type === "ambient" ? "light" : "moderate"
-      }), { round, worldType: opts.worldType || "daily" });
+    const hookEvent = !triggerResult.trigger && selectHookEvent(storyHooks, { round, worldSeed, forceLevel: assessment.type === "ambient" ? "light" : "moderate" });
+    if (hookEvent && assessment.score >= 20 && assessment.score <= 50) {
+      cacheEventPrediction(assessment, hookEvent, { round, worldType: opts.worldType || "daily" });
     }
   }
 
   // 清理过期缓存
   pruneEventCache(round);
+
+  // 决策进入世界状态（engineSnapshot.director），供存档/读档与确定性哈希覆盖
+  recordDirectorDecision({
+    round,
+    trigger: Boolean(triggerResult.trigger),
+    method: triggerResult.method,
+    hookId: triggerResult.event?.hookId || null,
+    level: triggerResult.trigger ? (triggerResult.event?.level || null) : null,
+    title: triggerResult.trigger ? (triggerResult.event?.title || null) : null,
+    hooksAvailable: storyHooks.length,
+    score: Math.round((assessment?.score || 0) * 1000) / 1000
+  });
 
   // 3. 缓存状态信息
   const cacheInfo = getEventCache();
@@ -525,7 +185,7 @@ export function generateDirectionPacket(opts = {}) {
   // 复用或重新计算 Director 结果
   const result = existingResult || directNarrative({
     emotionState, input, proximityEntities,
-    round, sceneChanged, plotState, lastEventRound, worldType, worldSeed
+    round, sceneChanged, plotState, lastEventRound, worldType, worldSeed, moduleData
   });
 
   const emotion = result.emotion;

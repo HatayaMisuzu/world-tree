@@ -13,12 +13,14 @@
 //   两者共享 IPC 通道但数据隔离。
 
 import { classifyChangeLevel, needsUserConfirmation, needsStopLoss, CHANGE_LEVEL, CONTENT_TYPES, findById, assessImpact, TYPE_INDEX } from "./content-registry.js";
+import { scopedObject } from "./world-scope.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  提案存储
 // ═══════════════════════════════════════════════════════════════
 
-const PROPOSAL_STORE = {
+// per-world (S2 ③): backing object lives in the active world scope
+const PROPOSAL_STORE = scopedObject("proposals.store", () => ({
   proposals: [],       // 所有提案
   history: [],         // 已处理的提案归档
   config: {
@@ -29,9 +31,9 @@ const PROPOSAL_STORE = {
     autoCommitLog: [],          // 自动提交日志（最近 50 条）
     maxAutoCommitLog: 50
   }
-};
+}));
 
-let proposalIdCounter = 0;
+const COUNTERS = scopedObject("proposals.counters", () => ({ proposalIdCounter: 0 }));
 
 // ═══════════════════════════════════════════════════════════════
 //  提案创建
@@ -63,7 +65,7 @@ export function createProposal({ typeId, change, source = "writer", moduleKey = 
     : [];
 
   const proposal = {
-    id: `proposal-${++proposalIdCounter}`,
+    id: `proposal-${++COUNTERS.proposalIdCounter}`,
     typeId,
     typeName: typeDef.name,
     change: {
@@ -399,7 +401,7 @@ export function resetProposalStore() {
   PROPOSAL_STORE.proposals = [];
   PROPOSAL_STORE.history = [];
   PROPOSAL_STORE.config.autoCommitLog = [];
-  proposalIdCounter = 0;
+  COUNTERS.proposalIdCounter = 0;
 }
 
 /** 从快照恢复提案存储（用于存档加载） */
@@ -412,7 +414,7 @@ export function importProposalSnapshot(snapshot = {}) {
     const num = parseInt((p.id || "proposal-0").replace("proposal-", ""), 10);
     return num > max ? num : max;
   }, 0);
-  proposalIdCounter = Math.max(proposalIdCounter, maxId);
+  COUNTERS.proposalIdCounter = Math.max(COUNTERS.proposalIdCounter, maxId);
 }
 
 /** 导出全文快照（用于存档） */
