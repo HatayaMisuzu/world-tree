@@ -123,3 +123,65 @@ test("resolveInsideRoot allows normal paths and symlinks that remain inside root
     assert.ok(resolveInsideRoot(root, "shared/safe.json"));
   });
 });
+
+// ── H2 (audit 2026-08-21): root directory may not exist yet ──
+
+test("H2: import into a not-yet-created world root succeeds while traversal is still rejected", async () => {
+  const { prepareImportFiles } = await import("../../src/server/data-import-service.js");
+  const { realPathWithinRoot } = await import("../../src/server/path-security.js");
+  await withTempRoot(async (base) => {
+    const root = join(base, "worlds", "brand-new-world"); // does not exist
+    const prepared = prepareImportFiles(root, { "world.json": "{}", "runtime/chat.jsonl": "{\"a\":1}\n" });
+    assert.deepEqual(prepared.map((item) => relative(root, item.targetPath).replace(/\\/g, "/")), ["world.json", "runtime/chat.jsonl"]);
+    assert.equal(resolveInsideRoot(root, "runtime/state.json"), join(root, "runtime", "state.json"));
+
+    for (const bad of ["../escape.json", "../../worlds/other/world.json", "%2e%2e/escape.json", "a/../../escape.json", "/etc/passwd.json", "C:/x.json"]) {
+      assert.throws(() => prepareImportFiles(root, { [bad]: "{}" }), (err) => err.code === "IMPORT_FILE_KEY_INVALID", bad);
+      assert.equal(resolveInsideRoot(root, bad), null, bad);
+    }
+    // Direct realpath check must not admit siblings of a missing root via its existing ancestor.
+    assert.equal(realPathWithinRoot(root, join(base, "worlds", "other", "world.json")), false);
+    assert.equal(realPathWithinRoot(root, join(root, "world.json")), true);
+  });
+});
+
+test("H2: missing root under a symlinked ancestor cannot reach outside through the symlink", async () => {
+  await withTempRoot(async (base) => {
+    const outside = join(base, "outside");
+    await mkdir(outside, { recursive: true });
+    const inside = join(base, "inside");
+    await mkdir(inside, { recursive: true });
+    await symlink(outside, join(inside, "link"), "dir");
+    const root = join(inside, "new-world"); // missing
+    assert.equal(resolveInsideRoot(root, "link/x.json"), join(root, "link", "x.json")); // lexical, under missing root: fine
+    assert.equal(resolveInsideRoot(inside, "link/x.json"), null); // existing root, symlink escape rejected
+  });
+});
+
+test("H2: dangling symlink (to a not-yet-existing outside dir) on the target prefix is rejected", async () => {
+  await withTempRoot(async (base) => {
+    const root = join(base, "root");
+    await mkdir(root, { recursive: true });
+    await symlink(join(base, "outside-not-yet"), join(root, "dangling"), "dir");
+    assert.equal(resolveInsideRoot(root, "dangling/x.json"), null);
+    assert.equal(resolveInsideRoot(root, "dangling/deeper/x.json"), null);
+    const { prepareImportFiles } = await import("../../src/server/data-import-service.js");
+    assert.throws(() => prepareImportFiles(root, { "dangling/world.json": "{}" }), (err) => err.code === "IMPORT_FILE_KEY_INVALID");
+  });
+});
+
+test("H2: symlink to outside on the prefix of a missing subpath is rejected; symlinked root itself is canonicalized", async () => {
+  await withTempRoot(async (base) => {
+    const outside = join(base, "outside");
+    await mkdir(outside, { recursive: true });
+    const root = join(base, "root");
+    await mkdir(root, { recursive: true });
+    await symlink(outside, join(root, "out"), "dir");
+    assert.equal(resolveInsideRoot(root, "out/new/dir/x.json"), null);
+    // A root reached through a symlinked parent is compared by realpath on both sides.
+    await symlink(root, join(base, "root-alias"), "dir");
+    const aliasRoot = join(base, "root-alias", "new-world");
+    assert.equal(resolveInsideRoot(aliasRoot, "a/b.json"), join(aliasRoot, "a", "b.json"));
+    assert.equal(resolveInsideRoot(aliasRoot, "../escape.json"), null);
+  });
+});

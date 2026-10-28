@@ -1,5 +1,5 @@
-import { existsSync, realpathSync } from "node:fs";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { lstatSync, realpathSync } from "node:fs";
+import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { pathWithinRoot as corePathWithinRoot } from "../core/system/path-boundary.js";
 
 const WINDOWS_DRIVE_RE = /^[a-zA-Z]:[\\/]/;
@@ -72,19 +72,38 @@ export function assertPathInsideRoot(rootPath, userPath, label = "path") {
   return target;
 }
 
-export function realPathWithinRoot(rootPath, targetPath) {
-  if (!rootPath || !targetPath || !existsSync(rootPath)) return false;
-  let ancestor = resolve(targetPath);
-  while (!existsSync(ancestor)) {
-    const parent = dirname(ancestor);
-    if (parent === ancestor) return false;
-    ancestor = parent;
+function lexists(p) {
+  try { lstatSync(p); return true; } catch { return false; }
+}
+
+// Canonicalize a possibly non-existent path: realpath of its nearest existing
+// ancestor (lstat-based, so dangling symlinks count as existing and then fail
+// realpath) joined with the remaining, not-yet-created segments.
+function canonicalPath(p) {
+  let base = resolve(p);
+  const rest = [];
+  while (!lexists(base)) {
+    const parent = dirname(base);
+    if (parent === base) return null;
+    rest.unshift(basename(base));
+    base = parent;
   }
   try {
-    const realRoot = realpathSync.native(resolve(rootPath));
-    const realAncestor = realpathSync.native(ancestor);
-    return pathWithinRoot(realRoot, realAncestor);
+    return resolve(realpathSync.native(base), ...rest);
   } catch {
-    return false;
+    return null; // dangling symlink or unreadable ancestor
   }
+}
+
+export function realPathWithinRoot(rootPath, targetPath) {
+  if (!rootPath || !targetPath) return false;
+  // Lexical containment is always required.
+  if (!pathWithinRoot(resolve(rootPath), resolve(targetPath))) return false;
+  // The root may not exist yet (new world). Compare fully canonicalized paths:
+  // realpath(nearest existing ancestor) + remaining segments, for both sides,
+  // so symlinks anywhere on the target's existing prefix cannot escape.
+  const realRoot = canonicalPath(rootPath);
+  const realTarget = canonicalPath(targetPath);
+  if (!realRoot || !realTarget) return false;
+  return pathWithinRoot(realRoot, realTarget);
 }

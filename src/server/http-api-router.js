@@ -128,17 +128,18 @@ export function createHttpApiRouter(deps = {}) {
       if (!isLocalRequest(req)) {
         return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。", "Forbidden: non-local preflight");
       }
-      res.setHeader("Access-Control-Allow-Origin", origin || "http://localhost:3000");
+      const allowOrigin = origin && originHost && LOCAL_HOSTS.has(originHost) ? origin : "http://localhost:3000";
+      res.setHeader("Access-Control-Allow-Origin", allowOrigin);
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
       return res.writeHead(204).end();
     }
-    // 非法 Origin → 403，不设置 ACAO
+    // 非法 Origin（含 "null" / 不可解析值）→ 403，不设置 ACAO
     if (originHost && !LOCAL_HOSTS.has(originHost)) {
-      return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。请不要从公网或其他设备调用此服务。", `Forbidden: non-local Origin ${originHost}`);
+      return jsonError(res, 403, "LOCAL_ONLY", "World Tree 只允许本机浏览器访问。请不要从公网或其他设备调用此服务。", `Forbidden: non-local Origin ${origin === "null" ? "null" : originHost}`);
     }
-    // 本地 Origin 或无 Origin（CLI 请求）→ 设置正确的 CORS 头
-    if (origin) {
+    // 本地 Origin 或无 Origin（CLI 请求）→ 仅反射白名单内的 Origin
+    if (origin && originHost && LOCAL_HOSTS.has(originHost)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
