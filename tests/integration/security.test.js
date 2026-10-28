@@ -57,6 +57,23 @@ test("security: rejects non-local Origin and allows localhost Origin", async () 
   });
 });
 
+test("H1: Origin null / unparseable is rejected and never reflected in Access-Control-Allow-Origin", async () => {
+  await withServer(async (server) => {
+    for (const origin of ["null", "not a url", "http://"]) {
+      const rejected = await rawRequest(server, "/api/health", { headers: { Origin: origin } });
+      assert.equal(rejected.status, 403, origin);
+      assertReadableError(rejected, "LOCAL_ONLY");
+      assert.equal(rejected.response.headers.get("access-control-allow-origin"), null, origin);
+
+      const preflight = await rawRequest(server, "/api/health", { method: "OPTIONS", headers: { Origin: origin, "Access-Control-Request-Method": "POST" } });
+      assert.notEqual(preflight.response.headers.get("access-control-allow-origin"), origin, `preflight reflected ${origin}`);
+    }
+    const noOrigin = await rawRequest(server, "/api/health");
+    assert.equal(noOrigin.status, 200);
+    assert.equal(noOrigin.response.headers.get("access-control-allow-origin"), null);
+  });
+});
+
 test("security: rate limit returns a readable 429 error", async () => {
   await withServer(async (server) => {
     let limited = null;

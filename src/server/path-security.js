@@ -1,5 +1,5 @@
-import { existsSync, realpathSync } from "node:fs";
-import { dirname, isAbsolute, resolve } from "node:path";
+import { lstatSync, realpathSync } from "node:fs";
+import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { pathWithinRoot as corePathWithinRoot } from "../core/system/path-boundary.js";
 
 const WINDOWS_DRIVE_RE = /^[a-zA-Z]:[\\/]/;
@@ -72,37 +72,38 @@ export function assertPathInsideRoot(rootPath, userPath, label = "path") {
   return target;
 }
 
-export function realPathWithinRoot(rootPath, targetPath) {
-  if (!rootPath || !targetPath) return false;
-  // Lexical containment is always required: when the root does not exist yet we
-  // validate against an existing ancestor, which alone would admit siblings of
-  // the root (e.g. "<parent>/other/file").
-  if (!pathWithinRoot(resolve(rootPath), resolve(targetPath))) return false;
-  // The root itself may not exist yet (e.g. validating paths for a directory
-  // that is about to be created). Walk up from the root to its nearest existing
-  // ancestor and validate against that instead of failing outright.
-  let realRootBase = resolve(rootPath);
-  while (!existsSync(realRootBase)) {
-    const parent = dirname(realRootBase);
-    if (parent === realRootBase) return false;
-    realRootBase = parent;
-  }
-  let ancestor = resolve(targetPath);
-  while (!existsSync(ancestor)) {
-    const parent = dirname(ancestor);
-    if (parent === ancestor) return false;
-    ancestor = parent;
+function lexists(p) {
+  try { lstatSync(p); return true; } catch { return false; }
+}
+
+// Canonicalize a possibly non-existent path: realpath of its nearest existing
+// ancestor (lstat-based, so dangling symlinks count as existing and then fail
+// realpath) joined with the remaining, not-yet-created segments.
+function canonicalPath(p) {
+  let base = resolve(p);
+  const rest = [];
+  while (!lexists(base)) {
+    const parent = dirname(base);
+    if (parent === base) return null;
+    rest.unshift(basename(base));
+    base = parent;
   }
   try {
-    const realRoot = realpathSync.native(realRootBase);
-    const realAncestor = realpathSync.native(ancestor);
-    // The existing ancestor of the target must stay inside the real root.
-    if (!pathWithinRoot(realRoot, realAncestor)) return false;
-    // When the root itself exists, also verify the root's own realpath so a
-    // symlinked root cannot widen the boundary.
-    if (realRootBase !== resolve(rootPath) && !pathWithinRoot(realRoot, resolve(rootPath))) return false;
-    return true;
+    return resolve(realpathSync.native(base), ...rest);
   } catch {
-    return false;
+    return null; // dangling symlink or unreadable ancestor
   }
+}
+
+export function realPathWithinRoot(rootPath, targetPath) {
+  if (!rootPath || !targetPath) return false;
+  // Lexical containment is always required.
+  if (!pathWithinRoot(resolve(rootPath), resolve(targetPath))) return false;
+  // The root may not exist yet (new world). Compare fully canonicalized paths:
+  // realpath(nearest existing ancestor) + remaining segments, for both sides,
+  // so symlinks anywhere on the target's existing prefix cannot escape.
+  const realRoot = canonicalPath(rootPath);
+  const realTarget = canonicalPath(targetPath);
+  if (!realRoot || !realTarget) return false;
+  return pathWithinRoot(realRoot, realTarget);
 }

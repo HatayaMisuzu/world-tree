@@ -639,6 +639,7 @@ export async function switchTabletopV2Branch(body = {}, deps = {}) {
     // the branch's divergence point instead of keeping the old lineage state.
     // Degrades gracefully (label-only switch) if the branch/save file is missing or corrupt.
     const branchFilePath = join(branchesDir(dataRoot, runId), `${branchId}.json`);
+    let forkStateRestored = false;
     try {
       if (existsSync(branchFilePath)) {
         const branchRecord = JSON.parse(readFileSync(branchFilePath, "utf-8"));
@@ -649,6 +650,7 @@ export async function switchTabletopV2Branch(body = {}, deps = {}) {
             const forkedSave = JSON.parse(readFileSync(forkedSavePath, "utf-8"));
             const restored = restoreSaveSlot(forkedSave);
             Object.assign(runState, restored);
+            forkStateRestored = true;
           }
         }
       }
@@ -671,6 +673,7 @@ export async function switchTabletopV2Branch(body = {}, deps = {}) {
       status: "ok",
       activeBranchId: branchId,
       branchLabel: branch.label,
+      forkStateRestored,
       run: stripHiddenState(runState),
     };
   } catch (err) {

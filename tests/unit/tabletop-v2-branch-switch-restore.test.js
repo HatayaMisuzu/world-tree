@@ -43,6 +43,7 @@ test("H3: switching branch restores the forked save state and later saves carry 
   try {
     const result = await switchTabletopV2Branch({ runId: ctx.runId, branchId: ctx.branchId }, ctx.deps);
     assert.equal(result.status, "ok");
+    assert.equal(result.forkStateRestored, true);
     const state = readJson(ctx.p.state);
     assert.equal(state.turnIndex, ctx.saveSlot.turnIndex);
     assert.deepEqual(state.publicState, ctx.saveSlot.publicSnapshot);
@@ -70,6 +71,8 @@ test("H3: corrupt forked save degrades to a label-only switch instead of failing
     let result;
     try { result = await switchTabletopV2Branch({ runId: ctx.runId, branchId: ctx.branchId }, ctx.deps); } finally { console.warn = warn; }
     assert.equal(result.status, "ok");
+    // Explicitly reports that the fork state was NOT restored (base has no such signal).
+    assert.equal(result.forkStateRestored, false);
     const state = readJson(ctx.p.state);
     assert.equal(state.branchId, ctx.branchId);
     assert.equal(state.turnIndex, 7);

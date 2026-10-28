@@ -247,7 +247,7 @@ export function searchMemorySnapshots(query = {}) {
     score += emScore;
 
     // ③ 时效性（最高20分）
-    const recentBonus = Math.max(0, 20 - ((query._currentRound || 0) - snap.round) * 0.5);
+    const recentBonus = Math.max(0, 20 - (query._currentRound || 0 - snap.round) * 0.5);
     if (recentBonus > 0) reasons.push(`时效 +${recentBonus.toFixed(0)}`);
     score += recentBonus;
 

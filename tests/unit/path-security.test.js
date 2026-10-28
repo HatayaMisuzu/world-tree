@@ -157,3 +157,31 @@ test("H2: missing root under a symlinked ancestor cannot reach outside through t
     assert.equal(resolveInsideRoot(inside, "link/x.json"), null); // existing root, symlink escape rejected
   });
 });
+
+test("H2: dangling symlink (to a not-yet-existing outside dir) on the target prefix is rejected", async () => {
+  await withTempRoot(async (base) => {
+    const root = join(base, "root");
+    await mkdir(root, { recursive: true });
+    await symlink(join(base, "outside-not-yet"), join(root, "dangling"), "dir");
+    assert.equal(resolveInsideRoot(root, "dangling/x.json"), null);
+    assert.equal(resolveInsideRoot(root, "dangling/deeper/x.json"), null);
+    const { prepareImportFiles } = await import("../../src/server/data-import-service.js");
+    assert.throws(() => prepareImportFiles(root, { "dangling/world.json": "{}" }), (err) => err.code === "IMPORT_FILE_KEY_INVALID");
+  });
+});
+
+test("H2: symlink to outside on the prefix of a missing subpath is rejected; symlinked root itself is canonicalized", async () => {
+  await withTempRoot(async (base) => {
+    const outside = join(base, "outside");
+    await mkdir(outside, { recursive: true });
+    const root = join(base, "root");
+    await mkdir(root, { recursive: true });
+    await symlink(outside, join(root, "out"), "dir");
+    assert.equal(resolveInsideRoot(root, "out/new/dir/x.json"), null);
+    // A root reached through a symlinked parent is compared by realpath on both sides.
+    await symlink(root, join(base, "root-alias"), "dir");
+    const aliasRoot = join(base, "root-alias", "new-world");
+    assert.equal(resolveInsideRoot(aliasRoot, "a/b.json"), join(aliasRoot, "a", "b.json"));
+    assert.equal(resolveInsideRoot(aliasRoot, "../escape.json"), null);
+  });
+});
