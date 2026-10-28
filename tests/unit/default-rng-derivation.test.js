@@ -51,8 +51,10 @@ test("slash persistence: same auto name twice in one round yields two files on d
   const dir = mkdtempSync(join(tmpdir(), "wt-slash-"));
   try {
     const op = (n) => ({ op: SLASH_WRITE_OP.ARCHIVE, name: "[W]auto-r0", overwrite: false, payload: { name: "[W]auto-r0", marker: n } });
-    applySlashWriteOps(dir, [op(1)], { round: 1 });
-    applySlashWriteOps(dir, [op(2)], { round: 1 });
+    const [w1] = applySlashWriteOps(dir, [op(1)], { round: 1 });
+    const [w2] = applySlashWriteOps(dir, [op(2)], { round: 1 });
+    assert.match(w1.receipt, /存档「\[W\]auto-r0」已保存/);
+    assert.match(w2.receipt, /存档「\[W\]auto-r0-2」已保存（文件 archives\/\[W\]auto-r0-2\.json）/);
     const files = readdirSync(join(dir, "archives")).sort();
     assert.deepEqual(files, ["[W]auto-r0-2.json", "[W]auto-r0.json"]);
     const markers = files.map((f) => JSON.parse(readFileSync(join(dir, "archives", f), "utf8")).marker).sort();

@@ -501,9 +501,9 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
   await createTurnTransaction({ journalPath: join(rtDir, "transactions", "turn.json") })
     .transact({ id: `${moduleId}:${turnId}`, operations: coreOperations });
 
-  if (result.writeSet?.length) {
+  let slashReceipts = []; if (result.writeSet?.length) {
     try {
-      await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId, round: turnCount, projectRoot });
+      slashReceipts = (await applyOverlayWriteSet(rtDir, result.writeSet, { moduleId, round: turnCount, projectRoot })).written.map((w) => w?.receipt).filter(Boolean);
     } catch (e) {
       console.warn("[persistTurn] writeSet 执行失败:", e.message);
     }
@@ -541,7 +541,7 @@ async function persistTurn(moduleId, input, result, engineState, kernelContext =
     }
   }
   moduleService.clearModuleCache?.(moduleId);
-  return { userId, assistantId, turnId, turnCount };
+  return { userId, assistantId, turnId, turnCount, slashReceipts };
 }
 
 async function handleLocalChatFallback(body = {}, reason = "LLM_NOT_CONFIGURED") {
@@ -941,7 +941,7 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
     }
 
     const returnedState = normalizeEngineState({ ...(result.engineState || realPlayState), realPlay: realPlayContext.state });
-    return { status: "ok", narrative: cleanNarrative, parsedSections: sections, engineState: returnedState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, usage, pipelineProfile: pipelineProfile ? { id: pipelineProfile.id, quality: pipelineProfile.quality, speed: pipelineProfile.speed, cost: pipelineProfile.cost } : null, kernel: summarizeKernelTurnContext(kernelContext), modePlay: realPlayContext.publicState, commandResult: realPlayContext.commandResult, _dualStage: result._dualStage || null, _progress: progress };
+    return { status: "ok", narrative: [cleanNarrative, ...(persistedIds?.slashReceipts || [])].join("\n\n"), commandReceipts: persistedIds?.slashReceipts || [], parsedSections: sections, engineState: returnedState, turnCount: persistedIds?.turnCount || (model.turnCount || 0) + 1, persistedIds, usage, pipelineProfile: pipelineProfile ? { id: pipelineProfile.id, quality: pipelineProfile.quality, speed: pipelineProfile.speed, cost: pipelineProfile.cost } : null, kernel: summarizeKernelTurnContext(kernelContext), modePlay: realPlayContext.publicState, commandResult: realPlayContext.commandResult, _dualStage: result._dualStage || null, _progress: progress };
 }
 
 async function handleLlmChat(body) {
