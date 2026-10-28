@@ -1,1 +1,29 @@
-{}
+{
+  "relations": [
+    {
+      "source": "米拉·阀匠",
+      "target": "罗船长",
+      "type": "friend",
+      "attitude": 1,
+      "description": "港口委托让两人有过一面之缘",
+      "origin": "s3-demo-seed"
+    },
+    {
+      "source": "米拉·阀匠",
+      "target": "灰烬工头",
+      "type": "mentor",
+      "attitude": 2,
+      "description": "工头带米拉入行",
+      "origin": "s3-demo-seed"
+    },
+    {
+      "source": "罗船长",
+      "target": "风令书记",
+      "type": "rival",
+      "attitude": -1,
+      "description": "航线审批上的旧怨",
+      "origin": "s3-demo-seed"
+    }
+  ],
+  "changeLog": []
+}

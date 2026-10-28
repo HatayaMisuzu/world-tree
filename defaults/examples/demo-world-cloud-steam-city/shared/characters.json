@@ -3,12 +3,88 @@
     "id": "mira-valvewright",
     "name": "米拉·阀匠",
     "role": "灰烬工会见习工程师",
-    "description": "熟悉第七锚塔的年轻工程师，说话直接，担心工会高层隐瞒了雾铃塔的真实故障范围。"
+    "race": "浮空人",
+    "location": "ash-guild-hall",
+    "nationId": "cloud-steam-city-state",
+    "orgId": "ash-guild",
+    "motive": "查清压力记录被谁改过",
+    "description": "熟悉第七锚塔的年轻工程师，担心工会高层隐瞒雾铃塔故障范围。"
   },
   {
     "id": "captain-luo",
     "name": "罗船长",
     "role": "黄铜港巡云船长",
-    "description": "掌握云墙外航线的人，愿意帮忙，但要求玩家先证明自己不是风议会的密探。"
+    "race": "浮空人",
+    "location": "brass-harbor",
+    "nationId": "cloud-steam-city-state",
+    "orgId": "wind-court",
+    "motive": "确认来人不是风议会密探",
+    "description": "掌握云墙外航线，愿意帮忙但先要证明来意。"
+  },
+  {
+    "id": "ash-foreman",
+    "name": "灰烬工头",
+    "role": "锅炉工头",
+    "race": "浮空人",
+    "location": "ash-guild-hall",
+    "nationId": "cloud-steam-city-state",
+    "orgId": "ash-guild",
+    "motive": "保住工会对第七锚塔的管辖权",
+    "description": "嗓门大、护短，不喜欢议会插手锅炉房。"
+  },
+  {
+    "id": "wind-clerk",
+    "name": "风令书记",
+    "role": "议会书记",
+    "race": "浮空人",
+    "location": "wind-court-plaza",
+    "nationId": "cloud-steam-city-state",
+    "orgId": "wind-court",
+    "motive": "压下雾铃塔异常的公开议论",
+    "description": "记录风令的文官，对下层云井讳莫如深。"
+  },
+  {
+    "id": "scavenger-yen",
+    "name": "拾荒者燕",
+    "role": "商会跑单",
+    "race": "云下遗民",
+    "location": "brass-harbor",
+    "nationId": "rust-harbor-league",
+    "orgId": "scavenger-company",
+    "motive": "高价收旧锚链齿轮",
+    "description": "带着锈港口音的滑翔艇跑单人。"
+  },
+  {
+    "id": "bell-keeper",
+    "name": "雾钟守望",
+    "role": "雾铃塔看守",
+    "race": "浮空人",
+    "location": "fog-bell-tower",
+    "nationId": "cloud-steam-city-state",
+    "orgId": "wind-court",
+    "motive": "弄清为何连续七次敲响",
+    "description": "独居钟楼的看守，夜里很少睡觉。"
+  },
+  {
+    "id": "dock-hand-kai",
+    "name": "码头工凯",
+    "role": "黄铜港装卸工",
+    "race": "浮空人",
+    "location": "brass-harbor",
+    "nationId": "cloud-steam-city-state",
+    "orgId": "scavenger-company",
+    "motive": "多挣一笔雾钟残骸搬运费",
+    "description": "熟悉码头缆绳与飞艇泊位。"
+  },
+  {
+    "id": "rust-envoy",
+    "name": "锈港使者",
+    "role": "联盟密使",
+    "race": "云下遗民",
+    "location": "cloud-well",
+    "nationId": "rust-harbor-league",
+    "orgId": "rust-harbor-league",
+    "motive": "试探城邦是否会开放云墙",
+    "description": "代表锈港联盟的密使，偶尔现身云井。"
   }
 ]

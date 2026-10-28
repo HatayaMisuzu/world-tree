@@ -6,7 +6,7 @@
       "type": "world",
       "title": "云上蒸汽城",
       "name": "云上蒸汽城",
-      "description": "30 分钟可玩的一局云上蒸汽冒险示例；用于首次体验与 smoke:first-play。",
+      "description": "S3 demo seed：≥2 国家 / ≥3 组织 / ≥2 种族 / ≥5 地点（含旅行边）/ ≥8 带日程 NPC；用于 first-play、关系网变化与固定种子随机事件断言。",
       "kind": "playable_demo",
       "contentPolicy": "original_demo_content",
       "entrypoint": "world_module",
@@ -37,14 +37,21 @@
         "runtime/state.json",
         "runtime/chat.jsonl",
         "runtime/memory.jsonl",
-        "runtime/alchemy-deliveries.jsonl"
+        "runtime/alchemy-deliveries.jsonl",
+        "shared/location-graph.json",
+        "shared/npc-schedules.json"
       ],
       "expectedInstallResult": {
         "createsPlayableStructure": true,
         "containsNarrativeContent": true,
         "containsTutorialContent": true,
         "worldbookEntries": 8,
-        "minimumRealLlmSmokeTarget": true
+        "minimumRealLlmSmokeTarget": true,
+        "minimumCharacters": 8,
+        "minimumOrganizations": 3,
+        "minimumNations": 2,
+        "minimumRaces": 2,
+        "minimumLocations": 5
       }
     },
     {

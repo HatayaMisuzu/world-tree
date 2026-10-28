@@ -1,0 +1,67 @@
+{
+  "nodes": [
+    {
+      "id": "brass-harbor",
+      "name": "黄铜港",
+      "regionId": "cloud-steam"
+    },
+    {
+      "id": "fog-bell-tower",
+      "name": "雾铃塔",
+      "regionId": "cloud-steam"
+    },
+    {
+      "id": "ash-guild-hall",
+      "name": "灰烬会馆",
+      "regionId": "cloud-steam"
+    },
+    {
+      "id": "wind-court-plaza",
+      "name": "风议广场",
+      "regionId": "cloud-steam"
+    },
+    {
+      "id": "cloud-well",
+      "name": "下层云井",
+      "regionId": "cloud-below"
+    }
+  ],
+  "edges": [
+    {
+      "from": "brass-harbor",
+      "to": "fog-bell-tower",
+      "durationDays": 1,
+      "bidirectional": true
+    },
+    {
+      "from": "brass-harbor",
+      "to": "ash-guild-hall",
+      "durationDays": 1,
+      "bidirectional": true
+    },
+    {
+      "from": "brass-harbor",
+      "to": "wind-court-plaza",
+      "durationDays": 1,
+      "bidirectional": true
+    },
+    {
+      "from": "fog-bell-tower",
+      "to": "cloud-well",
+      "durationDays": 2,
+      "bidirectional": true
+    },
+    {
+      "from": "ash-guild-hall",
+      "to": "cloud-well",
+      "durationDays": 3,
+      "bidirectional": true
+    },
+    {
+      "from": "wind-court-plaza",
+      "to": "fog-bell-tower",
+      "durationDays": 1,
+      "bidirectional": true
+    }
+  ]
+}

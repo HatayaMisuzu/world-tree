@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "id": "skyfolk",
+    "name": "浮空人",
+    "subraces": [],
+    "traits": {},
+    "abilities": [],
+    "relations": {
+      "云下遗民": "wary"
+    },
+    "territory": "云上蒸汽城",
+    "population": "",
+    "culture": "",
+    "language": "",
+    "lifespan": "",
+    "description": "世代生活在锚塔城邦的居民，擅长蒸汽机械。"
+  },
+  {
+    "id": "cloud-below-remnants",
+    "name": "云下遗民",
+    "subraces": [],
+    "traits": {},
+    "abilities": [],
+    "relations": {
+      "浮空人": "wary"
+    },
+    "territory": "锈港与云井下层",
+    "population": "",
+    "culture": "",
+    "language": "",
+    "lifespan": "",
+    "description": "云海下方遗民，熟悉旧时代管线与锈港航道。"
+  }
+]

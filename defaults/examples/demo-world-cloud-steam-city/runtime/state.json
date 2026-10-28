@@ -14,6 +14,425 @@
       "tension": 5,
       "fatigue": 4,
       "curiosity": 7
-    }
+    },
+    "locationGraph": {
+      "nodes": [
+        {
+          "id": "brass-harbor",
+          "name": "黄铜港",
+          "regionId": "cloud-steam"
+        },
+        {
+          "id": "fog-bell-tower",
+          "name": "雾铃塔",
+          "regionId": "cloud-steam"
+        },
+        {
+          "id": "ash-guild-hall",
+          "name": "灰烬会馆",
+          "regionId": "cloud-steam"
+        },
+        {
+          "id": "wind-court-plaza",
+          "name": "风议广场",
+          "regionId": "cloud-steam"
+        },
+        {
+          "id": "cloud-well",
+          "name": "下层云井",
+          "regionId": "cloud-below"
+        }
+      ],
+      "edges": [
+        {
+          "from": "brass-harbor",
+          "to": "fog-bell-tower",
+          "durationDays": 1,
+          "bidirectional": true
+        },
+        {
+          "from": "brass-harbor",
+          "to": "ash-guild-hall",
+          "durationDays": 1,
+          "bidirectional": true
+        },
+        {
+          "from": "brass-harbor",
+          "to": "wind-court-plaza",
+          "durationDays": 1,
+          "bidirectional": true
+        },
+        {
+          "from": "fog-bell-tower",
+          "to": "cloud-well",
+          "durationDays": 2,
+          "bidirectional": true
+        },
+        {
+          "from": "ash-guild-hall",
+          "to": "cloud-well",
+          "durationDays": 3,
+          "bidirectional": true
+        },
+        {
+          "from": "wind-court-plaza",
+          "to": "fog-bell-tower",
+          "durationDays": 1,
+          "bidirectional": true
+        }
+      ],
+      "byId": {
+        "brass-harbor": {
+          "id": "brass-harbor",
+          "name": "黄铜港",
+          "regionId": "cloud-steam"
+        },
+        "fog-bell-tower": {
+          "id": "fog-bell-tower",
+          "name": "雾铃塔",
+          "regionId": "cloud-steam"
+        },
+        "ash-guild-hall": {
+          "id": "ash-guild-hall",
+          "name": "灰烬会馆",
+          "regionId": "cloud-steam"
+        },
+        "wind-court-plaza": {
+          "id": "wind-court-plaza",
+          "name": "风议广场",
+          "regionId": "cloud-steam"
+        },
+        "cloud-well": {
+          "id": "cloud-well",
+          "name": "下层云井",
+          "regionId": "cloud-below"
+        }
+      }
+    },
+    "npcStates": [
+      {
+        "id": "mira-valvewright",
+        "name": "米拉·阀匠",
+        "locationId": "ash-guild-hall",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "ash-guild-hall"
+          },
+          {
+            "atDay": 3,
+            "locationId": "fog-bell-tower"
+          },
+          {
+            "atDay": 7,
+            "locationId": "brass-harbor"
+          }
+        ],
+        "relationDistance": 0.2,
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      },
+      {
+        "id": "captain-luo",
+        "name": "罗船长",
+        "locationId": "brass-harbor",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "brass-harbor"
+          },
+          {
+            "atDay": 5,
+            "locationId": "wind-court-plaza"
+          }
+        ],
+        "relationDistance": 0.3,
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      },
+      {
+        "id": "ash-foreman",
+        "name": "灰烬工头",
+        "locationId": "ash-guild-hall",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "ash-guild-hall"
+          },
+          {
+            "atDay": 4,
+            "locationId": "brass-harbor"
+          }
+        ],
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      },
+      {
+        "id": "wind-clerk",
+        "name": "风令书记",
+        "locationId": "wind-court-plaza",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "wind-court-plaza"
+          },
+          {
+            "atDay": 6,
+            "locationId": "fog-bell-tower"
+          }
+        ],
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      },
+      {
+        "id": "scavenger-yen",
+        "name": "拾荒者燕",
+        "locationId": "brass-harbor",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "brass-harbor"
+          },
+          {
+            "atDay": 2,
+            "locationId": "cloud-well"
+          },
+          {
+            "atDay": 8,
+            "locationId": "brass-harbor"
+          }
+        ],
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      },
+      {
+        "id": "bell-keeper",
+        "name": "雾钟守望",
+        "locationId": "fog-bell-tower",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "fog-bell-tower"
+          },
+          {
+            "atDay": 10,
+            "locationId": "ash-guild-hall"
+          }
+        ],
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      },
+      {
+        "id": "dock-hand-kai",
+        "name": "码头工凯",
+        "locationId": "brass-harbor",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "brass-harbor"
+          },
+          {
+            "atDay": 1,
+            "locationId": "ash-guild-hall"
+          },
+          {
+            "atDay": 3,
+            "locationId": "brass-harbor"
+          }
+        ],
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      },
+      {
+        "id": "rust-envoy",
+        "name": "锈港使者",
+        "locationId": "cloud-well",
+        "schedule": [
+          {
+            "atDay": 0,
+            "locationId": "cloud-well"
+          },
+          {
+            "atDay": 4,
+            "locationId": "brass-harbor"
+          },
+          {
+            "atDay": 9,
+            "locationId": "cloud-well"
+          }
+        ],
+        "alive": true,
+        "lod": {
+          "fatigue": 0,
+          "taskProgress": 0,
+          "lastEvolvedDay": 0,
+          "lastMode": null,
+          "fineSteps": 0,
+          "summaryBatches": 0,
+          "catchUpDays": 0
+        }
+      }
+    ],
+    "proximityScope": {
+      "version": 1,
+      "modeId": "",
+      "sceneId": "",
+      "protagonistId": "player",
+      "updatedAt": "2026-10-28T18:15:35.021Z",
+      "fingerprint": "{\"sceneId\":\"\",\"protagonistId\":\"player\",\"currentLocationId\":\"brass-harbor\",\"candidates\":[[\"mira-valvewright\",\"ash-guild-hall\",\"day:ash-guild-hall\"],[\"captain-luo\",\"brass-harbor\",\"day:brass-harbor\"],[\"ash-foreman\",\"ash-guild-hall\",\"day:ash-guild-hall\"],[\"wind-clerk\",\"wind-court-plaza\",\"day:wind-court-plaza\"],[\"scavenger-yen\",\"brass-harbor\",\"day:brass-harbor\"],[\"bell-keeper\",\"fog-bell-tower\",\"day:fog-bell-tower\"],[\"dock-hand-kai\",\"brass-harbor\",\"day:brass-harbor\"],[\"rust-envoy\",\"cloud-well\",\"day:cloud-well\"]],\"relations\":[]}",
+      "reused": false,
+      "rings": {
+        "core": [
+          "captain-luo"
+        ],
+        "near": [
+          "mira-valvewright",
+          "scavenger-yen",
+          "dock-hand-kai"
+        ],
+        "far": [
+          "ash-foreman",
+          "wind-clerk",
+          "bell-keeper",
+          "rust-envoy"
+        ],
+        "dormant": []
+      },
+      "scores": {
+        "mira-valvewright": 0.495,
+        "captain-luo": 0.23,
+        "ash-foreman": 0.6875,
+        "wind-clerk": 0.6875,
+        "scavenger-yen": 0.3875,
+        "bell-keeper": 0.6875,
+        "dock-hand-kai": 0.3875,
+        "rust-envoy": 0.6875
+      },
+      "reasons": {
+        "mira-valvewright": {
+          "ring": "near",
+          "distances": {
+            "location": 0.75,
+            "time": 0.5,
+            "relation": 0.2
+          }
+        },
+        "captain-luo": {
+          "ring": "core",
+          "distances": {
+            "location": 0,
+            "time": 0.5,
+            "relation": 0.3
+          }
+        },
+        "ash-foreman": {
+          "ring": "far",
+          "distances": {
+            "location": 0.75,
+            "time": 0.5,
+            "relation": 0.75
+          }
+        },
+        "wind-clerk": {
+          "ring": "far",
+          "distances": {
+            "location": 0.75,
+            "time": 0.5,
+            "relation": 0.75
+          }
+        },
+        "scavenger-yen": {
+          "ring": "near",
+          "distances": {
+            "location": 0,
+            "time": 0.5,
+            "relation": 0.75
+          }
+        },
+        "bell-keeper": {
+          "ring": "far",
+          "distances": {
+            "location": 0.75,
+            "time": 0.5,
+            "relation": 0.75
+          }
+        },
+        "dock-hand-kai": {
+          "ring": "near",
+          "distances": {
+            "location": 0,
+            "time": 0.5,
+            "relation": 0.75
+          }
+        },
+        "rust-envoy": {
+          "ring": "far",
+          "distances": {
+            "location": 0.75,
+            "time": 0.5,
+            "relation": 0.75
+          }
+        }
+      },
+      "warnings": []
+    },
+    "currentLocationId": "brass-harbor",
+    "protagonistId": "player"
   }
 }
