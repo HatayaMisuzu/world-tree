@@ -127,6 +127,7 @@ const NPC_DEFS = [
     orgId: "wind-court",
     locationId: "brass-harbor",
     motive: "确认来人不是风议会密探",
+    goals: ["确认来人不是风议会密探", "守住云墙外航线机密"],
     description: "掌握云墙外航线，愿意帮忙但先要证明来意。",
     relationDistance: 0.3,
     schedule: [
@@ -143,6 +144,7 @@ const NPC_DEFS = [
     orgId: "ash-guild",
     locationId: "ash-guild-hall",
     motive: "保住工会对第七锚塔的管辖权",
+    goals: ["保住工会对第七锚塔的管辖权", "阻止议会插手锅炉房"],
     description: "嗓门大、护短，不喜欢议会插手锅炉房。",
     schedule: [
       { atDay: 0, locationId: "ash-guild-hall" },
@@ -158,6 +160,7 @@ const NPC_DEFS = [
     orgId: "wind-court",
     locationId: "wind-court-plaza",
     motive: "压下雾铃塔异常的公开议论",
+    goals: ["压下雾铃塔异常的公开议论", "维护风议会体面"],
     description: "记录风令的文官，对下层云井讳莫如深。",
     schedule: [
       { atDay: 0, locationId: "wind-court-plaza" },
@@ -289,6 +292,7 @@ export function buildS3DemoSeed() {
       nationId: d.nationId,
       orgId: d.orgId,
       motive: d.motive,
+      goals: d.goals ? [...d.goals] : (d.motive ? [d.motive] : []),
       description: d.description,
       status: "正常"
     }))
@@ -298,6 +302,9 @@ export function buildS3DemoSeed() {
     nationId: NPC_DEFS[i].nationId,
     orgId: NPC_DEFS[i].orgId,
     motive: NPC_DEFS[i].motive,
+    goals: NPC_DEFS[i].goals
+      ? [...NPC_DEFS[i].goals]
+      : (NPC_DEFS[i].motive ? [NPC_DEFS[i].motive] : []),
     description: NPC_DEFS[i].description
   }));
   const npcStates = NPC_DEFS.map((d) =>

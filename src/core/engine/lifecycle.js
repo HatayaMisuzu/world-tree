@@ -25,9 +25,27 @@ import { recordSimulationRun, isSimulateActive } from "./simulator.js";
 import { calculateWorldTelemetry, telemetryForLLM, directorHints as telemetryDirectorHints } from "./world-telemetry.js";
 import { POSITIVE_RELATION_WORDS, NEGATIVE_RELATION_WORDS, RELATION_TYPE_KEYWORDS, DEGRADATION } from "./constants.js";
 import { exportEngineState } from "./state-persistence.js";
+import {
+  evaluateNpcRequests,
+  scrubCanonForRefusals,
+  formatNpcDecisionsForWriter
+} from "./npc-decision.js";
 import { slashWriteOps } from "./slash-persistence.js";
 import { rootChangeFromStateSuggestion, enqueueRippleProposals } from "../world-state/world-state-ripple-queue.js";
 import { recordTurnCausality } from "./timeline-causality-wire.js";
+
+
+function runNpcDecisionLayer({ input, model, engineState = {} }) {
+  const characters = model?.moduleData?.characters || [];
+  const evaluation = evaluateNpcRequests({
+    input,
+    characters,
+    playerName: model?.moduleData?.protagonistName || model?.protagonistName || "玩家",
+    npcStates: engineState?.npcStates || [],
+    currentLocationId: engineState?.currentLocationId || ""
+  });
+  return evaluation;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  prepareTurn — 三种模式差异化预处理
@@ -141,6 +159,9 @@ export function prepareTurn({ model, input, engineState, worldbookState, cards =
     telemetryHints: state.telemetryHints
   });
 
+  // S4-6: NPC 自主意愿（规则层）— 请求 vs 目标/态度 → cooperate/refuse/leave
+  const npcDecisions = runNpcDecisionLayer({ input, model, engineState: state });
+
   return {
     state, intent, budget, guard,
     injectedWorldbook, commandResult,
@@ -153,7 +174,9 @@ export function prepareTurn({ model, input, engineState, worldbookState, cards =
     directionResult,  // 新增：方向包
     telemetry: telemetryResult,
     relevantMemories,
-    memorySection
+    memorySection,
+    npcDecisions,
+    npcDecisionWriterBlock: formatNpcDecisionsForWriter(npcDecisions)
   };
 }
 
@@ -260,6 +283,20 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
 
   overlayPatch.audit = auditNarrative(parsed.narrative, model);
   overlayPatch.ruleCheck = checkFeasibility(input, model.moduleData?.worldState, model.moduleData?.rules);
+
+  // S4-6: rules-layer NPC refusal (assertable); refused requests never Canon「已完成」
+  const npcDecisions = runNpcDecisionLayer({ input, model, engineState: state });
+  overlayPatch.npcDecisions = npcDecisions;
+  if (npcDecisions.hasRefusal) {
+    const scrubbed = scrubCanonForRefusals(overlayPatch.canon, npcDecisions.decisions);
+    overlayPatch.canon = scrubbed.canon;
+    overlayPatch.canonRefusalScrub = {
+      scrubbed: scrubbed.scrubbed,
+      blockedMarks: scrubbed.blockedMarks,
+      requestFulfilled: false,
+      requestStatus: "not_completed"
+    };
+  }
 
   if (model.moduleData?.races) {
     const characters = model.moduleData?.characters || [];
@@ -547,7 +584,8 @@ export function completeTurn({ rawText, input, model, moduleKey, dataMode = "wor
   overlayPatch._engineState = exportEngineState({
     emotionState: state.emotionState,
     turnCount: model.turnCount || 0,
-    sceneSummary: sceneSummary?.summary || ""
+    sceneSummary: sceneSummary?.summary || "",
+    npcDecisions: overlayPatch.npcDecisions || null
   });
 
   // S4-2 / dc-5: bounded ripple depth≥2 → proposal-bus → proposal-system (major/critical 状态建议)

@@ -33,6 +33,8 @@ export function exportEngineState(extra = {}) {
       const t = exportTimeline();
       return { events: t.events, edges: t.edges, echoes: t.echoes };
     })(),
+    // S4-6: last-turn NPC cooperate/refuse/leave (rules layer); not a Canon write
+    npcDecisions: extra.npcDecisions || null,
     runtime: {
       emotionState: extra.emotionState || null,
       turnCount: extra.turnCount || 0,

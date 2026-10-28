@@ -8,7 +8,10 @@
     "nationId": "cloud-steam-city-state",
     "orgId": "ash-guild",
     "motive": "查清压力记录被谁改过",
-    "description": "熟悉第七锚塔的年轻工程师，担心工会高层隐瞒雾铃塔故障范围。"
+    "description": "熟悉第七锚塔的年轻工程师，担心工会高层隐瞒雾铃塔故障范围。",
+    "goals": [
+      "查清压力记录被谁改过"
+    ]
   },
   {
     "id": "captain-luo",
@@ -19,7 +22,11 @@
     "nationId": "cloud-steam-city-state",
     "orgId": "wind-court",
     "motive": "确认来人不是风议会密探",
-    "description": "掌握云墙外航线，愿意帮忙但先要证明来意。"
+    "description": "掌握云墙外航线，愿意帮忙但先要证明来意。",
+    "goals": [
+      "确认来人不是风议会密探",
+      "守住云墙外航线机密"
+    ]
   },
   {
     "id": "ash-foreman",
@@ -30,7 +37,11 @@
     "nationId": "cloud-steam-city-state",
     "orgId": "ash-guild",
     "motive": "保住工会对第七锚塔的管辖权",
-    "description": "嗓门大、护短，不喜欢议会插手锅炉房。"
+    "description": "嗓门大、护短，不喜欢议会插手锅炉房。",
+    "goals": [
+      "保住工会对第七锚塔的管辖权",
+      "阻止议会插手锅炉房"
+    ]
   },
   {
     "id": "wind-clerk",
@@ -41,7 +52,11 @@
     "nationId": "cloud-steam-city-state",
     "orgId": "wind-court",
     "motive": "压下雾铃塔异常的公开议论",
-    "description": "记录风令的文官，对下层云井讳莫如深。"
+    "description": "记录风令的文官，对下层云井讳莫如深。",
+    "goals": [
+      "压下雾铃塔异常的公开议论",
+      "维护风议会体面"
+    ]
   },
   {
     "id": "scavenger-yen",
@@ -52,7 +67,10 @@
     "nationId": "rust-harbor-league",
     "orgId": "scavenger-company",
     "motive": "高价收旧锚链齿轮",
-    "description": "带着锈港口音的滑翔艇跑单人。"
+    "description": "带着锈港口音的滑翔艇跑单人。",
+    "goals": [
+      "高价收旧锚链齿轮"
+    ]
   },
   {
     "id": "bell-keeper",
@@ -63,7 +81,10 @@
     "nationId": "cloud-steam-city-state",
     "orgId": "wind-court",
     "motive": "弄清为何连续七次敲响",
-    "description": "独居钟楼的看守，夜里很少睡觉。"
+    "description": "独居钟楼的看守，夜里很少睡觉。",
+    "goals": [
+      "弄清为何连续七次敲响"
+    ]
   },
   {
     "id": "dock-hand-kai",
@@ -74,7 +95,10 @@
     "nationId": "cloud-steam-city-state",
     "orgId": "scavenger-company",
     "motive": "多挣一笔雾钟残骸搬运费",
-    "description": "熟悉码头缆绳与飞艇泊位。"
+    "description": "熟悉码头缆绳与飞艇泊位。",
+    "goals": [
+      "多挣一笔雾钟残骸搬运费"
+    ]
   },
   {
     "id": "rust-envoy",
@@ -85,6 +109,9 @@
     "nationId": "rust-harbor-league",
     "orgId": "rust-harbor-league",
     "motive": "试探城邦是否会开放云墙",
-    "description": "代表锈港联盟的密使，偶尔现身云井。"
+    "description": "代表锈港联盟的密使，偶尔现身云井。",
+    "goals": [
+      "试探城邦是否会开放云墙"
+    ]
   }
 ]
