@@ -58,7 +58,7 @@ test("tabletop-v2-routes.js: no Tabletop V2 route path appears without handler",
   }
 });
 
-test("tabletop-v2-service.js: all handler functions exist as named exports", () => {
+test("tabletop-v2-service.js: all handler functions exist as named exports", async () => {
   const expectedExports = [
     "previewTabletopV2Import",
     "commitTabletopV2Import",
@@ -74,12 +74,16 @@ test("tabletop-v2-service.js: all handler functions exist as named exports", () 
     "exportTabletopV2Run",
   ];
 
+  // The import handlers live in tabletop-v2-import-service.js and are re-exported by the service.
+  const service = await import("../../src/server/tabletop-v2-service.js");
+  const importServiceContent = readFileSync(new URL("../../src/server/tabletop-v2-import-service.js", import.meta.url), "utf-8");
   for (const fnName of expectedExports) {
     const exportRegex = new RegExp(`export\\s+async\\s+function\\s+${fnName}\\b`, 'm');
     assert.ok(
-      exportRegex.test(serviceContent),
-      `Expected export async function ${fnName} in tabletop-v2-service.js`
+      exportRegex.test(serviceContent) || exportRegex.test(importServiceContent),
+      `Expected export async function ${fnName} in tabletop-v2-service.js or its import service`
     );
+    assert.equal(typeof service[fnName], "function", `tabletop-v2-service.js must export ${fnName}`);
   }
 });
 

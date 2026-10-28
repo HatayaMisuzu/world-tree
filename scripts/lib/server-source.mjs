@@ -7,6 +7,7 @@ export const SERVER_RUNTIME_FILES = Object.freeze([
   "src/server/connection-runtime.js",
   "src/server/static-shell.js",
   "src/server/http-api-router.js",
+  "src/server/character-card-http-routes.js",
   "src/server/debug-log.js",
   "src/server/v2-product-playable-routes.js",
   "src/server/tabletop-v2-routes.js",
