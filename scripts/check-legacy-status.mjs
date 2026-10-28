@@ -65,9 +65,9 @@ try {
 const bridgeFiles = [
   "src/core/engine/rpg.js",
   "src/core/engine/tabletop.js",
-  "src/core/engine/sim.js",
   "src/core/engine/murder-mystery.js"
 ];
+// sim.js archived (dc-4); SIM_DM_INSTRUCTION lives in sim-dm-instruction.js
 for (const f of bridgeFiles) {
   const full = resolve(BASE, f);
   if (!existsSync(full)) {

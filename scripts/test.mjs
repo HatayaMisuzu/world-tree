@@ -77,7 +77,7 @@ const CORE_FILES = [
   "src/core/engine/telemetry-data-extractor.js",
   "src/core/engine/world-telemetry.js",
   "src/core/engine/tabletop.js", "src/core/engine/rpg.js",
-  "src/core/engine/sim.js", "src/core/engine/murder-mystery.js",
+  "src/core/engine/sim-dm-instruction.js", "src/core/engine/murder-mystery.js",
   "src/core/engine/simulator.js", "src/core/engine/world-manager.js",
   "src/core/data/character-card.js", "src/core/data/templates.js",
   "src/core/data/rules.js", "src/core/data/prediction.js",

@@ -29,7 +29,7 @@
 |--------|---------------------|----------|
 | `src/core/engine/rpg.js` | `src/core/grand-world/` | Re-exported by world-engine.js |
 | `src/core/engine/tabletop.js` | `src/core/tabletop/` | Re-exported by world-engine.js |
-| `src/core/engine/sim.js` | `src/core/strategy-sim/` | Re-exported by world-engine.js |
+| `archive/src/core/engine/sim.js` (dc-4; `SIM_DM_INSTRUCTION` → `engine/sim-dm-instruction.js`) | `src/core/strategy-sim/` | Re-export `as sim` removed; instruction kept on product path |
 | `src/core/engine/murder-mystery.js` | `src/core/murder-mystery/` | Re-exported by world-engine.js |
 
 这些旧文件导出 DM instruction 常量，被 `world-engine.js` 导入并 re-export。新胶囊 `mode-runner.js` 使用 route index + prompt registry，不完全依赖这些旧 DM instruction。但旧 API（world-engine exports）可能仍有外部引用。

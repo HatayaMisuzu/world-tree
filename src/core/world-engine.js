@@ -8,7 +8,7 @@ import { presetSummary, styleInstruction } from "./data/templates.js";
 import { getEmotionProfile } from "./engine/emotion-state.js";
 import { TABLETOP_DM_INSTRUCTION } from "./engine/tabletop.js";
 import { RPG_DM_INSTRUCTION } from "./engine/rpg.js";
-import { SIM_DM_INSTRUCTION } from "./engine/sim.js";
+import { SIM_DM_INSTRUCTION } from "./engine/sim-dm-instruction.js";
 import { MURDER_MYSTERY_DM_INSTRUCTION } from "./engine/murder-mystery.js";
 import { assembleContext } from "./engine/context-engine.js";
 import { directorModePromptBlock } from "./engine/director-modes.js";
@@ -22,7 +22,6 @@ export { prepareTurn, completeTurn } from "./engine/lifecycle.js";
 // 🆕 跑团模块
 export * as tabletop from "./engine/tabletop.js";
 export * as rpg from "./engine/rpg.js";
-export * as sim from "./engine/sim.js";
 export * as murderMystery from "./engine/murder-mystery.js";
 export * as storytellers from "./engine/storytellers.js";
 
