@@ -518,7 +518,12 @@ export function createModuleService(deps) {
     const byName = new Map();
     for (const entry of primary) byName.set(entry.name, entry);
     for (const entry of legacy) {
-      if (!byName.has(entry.name)) byName.set(entry.name, entry);
+      if (byName.has(entry.name)) {
+        const kept = byName.get(entry.name);
+        byName.set(entry.name, { ...kept, shadowsLegacy: true });
+      } else {
+        byName.set(entry.name, entry);
+      }
     }
     return [...byName.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
   }
