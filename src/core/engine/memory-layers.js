@@ -1,4 +1,5 @@
 import { stableId } from "../../shared/determinism.js";
+import { scopedObject } from "./world-scope.js";
 // ===== 五层记忆体系 v1 =====
 // 构建于 global-memory.js（快照层）之上，提供分层记忆管理。
 //
@@ -16,7 +17,8 @@ import { stableId } from "../../shared/determinism.js";
 //  内存存储
 // ═══════════════════════════════════════════════════════════════
 
-const MEMORY_LAYERS = {
+// per-world (S2 ③): backing object lives in the active world scope
+const MEMORY_LAYERS = scopedObject("memory.layers", () => ({
   stm: {
     entries: [],            // 最近对话轮次 [{ round, userInput, narrativeSummary, keywords, emotion }]
     maxEntries: 10,         // 最大保留轮次
@@ -41,7 +43,7 @@ const MEMORY_LAYERS = {
     choices: [],            // 重大选择历史
     patterns: {}            // 行为模式 { favorsAction, avoidsConflict, etc }
   }
-};
+}));
 
 // ═══════════════════════════════════════════════════════════════
 //  L1: 短期记忆

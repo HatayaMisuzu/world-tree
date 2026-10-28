@@ -84,7 +84,8 @@ export function prepareTurn({ model, input, engineState, worldbookState, cards =
     plotState: {},
     lastEventRound: state.lastEventRound || 0,
     worldType: model.selected?.type || "daily",
-    worldSeed: worldSeedOf(model)
+    worldSeed: worldSeedOf(model),
+    moduleData: model.moduleData || {}
   });
 
   // 更新 engine state 中的情绪状态

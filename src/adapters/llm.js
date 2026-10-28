@@ -603,7 +603,8 @@ export async function sendDualStageTurn(opts = {}) {
   // 🆕 混合模式：轻量 LLM 分析 → JS generateDirectionPacket
   if (!finalDirectionPacket && llmAnalysis) {
     const jsResult = generateDirectionPacket({
-      emotionState: turnPrep?.directorResult?.emotion?.state || turnPrep?.state?.emotionState,
+      // 主管线没有 turnPrep 时，此前情绪总是回落到默认值（导演忽略了玩家当前情绪）
+      emotionState: turnPrep?.directorResult?.emotion?.state || turnPrep?.state?.emotionState || engineState?.emotionState,
       input,
       proximityEntities: model.entities || [],
       round: model.turnCount || 0,

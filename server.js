@@ -770,6 +770,9 @@ async function runLlmChatSuccessInSession(body, retryMeta = {}, streamHooks = {}
     entities: [], turnCount: 0
   };
   const sessionSnapshot = model?.moduleData?.runtime?.engineSnapshot || model?._overlay?.runtime?.engineSnapshot || null;
+  // S2 ④: restore this world's engine snapshot before the director runs (it used to run against
+  // whatever state the previous turn of any world left behind, and its decisions were then wiped).
+  if (worldSession) worldSession.beginTurn(sessionSnapshot);
 
   // 标准化引擎状态
   const normState = normalizeEngineState(engineState || DEFAULT_ENGINE_STATE);

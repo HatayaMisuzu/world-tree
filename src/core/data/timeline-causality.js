@@ -1,4 +1,5 @@
 import { stableId } from "../../shared/determinism.js";
+import { scopedObject } from "../engine/world-scope.js";
 // ===== 时间线与因果链 v1 =====
 // 构建于现有 timeline.js 之上。
 // 新增：事件依赖图(DAG)、因果链、改动影响回溯、命运回响(echoes)、伏笔追踪。
@@ -39,7 +40,7 @@ const TIMELINE_STORE = {
   maxEvents: 500
 };
 
-let eventIdCounter = 0;
+const COUNTERS = scopedObject("timeline.counters", () => ({ eventIdCounter: 0 }));
 
 // ═══════════════════════════════════════════════════════════════
 //  事件创建
@@ -79,7 +80,7 @@ export function createTimelineEvent(opts = {}) {
   if (!title) return { error: "事件标题不能为空" };
 
   const event = {
-    id: `event-${++eventIdCounter}`,
+    id: `event-${++COUNTERS.eventIdCounter}`,
     title,
     time,
     type,
@@ -439,15 +440,15 @@ export function resetTimeline() {
   TIMELINE_STORE.events = [];
   TIMELINE_STORE.edges = [];
   TIMELINE_STORE.echoes = [];
-  eventIdCounter = 0;
+  COUNTERS.eventIdCounter = 0;
 }
 
 export function importEvents(events = [], edges = [], echoes = []) {
   for (const e of events) {
     if (!e.error) {
       TIMELINE_STORE.events.push(e);
-      if (e.id && parseInt(e.id.replace('event-', '')) > eventIdCounter) {
-        eventIdCounter = parseInt(e.id.replace('event-', ''));
+      if (e.id && parseInt(e.id.replace('event-', '')) > COUNTERS.eventIdCounter) {
+        COUNTERS.eventIdCounter = parseInt(e.id.replace('event-', ''));
       }
     }
   }

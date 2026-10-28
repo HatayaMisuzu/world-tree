@@ -5,18 +5,18 @@
 // 依赖：emotion-state.js, random-events.js (仅环境事件)
 
 import { getEmotionProfile, updateEmotionState, getDefaultEmotionState, formatEmotionState } from "./emotion-state.js";
-import { proposeRandomEvent } from "../data/random-events.js";
-import { rngFrom } from "../../shared/determinism.js";
+import { rngFrom, stableId } from "../../shared/determinism.js";
 import { createDirectionPacket, normalizeDirectionPacket, summarizeDirectionPacket, PACING_OPTIONS, PRESSURE_OPTIONS, EVENT_INTENSITY_OPTIONS } from "./direction-packet.js";
 import { getStoryteller, applyStorytellerModifiers, applyStorytellerPacing, storytellerStrategySummary } from "./storytellers.js";
 import { EVENT_SCORE, PACING_THRESHOLDS, PREDICTION_CACHE } from "./constants.js";
+import { scopedObject } from "./world-scope.js";
 
 // ═══════════════════════════════════════════════════════════════
 //  事件预测缓存 — 延迟触发的"边缘事件"在后续轮次自然冒泡
 // ═══════════════════════════════════════════════════════════════
 
 // 多世界隔离：每个世界独立缓存
-const PREDICTION_STORES = new Map();
+const PREDICTION_STORES = scopedObject("director.predictions", () => new Map());
 
 /** 导出预测缓存（用于持久化） */
 export function exportPredictionStores() {
@@ -46,6 +46,85 @@ function getPredictionStore(worldName = "_default") {
   }
   return PREDICTION_STORES.get(worldName);
 }
+// ═══════════════════════════════════════════════════════════════
+//  方案 A（PRD v0.3 §2/§3.1）：事件只从已有世界状态与 NPC 动机中引出
+//  —— 不再用随机模板凭空生成冲突；节奏/情绪只决定"此刻是否适合叙述"，不决定"发生什么"。
+// ═══════════════════════════════════════════════════════════════
+
+const MOTIVE_KEYS = ["motive", "motivation", "goal", "goals", "desire", "agenda", "wants"];
+const textOf = (v) => (typeof v === "string" ? v : v?.title || v?.description || v?.summary || v?.name || "").trim();
+const listOf = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+
+/**
+ * 从已有世界状态收集"可被叙述的钩子"：未解线索/未决事件 + NPC/组织动机。
+ * 输出顺序稳定（与对象插入顺序无关），id 可复现。
+ */
+export function collectStoryHooks(moduleData = {}) {
+  const hooks = [];
+  const ws = moduleData?.worldState || {};
+  for (const t of listOf(ws.openThreads)) {
+    const title = textOf(t); if (title) hooks.push({ kind: "open_thread", title, ref: "worldState.openThreads", level: t?.severity === "major" ? "major" : "light" });
+  }
+  for (const e of [...listOf(ws.unresolvedEvents), ...listOf(ws.unresolved)]) {
+    if (e?.status === "resolved") continue;
+    const title = textOf(e); if (title) hooks.push({ kind: "unresolved_event", title, ref: "worldState.unresolvedEvents", level: e?.severity === "major" || e?.urgency === "high" ? "major" : "moderate" });
+  }
+  const actors = [...listOf(moduleData?.characters).map(c => ["npc", c]), ...listOf(moduleData?.organizations).map(o => ["faction", o])];
+  for (const [kind, a] of actors) {
+    const who = a?.name || a?.id; if (!who) continue;
+    for (const k of MOTIVE_KEYS) for (const m of listOf(a?.[k])) {
+      const motive = textOf(m); if (motive) hooks.push({ kind: `${kind}_motive`, actor: who, title: `${who}：${motive}`, ref: `${kind === "npc" ? "characters" : "organizations"}.${k}`, level: "moderate" });
+    }
+  }
+  const seen = new Set();
+  return hooks
+    .map(h => ({ ...h, id: stableId("hook", h.kind, h.title) }))
+    .filter(h => (seen.has(h.id) ? false : seen.add(h.id)))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** 导演决策日志（按世界隔离，进入 engineSnapshot → runtime/state.json，从而被状态哈希覆盖） */
+const DIRECTOR_LOG = scopedObject("director.log", () => ({ decisions: [], max: 50 }));
+
+export function exportDirectorLog() { return { decisions: DIRECTOR_LOG.decisions.slice(-DIRECTOR_LOG.max) }; }
+export function importDirectorLog(data = {}) { DIRECTOR_LOG.decisions = Array.isArray(data?.decisions) ? data.decisions.slice(-DIRECTOR_LOG.max) : []; }
+export function resetDirectorLog() { DIRECTOR_LOG.decisions = []; }
+export function getDirectorDecisions() { return DIRECTOR_LOG.decisions.slice(); }
+
+function recordDirectorDecision(entry) {
+  const list = DIRECTOR_LOG.decisions;
+  // 同一回合重复评估（prepareTurn + 混合模式复算）只保留最后一次
+  if (list.length && list[list.length - 1].round === entry.round) list.pop();
+  list.push(entry);
+  if (list.length > DIRECTOR_LOG.max) list.splice(0, list.length - DIRECTOR_LOG.max);
+}
+
+/**
+ * 从钩子中挑一个本回合可叙述的事件；没有钩子 → null（绝不凭空造事件）。
+ * 最近 3 次已叙述过的钩子降权；挑选用种子 RNG。
+ */
+export function selectHookEvent(hooks = [], context = {}) {
+  if (!hooks.length) return null;
+  const recent = new Set(DIRECTOR_LOG.decisions.slice(-3).map(d => d.hookId).filter(Boolean));
+  const fresh = hooks.filter(h => !recent.has(h.id));
+  const pool = fresh.length ? fresh : hooks;
+  const rng = rngFrom(context.rng, context.worldSeed ?? "world-tree", context.round || 0, "director.hook");
+  const hook = pool[rng.int(pool.length)];
+  const level = context.forceLevel || hook.level || "light";
+  return {
+    level,
+    title: hook.title,
+    proposal: hook.kind.endsWith("_motive") ? `让「${hook.actor}」按其既有动机行动：${hook.title}` : `推进已有线索：${hook.title}`,
+    hookId: hook.id,
+    hookKind: hook.kind,
+    source: hook.ref,
+    grounded: true,
+    marker: level === "major" ? "★" : level === "moderate" ? "◆" : "·",
+    canIncorporate: level === "major",
+    canBackground: level !== "light"
+  };
+}
+
 /**
  * 将未触发但有潜力的事件存入缓存
  * @param {Object} assessment - calculateEventScore 的返回
@@ -105,6 +184,12 @@ export function checkEventCache(context = {}) {
 
   const best = pending[0];
   const effectiveScore = best.effectiveScore || best.score;
+
+  // 方案 A：缓存事件对应的钩子已不在世界状态中（线索已解/动机已变）→ 作废
+  if (Array.isArray(context.storyHooks) && best.event?.hookId && !context.storyHooks.some(h => h.id === best.event.hookId)) {
+    best.status = "stale";
+    return { promoted: false, event: null, source: null };
+  }
 
   // 检查当前条件是否还匹配
   const coreChars = (proximity || []).filter((e) => e.proximity?.level === 0 && e.type === "character").length;
@@ -274,17 +359,16 @@ export function shouldTriggerEvent(assessment, context = {}) {
   if (!assessment || assessment.method === "none") {
     return { trigger: false, method: "none", event: null };
   }
+  // 方案 A：没有已有线索/动机可引出 → 不触发（节奏/情绪分再高也不凭空制造冲突）
+  const hooks = Array.isArray(context.storyHooks) ? context.storyHooks : [];
+  if (!hooks.length) return { trigger: false, method: "no_grounded_hook", event: null };
 
   if (assessment.method === "judgment") {
     // 计分制：分数够高就触发，不用概率
     return {
       trigger: true,
       method: "judgment",
-      event: proposeRandomEvent({
-        ...context,
-        forceLevel: assessment.type === "ambient" ? "light" : null,
-        forceScore: assessment.score
-      })
+      event: selectHookEvent(hooks, { ...context, forceLevel: assessment.type === "ambient" ? "light" : null })
     };
   }
 
@@ -295,10 +379,7 @@ export function shouldTriggerEvent(assessment, context = {}) {
       trigger: true,
       method: "probability",
       probability: weight,
-      event: proposeRandomEvent({
-        ...context,
-        forceLevel: assessment.type === "ambient" ? "light" : null
-      })
+      event: selectHookEvent(hooks, { ...context, forceLevel: assessment.type === "ambient" ? "light" : null })
     };
   }
 
@@ -310,7 +391,7 @@ export function shouldTriggerEvent(assessment, context = {}) {
 // ═══════════════════════════════════════════════════════════════
 
 export function analyzePacing(emotion, round = 0, lastEventRound = 0) {
-  const { engagement, tension, fatigue } = emotion || getDefaultEmotionState();
+  const { engagement, tension, fatigue, curiosity } = emotion || getDefaultEmotionState(); // curiosity 此前未解构：高投入时抛 ReferenceError
   const T = PACING_THRESHOLDS;
   const advices = [];
 
@@ -328,7 +409,7 @@ export function analyzePacing(emotion, round = 0, lastEventRound = 0) {
     advices.push({
       signal: "节奏过松",
       severity: "advise",
-      advice: "叙事节奏偏平，可考虑放入一个轻量悬念或角色小互动来提升张力。"
+      advice: "叙事节奏偏平：可从已有未解线索或角色既有动机中推进一步；没有合适线索时保持平静，不要新造冲突。"
     });
   }
 
@@ -393,8 +474,10 @@ export function directNarrative(opts = {}) {
     sceneChanged = false,
     plotState = {},
     lastEventRound = 0,
-    worldSeed = "world-tree"
+    worldSeed = "world-tree",
+    moduleData = null
   } = opts;
+  const storyHooks = Array.isArray(opts.storyHooks) ? opts.storyHooks : collectStoryHooks(moduleData || {});
 
   // 1. 更新情绪状态
   const updatedEmotion = updateEmotionState(emotionState, { input, turnCount: round, sceneChanged });
@@ -404,7 +487,7 @@ export function directNarrative(opts = {}) {
   const pacing = analyzePacing(updatedEmotion, round, lastEventRound);
 
   // 2.5 检查事件预测缓存（优先于新事件评估）
-  const cacheContext = { emotion: updatedEmotion, proximity: proximityEntities, round, sceneChanged };
+  const cacheContext = { emotion: updatedEmotion, proximity: proximityEntities, round, sceneChanged, storyHooks };
   const cacheResult = checkEventCache(cacheContext);
 
   let assessment, triggerResult;
@@ -434,11 +517,9 @@ export function directNarrative(opts = {}) {
     triggerResult = { trigger: false, method: "pacing_blocked", event: null };
 
     // 边界分（20-50）的未触发事件→缓存，等后续轮次自然冒泡
-    if (assessment.score >= 20 && assessment.score <= 50) {
-      cacheEventPrediction(assessment, proposeRandomEvent({
-        round, sceneChanged, worldType: opts.worldType || "daily", worldSeed,
-        forceLevel: assessment.type === "ambient" ? "light" : "moderate"
-      }), { round, worldType: opts.worldType || "daily" });
+    const hookEvent = selectHookEvent(storyHooks, { round, worldSeed, forceLevel: assessment.type === "ambient" ? "light" : "moderate" });
+    if (hookEvent && assessment.score >= 20 && assessment.score <= 50) {
+      cacheEventPrediction(assessment, hookEvent, { round, worldType: opts.worldType || "daily" });
     }
   } else {
     // 正常评估
@@ -446,19 +527,29 @@ export function directNarrative(opts = {}) {
       emotion: updatedEmotion, proximity: proximityEntities,
       round, sceneChanged, plotState, lastEventRound, worldSeed
     });
-    triggerResult = shouldTriggerEvent(assessment, { round, sceneChanged, worldType: opts.worldType || "daily", worldSeed });
+    triggerResult = shouldTriggerEvent(assessment, { round, sceneChanged, worldType: opts.worldType || "daily", worldSeed, storyHooks });
 
     // 边缘分（20-50）但未触发→缓存
-    if (!triggerResult.trigger && assessment.score >= 20 && assessment.score <= 50) {
-      cacheEventPrediction(assessment, triggerResult.event || proposeRandomEvent({
-        round, sceneChanged, worldType: opts.worldType || "daily",
-        forceLevel: assessment.type === "ambient" ? "light" : "moderate"
-      }), { round, worldType: opts.worldType || "daily" });
+    const hookEvent = !triggerResult.trigger && selectHookEvent(storyHooks, { round, worldSeed, forceLevel: assessment.type === "ambient" ? "light" : "moderate" });
+    if (hookEvent && assessment.score >= 20 && assessment.score <= 50) {
+      cacheEventPrediction(assessment, hookEvent, { round, worldType: opts.worldType || "daily" });
     }
   }
 
   // 清理过期缓存
   pruneEventCache(round);
+
+  // 决策进入世界状态（engineSnapshot.director），供存档/读档与确定性哈希覆盖
+  recordDirectorDecision({
+    round,
+    trigger: Boolean(triggerResult.trigger),
+    method: triggerResult.method,
+    hookId: triggerResult.event?.hookId || null,
+    level: triggerResult.trigger ? (triggerResult.event?.level || null) : null,
+    title: triggerResult.trigger ? (triggerResult.event?.title || null) : null,
+    hooksAvailable: storyHooks.length,
+    score: Math.round((assessment?.score || 0) * 1000) / 1000
+  });
 
   // 3. 缓存状态信息
   const cacheInfo = getEventCache();
@@ -529,7 +620,7 @@ export function generateDirectionPacket(opts = {}) {
   // 复用或重新计算 Director 结果
   const result = existingResult || directNarrative({
     emotionState, input, proximityEntities,
-    round, sceneChanged, plotState, lastEventRound, worldType, worldSeed
+    round, sceneChanged, plotState, lastEventRound, worldType, worldSeed, moduleData
   });
 
   const emotion = result.emotion;

@@ -6,11 +6,13 @@
 //   3. grep:     rules layer (src/core/engine, src/core/data, src/core/world-engine.js) has no
 //                Math.random / Date.now (allowlist below, each with a reason).
 // Never calls a real model: the only LLM is a local 127.0.0.1 stub started by this script.
-// Usage: node scripts/determinism-check.mjs [--turns 30] [--resume-at 20] [--only grep|replay|resume] [--json]
+//   4. mutate:   --mutate seed gives run B a different world seed (runtime/state.json seed); the replay
+//                comparison MUST then FAIL — proves the hash covers seeded director decisions.
+// Usage: node scripts/determinism-check.mjs [--turns 30] [--resume-at 20] [--only grep|replay|resume] [--mutate seed] [--json]
 import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { createServer } from "node:http";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import { api, createTempDataDir, removeTempDir, startWorldTreeServer } from "../tests/integration/helpers/server-process.js";
@@ -21,6 +23,8 @@ const opt = (name, dflt) => { const i = args.indexOf(`--${name}`); return i >= 0
 const TURNS = Number(opt("turns", 30));
 const RESUME_AT = Number(opt("resume-at", Math.max(1, TURNS - 10)));
 const ONLY = opt("only", "");
+const MUTATE = opt("mutate", "");
+const STUB = { calls: 0 };
 const DEMO = process.env.WT_DET_EXAMPLE_ID || "demo-world-cloud-steam-city";
 
 // ---------- 3. static grep ----------
@@ -63,7 +67,10 @@ async function startStubLlm() {
       const msgs = parsed.messages || [];
       // wall-clock timestamps in the prompt are excluded (PRD §7: hash excludes wall clock); everything else keys the reply
       const last = String(msgs.filter(m => m.role === "user").at(-1)?.content || "").replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, "<ISO>");
-      const h = parseInt(sha(last).slice(0, 8), 16);
+      // --mutate: key the stub on the per-run call index only (prompt-independent), so any divergence comes
+      // from engine/director state, not from director text leaking into the prompt and changing the reply.
+      const key = MUTATE ? `call:${STUB.calls++}:${parsed.response_format?.type || "text"}` : last;
+      const h = parseInt(sha(key).slice(0, 8), 16);
       if (process.env.WT_DET_DUMP) { stubLog.push({ h, last }); }
       const content = parsed.response_format?.type === "json_object"
         ? JSON.stringify({ intent: "action", emotionalSubtext: "调查", engagementDelta: (h % 3) - 1, tensionDelta: (h >> 3) % 3 - 1,
@@ -106,6 +113,10 @@ export function worldStateForHash(worldDir) {
     if (/\.json$/.test(r)) files[r] = readJson(f);
     else if (/\.jsonl$/.test(r)) files[r] = readFileSync(f, "utf8").split("\n").filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return l; } });
   }
+  if (MUTATE === "seed") { // the injected seed itself must not be what makes the hashes differ
+    delete state.seed;
+    if (files["runtime/state.json"]) delete files["runtime/state.json"].seed;
+  }
   return canon({ state, files });
 }
 export function hashState(obj) { return sha(JSON.stringify(obj)); }
@@ -116,6 +127,13 @@ const ACTIONS = [
   "我沿着锅炉廊查看原始阀门，留意是否有被动过的痕迹。",
   "我向港务局的值班员打听匿名委托的来历。",
   "我回顾雾铃塔、齿轮和压力记录之间的联系。"
+];
+// varied emotion so the director's score thresholds are crossed on some turns (exercises triggers + cache)
+const EMOTIONS = [
+  { engagement: 6, tension: 5, fatigue: 4, curiosity: 7 },
+  { engagement: 8, tension: 9, fatigue: 2, curiosity: 9 },
+  { engagement: 6, tension: 2, fatigue: 3, curiosity: 6 },
+  { engagement: 9, tension: 8, fatigue: 3, curiosity: 8 }
 ];
 const inputFor = i => `${ACTIONS[i % ACTIONS.length]}（第${i + 1}步）`;
 
@@ -132,7 +150,7 @@ async function playTurns(server, dataDir, moduleKey, from, to, messages, hashes,
     const input = inputFor(i);
     const chat = await api(server, "/api/llm/chat", { method: "POST", body: JSON.stringify({
       input, moduleKey, modeId: "world-rpg", dataMode: "worldbook",
-      engineState: { dataMode: "worldbook", emotionState: { engagement: 6, tension: 5, fatigue: 4, curiosity: 7 } },
+      engineState: { dataMode: "worldbook", emotionState: EMOTIONS[i % EMOTIONS.length] },
       messages: messages.slice(-8) }) });
     if (chat.body?.status !== "ok") throw new Error(`turn ${i + 1}: status=${chat.body?.status} code=${chat.body?.code || ""} ${chat.body?.errorMsg || ""}`);
     messages.push({ role: "user", content: input }, { role: "assistant", content: String(chat.body.narrative || "") });
@@ -142,8 +160,9 @@ async function playTurns(server, dataDir, moduleKey, from, to, messages, hashes,
   }
 }
 
-async function run({ turns, resumeAt = null, llm }) {
+async function run({ turns, resumeAt = null, llm, seed = null }) {
   stubLog.push({ run: true });
+  STUB.calls = 0;
   const dataDir = await createTempDataDir("world-tree-det-");
   let server = await startServer(dataDir, llm);
   const hashes = []; const samples = []; const messages = [];
@@ -151,6 +170,11 @@ async function run({ turns, resumeAt = null, llm }) {
     const install = await api(server, "/api/examples/install", { method: "POST", body: JSON.stringify({ id: DEMO }) });
     if (install.body?.status !== "ok") throw new Error(`install failed: ${install.status}`);
     const moduleKey = install.body.module.id;
+    if (seed !== null) {
+      const statePath = join(dataDir, "engine", "worlds", String(moduleKey).replace(/^world:/, ""), "runtime", "state.json");
+      const st = readJson(statePath) || {};
+      writeFileSync(statePath, JSON.stringify({ ...st, seed }, null, 2));
+    }
     if (resumeAt) {
       await playTurns(server, dataDir, moduleKey, 0, resumeAt, messages, hashes, samples);
       await server.stop();
@@ -192,8 +216,12 @@ if (isMain) {
     const llm = await startStubLlm();
     try {
       const a = await run({ turns: TURNS, llm });
-      if (!ONLY || ONLY === "replay") { const b = await run({ turns: TURNS, llm }); results.push(compare(`replay ${TURNS}x2`, a, b)); }
-      if (!ONLY || ONLY === "resume") { const c = await run({ turns: TURNS, resumeAt: RESUME_AT, llm }); results.push(compare(`resume@${RESUME_AT} vs continuous`, a, c)); }
+      if (MUTATE === "seed") {
+        const b = await run({ turns: TURNS, llm, seed: "mutated-seed" });
+        const r = compare(`replay ${TURNS}x2 [mutate=seed]`, a, b);
+        results.push({ ...r, name: `${r.name} expect-FAIL`, ok: !r.ok, mutationDetected: !r.ok });
+      } else if (!ONLY || ONLY === "replay") { const b = await run({ turns: TURNS, llm }); results.push(compare(`replay ${TURNS}x2`, a, b)); }
+      if (!MUTATE && (!ONLY || ONLY === "resume")) { const c = await run({ turns: TURNS, resumeAt: RESUME_AT, llm }); results.push(compare(`resume@${RESUME_AT} vs continuous`, a, c)); }
     } finally { await llm.stop(); }
   }
   for (const r of results) {

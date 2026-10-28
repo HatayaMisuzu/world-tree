@@ -1,4 +1,5 @@
 import { rngFrom } from "../../shared/determinism.js";
+import { scopedObject } from "../engine/world-scope.js";
 // ===== M17 随机性模块 =====
 // v2 — 概率 vs 判断分离
 //
@@ -10,7 +11,7 @@ import { rngFrom } from "../../shared/determinism.js";
 // 本模块仅提供事件模板池和基础概率函数。
 // 事件决策由 Director 层 (engine/director.js) 完成。
 
-const CACHE = { lastEventLevel: "", lastEventRound: 0, eventHistory: [] };
+const CACHE = scopedObject("events.cache", () => ({ lastEventLevel: "", lastEventRound: 0, eventHistory: [] }));
 
 // ---- 纯概率判定（仅用于环境事件/气氛调剂） ----
 export function eventChance(weight = 0.15, rng = null, ...seedParts) {
@@ -176,4 +177,12 @@ export function resetEventCache() {
   CACHE.lastEventLevel = "";
   CACHE.lastEventRound = 0;
   CACHE.eventHistory = [];
+}
+
+/** 从快照恢复事件历史（含冷却所需的 lastEventLevel/lastEventRound） */
+export function importEventHistory(history = []) {
+  CACHE.eventHistory = Array.isArray(history) ? history.map(e => ({ ...e })) : [];
+  const last = CACHE.eventHistory[CACHE.eventHistory.length - 1];
+  CACHE.lastEventLevel = last?.level || "";
+  CACHE.lastEventRound = last?.round || 0;
 }
