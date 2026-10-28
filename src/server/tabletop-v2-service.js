@@ -13,6 +13,7 @@ import { assertRuntimeNamespaceIsolation } from "../core/mode/mode-asset-linkage
 import { executeTabletopGmLoop } from "../core/tabletop/tabletop-v2-gm-loop.js";
 import { createTabletopV2PolishClient } from "../core/tabletop/tabletop-v2-llm-polish.js";
 import { assertTabletopV2RuntimePath, moduleDir, runsDir, runDir, savesDir, branchesDir, ensureDir } from "./tabletop-v2-paths.js";
+import { stableId } from "../shared/determinism.js";
 export { previewTabletopV2Import, commitTabletopV2Import } from "./tabletop-v2-import-service.js";
 
 // ── LLM polish client ──
@@ -56,7 +57,7 @@ export async function startTabletopV2Run(body = {}, deps = {}) {
     const runState = createTabletopRun({
       module,
       playerCharacter: body.playerCharacter || null,
-      seed: body.seed || Date.now(),
+      seed: body.seed, // omit → createTabletopRun derives hashSeed(moduleId); no wall clock
     });
 
     // Persist run
@@ -427,7 +428,7 @@ export async function restoreTabletopV2Save(body = {}, deps = {}) {
       ...restored,
       runId,
       moduleId: currentState?.moduleId,
-      branchId: currentState?.branchId || `branch_restored_${Date.now()}`,
+      branchId: currentState?.branchId || stableId("branch", runId, saveId, "restored"),
       updatedAt: new Date().toISOString(),
     };
 
@@ -555,7 +556,7 @@ export async function exportTabletopV2Run(body = {}, deps = {}) {
     };
 
     // Also write export to file for persistence
-    const exportPath = join(runDir(dataRoot, runId), `export-${Date.now()}.json`);
+    const exportPath = join(runDir(dataRoot, runId), `export-${stableId("export", runId, runState.turnIndex || 0, (runState.saveSlots || []).length)}.json`);
     writeFileSync(exportPath, JSON.stringify(exportData, null, 2));
 
     return { status: "ok", export: exportData, exportPath };

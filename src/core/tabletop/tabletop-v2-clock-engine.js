@@ -1,14 +1,18 @@
 // Tabletop V2 Clock Engine
 // Progress clocks for tracking faction moves, impending threats, and timed events.
 // Clocks are project assets with public/hidden visibility.
+// Ids are stableId-derived (dc-3); createdAt / history.timestamp are display-only.
+
+import { stableId } from "../../shared/determinism.js";
 
 // ── Factory ──
 
 export function createClock({ id, label, segments = 4, value = 0, visibility = "public", source = "module", maxSegments } = {}) {
   const max = maxSegments || segments;
+  const resolvedLabel = label || "时钟";
   return {
-    id: id || `clock_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    label: label || "时钟",
+    id: id || stableId("clock", resolvedLabel, max, visibility, source),
+    label: resolvedLabel,
     segments: max,
     value: Math.max(0, Math.min(max, Number(value) || 0)),
     visibility,

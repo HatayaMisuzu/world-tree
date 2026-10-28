@@ -65,7 +65,8 @@ export function cacheEventPrediction(assessment, eventTemplate = null, context =
 
   const entry = {
     id: `cache-${++store.counter}`,
-    createdAt: new Date().toISOString(),
+    // round-scoped; no wall-clock createdAt (dc-3) — hash can include this entry without stubs
+    createdAtRound: context.round || 0,
     round: context.round || 0,
     score,
     type: assessment.type,
@@ -134,7 +135,7 @@ export function checkEventCache(context = {}) {
         canBackground: event.level !== "light",
         cached: true,
         cacheId: best.id,
-        promotedAt: new Date().toISOString()
+        promotedAtRound: round
       },
       source: best
     };

@@ -3,6 +3,7 @@
 // Separates player-visible brief from hidden GM book.
 
 import { normalizeModeAssetBindings } from "../mode/mode-asset-linkage-contract.js";
+import { stableId } from "../../shared/determinism.js";
 
 // ── Schema version ──
 
@@ -15,7 +16,7 @@ export function normalizeAdventureModule(input = {}) {
 
   const module = {
     schemaVersion: input.schemaVersion || SCHEMA_VERSION,
-    moduleId: input.moduleId || input.id || `tabletop_${Date.now()}`,
+    moduleId: input.moduleId || input.id || stableId("tabletop", input.title || "未命名冒险", input.sourceType || "quick_start"),
     title: input.title || "未命名冒险",
     sourceType: input.sourceType || "quick_start",
     rulesetProfileId: input.rulesetProfileId || input.ruleset?.rulesetId || "d20_fantasy",
@@ -37,7 +38,7 @@ export function normalizeAdventureModule(input = {}) {
       secretClocks: input.secretClocks || [],
       twistPoints: input.twistPoints || [],
     },
-    scenes: (input.scenes || []).map(normalizeScene),
+    scenes: (input.scenes || []).map((s, i) => normalizeScene(s, i)),
     characters: (input.characters || []).map((c) => ({
       name: c.name || "未命名",
       isNpc: c.isNpc !== undefined ? c.isNpc : false,
@@ -79,9 +80,9 @@ export function normalizeAdventureModule(input = {}) {
   return module;
 }
 
-function normalizeScene(scene = {}) {
+function normalizeScene(scene = {}, index = 0) {
   return {
-    sceneId: scene.sceneId || scene.id || `scene_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    sceneId: scene.sceneId || scene.id || stableId("scene", scene.title || "未命名场景", index, scene.description || ""),
     title: scene.title || "未命名场景",
     description: scene.description || "",
     isStarting: scene.isStarting || false,
@@ -103,7 +104,7 @@ function normalizeScene(scene = {}) {
 
 function normalizeClockFromModule(clock = {}) {
   return {
-    id: clock.id || `clock_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: clock.id || stableId("clock", clock.label || "时钟", clock.segments || 4, clock.visibility || "public", clock.source || "module"),
     label: clock.label || "时钟",
     segments: clock.segments || 4,
     value: clock.value !== undefined ? clock.value : 0,

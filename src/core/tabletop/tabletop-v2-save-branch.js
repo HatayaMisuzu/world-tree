@@ -1,24 +1,29 @@
 // Tabletop V2 Save/Branch System
 // Manages run state, save slots, and branch forking.
 // Hidden GM state is stored separately from public state.
+// Ids/seeds are derived from stableId / hashSeed (dc-3); wall-clock fields are display-only.
 
 import { createHash } from "node:crypto";
 import { createModeRuntimeNamespace } from "../mode/mode-asset-linkage-contract.js";
+import { hashSeed, stableId } from "../../shared/determinism.js";
 
 // ── Run creation ──
 
-export function createTabletopRun({ module, playerCharacter, seed } = {}) {
+export function createTabletopRun({ module, playerCharacter, seed, runKey } = {}) {
+  const moduleId = module?.moduleId || null;
+  const resolvedSeed = seed ?? hashSeed(moduleId || "tabletop", "run", runKey ?? 0);
+  const runId = stableId("run", moduleId || "tabletop", resolvedSeed, runKey ?? 0);
+  const branchId = stableId("branch", runId, "main");
   const now = new Date().toISOString();
-  const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
   const startingScene = (module?.scenes || []).find((s) => s.isStarting) || module?.scenes?.[0] || null;
 
   return {
     runId,
-    moduleId: module?.moduleId || null,
-    branchId: `branch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    moduleId,
+    branchId,
     parentBranchId: null,
-    seed: seed || Date.now(),
+    seed: resolvedSeed,
     createdAt: now,
     updatedAt: now,
     currentSceneId: startingScene?.sceneId || null,
@@ -61,7 +66,8 @@ export function createTabletopRun({ module, playerCharacter, seed } = {}) {
 export function createSaveSlot(runState, label = "") {
   if (!runState?.runId) throw new Error("runState must have a runId");
 
-  const saveId = `save_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const slotIndex = Array.isArray(runState.saveSlots) ? runState.saveSlots.length : 0;
+  const saveId = stableId("save", runState.runId, runState.branchId || "", runState.turnIndex || 0, label || "", slotIndex);
   const now = new Date().toISOString();
 
   const slot = {
@@ -101,7 +107,7 @@ export function restoreSaveSlot(saveSlot) {
 export function forkBranchFromSave(saveSlot, branchLabel = "") {
   if (!saveSlot?.saveId) throw new Error("save slot required for branch");
 
-  const branchId = `branch_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const branchId = stableId("branch", saveSlot.runId || "", saveSlot.saveId, branchLabel || "", saveSlot.turnIndex || 0);
 
   return {
     branchId,
