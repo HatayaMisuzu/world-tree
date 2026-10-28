@@ -3,8 +3,8 @@
  *
  * Absorbs ring labels from `src/core/proximity/proximity-scope.js`
  * (core / near / far / dormant) and the s3-2 NPC runtime shape.
- * Optional living-world / timeline-causality skeletons are NOT wired here
- * (ripple + causal write-back → s3-4+).
+ * Causal write-back lives in lifecycle via timeline-causality-wire (S4-4);
+ * this module stays LOD-only (no parallel event bus).
  *
  * ## LOD rules
  * - **near** (and **core**): finer per-tick update — one fine step per
